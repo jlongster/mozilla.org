@@ -1,0 +1,148 @@
+<?php
+
+$html_title = 'Netscape PKCS #11 Test Suite';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>Netscape PKCS #11 Test Suite</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Technical contact: 
+<A HREF="mailto:relyea@netscape.com?subject=PKCS #11 Netscape PK11 Test Suite Feedback">Bob Relyea</A><BR>
+
+Yell at the manager: 
+<A HREF="mailto:lord@netscape.com?subject=PKCS #11 Netscape PK11 Test Suite Feedback">Bob Lord</A></FONT></i>
+</center>
+
+<h3>Purpose</h3>
+The PKCS #11 Test Suite exercises cryptographic modules through
+Netscape's PKCS #11 interface layer. It is designed to exercise some
+of the PKCS #11 operations most commonly accessed from Netscape products.
+Running the suite against your PKCS #11 implementation will help expose
+incompatibilities that could otherwise be found by manual testing only.
+
+<h3>Using the Suite</font></h3>
+<ol>
+
+<li><b>Create a working directory.</b> After you have built the suite, 
+copy the following files into a directory on your hard drive:
+<ul>
+<li><code>regress</code> executable for your platform
+<li><code>pk11test</code> executable for your platform
+<li><code>pkcs11.reg</code>, the
+<a href="testtools/regress.html">regress</a> specification file
+<li><code>internal</code>, the sample configuration file
+</ul>
+
+<p><li><b>If you don't already have security databases, create them with
+<a href="../../nss/tools/#Tools">modutil</a></b>.
+Running the test suite requires that you have a <code>secmod.db</code> file only; <code>key3.db</code>
+and <code>cert7.db</code> are not used by the suite. The databases should
+be in your working directory.
+
+<p><li><b>Install the driver for your PKCS #11 implementation.</b> Use
+<code>modutil -add</code>
+to add your PKCS #11 module to the security module database
+(<code>secmod.db</code>) in your working directory.
+
+<p><li><b>Create a configuration file.</b> A sample configuration file,
+called <code>internal</code>, is included in the package.  The configuration
+file contains three entries, one per line. The first entry is the name
+of the token to be tested--this name can be acquired from modutil.  The
+second line contains the name of the <code>secmod.db</code> file containing
+the security module database.  This file may have been created with modutil,
+or it may have been created with Communicator.  The third line is the PIN
+for the token, which will be used by the suite to login to the token.
+
+<p>Here is another sample configuration file:
+<blockquote><pre>
+My SuperCrypt Token
+dbdir/secmod.db
+myPIN
+</pre></blockquote>
+
+<p><li><b>Edit the regress specfile.</b>
+In the "globalArgs" section of the regress specfile, put the name of the
+configuration file that should be used by the suite. For example, if the
+configuration file is called <code>sprcrypt.txt</code>, the globalArgs
+line would look like this:
+<blockquote><pre>
+globalArgs=sprcrypt.txt
+</pre></blockquote>
+Also, you may want to alter the location of test results. This is specified
+with the <code>htmlout</code> attribute.  The default is <code>NOW</code>,
+which causes regress to construct a filename from the current date (e.g.,
+<code>19980604.htm</code>).
+
+<p><li><b>Run the suite.</b> Use the
+<a href="testtools/regress.html">regress</a> tool
+to run the test suite over all the cases in the specfile:
+<blockquote><pre>
+regress specfile=pkcs11.reg
+</blockquote></pre>
+Regress will write HTML results to the location specified with the 
+<code>htmlout</code> attribute in the regress specfile.
+</ol>
+
+<h3>Evaluating the Results</h3>
+After the test suite completes, the results will be available in the HTML
+output file.  There is one entry for each test. Each entry contains the
+test case number, the command line, a description of the test case,
+the start and end times of the test, and the result of the test. The result
+will be either PASS or FAIL.  If the test fails, one of the following
+error codes will be returned:
+
+<p>
+<table align="center" border>
+<tr><th colspan="2">Error Codes</th></tr>
+<tr><th>Error Code</th><th>Description</th></tr>
+<tr><td align="center">0</td><td>no error</td></tr>
+<tr><td align="center">1</td>
+<td>could not find token specified in configuration file</td></tr>
+<tr><td align="center">2</td><td>key generation failed</td></tr>
+<tr><td align="center">3</td><td>failed to create cryptographic context</td></tr>
+<tr><td align="center">4</td><td>internal random number generation failed</td></tr>
+<tr><td align="center">5</td><td>unknown mechanism</td></tr>
+<tr><td align="center">6</td><td>error in configuration file</td></tr>
+<tr><td align="center">7</td><td>failed to copy key to token</td></tr>
+<tr><td align="center">8</td><td>cryptographic operation failed</td></tr>
+<tr><td align="center">9</td><td>failed to finalize cryptographic operation</td></tr>
+<tr><td align="center">10</td><td>ciphertext generated by token did not match ciphertext generated by Netscape security library</td></tr>
+<tr><td align="center">11</td><td>failed to generate mechanism parameters</td></tr>
+<tr><td align="center">12</td><td>recovered plaintext does not match original plaintext: Decrypt(Encrypt(x)) != x</td></tr>
+<tr><td align="center">13</td><td>encryption is a null operation: Encrypt(x) == x</td></tr>
+<tr><td align="center">14</td><td>failed to wrap private key</td></tr>
+<tr><td align="center">15</td><td>failed to wrap symmetric key</td></tr>
+<tr><td align="center">16</td><td>failed to unwrap symmetric key</td></tr>
+<tr><td align="center">17</td><td>unwrapped key is different from original: Unwrap(Wrap(x)) != x</td></tr>
+<tr><td align="center">18</td><td>failed to unwrap private key</td></tr>
+<tr><td align="center">19</td><td>signature operation failed</td></tr>
+<tr><td align="center">20</td><td>signature verification failed</td></tr>
+<tr><td align="center">21</td><td>authentication failed with correct PIN</td></tr>
+<tr><td align="center">22</td><td>authentication succeeded with incorrect PIN</td></tr>
+
+</table>
+
+
+<h3>Running the Test Program Manually</h3>
+Individual tests can be run directly to assist in debugging. To run an
+individual test case, look up the command line from the HTML output file
+and type it at the command prompt. Alternatively, the program can be run
+in a debugger, which can trap on calls into your PKCS #11 driver.  This
+is usually the most effective technique for debugging failed test cases.
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

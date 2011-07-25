@@ -1,0 +1,390 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* 
+<b><a name="2">    2</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="3">    3</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="4">    4</a></b>  *
+<b><a name="5">    5</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="6">    6</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="7">    7</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="8">    8</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="9">    9</a></b>  *
+<b><a name="10">   10</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="11">   11</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="12">   12</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="13">   13</a></b>  * License.
+<b><a name="14">   14</a></b>  *
+<b><a name="15">   15</a></b>  * The Original Code is the elliptic curve math library for prime field curves.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Initial Developer of the Original Code is
+<b><a name="18">   18</a></b>  * Sun Microsystems, Inc.
+<b><a name="19">   19</a></b>  * Portions created by the Initial Developer are Copyright (C) 2003
+<b><a name="20">   20</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="21">   21</a></b>  *
+<b><a name="22">   22</a></b>  * Contributor(s):
+<b><a name="23">   23</a></b>  *   Douglas Stebila &lt;douglas@stebila.ca&gt;, Sun Microsystems Laboratories
+<b><a name="24">   24</a></b>  *
+<b><a name="25">   25</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="26">   26</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="27">   27</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="28">   28</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="29">   29</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="30">   30</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="31">   31</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="32">   32</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="33">   33</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="34">   34</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="35">   35</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="36">   36</a></b>  *
+<b><a name="37">   37</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> #include "ecp.h"
+<b><a name="40">   40</a></b> #include "mpi.h"
+<b><a name="41">   41</a></b> #include "mplogic.h"
+<b><a name="42">   42</a></b> #include "mpi-priv.h"
+<b><a name="43">   43</a></b> #include &lt;stdlib.h&gt;
+<b><a name="44">   44</a></b> 
+<b><a name="45">   45</a></b> #define <a href="#45">ECP224_DIGITS</a> <a href="../../freebl/ecl/ecl-priv.h.dep.html#ECL_CURVE_DIGITS">ECL_CURVE_DIGITS</a>(224)
+<b><a name="46">   46</a></b> 
+<b><a name="47">   47</a></b> /* Fast modular reduction for p224 = 2^224 - 2^96 + 1.  a can be r. Uses
+<b><a name="48">   48</a></b>  * algorithm 7 from Brown, Hankerson, Lopez, Menezes. Software
+<b><a name="49">   49</a></b>  * Implementation of the NIST Elliptic Curves over Prime Fields. */
+<b><a name="50">   50</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="51">   51</a></b> <a href="#51">ec_GFp_nistp224_mod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r, const <a href="../../freebl/ecl/ecl-priv.h.dep.html#GFMethod">GFMethod</a> *meth)
+<b><a name="52">   52</a></b> {
+<b><a name="53">   53</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="54">   54</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> a_used = <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a);
+<b><a name="55">   55</a></b> 
+<b><a name="56">   56</a></b>         int    r3b;
+<b><a name="57">   57</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> carry;
+<b><a name="58">   58</a></b> #ifdef <a href="../../freebl/ecl/ecl-priv.h.dep.html#ECL_THIRTY_TWO_BIT">ECL_THIRTY_TWO_BIT</a>
+<b><a name="59">   59</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a6a = 0, a6b = 0,
+<b><a name="60">   60</a></b>                 a5a = 0, a5b = 0, a4a = 0, a4b = 0, a3a = 0, a3b = 0;
+<b><a name="61">   61</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> r0a, r0b, r1a, r1b, r2a, r2b, r3a;
+<b><a name="62">   62</a></b> #else
+<b><a name="63">   63</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a6 = 0, a5 = 0, a4 = 0, a3b = 0, a5a = 0;
+<b><a name="64">   64</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a6b = 0, a6a_a5b = 0, a5b = 0, a5a_a4b = 0, a4a_a3b = 0;
+<b><a name="65">   65</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> r0, r1, r2, r3;
+<b><a name="66">   66</a></b> #endif
+<b><a name="67">   67</a></b> 
+<b><a name="68">   68</a></b>         /* reduction not needed if a is not larger than field size */
+<b><a name="69">   69</a></b>         if (a_used &lt; <a href="../../freebl/ecl/ecp_224.c.dep.html#ECP224_DIGITS">ECP224_DIGITS</a>) {
+<b><a name="70">   70</a></b>                 if (a == r) return <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="71">   71</a></b>                 return <a href="../../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(a, r);
+<b><a name="72">   72</a></b>         }
+<b><a name="73">   73</a></b>         /* for polynomials larger than twice the field size, use regular
+<b><a name="74">   74</a></b>          * reduction */
+<b><a name="75">   75</a></b>         if (a_used &gt; <a href="../../freebl/ecl/ecl-priv.h.dep.html#ECL_CURVE_DIGITS">ECL_CURVE_DIGITS</a>(224*2)) {
+<b><a name="76">   76</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_mod">mp_mod</a>(a, &amp;meth-&gt;irr, r));
+<b><a name="77">   77</a></b>         } else {
+<b><a name="78">   78</a></b> #ifdef <a href="../../freebl/ecl/ecl-priv.h.dep.html#ECL_THIRTY_TWO_BIT">ECL_THIRTY_TWO_BIT</a>
+<b><a name="79">   79</a></b>                 /* copy out upper words of a */
+<b><a name="80">   80</a></b>                 switch (a_used) {
+<b><a name="81">   81</a></b>                 case 14:
+<b><a name="82">   82</a></b>                         a6b = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 13);
+<b><a name="83">   83</a></b>                 case 13:
+<b><a name="84">   84</a></b>                         a6a = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 12);
+<b><a name="85">   85</a></b>                 case 12:
+<b><a name="86">   86</a></b>                         a5b = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 11);
+<b><a name="87">   87</a></b>                 case 11:
+<b><a name="88">   88</a></b>                         a5a = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 10);
+<b><a name="89">   89</a></b>                 case 10:
+<b><a name="90">   90</a></b>                         a4b = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 9);
+<b><a name="91">   91</a></b>                 case 9:
+<b><a name="92">   92</a></b>                         a4a = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 8);
+<b><a name="93">   93</a></b>                 case 8:
+<b><a name="94">   94</a></b>                         a3b = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 7);
+<b><a name="95">   95</a></b>                 }
+<b><a name="96">   96</a></b>                 r3a = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 6);
+<b><a name="97">   97</a></b>                 r2b= <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 5);
+<b><a name="98">   98</a></b>                 r2a= <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 4);
+<b><a name="99">   99</a></b>                 r1b = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 3);
+<b><a name="100">  100</a></b>                 r1a = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 2);
+<b><a name="101">  101</a></b>                 r0b = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 1);
+<b><a name="102">  102</a></b>                 r0a = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 0);
+<b><a name="103">  103</a></b> 
+<b><a name="104">  104</a></b> 
+<b><a name="105">  105</a></b>                 /* implement r = (a3a,a2,a1,a0)
+<b><a name="106">  106</a></b>                         +(a5a, a4,a3b,  0)
+<b><a name="107">  107</a></b>                         +(  0, a6,a5b,  0)
+<b><a name="108">  108</a></b>                         -(  0         0,    0|a6b, a6a|a5b )
+<b><a name="109">  109</a></b>                         -(  a6b, a6a|a5b, a5a|a4b, a4a|a3b ) */
+<b><a name="110">  110</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r1b, a3b, r1b, 0,     carry);
+<b><a name="111">  111</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r2a, a4a, r2a, carry, carry);
+<b><a name="112">  112</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r2b, a4b, r2b, carry, carry);
+<b><a name="113">  113</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r3a, a5a, r3a, carry, carry);
+<b><a name="114">  114</a></b>                 r3b = carry;
+<b><a name="115">  115</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r1b, a5b, r1b, 0,     carry);
+<b><a name="116">  116</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r2a, a6a, r2a, carry, carry);
+<b><a name="117">  117</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r2b, a6b, r2b, carry, carry);
+<b><a name="118">  118</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r3a,   0, r3a, carry, carry);
+<b><a name="119">  119</a></b>                 r3b += carry;
+<b><a name="120">  120</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0a, a3b, r0a, 0,     carry);
+<b><a name="121">  121</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0b, a4a, r0b, carry, carry);
+<b><a name="122">  122</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r1a, a4b, r1a, carry, carry);
+<b><a name="123">  123</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r1b, a5a, r1b, carry, carry);
+<b><a name="124">  124</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r2a, a5b, r2a, carry, carry);
+<b><a name="125">  125</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r2b, a6a, r2b, carry, carry);
+<b><a name="126">  126</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r3a, a6b, r3a, carry, carry);
+<b><a name="127">  127</a></b>                 r3b -= carry;
+<b><a name="128">  128</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0a, a5b, r0a, 0,     carry);
+<b><a name="129">  129</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0b, a6a, r0b, carry, carry);
+<b><a name="130">  130</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r1a, a6b, r1a, carry, carry);
+<b><a name="131">  131</a></b>                 if (carry) {
+<b><a name="132">  132</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r1b, 0, r1b, carry, carry);
+<b><a name="133">  133</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r2a, 0, r2a, carry, carry);
+<b><a name="134">  134</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r2b, 0, r2b, carry, carry);
+<b><a name="135">  135</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r3a, 0, r3a, carry, carry);
+<b><a name="136">  136</a></b>                         r3b -= carry;
+<b><a name="137">  137</a></b>                 }
+<b><a name="138">  138</a></b> 
+<b><a name="139">  139</a></b>                 while (r3b &gt; 0) {
+<b><a name="140">  140</a></b>                         int <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="141">  141</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a>(r1b, r3b, r1b, 0,     carry);
+<b><a name="142">  142</a></b>                         if (carry) {
+<b><a name="143">  143</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a>(r2a,  0, r2a, carry, carry);
+<b><a name="144">  144</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a>(r2b,  0, r2b, carry, carry);
+<b><a name="145">  145</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a>(r3a,  0, r3a, carry, carry);
+<b><a name="146">  146</a></b>                         }
+<b><a name="147">  147</a></b>                         <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = carry;
+<b><a name="148">  148</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0a, r3b, r0a, 0,     carry);
+<b><a name="149">  149</a></b>                         if (carry) {
+<b><a name="150">  150</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0b, 0, r0b, carry, carry);
+<b><a name="151">  151</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r1a, 0, r1a, carry, carry);
+<b><a name="152">  152</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r1b, 0, r1b, carry, carry);
+<b><a name="153">  153</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r2a, 0, r2a, carry, carry);
+<b><a name="154">  154</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r2b, 0, r2b, carry, carry);
+<b><a name="155">  155</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r3a, 0, r3a, carry, carry);
+<b><a name="156">  156</a></b>                                 <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> -= carry;
+<b><a name="157">  157</a></b>                         }
+<b><a name="158">  158</a></b>                         r3b = <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="159">  159</a></b>                 }
+<b><a name="160">  160</a></b> 
+<b><a name="161">  161</a></b>                 while (r3b &lt; 0) {
+<b><a name="162">  162</a></b>                         <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> maxInt = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a>;
+<b><a name="163">  163</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r0a, 1, r0a, 0,     carry);
+<b><a name="164">  164</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r0b, 0, r0b, carry, carry);
+<b><a name="165">  165</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r1a, 0, r1a, carry, carry);
+<b><a name="166">  166</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r1b, maxInt, r1b, carry, carry);
+<b><a name="167">  167</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r2a, maxInt, r2a, carry, carry);
+<b><a name="168">  168</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r2b, maxInt, r2b, carry, carry);
+<b><a name="169">  169</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r3a, maxInt, r3a, carry, carry);
+<b><a name="170">  170</a></b>                         r3b += carry;
+<b><a name="171">  171</a></b>                 }
+<b><a name="172">  172</a></b>                 /* check for final reduction */
+<b><a name="173">  173</a></b>                 /* now the only way we are over is if the top 4 words are all ones */
+<b><a name="174">  174</a></b>                 if ((r3a == <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a>) &amp;&amp; (r2b == <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a>)
+<b><a name="175">  175</a></b>                         &amp;&amp; (r2a == <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a>) &amp;&amp; (r1b == <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a>) &amp;&amp;
+<b><a name="176">  176</a></b>                          ((r1a != 0) || (r0b != 0) || (r0a != 0)) ) {
+<b><a name="177">  177</a></b>                         /* one last subraction */
+<b><a name="178">  178</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0a, 1, r0a, 0,     carry);
+<b><a name="179">  179</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0b, 0, r0b, carry, carry);
+<b><a name="180">  180</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r1a, 0, r1a, carry, carry);
+<b><a name="181">  181</a></b>                         r1b = r2a = r2b = r3a = 0;
+<b><a name="182">  182</a></b>                 }
+<b><a name="183">  183</a></b> 
+<b><a name="184">  184</a></b> 
+<b><a name="185">  185</a></b>                 if (a != r) {
+<b><a name="186">  186</a></b>                         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#s_mp_pad">s_mp_pad</a>(r, 7));
+<b><a name="187">  187</a></b>                 }
+<b><a name="188">  188</a></b>                 /* set the lower words of r */
+<b><a name="189">  189</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_SIGN">MP_SIGN</a>(r) = <a href="../../freebl/mpi/mpi.h.dep.html#MP_ZPOS">MP_ZPOS</a>;
+<b><a name="190">  190</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(r) = 7;
+<b><a name="191">  191</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 6) = r3a;
+<b><a name="192">  192</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 5) = r2b;
+<b><a name="193">  193</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 4) = r2a;
+<b><a name="194">  194</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 3) = r1b;
+<b><a name="195">  195</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 2) = r1a;
+<b><a name="196">  196</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 1) = r0b;
+<b><a name="197">  197</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 0) = r0a;
+<b><a name="198">  198</a></b> #else
+<b><a name="199">  199</a></b>                 /* copy out upper words of a */
+<b><a name="200">  200</a></b>                 switch (a_used) {
+<b><a name="201">  201</a></b>                 case 7:
+<b><a name="202">  202</a></b>                         a6 = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 6);
+<b><a name="203">  203</a></b>                         a6b = a6 &gt;&gt; 32;
+<b><a name="204">  204</a></b>                         a6a_a5b = a6 &lt;&lt; 32;
+<b><a name="205">  205</a></b>                 case 6:
+<b><a name="206">  206</a></b>                         a5 = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 5);
+<b><a name="207">  207</a></b>                         a5b = a5 &gt;&gt; 32;
+<b><a name="208">  208</a></b>                         a6a_a5b |= a5b;
+<b><a name="209">  209</a></b>                         a5b = a5b &lt;&lt; 32;
+<b><a name="210">  210</a></b>                         a5a_a4b = a5 &lt;&lt; 32;
+<b><a name="211">  211</a></b>                         a5a = a5 &amp; 0xffffffff;
+<b><a name="212">  212</a></b>                 case 5:
+<b><a name="213">  213</a></b>                         a4 = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 4);
+<b><a name="214">  214</a></b>                         a5a_a4b |= a4 &gt;&gt; 32;
+<b><a name="215">  215</a></b>                         a4a_a3b = a4 &lt;&lt; 32;
+<b><a name="216">  216</a></b>                 case 4:
+<b><a name="217">  217</a></b>                         a3b = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 3) &gt;&gt; 32;
+<b><a name="218">  218</a></b>                         a4a_a3b |= a3b;
+<b><a name="219">  219</a></b>                         a3b = a3b &lt;&lt; 32;
+<b><a name="220">  220</a></b>                 }
+<b><a name="221">  221</a></b> 
+<b><a name="222">  222</a></b>                 r3 = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 3) &amp; 0xffffffff;
+<b><a name="223">  223</a></b>                 r2 = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 2);
+<b><a name="224">  224</a></b>                 r1 = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 1);
+<b><a name="225">  225</a></b>                 r0 = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 0);
+<b><a name="226">  226</a></b> 
+<b><a name="227">  227</a></b>                 /* implement r = (a3a,a2,a1,a0)
+<b><a name="228">  228</a></b>                         +(a5a, a4,a3b,  0)
+<b><a name="229">  229</a></b>                         +(  0, a6,a5b,  0)
+<b><a name="230">  230</a></b>                         -(  0         0,    0|a6b, a6a|a5b )
+<b><a name="231">  231</a></b>                         -(  a6b, a6a|a5b, a5a|a4b, a4a|a3b ) */
+<b><a name="232">  232</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r1, a3b, r1, 0,     carry);
+<b><a name="233">  233</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r2, a4 , r2, carry, carry);
+<b><a name="234">  234</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r3, a5a, r3, carry, carry);
+<b><a name="235">  235</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r1, a5b, r1, 0,     carry);
+<b><a name="236">  236</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r2, a6 , r2, carry, carry);
+<b><a name="237">  237</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r3,   0, r3, carry, carry);
+<b><a name="238">  238</a></b> 
+<b><a name="239">  239</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0, a4a_a3b, r0, 0,     carry);
+<b><a name="240">  240</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r1, a5a_a4b, r1, carry, carry);
+<b><a name="241">  241</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r2, a6a_a5b, r2, carry, carry);
+<b><a name="242">  242</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r3, a6b    , r3, carry, carry);
+<b><a name="243">  243</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0, a6a_a5b, r0, 0,     carry);
+<b><a name="244">  244</a></b>                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r1, a6b    , r1, carry, carry);
+<b><a name="245">  245</a></b>                 if (carry) {
+<b><a name="246">  246</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r2, 0, r2, carry, carry);
+<b><a name="247">  247</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r3, 0, r3, carry, carry);
+<b><a name="248">  248</a></b>                 }
+<b><a name="249">  249</a></b> 
+<b><a name="250">  250</a></b> 
+<b><a name="251">  251</a></b>                 /* if the value is negative, r3 has a 2's complement 
+<b><a name="252">  252</a></b>                  * high value */
+<b><a name="253">  253</a></b>                 r3b = (int)(r3 &gt;&gt;32);
+<b><a name="254">  254</a></b>                 while (r3b &gt; 0) {
+<b><a name="255">  255</a></b>                         r3 &amp;= 0xffffffff;
+<b><a name="256">  256</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a>(r1,((<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>)r3b) &lt;&lt; 32, r1, 0, carry);
+<b><a name="257">  257</a></b>                         if (carry) {
+<b><a name="258">  258</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a>(r2,  0, r2, carry, carry);
+<b><a name="259">  259</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a>(r3,  0, r3, carry, carry);
+<b><a name="260">  260</a></b>                         }
+<b><a name="261">  261</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0, r3b, r0, 0, carry);
+<b><a name="262">  262</a></b>                         if (carry) {
+<b><a name="263">  263</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r1, 0, r1, carry, carry);
+<b><a name="264">  264</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r2, 0, r2, carry, carry);
+<b><a name="265">  265</a></b>                                 <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r3, 0, r3, carry, carry);
+<b><a name="266">  266</a></b>                         }
+<b><a name="267">  267</a></b>                         r3b = (int)(r3 &gt;&gt;32);
+<b><a name="268">  268</a></b>                 }
+<b><a name="269">  269</a></b> 
+<b><a name="270">  270</a></b>                 while (r3b &lt; 0) {
+<b><a name="271">  271</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r0, 1, r0, 0,     carry);
+<b><a name="272">  272</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r1, <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a> &lt;&lt;32, r1, carry, carry);
+<b><a name="273">  273</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r2, <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a>, r2, carry, carry);
+<b><a name="274">  274</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_ADD_CARRY">MP_ADD_CARRY</a></a> (r3, <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a> &gt;&gt; 32, r3, carry, carry);
+<b><a name="275">  275</a></b>                         r3b = (int)(r3 &gt;&gt;32);
+<b><a name="276">  276</a></b>                 }
+<b><a name="277">  277</a></b>                 /* check for final reduction */
+<b><a name="278">  278</a></b>                 /* now the only way we are over is if the top 4 words are all ones */
+<b><a name="279">  279</a></b>                 if ((r3 == (<a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a> &gt;&gt; 32)) &amp;&amp; (r2 == <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a>)
+<b><a name="280">  280</a></b>                         &amp;&amp; ((r1 &amp; <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a> &lt;&lt; 32)== <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a> &lt;&lt; 32) &amp;&amp;
+<b><a name="281">  281</a></b>                          ((r1 != <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a> &lt;&lt; 32 ) || (r0 != 0)) ) {
+<b><a name="282">  282</a></b>                         /* one last subraction */
+<b><a name="283">  283</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r0, 1, r0, 0,     carry);
+<b><a name="284">  284</a></b>                         <a href="../../freebl/ecl/ecl-priv.h.dep.html#MP_SUB_BORROW">MP_SUB_BORROW</a></a>(r1, 0, r1, carry, carry);
+<b><a name="285">  285</a></b>                         r2 = r3 = 0;
+<b><a name="286">  286</a></b>                 }
+<b><a name="287">  287</a></b> 
+<b><a name="288">  288</a></b> 
+<b><a name="289">  289</a></b>                 if (a != r) {
+<b><a name="290">  290</a></b>                         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#s_mp_pad">s_mp_pad</a>(r, 4));
+<b><a name="291">  291</a></b>                 }
+<b><a name="292">  292</a></b>                 /* set the lower words of r */
+<b><a name="293">  293</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_SIGN">MP_SIGN</a>(r) = <a href="../../freebl/mpi/mpi.h.dep.html#MP_ZPOS">MP_ZPOS</a>;
+<b><a name="294">  294</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(r) = 4;
+<b><a name="295">  295</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 3) = r3;
+<b><a name="296">  296</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 2) = r2;
+<b><a name="297">  297</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 1) = r1;
+<b><a name="298">  298</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 0) = r0;
+<b><a name="299">  299</a></b> #endif
+<b><a name="300">  300</a></b>         }
+<b><a name="301">  301</a></b> 
+<b><a name="302">  302</a></b>   CLEANUP:
+<b><a name="303">  303</a></b>         return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="304">  304</a></b> }
+<b><a name="305">  305</a></b> 
+<b><a name="306">  306</a></b> /* Compute the square of polynomial a, reduce modulo p224. Store the
+<b><a name="307">  307</a></b>  * result in r.  r could be a.  Uses optimized modular reduction for p224. 
+<b><a name="308">  308</a></b>  */
+<b><a name="309">  309</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="310">  310</a></b> <a href="#310">ec_GFp_nistp224_sqr</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r, const <a href="../../freebl/ecl/ecl-priv.h.dep.html#GFMethod">GFMethod</a> *meth)
+<b><a name="311">  311</a></b> {
+<b><a name="312">  312</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="313">  313</a></b> 
+<b><a name="314">  314</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_sqr">mp_sqr</a><a href="../../freebl/mpi/mpi.h.dep.html#mp_sqr"><sup>[1]</sup></a>(a, r));
+<b><a name="315">  315</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/ecl/ecp_224.c.dep.html#ec_GFp_nistp224_mod">ec_GFp_nistp224_mod</a>(r, r, meth));
+<b><a name="316">  316</a></b>   CLEANUP:
+<b><a name="317">  317</a></b>         return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="318">  318</a></b> }
+<b><a name="319">  319</a></b> 
+<b><a name="320">  320</a></b> /* Compute the product of two polynomials a and b, reduce modulo p224.
+<b><a name="321">  321</a></b>  * Store the result in r.  r could be a or b; a could be b.  Uses
+<b><a name="322">  322</a></b>  * optimized modular reduction for p224. */
+<b><a name="323">  323</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="324">  324</a></b> <a href="#324">ec_GFp_nistp224_mul</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r,
+<b><a name="325">  325</a></b>                                         const <a href="../../freebl/ecl/ecl-priv.h.dep.html#GFMethod">GFMethod</a> *meth)
+<b><a name="326">  326</a></b> {
+<b><a name="327">  327</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="328">  328</a></b> 
+<b><a name="329">  329</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_mul">mp_mul</a>(a, b, r));
+<b><a name="330">  330</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/ecl/ecp_224.c.dep.html#ec_GFp_nistp224_mod">ec_GFp_nistp224_mod</a>(r, r, meth));
+<b><a name="331">  331</a></b>   CLEANUP:
+<b><a name="332">  332</a></b>         return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="333">  333</a></b> }
+<b><a name="334">  334</a></b> 
+<b><a name="335">  335</a></b> /* Divides two field elements. If a is NULL, then returns the inverse of
+<b><a name="336">  336</a></b>  * b. */
+<b><a name="337">  337</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="338">  338</a></b> <a href="#338">ec_GFp_nistp224_div</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r,
+<b><a name="339">  339</a></b>                    const <a href="../../freebl/ecl/ecl-priv.h.dep.html#GFMethod">GFMethod</a> *meth)
+<b><a name="340">  340</a></b> {
+<b><a name="341">  341</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="342">  342</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> t;
+<b><a name="343">  343</a></b> 
+<b><a name="344">  344</a></b>         /* If a is NULL, then return the inverse of b, otherwise return a/b. */
+<b><a name="345">  345</a></b>         if (a == NULL) {
+<b><a name="346">  346</a></b>                 return  <a href="../../freebl/mpi/mpi.c.dep.html#mp_invmod">mp_invmod</a>(b, &amp;meth-&gt;irr, r);
+<b><a name="347">  347</a></b>         } else {
+<b><a name="348">  348</a></b>                 /* MPI doesn't support divmod, so we implement it using invmod and 
+<b><a name="349">  349</a></b>                  * mulmod. */
+<b><a name="350">  350</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;t));
+<b><a name="351">  351</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_invmod">mp_invmod</a>(b, &amp;meth-&gt;irr, &amp;t));
+<b><a name="352">  352</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_mul">mp_mul</a>(a, &amp;t, r));
+<b><a name="353">  353</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/ecl/ecp_224.c.dep.html#ec_GFp_nistp224_mod">ec_GFp_nistp224_mod</a>(r, r, meth));
+<b><a name="354">  354</a></b>           CLEANUP:
+<b><a name="355">  355</a></b>                 <a href="../../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;t);
+<b><a name="356">  356</a></b>                 return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="357">  357</a></b>         }
+<b><a name="358">  358</a></b> }
+<b><a name="359">  359</a></b> 
+<b><a name="360">  360</a></b> /* Wire in fast field arithmetic and precomputation of base point for
+<b><a name="361">  361</a></b>  * named curves. */
+<b><a name="362">  362</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="363">  363</a></b> <a href="#363">ec_group_set_gfp224</a>(<a href="../../freebl/ecl/ecl.h.dep.html#ECGroup">ECGroup</a> *group, <a href="../../freebl/ecl/ecl-exp.h.dep.html#ECCurveName">ECCurveName</a> name)
+<b><a name="364">  364</a></b> {
+<b><a name="365">  365</a></b>         if (name == ECCurve_NIST_P224) {
+<b><a name="366">  366</a></b>                 group-&gt;meth-&gt;field_mod = &amp;<a href="../../freebl/ecl/ecp_224.c.dep.html#ec_GFp_nistp224_mod">ec_GFp_nistp224_mod</a>;
+<b><a name="367">  367</a></b>                 group-&gt;meth-&gt;field_mul = &amp;<a href="../../freebl/ecl/ecp_224.c.dep.html#ec_GFp_nistp224_mul">ec_GFp_nistp224_mul</a>;
+<b><a name="368">  368</a></b>                 group-&gt;meth-&gt;field_sqr = &amp;<a href="../../freebl/ecl/ecp_224.c.dep.html#ec_GFp_nistp224_sqr">ec_GFp_nistp224_sqr</a>;
+<b><a name="369">  369</a></b>                 group-&gt;meth-&gt;field_div = &amp;<a href="../../freebl/ecl/ecp_224.c.dep.html#ec_GFp_nistp224_div">ec_GFp_nistp224_div</a>;
+<b><a name="370">  370</a></b>         }
+<b><a name="371">  371</a></b>         return <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="372">  372</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,284 @@
+<?php
+
+$html_title = 'Selected SSL Types and Structures
+';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<FONT SIZE=-1><A HREF="index.html">Table of Contents</A> | <A HREF="gtstd.html">Previous</A>
+ | <A HREF="sslfnc.html">Next</A>
+ | <A HREF="bklast.html">Index</A>
+</FONT><BR><BR>
+
+
+<BR>
+<HR>
+<A NAME="1030507">
+<P></A><CENTER><H2>Chapter 3<BR>
+<A NAME="1029792">
+Selected SSL Types and Structures </A></H2></CENTER>
+<A NAME="1029793">
+This chapter describes some of the most important types and structures used with the functions described in the rest of this document, and how to manage the memory used for them. Additional types are described with the functions that use them or in the header files.</A></P>
+<A NAME="1030889">
+<A HREF="ssltyp.html#1030559">Types and Structures</A><br><A HREF="ssltyp.html#1029645">Managing SECItem Memory</A></A></P>
+
+<H2><A NAME="Types and Structures"></A>
+<A NAME="1030559">
+ Types and Structures
+</A></H2><A NAME="1030587">
+These types and structures are described here:</A></P>
+<A NAME="1028704">
+<A HREF="ssltyp.html#1028465"><CODE>CERTCertDBHandle</CODE></A><br><A HREF="ssltyp.html#1027387"><CODE>CERTCertificate</CODE></A><br><A HREF="ssltyp.html#1028593"><CODE>PK11SlotInfo</CODE></A><br><A HREF="ssltyp.html#1026076"><CODE>SECItem</CODE></A><br><A HREF="ssltyp.html#1026727"><CODE>SECKEYPrivateKey</CODE></A><br><A HREF="ssltyp.html#1026722"><CODE>SECStatus</CODE></A></A></P>
+<A NAME="1029417">
+Additional types used by a single function only are described with the function's entry in each chapter. Some of these functions also use types defined by NSPR and described in the <A href="../../../../../../docs/refList/refNSPR/contents.html>NSPR Reference</A>. </A></P>
+<A NAME="1028657">
+Many of the structures presented here (<A HREF="ssltyp.html#1028465"><CODE>CERTCertDBHandle</CODE></A>, <A HREF="ssltyp.html#1027387"><CODE>CERTCertificate</CODE></A>, <A HREF="ssltyp.html#1028593"><CODE>PK11SlotInfo</CODE></A>, and <A HREF="ssltyp.html#1026727"><CODE>SECKEYPrivateKey</CODE></A>) are opaque--that is, they are types defined as structures (for example, <CODE>CERTCertDBHandleStr</CODE>) that may change in future releases of Network Security Services. As long as you use the form shown here, your code will not need revision. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1028465">
+ CERTCertDBHandle
+</A></H4>
+
+<A NAME="1027307">
+An opaque handle structure for open certificate databases.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029008">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1027336">#include &lt;<CODE>certt.h&gt;</CODE></A></PRE><PRE><A NAME="1029013">typedef struct CERTCertDBHandleStr CERTCertDBHandle;</A></PRE>
+<H4><A NAME="Head3;"></A>
+<A NAME="1027387">
+ CERTCertificate
+</A></H4>
+
+<A NAME="1027388">
+An opaque X.509 certificate object.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029288">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1029289">#include &lt;<CODE>certt.h&gt;</CODE></A></PRE><PRE><A NAME="1027422">typedef struct CERTCertificateStr CERTCertificate;</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1029889">
+ Description
+</A></H5>
+
+<A NAME="1029894">
+Certificate and key structures are shared objects. When an application makes a copy of a particular certificate or key structure that already exists in memory, SSL makes a <I>shallow</I> copy--that is, it increments the reference count for that object rather than making a whole new copy. When you call <A HREF="sslcrt.html#1050532"><CODE>CERT_DestroyCertificate</CODE></A> or <A HREF="sslkey.html#1051017"><CODE>SECKEY_DestroyPrivateKey</CODE></A>, the function decrements the reference count and, if the reference count reaches zero as a result, both frees the memory and sets all the bits to zero. The use of the word "destroy" in function names or in the description of a function implies reference counting.</A></P>
+<A NAME="1029891">
+Never alter the contents of a certificate or key structure. If you attempt to do so, the change affects all the shallow copies of that structure and can cause severe problems. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1028593">
+ PK11SlotInfo
+</A></H4>
+
+<A NAME="1028594">
+An opaque structure representing a physical or logical PKCS #11 slot.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029298">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1029299">#include &lt;<CODE>pk11expt.h&gt;</CODE></A></PRE><A NAME="1028595">
+<CODE>typedef struct PK11SlotInfo</CODE>Str <CODE>PK11SlotInfo</CODE>;</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1026076">
+ SECItem
+</A></H4>
+
+<A NAME="1029392">
+A structure that points to other structures. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029337">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1029342">#include &lt;seccomon.h&gt;<br>#include &lt;prtypes.h&gt;<br>#include &lt;secport.h&gt;</A></PRE><PRE><A NAME="1026306">typedef enum {<br>    siBuffer,<br>    siClearDataBuffer,<br>    siCipherDataBuffer,<br>    siDERCertBuffer,<br>    siEncodedCertBuffer,<br>    siDERNameBuffer,<br>    siEncodedNameBuffer,<br>    siAsciiNameString,<br>    siAsciiString,<br>    siDEROID<br>} SECItemType;</A></PRE><PRE><A NAME="1029386">typedef struct SECItemStr SECItem;</A></PRE><PRE><A NAME="1027621">struct SECItemStr {<br>    SECItemType type;<br>    unsigned char *data;<br>    unsigned int len;<br>};</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1030926">
+ Description
+</A></H5>
+
+<A NAME="1030934">
+A <CODE>SECItem</CODE> structure can be used to associate your own data with an SSL socket.</A></P>
+<A NAME="1030983">
+To free a structure pointed to by a <CODE>SECItem</CODE>, and, if desired, the <CODE>SECItem</CODE> structure itself, use one the functions <A HREF="ssltyp.html#1030620"><CODE>SECItem_FreeItem</CODE></A> or <A HREF="ssltyp.html#1030773"><CODE>SECItem_ZfreeItem</CODE></A>.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1026727">
+ SECKEYPrivateKey
+</A></H4>
+
+<A NAME="1027674">
+An opaque, generic key structure.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029313">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1029314">#include &lt;<CODE>keyt.h&gt;</CODE></A></PRE><PRE><A NAME="1027665">typedef struct SECKEYPrivateKeyStr SECKEYPrivateKey;</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1029925">
+ Description
+</A></H5>
+
+<A NAME="1029926">
+Certificate and key structures are shared objects. When an application makes a copy of a particular certificate or key structure that already exists in memory, SSL makes a <I>shallow</I> copy--that is, it increments the reference count for that object rather than making a whole new copy. When you call <A HREF="sslcrt.html#1050532"><CODE>CERT_DestroyCertificate</CODE></A> or <A HREF="sslkey.html#1051017"><CODE>SECKEY_DestroyPrivateKey</CODE></A>, the function decrements the reference count and, if the reference count reaches zero as a result, both frees the memory and sets all the bits to zero. The use of the word "destroy" in function names or in the description of a function implies reference counting.</A></P>
+<A NAME="1029933">
+Never alter the contents of a certificate or key structure. If you attempt to do so, the change affects all the shallow copies of that structure and can cause severe problems. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1026722">
+ SECStatus
+</A></H4>
+
+<A NAME="1026094">
+The return value for many SSL functions. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1026287">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1027737">#include &lt;<CODE>seccomon.h&gt;</CODE></A></PRE><PRE><A NAME="1029324">typedef enum {<br>    SECWouldBlock = -2,<br>    SECFailure = -1,<br>    SECSuccess = 0<br>} SECStatus;</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1026433">
+ Enumerators
+</A></H5>
+
+<A NAME="1029618">
+The enum includes the following enumerators:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1029622">SECWouldBlock</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1029624">
+Reserved for internal use.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1029626">SECFailure</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1029628">
+The operation failed. To find out why, call <CODE><A href="../../../../../nspr/reference/html/prerr.html#26127">PR_GetError</A></CODE>.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1029630">SECSuccess</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1029632">
+The operation succeeded. In this case the value returned by <CODE><A href="../../../../../nspr/reference/html/prerr.html#26127">PR_GetError</A></CODE> is meaningless.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+
+<H2><A NAME="Managing SECItem Memory"></A>
+<A NAME="1029645">
+ Managing SECItem Memory
+</A></H2><A NAME="1030704">
+These functions are available for managing the memory associated with <CODE>SECItem</CODE> structures and the structures to which they point.</A></P>
+<A NAME="1030852">
+<A HREF="ssltyp.html#1030620"><CODE>SECItem_FreeItem</CODE></A><br><A HREF="ssltyp.html#1030773"><CODE>SECItem_ZfreeItem</CODE></A><br></A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1030620">
+ SECItem_FreeItem
+</A></H4>
+
+<A NAME="1030621">
+Frees the memory associated with a <CODE>SECItem</CODE> structure.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1030622">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1030623">#include &lt;prtypes.h&gt; </A></PRE><PRE><A NAME="1030624">SECStatus SECItem_FreeItem (<br>&nbsp;&nbsp;&nbsp;SECItem *item,<br>&nbsp;&nbsp;&nbsp;PRBool freeItem)</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1030625">
+ Parameter
+</A></H5>
+
+<A NAME="1030631">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1030628">
+<CODE>item</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1030630">
+A pointer to a <CODE>SECItem </CODE>structure.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1030680">
+freeItem</A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1030682">
+When <CODE>PR_FALSE</CODE>, free only the structure pointed to. Otherwise, free both the structure pointed to and the <CODE>SECItem</CODE> structure itself.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1030632">
+ Returns
+</A></H5>
+
+<A NAME="1030633">
+The function returns one of these value<VAR>s</VAR>:</A></P>
+<ul><P><LI><A NAME="1030634">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<P><LI><A NAME="1030637">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127">PR_GetError<CODE></A></CODE> to retrieve the error code.</A></LI>
+</ul><H5><A NAME="Head4;"></A>
+<A NAME="1030638">
+ Description 
+</A></H5>
+
+<A NAME="1030639">
+This function frees the memory associated with the structure to which the specified item points, when that structure is no longer used. When <CODE>freeItem</CODE> is not <CODE>PR_FALSE</CODE>, also frees the item structure itself.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1030773">
+ SECItem_ZfreeItem
+</A></H4>
+
+<A NAME="1030774">
+Zeroes and frees the memory associated with a <CODE>SECItem</CODE> structure.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1030775">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1030776">#include &lt;prtypes.h&gt; </A></PRE><PRE><A NAME="1030777">SECStatus SECItem_ZfreeItem (<br>&nbsp;&nbsp;&nbsp;SECItem *item,<br>&nbsp;&nbsp;&nbsp;PRBool freeItem)</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1030778">
+ Parameter
+</A></H5>
+
+<A NAME="1030788">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1030781">
+<CODE>item</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1030783">
+A pointer to a <CODE>SECItem </CODE>structure.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1030785">
+freeItem</A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1030787">
+When <CODE>PR_FALSE</CODE>, free only the structure pointed to. Otherwise, free both the structure pointed to and the <CODE>SECItem</CODE> structure itself.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1030789">
+ Returns
+</A></H5>
+
+<A NAME="1030790">
+The function returns one of these value<VAR>s</VAR>:</A></P>
+<ul><P><LI><A NAME="1030791">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<P><LI><A NAME="1030794">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127">PR_GetError<CODE></A></CODE> to retrieve the error code.</A></LI>
+</ul><H5><A NAME="Head4;"></A>
+<A NAME="1030795">
+ Description 
+</A></H5>
+
+<A NAME="1030796">
+This function is similar to <A HREF="ssltyp.html#1030620"><CODE>SECItem_FreeItem</CODE></A>, except that it overwrites the structures to be freed with zeroes before it frees them. Zeros and frees the memory associated with the structure to which the specified item points, when that structure is no longer used. When <CODE>freeItem</CODE> is not <CODE>PR_FALSE</CODE>, also zeroes and frees the item structure itself.</A></P>
+<A NAME="1030611">
+</A></P>
+
+<HR>
+
+<FONT SIZE=-1><A HREF="index.html">Table of Contents</A> | <A HREF="gtstd.html">Previous</A>
+ | <A HREF="sslfnc.html">Next</A>
+ | <A HREF="bklast.html">Index</A>
+</FONT>
+<P ALIGN=right>
+<FONT SIZE=-2><I>Last Updated:  10/18/00  09:17:43</I></FONT>
+<P> 
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

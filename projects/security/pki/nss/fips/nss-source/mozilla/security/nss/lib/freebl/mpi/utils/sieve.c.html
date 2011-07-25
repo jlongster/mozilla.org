@@ -1,0 +1,286 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /*
+<b><a name="2">    2</a></b>  * sieve.c
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * Finds prime numbers using the Sieve of Eratosthenes
+<b><a name="5">    5</a></b>  *
+<b><a name="6">    6</a></b>  * This implementation uses a bitmap to represent all odd integers in a
+<b><a name="7">    7</a></b>  * given range.  We iterate over this bitmap, crossing off the
+<b><a name="8">    8</a></b>  * multiples of each prime we find.  At the end, all the remaining set
+<b><a name="9">    9</a></b>  * bits correspond to prime integers.
+<b><a name="10">   10</a></b>  *
+<b><a name="11">   11</a></b>  * Here, we make two passes -- once we have generated a sieve-ful of
+<b><a name="12">   12</a></b>  * primes, we copy them out, reset the sieve using the highest
+<b><a name="13">   13</a></b>  * generated prime from the first pass as a base.  Then we cross out
+<b><a name="14">   14</a></b>  * all the multiples of all the primes we found the first time through,
+<b><a name="15">   15</a></b>  * and re-sieve.  In this way, we get double use of the memory we
+<b><a name="16">   16</a></b>  * allocated for the sieve the first time though.  Since we also
+<b><a name="17">   17</a></b>  * implicitly ignore multiples of 2, this amounts to 4 times the
+<b><a name="18">   18</a></b>  * values.
+<b><a name="19">   19</a></b>  *
+<b><a name="20">   20</a></b>  * This could (and probably will) be generalized to re-use the sieve a
+<b><a name="21">   21</a></b>  * few more times.
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="24">   24</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="25">   25</a></b>  *
+<b><a name="26">   26</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="27">   27</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="28">   28</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="29">   29</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="30">   30</a></b>  *
+<b><a name="31">   31</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="32">   32</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="33">   33</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="34">   34</a></b>  * License.
+<b><a name="35">   35</a></b>  *
+<b><a name="36">   36</a></b>  * The Original Code is the MPI Arbitrary Precision Integer Arithmetic library.
+<b><a name="37">   37</a></b>  *
+<b><a name="38">   38</a></b>  * The Initial Developer of the Original Code is
+<b><a name="39">   39</a></b>  * Michael J. Fromberger.
+<b><a name="40">   40</a></b>  * Portions created by the Initial Developer are Copyright (C) 1998
+<b><a name="41">   41</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="42">   42</a></b>  *
+<b><a name="43">   43</a></b>  * Contributor(s):
+<b><a name="44">   44</a></b>  *
+<b><a name="45">   45</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="46">   46</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="47">   47</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="48">   48</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="49">   49</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="50">   50</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="51">   51</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="52">   52</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="53">   53</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="54">   54</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="55">   55</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="56">   56</a></b>  *
+<b><a name="57">   57</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="58">   58</a></b> /* $Id$ */
+<b><a name="59">   59</a></b> 
+<b><a name="60">   60</a></b> #include &lt;stdio.h&gt;
+<b><a name="61">   61</a></b> #include &lt;stdlib.h&gt;
+<b><a name="62">   62</a></b> #include &lt;limits.h&gt;
+<b><a name="63">   63</a></b> 
+<b><a name="64">   64</a></b> typedef unsigned char  <a href="#64">byte</a>;
+<b><a name="65">   65</a></b> 
+<b><a name="66">   66</a></b> typedef struct {
+<b><a name="67">   67</a></b>   int   size;
+<b><a name="68">   68</a></b>   <a href="../../../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a> *bits;
+<b><a name="69">   69</a></b>   long  base;
+<b><a name="70">   70</a></b>   int   next;
+<b><a name="71">   71</a></b>   int   nbits;
+<b><a name="72">   72</a></b> } <a href="#72">sieve</a>;
+<b><a name="73">   73</a></b> 
+<b><a name="74">   74</a></b> void <a href="#74"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_init</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp, long base, int nbits);
+<b><a name="75">   75</a></b> void <a href="#75"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_grow</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp, int nbits);
+<b><a name="76">   76</a></b> long <a href="#76"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_next</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp);
+<b><a name="77">   77</a></b> void <a href="#77"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_reset</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp, long base);
+<b><a name="78">   78</a></b> void <a href="#78"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_cross</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp, long val);
+<b><a name="79">   79</a></b> void <a href="#79"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_clear</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp);
+<b><a name="80">   80</a></b> 
+<b><a name="81">   81</a></b> #define <a href="#81"><a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>_I<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a><a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>ET</a>(<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)  (((<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>)-&gt;bits[(<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)/CHAR_<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>IT]&gt;&gt;((<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)%CHAR_<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>IT))&amp;1)
+<b><a name="82">   82</a></b> #define <a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>_<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>ET(<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)    ((<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>)-&gt;bits[(<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)/CHAR_<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>IT]|=(1&lt;&lt;((<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)%CHAR_<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>IT)))
+<b><a name="83">   83</a></b> #define <a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>_CLR(<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)    ((<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>)-&gt;bits[(<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)/CHAR_<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>IT]&amp;=~(1&lt;&lt;((<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)%CHAR_<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>IT)))
+<b><a name="84">   84</a></b> #define <a href="#84"><a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>_VAL</a>(<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)    ((<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>)-&gt;base+(2*(<a href="../../../freebl/alg2268.c.dep.html#B">B</a><a href="../../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)))
+<b><a name="85">   85</a></b> #define <a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>_BIT(<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, V)    (((V)-((<a href="../../../freebl/alg2268.c.dep.html#S">S</a><a href="../../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>)-&gt;base))/2)
+<b><a name="86">   86</a></b> 
+<b><a name="87">   87</a></b> int <a href="#87">main</a>(int argc, char *argv[])
+<b><a name="88">   88</a></b> {
+<b><a name="89">   89</a></b>   <a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>   s;
+<b><a name="90">   90</a></b>   long    pr, *p;
+<b><a name="91">   91</a></b>   int     c, ix, cur = 0;
+<b><a name="92">   92</a></b> 
+<b><a name="93">   93</a></b>   if(argc &lt; 2) {
+<b><a name="94">   94</a></b>     fprintf(stderr, "Usage: %s &lt;width&gt;\n", argv[0]);
+<b><a name="95">   95</a></b>     return 1;
+<b><a name="96">   96</a></b>   }
+<b><a name="97">   97</a></b> 
+<b><a name="98">   98</a></b>   c = atoi(argv[1]);
+<b><a name="99">   99</a></b>   if(c &lt; 0) c = -c;
+<b><a name="100">  100</a></b> 
+<b><a name="101">  101</a></b>   fprintf(stderr, "%s: sieving to %d positions\n", argv[0], c);
+<b><a name="102">  102</a></b> 
+<b><a name="103">  103</a></b>   <a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve_init">sieve_init</a>(&amp;s, 3, c);
+<b><a name="104">  104</a></b> 
+<b><a name="105">  105</a></b>   c = 0;
+<b><a name="106">  106</a></b>   while((pr = <a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve_next">sieve_next</a>(&amp;s)) &gt; 0) {
+<b><a name="107">  107</a></b>     ++c;
+<b><a name="108">  108</a></b>   }
+<b><a name="109">  109</a></b> 
+<b><a name="110">  110</a></b>   p = calloc(c, sizeof(long));
+<b><a name="111">  111</a></b>   if(!p) {
+<b><a name="112">  112</a></b>     fprintf(stderr, "%s: out of memory after first half\n", argv[0]);
+<b><a name="113">  113</a></b>     <a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve_clear">sieve_clear</a>(&amp;s);
+<b><a name="114">  114</a></b>     exit(1);
+<b><a name="115">  115</a></b>   }
+<b><a name="116">  116</a></b> 
+<b><a name="117">  117</a></b>   fprintf(stderr, "%s: half done ... \n", argv[0]);
+<b><a name="118">  118</a></b> 
+<b><a name="119">  119</a></b>   for(ix = 0; ix &lt; s.nbits; ix++) {
+<b><a name="120">  120</a></b>     if(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#S_ISSET">S_ISSET</a>(&amp;s, ix)) {
+<b><a name="121">  121</a></b>       p[cur] = <a href="../../../freebl/mpi/utils/sieve.c.dep.html#S_VAL">S_VAL</a>(&amp;s, ix);
+<b><a name="122">  122</a></b>       printf("%ld\n", p[cur]);
+<b><a name="123">  123</a></b>       ++cur;
+<b><a name="124">  124</a></b>     }
+<b><a name="125">  125</a></b>   }
+<b><a name="126">  126</a></b> 
+<b><a name="127">  127</a></b>   <a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve_reset">sieve_reset</a>(&amp;s, p[cur - 1]);
+<b><a name="128">  128</a></b>   fprintf(stderr, "%s: crossing off %d found primes ... \n", argv[0], cur);
+<b><a name="129">  129</a></b>   for(ix = 0; ix &lt; cur; ix++) {
+<b><a name="130">  130</a></b>     <a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve_cross">sieve_cross</a>(&amp;s, p[ix]);
+<b><a name="131">  131</a></b>     if(!(ix % 1000))
+<b><a name="132">  132</a></b>       fputc('.', stderr);
+<b><a name="133">  133</a></b>   }
+<b><a name="134">  134</a></b>   fputc('\n', stderr);
+<b><a name="135">  135</a></b> 
+<b><a name="136">  136</a></b>   free(p);
+<b><a name="137">  137</a></b> 
+<b><a name="138">  138</a></b>   fprintf(stderr, "%s: sieving again from %ld ... \n", argv[0], p[cur - 1]);
+<b><a name="139">  139</a></b>   c = 0;
+<b><a name="140">  140</a></b>   while((pr = <a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve_next">sieve_next</a>(&amp;s)) &gt; 0) {
+<b><a name="141">  141</a></b>     ++c;
+<b><a name="142">  142</a></b>   }
+<b><a name="143">  143</a></b>   
+<b><a name="144">  144</a></b>   fprintf(stderr, "%s: done!\n", argv[0]);
+<b><a name="145">  145</a></b>   for(ix = 0; ix &lt; s.nbits; ix++) {
+<b><a name="146">  146</a></b>     if(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#S_ISSET">S_ISSET</a>(&amp;s, ix)) {
+<b><a name="147">  147</a></b>       printf("%ld\n", <a href="../../../freebl/mpi/utils/sieve.c.dep.html#S_VAL">S_VAL</a>(&amp;s, ix));
+<b><a name="148">  148</a></b>     }
+<b><a name="149">  149</a></b>   }
+<b><a name="150">  150</a></b> 
+<b><a name="151">  151</a></b>   <a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve_clear">sieve_clear</a>(&amp;s);
+<b><a name="152">  152</a></b> 
+<b><a name="153">  153</a></b>   return 0;
+<b><a name="154">  154</a></b> }
+<b><a name="155">  155</a></b> 
+<b><a name="156">  156</a></b> void <a href="#156"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_init</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp, long base, int nbits)
+<b><a name="157">  157</a></b> {
+<b><a name="158">  158</a></b>   sp-&gt;size = (nbits / CHAR_BIT);
+<b><a name="159">  159</a></b> 
+<b><a name="160">  160</a></b>   if(nbits % CHAR_BIT)
+<b><a name="161">  161</a></b>     ++sp-&gt;size;
+<b><a name="162">  162</a></b> 
+<b><a name="163">  163</a></b>   sp-&gt;bits = calloc(sp-&gt;size, sizeof(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a>));
+<b><a name="164">  164</a></b>   memset(sp-&gt;bits, UCHAR_MAX, sp-&gt;size);
+<b><a name="165">  165</a></b>   if(!(base &amp; 1))
+<b><a name="166">  166</a></b>     ++base;
+<b><a name="167">  167</a></b>   sp-&gt;base = base;
+<b><a name="168">  168</a></b>   
+<b><a name="169">  169</a></b>   sp-&gt;next = 0;
+<b><a name="170">  170</a></b>   sp-&gt;nbits = sp-&gt;size * CHAR_BIT;
+<b><a name="171">  171</a></b> }
+<b><a name="172">  172</a></b> 
+<b><a name="173">  173</a></b> void <a href="#173"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_grow</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp, int nbits)
+<b><a name="174">  174</a></b> {
+<b><a name="175">  175</a></b>   int  ns = (nbits / CHAR_BIT);
+<b><a name="176">  176</a></b> 
+<b><a name="177">  177</a></b>   if(nbits % CHAR_BIT)
+<b><a name="178">  178</a></b>     ++ns;
+<b><a name="179">  179</a></b> 
+<b><a name="180">  180</a></b>   if(ns &gt; sp-&gt;size) {
+<b><a name="181">  181</a></b>     <a href="../../../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a>   *<a href="../../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="182">  182</a></b>     int     ix;
+<b><a name="183">  183</a></b> 
+<b><a name="184">  184</a></b>     <a href="../../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = calloc(ns, sizeof(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a>));
+<b><a name="185">  185</a></b>     if(<a href="../../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> == NULL) {
+<b><a name="186">  186</a></b>       fprintf(stderr, "Error: out of memory in <a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve_grow">sieve_grow</a>\n");
+<b><a name="187">  187</a></b>       return;
+<b><a name="188">  188</a></b>     }
+<b><a name="189">  189</a></b> 
+<b><a name="190">  190</a></b>     memcpy(<a href="../../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, sp-&gt;bits, sp-&gt;size);
+<b><a name="191">  191</a></b>     for(ix = sp-&gt;size; ix &lt; ns; ix++) {
+<b><a name="192">  192</a></b>       <a href="../../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>[ix] = UCHAR_MAX;
+<b><a name="193">  193</a></b>     }
+<b><a name="194">  194</a></b> 
+<b><a name="195">  195</a></b>     free(sp-&gt;bits);
+<b><a name="196">  196</a></b>     sp-&gt;bits = <a href="../../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="197">  197</a></b>     sp-&gt;size = ns;
+<b><a name="198">  198</a></b> 
+<b><a name="199">  199</a></b>     sp-&gt;nbits = sp-&gt;size * CHAR_BIT;
+<b><a name="200">  200</a></b>   }
+<b><a name="201">  201</a></b> }
+<b><a name="202">  202</a></b> 
+<b><a name="203">  203</a></b> long <a href="#203"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_next</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp)
+<b><a name="204">  204</a></b> {
+<b><a name="205">  205</a></b>   long out;
+<b><a name="206">  206</a></b>   int  ix = 0;
+<b><a name="207">  207</a></b>   long val;
+<b><a name="208">  208</a></b> 
+<b><a name="209">  209</a></b>   if(sp-&gt;next &gt; sp-&gt;nbits)
+<b><a name="210">  210</a></b>     return -1;
+<b><a name="211">  211</a></b> 
+<b><a name="212">  212</a></b>   out = <a href="../../../freebl/mpi/utils/sieve.c.dep.html#S_VAL">S_VAL</a>(sp, sp-&gt;next);
+<b><a name="213">  213</a></b> #ifdef DEBUG
+<b><a name="214">  214</a></b>   fprintf(stderr, "Sieving %ld\n", out);
+<b><a name="215">  215</a></b> #endif
+<b><a name="216">  216</a></b> 
+<b><a name="217">  217</a></b>   /* Sieve out all multiples of the current prime */
+<b><a name="218">  218</a></b>   val = out;
+<b><a name="219">  219</a></b>   while(ix &lt; sp-&gt;nbits) {
+<b><a name="220">  220</a></b>     val += out;
+<b><a name="221">  221</a></b>     ix = <a href="../../../freebl/mpi/utils/sieve.c.dep.html#S_BIT">S_BIT</a>(sp, val);
+<b><a name="222">  222</a></b>     if((val &amp; 1) &amp;&amp; ix &lt; sp-&gt;nbits) { /* &amp;&amp; S_ISSET(sp, ix)) { */
+<b><a name="223">  223</a></b>       <a href="../../../freebl/mpi/utils/sieve.c.dep.html#S_CLR">S_CLR</a>(sp, ix);
+<b><a name="224">  224</a></b> #ifdef DEBUG
+<b><a name="225">  225</a></b>       fprintf(stderr, "Crossing out %ld (bit %d)\n", val, ix);
+<b><a name="226">  226</a></b> #endif
+<b><a name="227">  227</a></b>     }
+<b><a name="228">  228</a></b>   }
+<b><a name="229">  229</a></b> 
+<b><a name="230">  230</a></b>   /* Scan ahead to the next prime */
+<b><a name="231">  231</a></b>   ++sp-&gt;next;
+<b><a name="232">  232</a></b>   while(sp-&gt;next &lt; sp-&gt;nbits &amp;&amp; !<a href="../../../freebl/mpi/utils/sieve.c.dep.html#S_ISSET">S_ISSET</a>(sp, sp-&gt;next))
+<b><a name="233">  233</a></b>     ++sp-&gt;next;
+<b><a name="234">  234</a></b> 
+<b><a name="235">  235</a></b>   return out;
+<b><a name="236">  236</a></b> }
+<b><a name="237">  237</a></b> 
+<b><a name="238">  238</a></b> void <a href="#238"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_cross</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp, long val)
+<b><a name="239">  239</a></b> {
+<b><a name="240">  240</a></b>   int  ix = 0;
+<b><a name="241">  241</a></b>   long cur = val;
+<b><a name="242">  242</a></b> 
+<b><a name="243">  243</a></b>   while(cur &lt; sp-&gt;base)
+<b><a name="244">  244</a></b>     cur += val;
+<b><a name="245">  245</a></b> 
+<b><a name="246">  246</a></b>   ix = <a href="../../../freebl/mpi/utils/sieve.c.dep.html#S_BIT">S_BIT</a>(sp, cur);
+<b><a name="247">  247</a></b>   while(ix &lt; sp-&gt;nbits) {
+<b><a name="248">  248</a></b>     if(cur &amp; 1) 
+<b><a name="249">  249</a></b>       <a href="../../../freebl/mpi/utils/sieve.c.dep.html#S_CLR">S_CLR</a>(sp, ix);
+<b><a name="250">  250</a></b>     cur += val;
+<b><a name="251">  251</a></b>     ix = <a href="../../../freebl/mpi/utils/sieve.c.dep.html#S_BIT">S_BIT</a>(sp, cur);
+<b><a name="252">  252</a></b>   }
+<b><a name="253">  253</a></b> }
+<b><a name="254">  254</a></b> 
+<b><a name="255">  255</a></b> void <a href="#255"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_reset</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp, long base)
+<b><a name="256">  256</a></b> {
+<b><a name="257">  257</a></b>   memset(sp-&gt;bits, UCHAR_MAX, sp-&gt;size);
+<b><a name="258">  258</a></b>   sp-&gt;base = base;
+<b><a name="259">  259</a></b>   sp-&gt;next = 0;
+<b><a name="260">  260</a></b> }
+<b><a name="261">  261</a></b> 
+<b><a name="262">  262</a></b> void <a href="#262"><a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a>_clear</a>(<a href="../../../freebl/mpi/utils/sieve.c.dep.html#sieve">sieve</a> *sp)
+<b><a name="263">  263</a></b> {
+<b><a name="264">  264</a></b>   if(sp-&gt;bits) 
+<b><a name="265">  265</a></b>     free(sp-&gt;bits);
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b>   sp-&gt;bits = NULL;
+<b><a name="268">  268</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

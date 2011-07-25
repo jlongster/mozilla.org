@@ -1,0 +1,85 @@
+<?php
+
+$html_title = 'NSS Coding Style';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_style = '
+<style type="text/css">
+pre {background-color: #D3D3D3; /* lightgrey */ color: black;}
+</style>
+
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<h1>NSS Coding Style<br>
+</h1>
+<p>Version 1.6</p>
+<h2>Indentation, Tabbing, and Brace Style</h2>
+No two programmers agree on the level of indentation and tabbing and
+the placement of curly braces in the code. Unfortunately, multiple
+styles are used in NSS. The most important rule is the following:<br>
+<h3>Follow the Prevalent Style in the File You Modify</h3>
+When you modify a file, follow the prevalent style in the file, even if
+you disagree with it.<br>
+<br>
+Don't fix the indentation and brace style of the code you modify.&nbsp;
+It may be third party code. Such changes generate noise in diffs.<br>
+<h2>Variable and Function Naming Conventions</h2>
+&lt;To do&gt;<br>
+<h2>Use the PORT_New and Related Macros to Allocate Structures or
+Arrays of Type</h2>
+This applies to any new code, and any changes to exsting code, that
+allocates structures or arrays of type, with or without zeroing.<br>
+<br>
+Please change all lines of the form:<br>
+<pre>
+    ptr = (type *)PORT_ArenaAlloc(arena, sizeof(type));
+</pre>
+to <br>
+<pre>
+    ptr = PORT_ArenaNew(arena type);
+</pre>
+Similarly, change <code>PORT_ArenaZAlloc</code>
+to <code>PORT_ArenaZNew</code>.<br>
+<br>
+When no arenas are involved, change <br>
+<pre>
+    ptr = (type *)PORT_Alloc(sizeof(type));
+</pre>
+to <br>
+<pre>
+    ptr = PORT_New(type);
+</pre>
+Similarly change <code>PORT_ZAlloc</code>
+to <code>PORT_ZNew</code>.<br>
+<br>
+When arrays of some type are being allocated, change<br>
+<pre>
+    ptr = (type *)PORT_Alloc(nItems * sizeof(type));
+</pre>
+to <br>
+<pre>
+    ptr = PORT_NewArray(type, nItems);
+</pre>
+Similary there are <code>PORT_ZNewArray</code>,
+<code>PORT_ArenaNewArray</code> and
+<code>PORT_ArenaZNewArray</code>. Note that
+type can be pointer types, for example:<br>
+<pre>
+    SECItem ** foo = PORT_NewArray(SECItem *, 10);
+</pre>
+See the full set of these macros at<a class="moz-txt-link-freetext"
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/util/secport.h#158">
+http://lxr.mozilla.org/security/source/security/nss/lib/util/secport.h#158</a><span
+ class="moz-txt-link-freetext">.</span><br>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,796 @@
+<?php
+
+$html_title = 'NSPR 2.0: Thread synchronization sample';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<H2><CENTER>Thread Synchronization Sample</CENTER></H2>
+
+<A NAME="1039232">
+<A HREF="prswitch.html#1035066">Declarations and Notified</A> and <A HREF="prswitch.html#1039404">Switch</A> show a single sample program, <CODE>switch.c</CODE>, that illustrates basic techniques of NSPR thread synchronization. This program is also available in the <A HREF="./samples/" TARGET="_blank">Samples</A> directory.<P></A>
+<P><A NAME="1035066">
+<B>Declarations and Notified function
+</B></A></P>
+<A NAME="1040224">
+<CODE><B>1&nbsp;&nbsp;&nbsp;</B> /* Copyright &#169; 1998 Netscape Communications Corporation */<br>
+
+</CODE></A>
+<A NAME="1040225">
+<CODE><B>2&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1035067">
+<CODE><B>3&nbsp;&nbsp;&nbsp;</B> #include "prinit.h"<br>
+
+</CODE></A>
+<A NAME="1038037">
+<CODE><B>4&nbsp;&nbsp;&nbsp;</B> #include "prlock.h"<br>
+
+</CODE></A>
+<A NAME="1038038">
+<CODE><B>5&nbsp;&nbsp;&nbsp;</B> #include "prcvar.h"<br>
+
+</CODE></A>
+<A NAME="1038039">
+<CODE><B>6&nbsp;&nbsp;&nbsp;</B> #include "prmem.h"<br>
+
+</CODE></A>
+<A NAME="1038040">
+<CODE><B>7&nbsp;&nbsp;&nbsp;</B> #include "prinrval.h"<br>
+
+</CODE></A>
+<A NAME="1038041">
+<CODE><B>8&nbsp;&nbsp;&nbsp;</B> #include "prlog.h"<br>
+
+</CODE></A>
+<A NAME="1038042">
+<CODE><B>9&nbsp;&nbsp;&nbsp;</B> #include "prthread.h"<br>
+
+</CODE></A>
+<A NAME="1038043">
+<CODE><B>10&nbsp;&nbsp;&nbsp;</B> #include "prprf.h"<br>
+
+</CODE></A>
+<A NAME="1040183">
+<CODE><B>11&nbsp;&nbsp;&nbsp;</B> #include "plerror.h"<br>
+
+</CODE></A>
+<A NAME="1038046">
+<CODE><B>12&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038047">
+<CODE><B>13&nbsp;&nbsp;&nbsp;</B> #define INNER_LOOPS 100<br>
+
+</CODE></A>
+<A NAME="1038048">
+<CODE><B>14&nbsp;&nbsp;&nbsp;</B> #define DEFAULT_LOOPS 100<br>
+
+</CODE></A>
+<A NAME="1038049">
+<CODE><B>15&nbsp;&nbsp;&nbsp;</B> #define DEFAULT_THREADS 10<br>
+
+</CODE></A>
+<A NAME="1038050">
+<CODE><B>16&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038051">
+<CODE><B>17&nbsp;&nbsp;&nbsp;</B> typedef struct Shared<br>
+
+</CODE></A>
+<A NAME="1038052">
+<CODE><B>18&nbsp;&nbsp;&nbsp;</B> {<br>
+
+</CODE></A>
+<A NAME="1038053">
+<CODE><B>19&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRLock *ml;<br>
+
+</CODE></A>
+<A NAME="1038054">
+<CODE><B>20&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRCondVar *cv;<br>
+
+</CODE></A>
+<A NAME="1038055">
+<CODE><B>21&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRBool twiddle;<br>
+
+</CODE></A>
+<A NAME="1038056">
+<CODE><B>22&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRThread *thread;<br>
+
+</CODE></A>
+<A NAME="1038057">
+<CODE><B>23&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;struct Shared *next;<br>
+
+</CODE></A>
+<A NAME="1038058">
+<CODE><B>24&nbsp;&nbsp;&nbsp;</B> } Shared;<br>
+
+</CODE></A>
+<A NAME="1038059">
+<CODE><B>25&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038060">
+<CODE><B>26&nbsp;&nbsp;&nbsp;</B> static PRFileDesc *debug_out = NULL;<br>
+
+</CODE></A>
+<A NAME="1038061">
+<CODE><B>27&nbsp;&nbsp;&nbsp;</B> static PRBool debug_mode = PR_TRUE, verbosity = PR_FALSE, failed = 
+PR_FALSE;<br>
+
+</CODE></A>
+<A NAME="1038063">
+<CODE><B>28&nbsp;&nbsp;&nbsp;</B> static Shared home;<br>
+
+</CODE></A>
+<A NAME="1038064">
+<CODE><B>29&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038065">
+<CODE><B>30&nbsp;&nbsp;&nbsp;</B> static void Help(void);<br>
+
+</CODE></A>
+<A NAME="1038066">
+<CODE><B>31&nbsp;&nbsp;&nbsp;</B> static void PR_CALLBACK Notified(void *arg);<br>
+
+</CODE></A>
+<A NAME="1038067">
+<CODE><B>32&nbsp;&nbsp;&nbsp;</B> static PRIntn PR_CALLBACK Switch(PRIntn argc, char **argv);<br>
+
+</CODE></A>
+<A NAME="1038773">
+<CODE><B>33&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038775">
+<CODE><B>34&nbsp;&nbsp;&nbsp;</B> /* Root function for the threads in this sample (except primordial 
+thread, which runs main) */<br>
+
+</CODE></A>
+<A NAME="1038071">
+<CODE><B>35&nbsp;&nbsp;&nbsp;</B> static void PR_CALLBACK Notified(void *arg)<br>
+
+</CODE></A>
+<A NAME="1038072">
+<CODE><B>36&nbsp;&nbsp;&nbsp;</B> {<br>
+
+</CODE></A>
+<A NAME="1038073">
+<CODE><B>37&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;Shared *shared = arg;<br>
+
+</CODE></A>
+<A NAME="1038074">
+<CODE><B>38&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRStatus status = PR_SUCCESS;<br>
+
+</CODE></A>
+<A NAME="1038075">
+<CODE><B>39&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;while (PR_SUCCESS == status)<br>
+
+</CODE></A>
+<A NAME="1038076">
+<CODE><B>40&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;{<br>
+
+</CODE></A>
+<A NAME="1038077">
+<CODE><B>41&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_Lock(shared-&gt;ml);<br>
+
+</CODE></A>
+<A NAME="1038078">
+<CODE><B>42&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while (shared-&gt;twiddle &amp;&amp; (PR_SUCCESS == status))<br>
+
+</CODE></A>
+<A NAME="1038079">
+<CODE><B>43&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;status = PR_WaitCondVar(shared-&gt;cv, 
+PR_INTERVAL_NO_TIMEOUT);<br>
+
+</CODE></A>
+<A NAME="1038080">
+<CODE><B>44&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (verbosity) PR_fprintf(debug_out, "+");<br>
+
+</CODE></A>
+<A NAME="1038081">
+<CODE><B>45&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shared-&gt;twiddle = PR_TRUE;<br>
+
+</CODE></A>
+<A NAME="1038082">
+<CODE><B>46&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shared-&gt;next-&gt;twiddle = PR_FALSE;<br>
+
+</CODE></A>
+<A NAME="1038083">
+<CODE><B>47&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_NotifyCondVar(shared-&gt;next-&gt;cv);<br>
+
+</CODE></A>
+<A NAME="1038084">
+<CODE><B>48&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_Unlock(shared-&gt;ml);<br>
+
+</CODE></A>
+<A NAME="1038085">
+<CODE><B>49&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;}<br>
+
+</CODE></A>
+<A NAME="1038086">
+<CODE><B>50&nbsp;&nbsp;&nbsp;</B> }  /* Notified */<br>
+
+</CODE></A>
+<A NAME="1040169">
+<CODE><B>51&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1039332">
+<P></A>
+<A NAME="1039346">
+The root function, <CODE>Notified</CODE>, for the threads in this sample (except for the primordial thread, which runs <CODE>main</CODE>) starts after line <A HREF="prswitch.html#1038775">34</A> of <A HREF="prswitch.html#1035066">Declarations and Notified</A>. The threads are chained together, with the primordial thread at the end of the chain.<P></A>
+<A NAME="1039339">
+Each thread blocks on a condition variable (<CODE>shared-cv</CODE>), waiting for the Boolean expression <CODE>shared-&gt;twiddle</CODE> to become <CODE>PR_FALSE</CODE>. Notice that the condition variable wait is repeated while the Boolean expression <CODE>shared-&gt;twiddle</CODE> is <CODE>PR_TRUE</CODE>. This <CODE>while</CODE> loop around a condition variable wait is a common idiom.<P></A>
+<A NAME="1039333">
+The condition variable wait fails with <CODE>PR_PENDING_INTERRRUPT_ERROR</CODE> if the thread is interrupted, in which case the thread breaks out of the nested <CODE>while</CODE> loops and exits.<P></A>
+<A NAME="1039334">
+When the thread is notified and <CODE>shared-&gt;twiddle</CODE> has become <CODE>PR_FALSE</CODE>, it sets <CODE>shared-&gt;next-&gt;twiddle</CODE> to <CODE>PR_FALSE</CODE> and notifies the next thread down in the chain. It also sets its own <CODE>shared-&gt;twiddle</CODE> back to <CODE>PR_TRUE</CODE>, in preparation for the next iteration.<P></A>
+<A NAME="1039400">
+The <CODE>Switch</CODE> function shown in <A HREF="prswitch.html#1039404">Switch</A> is really the <CODE>main</CODE> function of this program. The <CODE>main</CODE> function simply passes <CODE>Switch</CODE> to <CODE>PR_Initialize</CODE>.<P></A>
+<P><A NAME="1039404">
+<B><CODE>Switch</CODE> and <CODE>main</CODE> functions
+</B></A></P>
+<A NAME="1038110">
+<CODE><B>52&nbsp;&nbsp;&nbsp;</B> static PRIntn PR_CALLBACK Switch(PRIntn argc, char **argv)<br>
+
+</CODE></A>
+<A NAME="1038111">
+<CODE><B>53&nbsp;&nbsp;&nbsp;</B> {<br>
+
+</CODE></A>
+<A NAME="1038113">
+<CODE><B>54&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRStatus status;<br>
+
+</CODE></A>
+<A NAME="1038114">
+<CODE><B>55&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRBool help = PR_FALSE;<br>
+
+</CODE></A>
+<A NAME="1038115">
+<CODE><B>56&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRUintn concurrency = 1;<br>
+
+</CODE></A>
+<A NAME="1038116">
+<CODE><B>57&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;Shared *shared, *link;<br>
+
+</CODE></A>
+<A NAME="1038117">
+<CODE><B>58&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRIntervalTime timein, timeout;<br>
+
+</CODE></A>
+<A NAME="1038118">
+<CODE><B>59&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRBool global_threads = PR_FALSE;<br>
+
+</CODE></A>
+<A NAME="1038119">
+<CODE><B>60&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRThreadScope thread_scope = PR_LOCAL_THREAD;<br>
+
+</CODE></A>
+<A NAME="1038120">
+<CODE><B>61&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRUintn thread_count, inner_count, loop_count, average;<br>
+
+</CODE></A>
+<A NAME="1038121">
+<CODE><B>62&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRUintn thread_limit = DEFAULT_THREADS, loop_limit = 
+DEFAULT_LOOPS;<br>
+
+</CODE></A>
+<A NAME="1038158">
+<CODE><B>63&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038159">
+<CODE><B>64&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;if (help) return -1;<br>
+
+</CODE></A>
+<A NAME="1038160">
+<CODE><B>65&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038161">
+<CODE><B>66&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;if (PR_TRUE == debug_mode)<br>
+
+</CODE></A>
+<A NAME="1038162">
+<CODE><B>67&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;{<br>
+
+</CODE></A>
+<A NAME="1038163">
+<CODE><B>68&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;debug_out = PR_STDOUT;<br>
+
+</CODE></A>
+<A NAME="1038164">
+<CODE><B>69&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_fprintf(debug_out, "Test parameters\n");<br>
+
+</CODE></A>
+<A NAME="1038165">
+<CODE><B>70&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_fprintf(debug_out, "\tThreads involved: %d\n", 
+thread_limit);<br>
+
+</CODE></A>
+<A NAME="1038166">
+<CODE><B>71&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_fprintf(debug_out, "\tIteration limit: %d\n", loop_limit);<br>
+
+</CODE></A>
+<A NAME="1038167">
+<CODE><B>72&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_fprintf(debug_out, "\tConcurrency: %d\n", concurrency);<br>
+
+</CODE></A>
+<A NAME="1038168">
+<CODE><B>73&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_fprintf(<br>
+
+</CODE></A>
+<A NAME="1038169">
+<CODE><B>74&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;debug_out, "\tThread type: %s\n",<br>
+
+</CODE></A>
+<A NAME="1038170">
+<CODE><B>75&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(PR_GLOBAL_THREAD == thread_scope) ? "GLOBAL" : "LOCAL");<br>
+
+</CODE></A>
+<A NAME="1038171">
+<CODE><B>76&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;}<br>
+
+</CODE></A>
+<A NAME="1038172">
+<CODE><B>77&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038173">
+<CODE><B>78&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PR_SetConcurrency(concurrency);<br>
+
+</CODE></A>
+<A NAME="1038174">
+<CODE><B>79&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038175">
+<CODE><B>80&nbsp;&nbsp;&nbsp;</B> /* "home" is "Shared" object for the primordial thread, at the end of 
+the chain. */<br>
+
+</CODE></A>
+<A NAME="1038177">
+<CODE><B>81&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;link = &amp;home;<br>
+
+</CODE></A>
+<A NAME="1038178">
+<CODE><B>82&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;home.ml = PR_NewLock();<br>
+
+</CODE></A>
+<A NAME="1038179">
+<CODE><B>83&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;home.cv = PR_NewCondVar(home.ml);<br>
+
+</CODE></A>
+<A NAME="1038180">
+<CODE><B>84&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;home.twiddle = PR_TRUE;<br>
+
+</CODE></A>
+<A NAME="1038181">
+<CODE><B>85&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;home.next = NULL;<br>
+
+</CODE></A>
+<A NAME="1038183">
+<CODE><B>86&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;timeout = 0;<br>
+
+</CODE></A>
+<A NAME="1038188">
+<CODE><B>87&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038189">
+<CODE><B>88&nbsp;&nbsp;&nbsp;</B> /* Create "thread_limit" number of additional threads, each with its 
+own "Shared" object. */<br>
+
+</CODE></A>
+<A NAME="1038191">
+<CODE><B>89&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;for (thread_count = 1; thread_count &lt;= thread_limit; 
+++thread_count)<br>
+
+</CODE></A>
+<A NAME="1038192">
+<CODE><B>90&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;{<br>
+
+</CODE></A>
+<A NAME="1038193">
+<CODE><B>91&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shared = PR_NEWZAP(Shared);<br>
+
+</CODE></A>
+<A NAME="1038195">
+<CODE><B>92&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shared-&gt;ml = home.ml;<br>
+
+</CODE></A>
+<A NAME="1038196">
+<CODE><B>93&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shared-&gt;cv = PR_NewCondVar(home.ml);<br>
+
+</CODE></A>
+<A NAME="1038197">
+<CODE><B>94&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shared-&gt;twiddle = PR_TRUE;<br>
+
+</CODE></A>
+<A NAME="1038198">
+<CODE><B>95&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shared-&gt;next = link;<br>
+
+</CODE></A>
+<A NAME="1038199">
+<CODE><B>96&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;link = shared;<br>
+
+</CODE></A>
+<A NAME="1038201">
+<CODE><B>97&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shared-&gt;thread = PR_CreateThread(<br>
+
+</CODE></A>
+<A NAME="1038202">
+<CODE><B>98&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_USER_THREAD, Notified, shared,<br>
+
+</CODE></A>
+<A NAME="1038203">
+<CODE><B>99&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_PRIORITY_HIGH, thread_scope,<br>
+
+</CODE></A>
+<A NAME="1038204">
+<CODE><B>100&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_JOINABLE_THREAD, 0);<br>
+
+</CODE></A>
+<A NAME="1038205">
+<CODE><B>101&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_ASSERT(shared-&gt;thread != NULL);<br>
+
+</CODE></A>
+<A NAME="1038206">
+<CODE><B>102&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (NULL == shared-&gt;thread)<br>
+
+</CODE></A>
+<A NAME="1038207">
+<CODE><B>103&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;failed = PR_TRUE;<br>
+
+</CODE></A>
+<A NAME="1038208">
+<CODE><B>104&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;}<br>
+
+</CODE></A>
+<A NAME="1038209">
+<CODE><B>105&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038210">
+<CODE><B>106&nbsp;&nbsp;&nbsp;</B> /* "Shared" now points to the head of the chain, and "home" is the 
+tail of the chain. */<br>
+
+</CODE></A>
+<A NAME="1038212">
+<CODE><B>107&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;for (loop_count = 1; loop_count &lt;= loop_limit; ++loop_count)<br>
+
+</CODE></A>
+<A NAME="1038213">
+<CODE><B>108&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;{<br>
+
+</CODE></A>
+<A NAME="1038214">
+<CODE><B>109&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timein = PR_IntervalNow();<br>
+
+</CODE></A>
+<A NAME="1038215">
+<CODE><B>110&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (inner_count = 0; inner_count &lt; INNER_LOOPS; ++inner_count)<br>
+
+</CODE></A>
+<A NAME="1038216">
+<CODE><B>111&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br>
+
+</CODE></A>
+<A NAME="1038217">
+<CODE><B>112&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_Lock(home.ml);<br>
+
+</CODE></A>
+<A NAME="1038218">
+<CODE><B>113&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;home.twiddle = PR_TRUE;<br>
+
+</CODE></A>
+<A NAME="1038219">
+<CODE><B>114&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shared-&gt;twiddle = PR_FALSE;<br>
+
+</CODE></A>
+<A NAME="1038220">
+<CODE><B>115&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_NotifyCondVar(shared-&gt;cv);<br>
+
+</CODE></A>
+<A NAME="1038221">
+<CODE><B>116&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while (home.twiddle)<br>
+
+</CODE></A>
+<A NAME="1038222">
+<CODE><B>117&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br>
+
+</CODE></A>
+<A NAME="1038223">
+<CODE><B>118&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;status = PR_WaitCondVar(home.cv, 
+PR_INTERVAL_NO_TIMEOUT);<br>
+
+</CODE></A>
+<A NAME="1038228">
+<CODE><B>119&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (PR_FAILURE == status)<br>
+
+</CODE></A>
+<A NAME="1038229">
+<CODE><B>120&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;failed = PR_TRUE;<br>
+
+</CODE></A>
+<A NAME="1038230">
+<CODE><B>121&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+
+</CODE></A>
+<A NAME="1038231">
+<CODE><B>122&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_Unlock(home.ml);<br>
+
+</CODE></A>
+<A NAME="1038232">
+<CODE><B>123&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+
+</CODE></A>
+<A NAME="1038233">
+<CODE><B>124&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timeout += (PR_IntervalNow() - timein);<br>
+
+</CODE></A>
+<A NAME="1038234">
+<CODE><B>125&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;}<br>
+
+</CODE></A>
+<A NAME="1038235">
+<CODE><B>126&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038236">
+<CODE><B>127&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;if (debug_mode)<br>
+
+</CODE></A>
+<A NAME="1038237">
+<CODE><B>128&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;{<br>
+
+</CODE></A>
+<A NAME="1038238">
+<CODE><B>129&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;average = PR_IntervalToMicroseconds(timeout)<br>
+
+</CODE></A>
+<A NAME="1038239">
+<CODE><B>130&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/ (INNER_LOOPS * loop_limit * thread_count);<br>
+
+</CODE></A>
+<A NAME="1038240">
+<CODE><B>131&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_fprintf(<br>
+
+</CODE></A>
+<A NAME="1038241">
+<CODE><B>132&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;debug_out, "Average switch times %d usecs for %d threads\n",<br>
+
+</CODE></A>
+<A NAME="1038242">
+<CODE><B>133&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;average, thread_limit);<br>
+
+</CODE></A>
+<A NAME="1038243">
+<CODE><B>134&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;}<br>
+
+</CODE></A>
+<A NAME="1038244">
+<CODE><B>135&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;/* Test completed. Remainder of sample cleanly shuts down the 
+test. */<br>
+
+</CODE></A>
+<A NAME="1038246">
+<CODE><B>136&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;link = shared;<br>
+
+</CODE></A>
+<A NAME="1038247">
+<CODE><B>137&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;for (thread_count = 1; thread_count &lt;= thread_limit; 
+++thread_count)<br>
+
+</CODE></A>
+<A NAME="1038248">
+<CODE><B>138&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;{<br>
+
+</CODE></A>
+<A NAME="1038249">
+<CODE><B>139&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (&amp;home == link) break;<br>
+
+</CODE></A>
+<A NAME="1038250">
+<CODE><B>140&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;status = PR_Interrupt(link-&gt;thread);<br>
+
+</CODE></A>
+<A NAME="1038251">
+<CODE><B>141&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (PR_SUCCESS != status)<br>
+
+</CODE></A>
+<A NAME="1038252">
+<CODE><B>142&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br>
+
+</CODE></A>
+<A NAME="1038253">
+<CODE><B>143&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;failed = PR_TRUE;<br>
+
+</CODE></A>
+<A NAME="1038254">
+<CODE><B>144&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (debug_mode)<br>
+
+</CODE></A>
+<A NAME="1038255">
+<CODE><B>145&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PL_FPrintError(debug_out, "Failed to interrupt");<br>
+
+</CODE></A>
+<A NAME="1038256">
+<CODE><B>146&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+
+</CODE></A>
+<A NAME="1038257">
+<CODE><B>147&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;link = link-&gt;next; <br>
+
+</CODE></A>
+<A NAME="1038258">
+<CODE><B>148&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;}<br>
+
+</CODE></A>
+<A NAME="1038259">
+<CODE><B>149&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038260">
+<CODE><B>150&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;for (thread_count = 1; thread_count &lt;= thread_limit; 
+++thread_count)<br>
+
+</CODE></A>
+<A NAME="1038261">
+<CODE><B>151&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;{<br>
+
+</CODE></A>
+<A NAME="1038262">
+<CODE><B>152&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;link = shared-&gt;next;<br>
+
+</CODE></A>
+<A NAME="1038263">
+<CODE><B>153&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;status = PR_JoinThread(shared-&gt;thread);<br>
+
+</CODE></A>
+<A NAME="1038264">
+<CODE><B>154&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (PR_SUCCESS != status)<br>
+
+</CODE></A>
+<A NAME="1038265">
+<CODE><B>155&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br>
+
+</CODE></A>
+<A NAME="1038266">
+<CODE><B>156&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;failed = PR_TRUE;<br>
+
+</CODE></A>
+<A NAME="1038267">
+<CODE><B>157&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (debug_mode)<br>
+
+</CODE></A>
+<A NAME="1038268">
+<CODE><B>158&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PL_FPrintError(debug_out, "Failed to join");<br>
+
+</CODE></A>
+<A NAME="1038269">
+<CODE><B>159&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+
+</CODE></A>
+<A NAME="1038270">
+<CODE><B>160&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_DestroyCondVar(shared-&gt;cv);<br>
+
+</CODE></A>
+<A NAME="1038271">
+<CODE><B>161&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PR_DELETE(shared);<br>
+
+</CODE></A>
+<A NAME="1038272">
+<CODE><B>162&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (&amp;home == link) break;<br>
+
+</CODE></A>
+<A NAME="1038273">
+<CODE><B>163&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shared = link;<br>
+
+</CODE></A>
+<A NAME="1038274">
+<CODE><B>164&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;}<br>
+
+</CODE></A>
+<A NAME="1038275">
+<CODE><B>165&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PR_DestroyCondVar(home.cv);<br>
+
+</CODE></A>
+<A NAME="1038276">
+<CODE><B>166&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PR_DestroyLock(home.ml);<br>
+
+</CODE></A>
+<A NAME="1038277">
+<CODE><B>167&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1038278">
+<CODE><B>168&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PR_fprintf(PR_STDOUT, ((failed) ? "FAILED\n" : "PASSED\n"));<br>
+
+</CODE></A>
+<A NAME="1038279">
+<CODE><B>169&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;return ((failed) ? 1 : 0);<br>
+
+</CODE></A>
+<A NAME="1038280">
+<CODE><B>170&nbsp;&nbsp;&nbsp;</B> }  /* Switch */<br>
+
+</CODE></A>
+<A NAME="1039679">
+<CODE><B>171&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1039666">
+<CODE><B>172&nbsp;&nbsp;&nbsp;</B> PRIntn main(PRIntn argc, char **argv)<br>
+
+</CODE></A>
+<A NAME="1039667">
+<CODE><B>173&nbsp;&nbsp;&nbsp;</B> {<br>
+
+</CODE></A>
+<A NAME="1039668">
+<CODE><B>174&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PRIntn result;<br>
+
+</CODE></A>
+<A NAME="1039669">
+<CODE><B>175&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;PR_STDIO_INIT();<br>
+
+</CODE></A>
+<A NAME="1039670">
+<CODE><B>176&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;result = PR_Initialize(Switch, argc, argv, 0);<br>
+
+</CODE></A>
+<A NAME="1039671">
+<CODE><B>177&nbsp;&nbsp;&nbsp;</B> &nbsp;&nbsp;&nbsp;return result;<br>
+
+</CODE></A>
+<A NAME="1039672">
+<CODE><B>178&nbsp;&nbsp;&nbsp;</B> }  /* main */<br>
+
+</CODE></A>
+<A NAME="1039673">
+<CODE><B>179&nbsp;&nbsp;&nbsp;</B> <br>
+
+</CODE></A>
+<A NAME="1039674">
+<CODE><B>180&nbsp;&nbsp;&nbsp;</B> /* switch.c */<br>
+
+</CODE></A>
+<A NAME="1039634">
+<P></A>
+<A NAME="1039661">
+The <CODE>home</CODE> object defined after line <A HREF="prswitch.html#1038175">80</A> in <A HREF="prswitch.html#1039404">Switch</A> is the <CODE>Shared</CODE> object for the primordial thread. It is at the end of the chain.<P></A>
+<A NAME="1039635">
+The <CODE>Switch</CODE> function creates <CODE>thread_limit</CODE> number of additional threads after line <A HREF="prswitch.html#1038188">87</A>, each with its own <CODE>Shared</CODE> object. The <CODE>Shared</CODE> objects are chained together. The <CODE>shared-&gt;twiddle</CODE> value for these objects is initialized to <CODE>PR_TRUE</CODE>, so that the threads are all blocked initially.<P></A>
+<A NAME="1039642">
+By line <A HREF="prswitch.html#1038210">106</A>, <CODE>Shared</CODE> points to the head of the chain, and <CODE>home</CODE> is the tail of the chain. The primordial thread then sets <CODE>shared-&gt;twiddle</CODE> to <CODE>PR_FALSE</CODE> and notifies <CODE>shared-&gt;cv</CODE> to kick off the domino effect. The primordial thread then blocks on its own condition variable <CODE>home.cv</CODE> at the end of the chain. This process is repeated by a nested <CODE>for</CODE> loop.<P></A>
+<A NAME="1039413">
+By line <A HREF="prswitch.html#1038244">135</A>, the test is finished. The code that follows cleanly shuts down the test. The primordial thread interrupts all the threads so that they know it's time to exit. Then the primordial thread joins all the threads to synchronize with their termination.<P></A>
+
+<P><HR>
+<P ALIGN=right>
+
+<FONT SIZE=-2><I>Last Updated: Mon Jul 13 15:31:58 PDT 1998</I></FONT>
+
+<HR SIZE=4>
+
+<P> <CENTER>Copyright © 1998
+<A HREF="http://home.netscape.com/misc/contact_info.html"
+TARGET=_top>Netscape Communications Corporation</A></FONT>
+</CENTER>
+<P>
+<P>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

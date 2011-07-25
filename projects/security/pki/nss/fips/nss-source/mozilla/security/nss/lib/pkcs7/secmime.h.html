@@ -1,0 +1,213 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> /*
+<b><a name="38">   38</a></b>  * Header file for routines specific to S/MIME.  Keep things that are pure
+<b><a name="39">   39</a></b>  * pkcs7 out of here; this is for S/MIME policy, S/MIME interoperability, etc.
+<b><a name="40">   40</a></b>  *
+<b><a name="41">   41</a></b>  * $Id$
+<b><a name="42">   42</a></b>  */
+<b><a name="43">   43</a></b> 
+<b><a name="44">   44</a></b> #ifndef <a href="../pkcs7/secmime.h.dep.html#_SECMIME_H_">_SECMIME_H_</a><a href="../smime/smime.h.dep.html#_SECMIME_H_"><sup>[1]</sup></a>
+<b><a name="45">   45</a></b> #define <a href="#45">_SECMIME_H_</a> 1
+<b><a name="46">   46</a></b> 
+<b><a name="47">   47</a></b> #include "secpkcs7.h"
+<b><a name="48">   48</a></b> 
+<b><a name="49">   49</a></b> 
+<b><a name="50">   50</a></b> /************************************************************************/
+<b><a name="51">   51</a></b> <a href="../util/seccomon.h.dep.html#SEC_BEGIN_PROTOS">SEC_BEGIN_PROTOS</a></a>
+<b><a name="52">   52</a></b> 
+<b><a name="53">   53</a></b> /*
+<b><a name="54">   54</a></b>  * Initialize the local recording of the user S/MIME cipher preferences.
+<b><a name="55">   55</a></b>  * This function is called once for each cipher, the order being
+<b><a name="56">   56</a></b>  * important (first call records greatest preference, and so on).
+<b><a name="57">   57</a></b>  * When finished, it is called with a "which" of CIPHER_FAMILID_MASK.
+<b><a name="58">   58</a></b>  * If the function is called again after that, it is assumed that
+<b><a name="59">   59</a></b>  * the preferences are being reset, and the old preferences are
+<b><a name="60">   60</a></b>  * discarded.
+<b><a name="61">   61</a></b>  *
+<b><a name="62">   62</a></b>  * XXX This is for a particular user, and right now the storage is
+<b><a name="63">   63</a></b>  * XXX local, static.  The preference should be stored elsewhere to allow
+<b><a name="64">   64</a></b>  * XXX for multiple uses of one library?  How does SSL handle this;
+<b><a name="65">   65</a></b>  * XXX it has something similar?
+<b><a name="66">   66</a></b>  *
+<b><a name="67">   67</a></b>  *  - The "which" values are defined in ciferfam.h (the SMIME_* values,
+<b><a name="68">   68</a></b>  *    for example SMIME_DES_CBC_56).
+<b><a name="69">   69</a></b>  *  - If "on" is non-zero then the named cipher is enabled, otherwise
+<b><a name="70">   70</a></b>  *    it is disabled.  (It is not necessary to call the function for
+<b><a name="71">   71</a></b>  *    ciphers that are disabled, however, as that is the default.)
+<b><a name="72">   72</a></b>  *
+<b><a name="73">   73</a></b>  * If the cipher preference is successfully recorded, SECSuccess
+<b><a name="74">   74</a></b>  * is returned.  Otherwise SECFailure is returned.  The only errors
+<b><a name="75">   75</a></b>  * are due to failure allocating memory or bad parameters/calls:
+<b><a name="76">   76</a></b>  *        SEC_ERROR_XXX ("which" is not in the S/MIME cipher family)
+<b><a name="77">   77</a></b>  *        SEC_ERROR_XXX (function is being called more times than there
+<b><a name="78">   78</a></b>  *                are known/expected ciphers)
+<b><a name="79">   79</a></b>  */
+<b><a name="80">   80</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#80">SECMIME_EnableCipher</a>(long which, int on);
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b> /*
+<b><a name="83">   83</a></b>  * Initialize the local recording of the S/MIME policy.
+<b><a name="84">   84</a></b>  * This function is called to enable/disable a particular cipher.
+<b><a name="85">   85</a></b>  * (S/MIME encryption or decryption using a particular cipher is only
+<b><a name="86">   86</a></b>  * allowed if that cipher is currently enabled.)  At startup, all S/MIME
+<b><a name="87">   87</a></b>  * ciphers are disabled.  From that point, this function can be called
+<b><a name="88">   88</a></b>  * to enable a cipher -- it is not necessary to call this to disable
+<b><a name="89">   89</a></b>  * a cipher unless that cipher was previously, explicitly enabled via
+<b><a name="90">   90</a></b>  * this function.
+<b><a name="91">   91</a></b>  *
+<b><a name="92">   92</a></b>  * XXX This is for a the current module, I think, so local, static storage
+<b><a name="93">   93</a></b>  * XXX is okay.  Is that correct, or could multiple uses of the same
+<b><a name="94">   94</a></b>  * XXX library expect to operate under different policies?
+<b><a name="95">   95</a></b>  *
+<b><a name="96">   96</a></b>  *  - The "which" values are defined in ciferfam.h (the SMIME_* values,
+<b><a name="97">   97</a></b>  *    for example SMIME_DES_CBC_56).
+<b><a name="98">   98</a></b>  *  - If "on" is non-zero then the named cipher is enabled, otherwise
+<b><a name="99">   99</a></b>  *    it is disabled.
+<b><a name="100">  100</a></b>  *
+<b><a name="101">  101</a></b>  * If the cipher is successfully enabled/disabled, SECSuccess is
+<b><a name="102">  102</a></b>  * returned.  Otherwise SECFailure is returned.  The only errors
+<b><a name="103">  103</a></b>  * are due to bad parameters:
+<b><a name="104">  104</a></b>  *        SEC_ERROR_XXX ("which" is not in the S/MIME cipher family)
+<b><a name="105">  105</a></b>  *        SEC_ERROR_XXX ("which" exceeds expected maximum cipher; this is
+<b><a name="106">  106</a></b>  *                really an internal error)
+<b><a name="107">  107</a></b>  */
+<b><a name="108">  108</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#108">SECMIME_SetPolicy</a>(long which, int on);
+<b><a name="109">  109</a></b> 
+<b><a name="110">  110</a></b> /*
+<b><a name="111">  111</a></b>  * Does the current policy allow S/MIME decryption of this particular
+<b><a name="112">  112</a></b>  * algorithm and keysize?
+<b><a name="113">  113</a></b>  */
+<b><a name="114">  114</a></b> extern <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> <a href="#114">SECMIME_DecryptionAllowed</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid, <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *<a href="../mozilla/nsprpub/pr/src/cplus/tests/tpd.cpp.dep.html#key">key</a><a href="../mozilla/nsprpub/pr/tests/tpd.c.dep.html#key"><sup>[1]</sup></a>);
+<b><a name="115">  115</a></b> 
+<b><a name="116">  116</a></b> /*
+<b><a name="117">  117</a></b>  * Does the current policy allow *any* S/MIME encryption (or decryption)?
+<b><a name="118">  118</a></b>  *
+<b><a name="119">  119</a></b>  * This tells whether or not *any* S/MIME encryption can be done,
+<b><a name="120">  120</a></b>  * according to policy.  Callers may use this to do nicer user interface
+<b><a name="121">  121</a></b>  * (say, greying out a checkbox so a user does not even try to encrypt
+<b><a name="122">  122</a></b>  * a message when they are not allowed to) or for any reason they want
+<b><a name="123">  123</a></b>  * to check whether S/MIME encryption (or decryption, for that matter)
+<b><a name="124">  124</a></b>  * may be done.
+<b><a name="125">  125</a></b>  *
+<b><a name="126">  126</a></b>  * It takes no arguments.  The return value is a simple boolean:
+<b><a name="127">  127</a></b>  *   PR_TRUE means encryption (or decryption) is *possible*
+<b><a name="128">  128</a></b>  *        (but may still fail due to other reasons, like because we cannot
+<b><a name="129">  129</a></b>  *        find all the necessary certs, etc.; PR_TRUE is *not* a guarantee)
+<b><a name="130">  130</a></b>  *   PR_FALSE means encryption (or decryption) is not permitted
+<b><a name="131">  131</a></b>  *
+<b><a name="132">  132</a></b>  * There are no errors from this routine.
+<b><a name="133">  133</a></b>  */
+<b><a name="134">  134</a></b> extern <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> <a href="#134">SECMIME_EncryptionPossible</a>(void);
+<b><a name="135">  135</a></b> 
+<b><a name="136">  136</a></b> /*
+<b><a name="137">  137</a></b>  * Start an S/MIME encrypting context.
+<b><a name="138">  138</a></b>  *
+<b><a name="139">  139</a></b>  * "scert" is the cert for the sender.  It will be checked for validity.
+<b><a name="140">  140</a></b>  * "rcerts" are the certs for the recipients.  They will also be checked.
+<b><a name="141">  141</a></b>  *
+<b><a name="142">  142</a></b>  * "certdb" is the cert database to use for verifying the certs.
+<b><a name="143">  143</a></b>  * It can be NULL if a default database is available (like in the client).
+<b><a name="144">  144</a></b>  *
+<b><a name="145">  145</a></b>  * This function already does all of the stuff specific to S/MIME protocol
+<b><a name="146">  146</a></b>  * and local policy; the return value just needs to be passed to
+<b><a name="147">  147</a></b>  * SEC_PKCS7Encode() or to SEC_PKCS7EncoderStart() to create the encoded data,
+<b><a name="148">  148</a></b>  * and finally to SEC_PKCS7DestroyContentInfo().
+<b><a name="149">  149</a></b>  *
+<b><a name="150">  150</a></b>  * An error results in a return value of NULL and an error set.
+<b><a name="151">  151</a></b>  * (Retrieve specific errors via PORT_GetError()/XP_GetError().)
+<b><a name="152">  152</a></b>  */
+<b><a name="153">  153</a></b> extern <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7ContentInfo">SEC_PKCS7ContentInfo</a> *<a href="#153">SECMIME_CreateEncrypted</a>(<a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a> *scert,
+<b><a name="154">  154</a></b>                                                      <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a> **rcerts,
+<b><a name="155">  155</a></b>                                                      <a href="../certdb/certt.h.dep.html#CERTCertDBHandle">CERTCertDBHandle</a></a> *certdb,
+<b><a name="156">  156</a></b>                                                      <a href="../pkcs7/pkcs7t.h.dep.html#SECKEYGetPasswordKey">SECKEYGetPasswordKey</a> pwfn,
+<b><a name="157">  157</a></b>                                                      void *pwfn_arg);
+<b><a name="158">  158</a></b> 
+<b><a name="159">  159</a></b> /*
+<b><a name="160">  160</a></b>  * Start an S/MIME signing context.
+<b><a name="161">  161</a></b>  *
+<b><a name="162">  162</a></b>  * "scert" is the cert that will be used to sign the data.  It will be
+<b><a name="163">  163</a></b>  * checked for validity.
+<b><a name="164">  164</a></b>  *
+<b><a name="165">  165</a></b>  * "certdb" is the cert database to use for verifying the cert.
+<b><a name="166">  166</a></b>  * It can be NULL if a default database is available (like in the client).
+<b><a name="167">  167</a></b>  * 
+<b><a name="168">  168</a></b>  * "digestalg" names the digest algorithm.  (It should be SEC_OID_SHA1;
+<b><a name="169">  169</a></b>  * XXX There should be SECMIME functions for hashing, or the hashing should
+<b><a name="170">  170</a></b>  * be built into this interface, which we would like because we would
+<b><a name="171">  171</a></b>  * support more smartcards that way, and then this argument should go away.)
+<b><a name="172">  172</a></b>  *
+<b><a name="173">  173</a></b>  * "digest" is the actual digest of the data.  It must be provided in
+<b><a name="174">  174</a></b>  * the case of detached data or NULL if the content will be included.
+<b><a name="175">  175</a></b>  *
+<b><a name="176">  176</a></b>  * This function already does all of the stuff specific to S/MIME protocol
+<b><a name="177">  177</a></b>  * and local policy; the return value just needs to be passed to
+<b><a name="178">  178</a></b>  * SEC_PKCS7Encode() or to SEC_PKCS7EncoderStart() to create the encoded data,
+<b><a name="179">  179</a></b>  * and finally to SEC_PKCS7DestroyContentInfo().
+<b><a name="180">  180</a></b>  *
+<b><a name="181">  181</a></b>  * An error results in a return value of NULL and an error set.
+<b><a name="182">  182</a></b>  * (Retrieve specific errors via PORT_GetError()/XP_GetError().)
+<b><a name="183">  183</a></b>  */
+<b><a name="184">  184</a></b> extern <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7ContentInfo">SEC_PKCS7ContentInfo</a> *<a href="#184">SECMIME_CreateSigned</a>(<a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a> *scert,
+<b><a name="185">  185</a></b>                                                   <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a> *ecert,
+<b><a name="186">  186</a></b>                                                   <a href="../certdb/certt.h.dep.html#CERTCertDBHandle">CERTCertDBHandle</a></a> *certdb,
+<b><a name="187">  187</a></b>                                                   <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> digestalg,
+<b><a name="188">  188</a></b>                                                   <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *digest,
+<b><a name="189">  189</a></b>                                                   <a href="../pkcs7/pkcs7t.h.dep.html#SECKEYGetPasswordKey">SECKEYGetPasswordKey</a> pwfn,
+<b><a name="190">  190</a></b>                                                   void *pwfn_arg);
+<b><a name="191">  191</a></b> 
+<b><a name="192">  192</a></b> /************************************************************************/
+<b><a name="193">  193</a></b> <a href="../certdb/certt.h.dep.html#SEC_END_PROTOS">SEC_END_PROTOS</a><a href="../util/secasn1.h.dep.html#SEC_END_PROTOS"><sup>[1]</sup></a><a href="../util/seccomon.h.dep.html#SEC_END_PROTOS"><sup>[2]</sup></a></a>
+<b><a name="194">  194</a></b> 
+<b><a name="195">  195</a></b> #endif /* _SECMIME_H_ */
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

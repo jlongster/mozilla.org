@@ -1,0 +1,363 @@
+<?php
+
+$html_title = 'Warpzilla Build Instructions';
+$page_title = 'Warpzilla Build Instructions Part One - Requirements';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<link rel="stylesheet" href="../../persistent-style.css" type="text/css">
+<link rel="icon" href="../../images/mozilla-16.png" type="image/png">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<p>This document explains what tools are required to build Warpzilla.
+We have tried to be as detailed as possible with these instructions.
+This document is designed for someone creating a build environment from
+scratch. The build environment works best when all the tools are placed 
+on a single drive. For our examples, we will use D:.</p>
+
+<h3>What's New?</h3>
+<ul>
+  <li><b>2005/03/13:</b> Update to new winico version, latest GCC 3.2.2 CSD 
+                         pack, new .mozconfig selection of compile target</li>
+  <li><b>2004/04/21:</b> New tool requirement - WINICO.EXE</li>
+  <li><b>2004/03/24:</b> Updated to GCC 3.2.2 Beta 4. Requires updated version
+                         of glibidl.</li>
+  <li><b>2003/12/10:</b> Updated sample '.mozconfig' file.</li>
+  <li><b>2003/11/12:</b> Added download link to ILINK 5.0.</li>
+  <li><b>2003/10/15:</b> Updated to GCC 3.2.2 Beta 3. Requires updated version
+                         of glibidl.</li>
+  <li><b>2003/09/29:</b> Added FIND.EXE and TAR.EXE.</li>
+  <li><b>2003/09/24:</b> Updated to GCC 3.2.2 Beta 2. Use ASH.EXE instead of
+                         BASH.EXE, which decreases build time by 3x! Requires 
+                         updated versions of glibidl and setmozenv.cmd.</li>
+  <li><b>2003/09/10:</b> Updated to GCC 3.2.2 Beta 1. Requires updated version
+                         of glibidl. Also, updated GNU Make to 3.81rc1.</li>
+</ul>
+
+
+<h3>Download the following packages:</h3>
+
+<ul>
+
+  <li><a href="http://hobbes.nmsu.edu/pub/os2/dev/emx/v0.9d/emxrt.zip">EMX
+
+Runtime</a><br>
+
+Unzip EMXRT.ZIP in the root directory. It will create a directory
+
+called EMX.<br>
+
+Add D:\EMX\DLL to your LIBPATH in CONFIG.SYS.</li>
+
+  <li><a href="http://www.axess.com/users/sobotka/warpzilla/srcs/autoconf-gcc.zip">autoconf</a>
+      <br>
+      Unzip AUTOCONF.ZIP in the root directory. It will create a directory 
+      called AUTOCONF.
+      <br>
+  </li>
+
+  <li>
+    <a href="http://www.axess.com/users/sobotka/warpzilla/srcs/glibidl-b4.zip">glib and libidl</a>
+    <br>
+    Unzip GLIBIDL.ZIP in the root directory. It will create a directory 
+    called GLIBIDL.
+  </li>
+
+  <li>Perl 5.8.0 (<a
+
+ href="http://hobbes.nmsu.edu/pub/os2/dev/perl/perl-5.8.0-bin.zip">bin</a>
+
+&amp; <a
+
+ href="http://hobbes.nmsu.edu/pub/os2/dev/perl/perl-5.8.0-core.zip">core</a>)<a
+
+ href="http://hobbes.nmsu.edu/pub/os2/dev/perl/perl-5.6.1.zip"><br>
+
+    </a>Unzip both zips in the root directory. &nbsp;It will create a
+
+directory called PERL.<br>
+
+In the file PERL\LIB\5.8.0\OS2\CONFIG.PM,&nbsp; find the "archlib"
+
+&nbsp;tag (line 120) and change the drive letter to point to where you
+
+have installed PERL.<br>
+
+  </li>
+
+</ul>
+
+<p><b>Note:</b>For the following packages, you only need to extract the
+
+files we specify from the ZIPs. We recommend putting all of the
+
+following EXEs and DLLs in one directory called MOZTOOLS. <br>
+
+</p>
+
+<ul>
+
+  <li><a href="http://hobbes.nmsu.edu/pub/os2/dev/util/cvs-m-1.11.2.zip">CVS</a>
+    <ul>
+      <li>cvs.exe</li>
+    </ul>
+  </li>
+
+  <li><a href="ftp://ftp.mozilla.org/pub/mozilla.org/mozilla/source/os2tools.zip">NSINSTALL</a>
+    <ul>
+      <li>nsinstall.exe<br>
+      </li>
+    </ul>
+  </li>
+
+  <li><a href="http://hobbes.nmsu.edu/pub/os2/util/shell/ashos2.zip">BSD Ash</a>
+    <ul>
+      <li>ash.exe </li>
+    </ul>
+  </li>
+
+  <li><a href="http://www2s.biglobe.ne.jp/%7Evtgf3mpr/gnu/sh-util.htm">GNU shell
+      utilities (sh-utils-2.0.zip)</a>
+    <ul>
+      <li>Unzip OS2TREE.ZIP</li>
+      <li>Copy everything in USR\BIN and USR\DLL to your MOZTOOLS dir.<br>
+      </li>
+    </ul>
+  </li>
+
+  <li><a href="http://www2s.biglobe.ne.jp/%7Evtgf3mpr/gnu/text-util.htm">GNU 
+      text utilities (textutils-2.0.11.zip)</a>
+    <ul>
+      <li>Unzip OS2TREE.ZIP</li>
+    </ul>
+    <ul>
+      <li>Copy everything in USR\BIN and USR\DLL to your MOZTOOLS dir.</li>
+    </ul>
+  </li>
+
+  <li><a href="http://www2s.biglobe.ne.jp/%7Evtgf3mpr/gnu/fileutils.htm">GNU
+      file utilities (os2_fileutils-3.16.zip)</a>
+    <ul>
+      <li>Copy everything in FILEUTILS-3.16\BIN and FILEUTILS-3.16\DLL to your
+          MOZTOOLS dir.</li>
+    </ul>
+  </li>
+
+  <li><a href="http://www2s.biglobe.ne.jp/%7Evtgf3mpr/gnu/diff.htm">GNU
+      diff (diffutils-2.8.zip)</a>
+    <ul>
+      <li>Unzip OS2TREE.ZIP</li>
+      <li>Copy everything in USR\BIN to your MOZTOOLS dir.</li>
+    </ul>
+  </li>
+
+  <li><a href="http://www.unixos2.org/sw/pub/binary/grep/grep-2_5_1-bin.zip">GNU
+      grep (grep-2_5_1-bin.zip)</a>
+    <ul>
+      <li>Copy everything in BIN to your MOZTOOLS dir.</li>
+    </ul>
+  </li>
+
+  <li><a href="http://www2s.biglobe.ne.jp/%7Evtgf3mpr/gnu/gawk.htm">GNU
+      awk (gawk304.zip)</a>
+    <ul>
+      <li>Unzip EMX-GAWK.ZIP</li>
+      <li>Copy EMX\BIN\GAWK.EXE to your MOZTOOLS dir.</li>
+      <li>Copy gawk.exe to awk.exe</li>
+    </ul>
+  </li>
+
+  <li><a href="http://hobbes.nmsu.edu/pub/os2/dev/misc/gnum4.zip">GNU m4 v1.4</a>
+    <ul>
+      <li>m4.exe</li>
+    </ul>
+  </li>
+
+  <li><a href="http://www.unixos2.org/sw/pub/binary/make/make-3_81rc1-bin.zip">
+      GNU make 3.81</a>
+    <ul>
+      <li>make.exe</li>
+    </ul>
+  </li>
+
+  <li><a href="http://www.unixos2.org/sw/pub/binary/gettext/gettext-0_11_5-r2-bin.zip">
+      gettext-0_11_5-r2-bin.zip </a>
+    <ul>
+      <li>intl.dll</li>
+    </ul>
+  </li>
+
+  <li><a href="http://www.unixos2.org/sw/pub/binary/sed/sed-4_0_5-bin.zip">GNU 
+      sed v4.0.5</a>
+    <ul>
+      <li>sed.exe</li>
+    </ul>
+  </li>
+
+  <li><a href="http://hobbes.nmsu.edu/pub/os2/util/disk/gnufind.zip">GNU find 
+      v4.1</a>
+    <ul>
+      <li>find.exe</li>
+      <li>xargs.exe</li>
+      <li>gnufind.dll</li>
+      <li>gnuregex.dll</li>
+      <li>Copy gnuregex.dll to regex.dll (the latter is needed by grep.exe)</li>
+    </ul>
+  </li>
+
+  <li><a href="http://www.info-zip.org">Info-ZIP (Zip and UnZip)</a>
+    <ul>
+      <li>zip.exe</li>
+      <li>unzip.exe</li>
+    </ul>
+  </li>
+
+  <li><a href="ftp://ftp.software.ibm.com/ps/products/warpzilla/os2tk40rc.zip">
+      RC.EXE</a>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+      &nbsp;&lt;= use this one, rather than the one that comes with the toolkit
+  </li>
+  
+  <li><a href="ftp://ftp.software.ibm.com/ps/products/warpzilla/ilink50.zip">
+      ILINK 5.0</a>
+    <ul>
+      <li>Copy everything in BIN to your MOZTOOLS dir.</li>
+    </ul>
+  </li>
+  
+  <li><a href="http://www2s.biglobe.ne.jp/~vtgf3mpr/gnu/patch.htm">GNU Patch
+      v2.5</a>
+    <ul>
+      <li>patch.exe</li>
+      <li>Use the 
+          <a href="http://pws.prserv.net/jpinet.jsawa/rpm/unrpm.zip">unrpm</a>
+          script to extract the executable.
+      </li>
+    </ul>
+  </li>
+
+  <li><a href="http://hobbes.nmsu.edu/pub/os2/util/archiver/gtar258.zip">GNU Tar
+      v1.10</a>
+    <ul>
+      <li>tar.exe</li>
+    </ul>
+  </li>
+  <li><a href="http://hobbes.nmsu.edu/pub/os2/apps/graphics/convert/winico92-2.zip">Icon converter
+      version 0.92-2</a>
+    <ul>
+      <li>winico.exe</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>GCC 3.2.2</h3>
+
+<p>Download <a href="http://download.innotek.de/gccos2/3.2.2-Beta4/gcc-3.2.2-beta4csd1.zip">
+GCC 3.2.2 Beta 4</a> from the Innotek site and install it. Then
+download the latest update,
+<a href="http://download.innotek.de/gccos2/3.2.2-Beta4/gcc-3.2.2-beta4csd1.zip">
+GCC 3.2.2 Beta 4 CSD 1</a>, and unpack on top of this installation.
+Then go into the <code> lib </code> directory and run
+<code> MakeOmfLibs.cmd</code>. The rest of
+the instructions assume you installed into the directory
+<span style="color: rgb(255, 0, 0);">D:\GCC322</span>.  If you installed
+elsewhere, you will have to make the appropriate changes.
+</p>
+
+<h3>OS/2 Toolkit</h3>
+Install the Toolkit that comes with your version of Warp.<br>
+<br>
+
+<h2>Part Two - Build it</h2>
+<p><span style="font-weight: bold;">Step 1:</span> &nbsp;Setup the
+environment using the <a href="gcc/setmozenv.cmd">setmozenv.cmd</a>
+file. Just run:</p>
+<ul>
+  <li>setmozenv gcc</li>
+</ul>
+<p>eComStation users might need to add a line <code> 'SET PROGRAMS=' </code> to setmozenv.cmd
+to delete this environment variable that interferes with some makefile 
+operation.</p>
+
+<p><span style="font-weight: bold;">Step 2:</span> &nbsp;Prepare pulling the code:</p>
+<ul>
+  <li>cvs co mozilla/client.mk</li>
+  <li>cd mozilla</li>
+</ul>
+
+<p><span style="font-weight: bold;">Step 3:</span>
+&nbsp;Generate the <code> .mozconfig </code> file, which is a file
+you create in the <code> mozilla </code> directory that specifies
+options for the build. Some of the more common options are creating an
+obj directory which separates the source code from the built code or
+enabling security. To create a <code>.mozconfig</code> file, see the
+<a href="http://webtools.mozilla.org/build/config.cgi">Unix Build
+Configurator</a></p>
+
+<p style="margin-left: 30px;"> <b>We strongly recommend that you build with an
+obj directory</b> </p>
+
+<p style="margin-left: 30px;"> Here is what our typical .mozconfig file look
+like for a debug build of the Mozilla Suite: </p>
+
+<pre style="margin-left: 60px;">
+# sh
+# Build configuration script
+#
+# See http://www.mozilla.org/build/unix.html for build instructions.
+#
+
+# Options for client.mk.
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj
+mk_add_options MOZ_CO_PROJECT=suite
+
+# Options for 'configure' (same as command-line options).
+ac_add_options --enable-application=suite
+#ac_add_options --disable-tests
+#ac_add_options --enable-optimize
+#ac_add_options --disable-debug
+ac_add_options --enable-crypto
+</pre>
+If you want to build Firefox or Thunderbird, take a look at the
+<a href="http://www.mozilla.org/build/configure-build.html">build options</a>
+page.
+
+<p><span style="font-weight: bold;">Step 4:</span> &nbsp;Now pull the
+code from the CVS repository at mozilla.org:</p>
+<ul>
+  <li>make -f client.mk pull_all</li>
+</ul>
+
+<p><span style="font-weight: bold;">Step 5:</span> &nbsp;Although the 
+<code>pull_all</code> command above should do this automatically, it is
+sometimes necessary to delete the three <code>configure</code> files so that
+they can be properly generated on OS/2. This usually happens when there is 
+a CVS conflict when pulling the code. If you encounter errors during the 
+build, you should first try deleting the <code>configure</code> files before asking for help in
+netscape.public.mozilla.os2:</p>
+<ul>
+  <li>rm mozilla/configure</li>
+  <li>rm mozilla/nsprpub/configure</li>
+  <li>rm mozilla/directory/c-sdk/configure</li>
+</ul>
+<p style="margin-left: 30px;">These will be regenerated automatically from the
+corresponding <code>configure.in</code> file when you kick off the build in the
+next step.  To generate them manually, go to each directory and run
+'<code>bash autoconf</code>'.</p>
+
+<p><span style="font-weight: bold;">Step 6:</span> &nbsp;Build the code:</p>
+<ul>
+  <li>make -f client.mk build</li>
+</ul>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,341 @@
+<?php
+
+$html_title = 'S/MIME Toolkit';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="generator" content=
+"HTML Tidy for Windows (vers 14 February 2006), see www.w3.org">
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<link rel="contents" type="text/html" href="../" title="NSS project page">
+<link rel="up" type="text/html" href="../" title="NSS project page">
+<link rel="subsection" href="#projectinfo" title="Project Information">
+<link rel="subsection" href="#currenttasks" title="Current Tasks">
+<link rel="subsection" href="#projectgoals" title="Project Goals">
+<link rel="subsection" href="#featurelist" title="Feature List">
+<link rel="glossary" href="http://developer.mozilla.org/en/Glossary"
+title="Glossary">
+';
+
+$extra_style = '
+<style type="text/css">
+h1, h1+p {text-align: center;}
+span.c1 {color: green;}
+</style>
+
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+  <p class="crumbs"><em>You are here:</em> <a href="../">NSS project page</a>
+  &gt; <strong>S/MIME Toolkit</strong></p>
+
+  <h1>S/MIME Toolkit</h1>
+
+  <p>Newsgroup: <a href=
+  "news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a><br>
+
+  Technical contacts: <a href=
+  "mailto:chrisk@netscape.com?subject=Open%20Source%20SMIME%20Toolkit%20Feedback">Christian
+  Kaiser</a><br>
+  Yell at the manager: <a href=
+  "mailto:lord@netscape.com?subject=Open%20Source%20SMIME%20Toolkit%20Feedback">Bob
+  Lord</a></p>
+
+  <h2>Overview</h2>
+
+  <p>The S/MIME Toolkit provides S/MIME functionality via an API that can be
+  integrated with a variety of MIME parsers and generators. It will support
+  <a class="ex-ref" href="http://www.ietf.org/rfc/rfc2633.txt">S/MIME version
+  3</a> features.</p>
+
+  <p>The S/MIME Toolkit cannot act as a MIME parser on its own. It includes a
+  simple parser for testing, but final applications will need to use a MIME
+  parser like the one developed for the Mozilla mail/news project (see <a href=
+  "../../../../../mailnews/libmime-description.html">libmime</a>).</p>
+
+  <h2><a name="projectinfo" id="projectinfo">Project Information</a></h2>
+
+  <p>To check out the source code,</p>
+
+  <p><code class="command">
+cvs -d :pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot co  mozilla/security</code></p>
+
+  <p>The library source code is located in <code class=
+  "filename">nss/lib/smime</code>. Two utilities are located in <code class=
+  "filename">nss/cmd/smimetools</code>:</p>
+
+  <ul>
+    <li><code class="command">smime</code> is a Perl script that turns ordinary
+    RFC822 messages into signed and/or encrypted S/MIME messages that verify
+    and decrypt correctly in Netscape Communicator 4.7 and Microsoft
+    Outlook.</li>
+
+    <li><code class="command">cmsutil</code> generates CMS/PKCS7 messages and
+    is used by <code class="command">smime</code>.</li>
+  </ul>
+
+  <p>You can send an automatically generated, signed email as follows:</p>
+
+  <p><code class="command">
+"cat rfc822msg.txt | smime -S "nickname" -p "passwd" | mail chrisk@netscape.com"</code></p>
+
+  <p><code>"nickname"</code> is the nickname of the certificate to sign with,
+  and <code>"passwd"</code> is the key database password.</p>
+
+  <p>The message sent to <tt>chrisk@netscape.com</tt> is signed and verifies
+  correctly with Netscape Communicator 4.7 and Microsoft Outlook.</p>
+
+  <h2><a name="currenttasks" id="currenttasks">Current Tasks</a></h2>
+
+  <p>Our current task list includes the following:</p>
+
+  <ul>
+    <li>Document a first cut at an API and begin to refine it.</li>
+
+    <li>Review the API to determine fitness for inclusion into various MIME
+    parsers, changing the API definition where necessary.</li>
+
+    <li>Create a test harness that can ideally be integrated into the build
+    process.</li>
+
+    <li>Create a prioritized list of further tasks, such as: Implement
+    <dfn>Cryptographic Message Syntax (CMS)</dfn> and S/MIME v3 features.</li>
+  </ul>
+
+  <h2>Status Summary</h2>
+
+  <p>We have completed and posted the version 1.0 code to mozilla.org.</p>
+
+  <h3>Target Applications</h3>
+
+  <p>Possible applications for the new S/MIME Toolkit include:</p>
+
+  <ul>
+    <li>S/MIME support in the Mozilla mail/news client.</li>
+
+    <li>S/MIME support in WebMail clients.</li>
+
+    <li>EDI messaging.</li>
+
+    <li>A Perl module that can be used to generate and process <a class=
+    "ex-ref" href="http://www.ietf.org/rfc/rfc2633.txt">S/MIME</a> messages
+    using Perl scripts.</li>
+  </ul>
+
+  <h3>Design</h3>
+
+  <p>The S/MIME Toolkit will be implemented on top of the core <a href=
+  "../../nss/">NSS</a> crypto and PKI services.</p>
+
+  <p>The S/MIME API will be implemented in C for several reasons:</p>
+
+  <ul>
+    <li>The existing NSS code is in C, so sticking with C maintains the same
+    level of portability.</li>
+
+    <li>Not all widely-used C++ compilers are up to the current standards.</li>
+
+    <li>Some applications (especially embedded apps) may not want the C++
+    runtime performance overhead.</li>
+
+    <li>Some of the NSS C code on which S/MIME depends may be difficult to
+    interface with a C++ API.</li>
+
+    <li>Of course, there may be some software engineering and maintenance
+    advantages to C++, so we should not consign it to the dustbin just
+    yet.</li>
+  </ul>
+
+  <h3><a name="projectgoals" id="projectgoals">Project Goals</a></h3>
+
+  <p>The overall goal for the S/MIME Toolkit is to create useful code that can
+  be implemented in real applications. To help keep us focused on that goal,
+  the list below shows what we want to accomplish.</p>
+
+  <p>The S/MIME Toolkit will...</p>
+
+  <ul>
+    <li>
+      <strong>Make S/MIME easy to use and integrate in a wide variety of MIME
+      parsers and generators.</strong>
+
+      <p>We want a flexible API that anticipates the possible needs of users.
+      For example, we need to support regular and streaming input and
+      output.</p>
+
+      <p>We will need an implementation of <a class="ex-ref" href=
+      "http://www.ietf.org/rfc/rfc2630.txt">Cryptographic Message Syntax
+      (CMS)</a> to get full support for cryptographic messages in
+      non-email/MIME contexts.</p>
+
+      <p>Finally, we will need S/MIME-specific glue code to allow easy
+      integration with common MIME parsers and generators.</p>
+    </li>
+
+    <li>
+      <strong>Implement commonly used features of <a class="ex-ref" href=
+      "http://www.ietf.org/rfc/rfc2633.txt">S/MIME v3</a>.</strong>
+
+      <p>The following features are currently on the "commonly used" list, in
+      order of decreasing importance:</p>
+
+      <ul>
+        <li><code>sMimeCapabilities</code> and
+        <code>sMimeEncryptionKeyPreferences</code> attributes</li>
+
+        <li><code>signingCertificate</code> attribute</li>
+
+        <li>DSA signatures</li>
+
+        <li>Triple-DES CBC bulk encryption</li>
+
+        <li>Diffie-Helman key agreement protocol</li>
+      </ul>
+    </li>
+
+    <li>
+      <strong>Provide an API specifically for generating and processing CMS
+      messages.</strong>
+
+      <p>S/MIME is based on CMS messages, but CMS messages have many useful
+      applications even outside the context of MIME (wallets, data storage,
+      generic messaging, etc.).</p>
+    </li>
+
+    <li>
+      <strong>Provide a support tool that can sign, verify, encrypt, and
+      decrypt S/MIME and raw CMS messages.</strong>
+
+      <p>A toolkit just isn't easy to use if it's harder to test and verify the
+      code than it is to write it.</p>
+    </li>
+
+    <li><strong>Provide a lightweight MIME parser suitable for basic
+    testing</strong></li>
+  </ul>
+
+  <h3>Non-Goals</h3>
+
+  <p>The Non-Goals list shows some things that could be done, but that we are
+  explicitly excluding.</p>
+
+  <p>The S/MIME Toolkit will not...</p>
+
+  <ul>
+    <li>
+      <strong>Be a reference implementation for S/MIME v3.</strong>
+
+      <p>The S/MIME Toolkit will not implement all of the features of S/MIME
+      v3. For example, support for some parts of ESS are not planned at this
+      time.</p>
+    </li>
+
+    <li>
+      <strong>Parse or generate MIME headers.</strong>
+
+      <p>The goal is to integrate with the MIME parsers/generators that have
+      already been built, debugged, and stood the test of time.</p>
+    </li>
+  </ul>
+
+  <h3><a name="featurelist" id="featurelist">Feature List</a></h3>
+
+  <p>The list below prioritizes the features to be implemented. For each
+  feature, the S/MIME Toolkit will be able to generate or process the attribute
+  (or feature) using an appropriate API.</p>
+
+  <p>The toolkit should be able to process message containing
+  <strong>any</strong> features and attributes defined in <a class="ex-ref"
+  href="http://www.ietf.org/rfc/rfc2632.txt">RFC2632</a>, <a class="ex-ref"
+  href="http://www.ietf.org/rfc/rfc2633.txt">RFC2633</a>, or <a class="ex-ref"
+  href="http://www.ietf.org/rfc/rfc2634.txt">RFC2634</a> without displaying
+  adverse behavior. Features marked with <span class="c1">(*)</span> are
+  available in the current PKCS7 and i S/MIME implementations for
+  Communicator.</p>
+
+  <ol>
+    <li>MIME Parser Interface: Input/output both in streaming and one-shot mode
+    <span class="c1">(* - streaming mode)</span></li>
+
+    <li>MIME Parser Interface: both clear-signed and inline-signed messages
+    (multipart/signed and application/pkcs7-mime)</li>
+
+    <li>CMS: SignedData objects, with internal and external signatures (RFC2630
+    - 5) <span class="c1">(* - external signatures)</span></li>
+
+    <li>CMS: EnvelopedData objects (RFC2630 - 6) <span class=
+    "c1">(*)</span></li>
+
+    <li>SMIME: smimeCapabilities attribute</li>
+
+    <li>CERT: Build list of certificates and CRLs for SignedData messages
+    <span class="c1">(*)</span></li>
+
+    <li>CMS: MD5 and SHA1 digest algorithms (RFC2630 12.1.1, 12.1.2)
+    <span class="c1">(*)</span></li>
+
+    <li>CMS: RSA signature algorithm (RFC2630 12.2.2) <span class=
+    "c1">(*)</span></li>
+
+    <li>CMS: DSA signature algorithm (RFC2630 - 12.2.1) <span class=
+    "c1">(*)</span></li>
+
+    <li>CMS: RSA Key Transport Protocol RFC2630 12.3.2.1) <span class=
+    "c1">(*)</span></li>
+
+    <li>CMS: Triple-DES CBC and RC2 CBC content encryption algorithms (RFC2630
+    12.4.1 and 12.4.2) <span class="c1">(*)</span></li>
+
+    <li>SMIME: sMIMEEncryptionKeyPreference attribute (dual key support)</li>
+
+    <li>ESS: signingCertificate attribute (RFC2634 - 5)</li>
+
+    <li>ESS: Triple Wrapping (RFC2634 - 1.1)</li>
+
+    <li>CMS: "degenerate" SignedData objects containing certs and CRLs only
+    (RFC2630 - 5)</li>
+
+    <li>CMS: Ephemeral Static Diffie-Helman Key Agreement Protocol (ESDH)
+    (RFC2630 12.3.1.1). This includes Triple-DES and RC2 key wrap
+    algorithms</li>
+
+    <li>CMS: EncryptedData objects (RFC2630 - 8)</li>
+
+    <li>
+      <p>The following features are lower in priority and are not likely to be
+      included in version 1.0:</p>CMS: <dfn>Static Static Diffie Hellman Key
+      Agreement Protocol (SSDH)</dfn> (RFC2630 12.3.1.1)
+    </li>
+
+    <li>CMS: multiple signers for SignedData objects</li>
+
+    <li>CMS: counter signatures (RFC2630 - 11.4)</li>
+
+    <li>CMS: DigestedData objects (RFC2630 - 7)</li>
+
+    <li>CMS: AuthenticatedData objects (RFC2630 - 9)</li>
+
+    <li>ESS: Signed Receipt Requests and Receipts (RFC2634 - 2)</li>
+
+    <li>ESS: Security Labels (RFC2634 - 3)</li>
+
+    <li>ESS: contentHints attribute (RFC2634 - 2.9)</li>
+
+    <li>ESS: contentIdentifier / contentReference attributes (RFC2634 - 2.7,
+    2.11)</li>
+
+    <li>ESS: <dfn>Mail List Agent (MLA)</dfn> Processing (RFC2634 - 4)</li>
+  </ol>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

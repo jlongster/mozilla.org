@@ -1,0 +1,196 @@
+<?php
+
+$html_title = 'Personal Security Manager 1.x Architecture(PSM)';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>Personal Security Manager 1.x Architecture</h2>
+
+<i><FONT SIZE="-1">
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Technical contact: 
+<A HREF="mailto:ddrinan@netscape.com?subject=Open Source PSM Architecture Feedback">David Drinan</A></FONT></i><BR>
+
+<i><FONT SIZE="-1">Yell at the manager: 
+<A HREF="mailto:lord@netscape.com?subject=Open Source PSM Architecture Feedback">Bob Lord</A></FONT></i></center>
+
+
+<p>Personal Security Manager (PSM) 1.x is a client-independent desktop
+security module. It performs PKI operations on behalf of desktop
+client applications, including certificate and key management, SSL, S/MIME,
+cryptographic token support, and centralized administration.
+<h2>
+PSM Components</h2>
+The PSM 1.x suite consists of two major pieces: the PSM daemon
+itself and the PSM client library. PSM itself is a daemon, running in
+a separate process. Applications use PSM functionality by calling
+the PSM client library, which communicates with PSM using an
+RPC-like protocol over a local socket connection.
+<p>
+<p><img SRC="security-module.jpg" height=330 width=667>
+<p>
+<h3>
+The PSM Daemon</h3>
+PSM itself is a daemon, running in a separate process. It performs
+cryptographic operations, wraps client network traffic using SSL, and performs many
+other kinds of PKI operations.
+<h3>
+The PSM Client Library</h3>
+In order to use PSM, a client application must link with the PSM client
+library. This library consists of several layers:
+<h4>
+The Transport Layer</h4>
+This layer provides a reliable transport stream abstraction for connection
+to PSM. The properties of the connection are:
+<ul>
+<li>
+a reliable stream</li>
+
+<li>
+two way communication</li>
+
+<li>
+provides a file descriptor that can be used with select()</li>
+</ul>
+Possible implementations of the transport layer include TCP sockets, Unix
+domain sockets, named pipes, and a shared memory transport (some operating
+systems provide select()'able semaphores that can be used to implement
+this). However, the transport layer in the PSM client library must
+currently agree with the implementation used by PSM on the given platform.
+<p>The transport layer is provided by the client application on a platform-dependent
+basis:
+<ul>
+<li>
+On Unix or Linux, the client socket function is expected to create a Unix domain
+socket.</li>
+
+<li>
+On Windows, a TCP socket is expected.</li>
+
+<li>
+On MacOS (running Open Transport), a TCP socket/endpoint is expected.</li>
+</ul>
+
+<h4>
+The Protocol Library</h4>
+The protocol library encodes and decodes messages passed along the control
+channel. The protocol library is shared between the client library and
+the PSM daemon.
+<p><b>The Client Library API</b>
+<p>The client library API manages connections to PSM, and provides
+client-side abstractions for objects and services contained within PSM.
+Eventually, this API will grow to resemble a subset of the NSS API,
+with higher-level functions and UI facilities added for ease of integration.
+<h2>
+The PSM GUI</h2>
+PSM may require user input to perform certain operations.  The application
+may choose from one of two methods for dealing with these exceptional conditions. 
+The application may allow PSM to use its own built-in HTML dialog-based 
+GUI, which is similar to the security UI curently implemented in
+Communicator. The other option [currently not implemented] is for
+PSM to send messages back to the application requesting the information
+required to continue.
+<p>When PSM requires user feedback and it is configured to use the internal
+HTML dialog-based GUI, the following process is used to display the dialog
+and get back the results:
+<ol>
+<li>
+If the NSS function running in PSM requires additional information to continue,
+and it calls a callback function that has been registered to address the particular
+exceptional condition.</li>
+
+<li>
+The callback function sends a message to the client application requesting
+an HTML window with the required dimensions, and a URL to be loaded into
+the window. The URL points to a port on the local machine that is
+serviced by PSM.</li>
+
+<li>
+The client application creates a window of the requested dimensions that
+is capable of displaying HTML, and loads the requested URL.</li>
+
+<li>
+The HTTP request for the URL is sent to a port on the local machine that
+is serviced by PSM. The URL provides enough information to PSM for
+it to generate the correct HTML stream for the dialog.</li>
+
+<li>
+The HTML is displayed in the window by the application.</li>
+
+<li>
+The user provides the required input to the dialog and submits it.</li>
+
+<li>
+The URL for submitting the dialog's form data also points to the PSM HTTP
+port on the local machine.</li>
+
+<li>
+PSM accepts the form post, and returns a response to the application that
+will cause the dialog window to be closed.</li>
+
+<li>
+The required information is extracted from the posted response and returned
+to NSS so that the original operation may be completed.</li>
+</ol>
+Use of the internal GUI requires that the application have the ability
+to display HTML in a window. Non-browser applications may still take
+advantage of the built-in GUI by using an available HTML display component.
+<h2>
+The PSM Protocol</h2>
+The application communicates with PSM using an RPC-like protocol over a
+control channel. In addition to this control channel, there may be
+several data channels in use to pass bulk data to and from PSM.
+<p>When the application starts up, or (in the case of Mozilla) when
+the https module is loaded for the first time, it initializes the PSM client
+library. The client library will start PSM if it is not already running,
+and then open a control channel to it. Each application will have
+its own control channel to PSM and will require separate authentication
+for access to the resources controlled by PSM. PSM will [eventually]
+be able to support a large number of applications at one time, though at
+the moment, only one at a time is supported. (There is some infrastructure
+within PSM itself to support multiple clients; as NSS exposes
+multi-client functionality, PSM will follow suit.)
+<p>In addition to the control channel, several data channels may be in
+use by a particular application at any one time. These data channels
+will be used for bulk data transfer, such as SSL connections, operations
+on cryptographic messages (PKCS #7 and S/MIME), or any other operation
+that requires transfer of a large amount of data to PSM.
+<p>The PSM protocol will be described in more detail in the future. 
+In brief, it supports the following types of operations:
+<ul>
+<li>
+Cryptographic operations</li>
+
+<li>
+Connection management for bulk data connections used for cryptographic
+operations, including basic crypto, PKCS #7, and SSL</li>
+
+<li>
+Messages to manipulate and query objects maintained by PSM such as certificates,
+trust information, tokens, keys, etc.</li>
+
+<li>
+GUI management messages</li>
+
+<li>
+Status reporting</li>
+
+<li>
+Messages reporting exceptional conditions requiring some data from the
+application or user</li>
+</ul>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

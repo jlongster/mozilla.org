@@ -1,0 +1,199 @@
+<html>
+<head>
+<title>ARIA listbox in iframe</title>
+<style type="text/css">
+<!--
+  body { padding: 0px; margin: 0px; cursor: default; }
+  div.selected { color: black; background-color: beige; }
+  body.active div.selected { color: white; background-color: #222222; }
+-->
+</style>
+<script>
+<!--
+var KEY_END = 0x23;
+var KEY_HOME = 0x24;
+var KEY_LEFT = 0x25;
+var KEY_UP = 0x26;
+var KEY_RIGHT = 0x27;
+var KEY_DOWN = 0x28;
+
+function getFirstListItem(list)
+{
+  var listItem = list.firstChild;
+  if (isText(listItem)) {
+    listItem = getRelativeListItem(listItem, 1, false);
+  }
+  return listItem;
+};
+
+function getLastListItem(list)
+{
+  var listItem = list.lastChild;
+  if (isText(listItem)) {
+    listItem = getRelativeListItem(listItem, -1, false);
+  }
+  return listItem;
+};
+
+function isText(node)
+{
+  return node && node.nodeType == node.TEXT_NODE;
+};
+
+function getRelativeListItem(listItem, delta, wrap)
+{
+  // delta: -1 = prev, 1 = next
+  if (delta == 1) {  // Next
+    var newListItem = listItem.nextSibling;
+    if (isText(newListItem)) {
+      newListItem = newListItem.nextSibling;
+    }
+    if (newListItem && newListItem.getAttribute("role") == "option") {
+      return newListItem;
+    }
+    return wrap ? getFirstListItem(document.body) : listItem;
+  }
+  var newListItem = listItem.previousSibling;
+  if (isText(newListItem)) {
+    newListItem = newListItem.previousSibling;
+  }
+  if (newListItem && newListItem.getAttribute("role") == "option") {
+    return newListItem;
+  }
+  return wrap ? getLastListItem(document.body) : listItem;
+};
+
+function listItemKeyEvent(event)
+{
+  var list = document.body;
+  var selectionDelta = 0;  // (-1 = up, 0 = no change, 1 = down)
+
+  if (event.type == "keydown") {
+    if (event.altKey) {
+      return true;  // Browser should use this, the listbox doesn't need alt-modified keys
+    }
+    // XXX Implement multiple selection (ctrl+arrow, shift+arrow, ctrl+space)
+    if (event.keyCode == KEY_HOME) {
+      try {
+        setSelectedListItem(getFirstListItem(list));
+      } catch(ex) { }
+      return false;
+    }
+    if (event.keyCode == KEY_END) {
+      try {
+        setSelectedListItem(getLastListItem(list));
+      } catch(ex) { }
+      return false;
+    }
+    if (event.keyCode == KEY_DOWN) {
+      selectionDelta = 1;
+    }
+    else if (event.keyCode == KEY_UP) {
+      selectionDelta = -1;
+    }
+    else {
+      return true;  // We didn't need key, don't consume event
+    }
+  }
+  else if (event.type == "keypress") {
+    var listItem = getSelectedListItem(list);
+    // Implement incremental find here, instead of keydown, because we
+    // need to capture printable characters in a keypress handler
+    var key;
+    if (event.charCode > ' ' && !event.altKey && !event.ctrlKey &&
+       !event.shiftKey && !event.metaKey) {
+      key = String.fromCharCode(event.charCode);
+    }
+    else {
+      list._incrementalString = "";
+      return true;
+    }
+    key = key.toLowerCase();
+    if (event.timeStamp - list._lastKeyTime > 1000)
+      list._incrementalString = key;
+    else
+      list._incrementalString += key;
+    list._lastKeyTime = event.timeStamp;
+    var length = list._incrementalString.length;
+    var incrementalString = list._incrementalString;
+    var charIndex = 1;
+    while (charIndex < length && incrementalString[charIndex] == incrementalString[charIndex - 1])
+      charIndex++;
+    // If all letters in incremental string are same, just try to match the first one
+    if (charIndex == length) {
+      length = 1;
+      incrementalString = incrementalString.substring(0, length);
+    }
+    var origListItem = listItem;
+    if (length == 1) {
+      listItem = getRelativeListItem(listItem, 1, true);
+    }
+    do {
+      var text = listItem.firstChild.data;
+      if (listItem.firstChild.data.substring(0, length).toLowerCase() == incrementalString) {
+        setSelectedListItem(listItem);
+        return false;
+      }
+      listItem = getRelativeListItem(listItem, 1, true);
+    } while (listItem != origListItem);
+    return false;
+  }
+
+  if (selectionDelta) {
+    listItem = getRelativeListItem(getSelectedListItem(list), selectionDelta, false);
+    setSelectedListItem(listItem);
+    return false;
+  }
+  return true;  // Browser can still use event
+};
+
+function listItemClick(event)
+{
+  // Cache last focused list item on the list
+  // The last focused item is always the only item in the tab order for this list,
+  // so we need to set its tabindex to 0, and the others to -1
+  var target = event.target || event.srcElement;
+  if (target.getAttribute("role") != "option") {
+    return;
+  }
+  setSelectedListItem(target);
+};
+
+function getSelectedListItem(list)
+{
+  var oldListItemId = list.getAttribute("aria-activedescendant");
+  return document.getElementById(oldListItemId);
+}
+
+function setSelectedListItem(listitem)
+{
+  if (listitem.getAttribute("role") != "option") {
+    alert("Not an option");
+    return;
+  }
+  var list = document.body
+  var oldListItem = getSelectedListItem(list);
+
+  // Set class so that we show selection appearance
+  oldListItem.className = "";
+  listitem.className = "selected";
+  list.setAttribute("aria-activedescendant", listitem.id);
+};
+-->
+</script>
+</head>
+<body role="listbox" id="listbox1"
+     onfocus="document.body.className='active';"
+     onblur="document.body.className='';"
+     onclick="return listItemClick(event);"
+     onkeydown="return listItemKeyEvent(event);"
+     onkeypress="return listItemKeyEvent(event);"
+     aria-activedescendant="listbox1-1">
+  <div role="option" id="listbox1-1" class="selected">Green</div>
+  <div role="option" id="listbox1-2">Orange</div>
+  <div role="option" id="listbox1-3">Red</div>
+  <div role="option" id="listbox1-4">Blue</div>
+  <div role="option" id="listbox1-5">Violet</div>
+  <div role="option" id="listbox1-6">Periwinkle</div>
+</body>
+</html>

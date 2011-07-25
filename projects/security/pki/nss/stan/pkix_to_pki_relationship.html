@@ -1,0 +1,260 @@
+<?php
+
+$html_title = 'PKIX to PKI Relationship';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+  <br>
+   
+<h2>Relationship between libpkix and libpki</h2>
+  <br>
+<img src="pki-pkix.gif" alt="pki-pkix" width="827" height="471"><br>
+<br>
+  In Stan as it exists now, there are three layers of code dealing with certificates.&nbsp;
+ The lowest layer, libdev, is concerned with talking to Cryptoki devices,
+and implements things like NSSToken.&nbsp;&nbsp; In this library, a certificate
+ is nothing more than a lightweight wrapper around a cryptoki object (nssCryptokiObject,
+ of course).<br>
+  <br>
+  The next layer up is libpki.&nbsp; This layer implements NSSCert
+and NSSTrustDomain (among others), and is concerned with the management of
+certificates.&nbsp; This includes importing, deleting, validating, and searching
+for certificates, as well as using them for crypto operations.<br>
+  <br>
+  The final layer is libpkix.&nbsp; This layer implements the entire PKIX
+specification from RFC 2459, including NSSPKIXCert.&nbsp; This includes
+building a certificate from subparts, and decoding a full DER.<br>
+  <br>
+  Stan has been designed to be independent of any particular certificate specification.&nbsp;
+ Currently, we only support X.509 certificates, but is is conceivable that
+we could choose to support another existing certificate type (PGP), or need
+ to support an unspecified certificate type in the future.&nbsp; PKCS#11
+currently  supports only X.509, but it is also designed to be extensible.<br>
+  <br>
+  Stan maintains this independence in libpki.&nbsp; All of the API functions
+ for managing certs there are blind to a particular certificate type.&nbsp;
+ In the OO sense, NSSCert is supposed to be a base class, and NSSPKIXCert
+ derives from it.&nbsp; NSSCert represents the common functionality
+ for all certificates we choose to support.<br>
+  <br>
+  It is worth noting that libpki/NSSCert only needs to peek into a
+few parts of a certificate.&nbsp; Specifically, libpki needs access to the
+following information:<br>
+  <br>
+   
+<ol>
+    <li>Specific issuer identifiers (issuerKeyID, e.g.) used to differentiate
+ issuing certificates with the same subject but different key material</li>
+    <li>The validity period</li>
+    <li>The set of certificate usages</li>
+    <li>Cert policies</li>
+    <li>Cracking a BER/DER blob to obtain the following fields needed by PKCS#11:</li>
+          
+  <ul>
+      <li>DER subject</li>
+      <li>DER issuer</li>
+      <li>DER serial number</li>
+      <li>email address</li>
+          
+  </ul>
+    <li>A higher-level verification mechanism.&nbsp; X.509 certs have a bunch
+ of rules for verification, involving extensions like basic constraints, etc.<br>
+    </li>
+   
+</ol>
+  <br>
+  <br>
+  In NSS 3.X, the code for cracking/constructing certificates is included
+in the same library (libnss3.so) as the code for managing them, as well as
+in the same type (CERTCert).&nbsp; Stan affords the opportunity to
+separate these layers.&nbsp; libpkix is entirely independent of libpki, so
+we have the choice of bundling them into one libnss4.so, or keeping them
+separate, including only libpki in libnss4.so, and shipping a separate libpkix.so.<br>
+  <br>
+  I think there are certain advantages in doing this.&nbsp; The certificate
+ implementations would be "pluggable".&nbsp; We could define a set of callbacks
+ for the six accessors defined above.&nbsp; Then, any .so which implements
+those six methods can register itself at initialization time as the default
+handler  for that certificate type.&nbsp; For example, we could have an API
+function:<br>
+  <code><br>
+  NSS_RegisterCertHandler(NSSCertType, NSSCertMethods
+ *);</code><br>
+  <br>
+  and libpkix would implement <code>NSSCertMethods</code> for PKIX
+certificates, by having a function:<br>
+  <br>
+  <code>NSSCertMethods * NSSPKIX_GetMethodsTable();</code><br>
+  <br>
+  This would avoid tying us down to any particular certificate model, while
+ at the same time (IMO) keep the code fairly clean.&nbsp; We wouldn't have
+ to fill our cert code with a bunch of if-then-else's and switch statements.&nbsp;
+ It also means there would be no circular dependencies between libpki and
+libpkix.<br>
+  <br>
+  It would, however, mean that would would have to be very careful with backwards
+ compatibility in case <code>NSSCertMethods</code> were to change.<br>
+  <br>
+  This exists to some degree already, in the form of <a
+ href="http://lxr.mozilla.org/security/ident?i=nssDecodedCertStr">nssDecodedCert</a>.<br>
+  <br>
+  Here is how I would propose to define the methods table:<br>
+  <br>
+  <code>struct NSSCertMethodsStr<br>
+  {<br>
+  <br>
+  &nbsp; /*<br>
+  &nbsp;&nbsp; * Decoding a certificate of this type.&nbsp; This method is
+ used when<br>
+  &nbsp;&nbsp; * NSS is asked to import an encoded certificate.<br>
+  &nbsp;&nbsp; */<br>
+  &nbsp; void * (* decode)(NSSArena *arenaOpt, NSSBER *encoding);<br>
+  <br>
+  &nbsp; /* Obtain the following encoded parts from the decoded cert.&nbsp;
+ */<br>
+  <br>
+  &nbsp; NSSBER *&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (* getSubject)(void
+ *cert, <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ NSSBER *rvOpt, <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ NSSArena *arenaOpt);<br>
+  <br>
+  &nbsp; NSSBER *&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (*
+ getIssuer)(void *cert,<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ NSSBER *rvOpt, <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ NSSArena *arenaOpt);<br>
+  &nbsp; NSSBER *&nbsp;&nbsp;&nbsp; (* getSerialNumber)(void *cert,<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ NSSBER *rvOpt, <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ NSSArena *arenaOpt);<br>
+  <br>
+  &nbsp; NSSASCII7 * (* getEmailAddress)(void *cert, NSSArena *arenaOpt);<br>
+  <br>
+  &nbsp; /*<br>
+  &nbsp;&nbsp; * Obtaining a generic identifier for the certificate's issuer.&nbsp;
+ These<br>
+  &nbsp;&nbsp; * methods are required to correctly build certificate chains.<br>
+  &nbsp;&nbsp; */<br>
+  <br>
+  &nbsp; /* If this certificate issuer's has a specific identifer, get it
+*/<br>
+  &nbsp; void * (* getIssuerIdentifier)(void *cert);<br>
+  <br>
+  &nbsp; /* Does this identifier match the certificate? */<br>
+  &nbsp; PRBool (* isMyIdentifier)(void *cert, void *id);<br>
+  <br>
+  &nbsp; /* Free an identifier */<br>
+  &nbsp; void (* freeIdentifier)(void *id);<br>
+  <br>
+  &nbsp; /*<br>
+  &nbsp;&nbsp; * Obtaining the certificate's validity period.&nbsp; This method
+ is<br>
+  &nbsp;&nbsp; * required to compare two certs by valid time.<br>
+  &nbsp;&nbsp; */<br>
+  <br>
+  &nbsp; /* Get the validity period of the cert */<br>
+  &nbsp; PRStatus (* getValidityPeriod)(void *cert, <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ NSSTime *notBefore, <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ NSSTime *notAfter);<br>
+  <br>
+  &nbsp; /*<br>
+  &nbsp;&nbsp; * Obtaining certificate usages.<br>
+  &nbsp;&nbsp; */<br>
+  <br>
+  &nbsp; /* Get the array of usages this certificate is capable of */<br>
+  &nbsp; NSSUsage * (* getUsages)(void *cert, PRUint32 *numUsages);<br>
+  <br>
+  &nbsp; /*<br>
+  &nbsp;&nbsp; * Obtaining certificate policies.<br>
+  &nbsp;&nbsp; */<br>
+  <br>
+  &nbsp; /* Get the policies specified by this cert */<br>
+  &nbsp; NSSPolicies * (getPolicies)(void *cert);<br>
+  <br>
+  &nbsp; /*<br>
+  &nbsp;&nbsp; * Validating a certificate chain.<br>
+  &nbsp;&nbsp; */<br>
+  <br>
+  &nbsp; /* Start a certificate chain validation */<br>
+  &nbsp; void * (startValidation)(NSSTime *time, <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ NSSUsage *usage, <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ NSSPolicies *policies);<br>
+  <br>
+  &nbsp; /* Validate this cert in the chain */<br>
+  &nbsp; PRStatus (* validate)(void *cert, void *issuer, void *vData);<br>
+  <br>
+  &nbsp; /* Free chain validation data */<br>
+  &nbsp; void (* freeValidationData)(void *vData);<br>
+  <br>
+  &nbsp; /*<br>
+  &nbsp;&nbsp; * future extensions<br>
+  &nbsp;&nbsp; */<br>
+  &nbsp; void *reserved;<br>
+  };</code><br>
+  <br>
+  For PKIX certificates, functions implementing the methods table would cast
+ cert arguments to <code>NSSPKIXCert</code>. &nbsp;Downcasting is always
+ ugly, and would have to be something like:<br>
+  <code><br>
+  void *<br>
+  NSSCert_GetDecoding(NSSCert *);</code><br>
+  <br>
+  used as:<br>
+  <br>
+  <code>if (cert-&gt;type == NSSCertType_PKIX) {<br>
+  &nbsp; NSSPKIXCert *pkixCert;<br>
+  &nbsp; pkixCert = (NSSPKIXCert *)NSSCert_GetDecoding(cert);<br>
+  &nbsp; ...<br>
+  }</code><br>
+  <br>
+  Note that <code>NSSPKIXCert</code> is "free-floating". &nbsp;An<code>NSSPKIXCert</code>
+ is just the decoded parts of a DER. &nbsp;It is not ref-counted. &nbsp;It
+ does not necessarily exist as a physical object. &nbsp;That is, there is
+no functional difference between an <code>NSSPKIXCert</code>that came
+from a token, and one that was built from a bunch of DER data. &nbsp;The
+<code>NSSPKIXCert</code> obtained above is owned by the<code>NSSCert</code>
+it came from, and does not need to be freed. &nbsp;It is within the scope
+of the parent <code>NSSCert</code>.<br>
+  <br>
+  If you construct an <code>NSSPKIXCert</code> from parts, and want
+ it to become part of the system (that is, usable as an <code>NSSCert</code>),
+ you would have to import it into either a trust domain or crypto context.
+&nbsp;For  example:<br>
+  <br>
+  <code><br>
+  NSSPKIXCert *pkixCert;<br>
+  pkixCert = NSSPKIXCert_Create(arena, tbsCert, signature);<br>
+  if (pkixCert) {<br>
+  </code><code>&nbsp; NSSDER *certDER;</code><code><br>
+  &nbsp; certDER = NSSPKIXCert_Encode(pkixCert);<br>
+  &nbsp; if (certDER) {<br>
+  &nbsp; &nbsp; NSSCert *nssCert;<br>
+  &nbsp; &nbsp; nssCert = NSSTrustDomain_ImportEncodedCert(trustDomain,
+ certDER);<br>
+  &nbsp; &nbsp; if (nssCert) {<br>
+  &nbsp; &nbsp; &nbsp; ...<br>
+  &nbsp; &nbsp; }<br>
+  &nbsp; }<br>
+  }</code><br>
+  <br>
+ <br>
+<br>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

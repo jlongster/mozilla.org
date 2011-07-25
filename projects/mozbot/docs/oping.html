@@ -1,0 +1,213 @@
+<?php
+
+$html_title = 'God Module';
+$page_title = 'God Module';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<link rel="up" href="./">
+<link rel="top" href="../">
+<link href="../mozbot.css" rel="stylesheet">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+  <p>This page will help you set up mozbot in a channel on an IRC
+  server where a mozbot instance is running, so that mozbot stays in
+  the channel to keep it op people who you want to give ops to.</p>
+
+  <p>Note that you can do this even if you are not the bot's
+  administrator, although <a
+  href="http://bugzilla.mozilla.org/show_bug.cgi?id=72952"
+  title="Bug 72952: automatic channel admin promotions">currently</a>
+  you do have to speak to them at one point.</p>
+
+  <h2>Preliminary Setup</h2>
+
+  <p>This section will set you up as a channel administrator.</p>
+
+  <p>First, invite the bot into your channel:</p>
+
+<pre>
+ <kbd>/invite mozbot <var>#channel</var></kbd>
+--- You're inviting mozbot to <var>#channel</var> (irc.example.org)
+--&gt; mozbot (pid-12345@user.example.net) has joined <var>#channel</var>
+</pre>
+
+  <p>For this to work, you have to be an op in the channel, the bot
+  admin has to have set the Admin module's <code>allowInviting</code>
+  setting to <code>1</code> and if the channel is keyed, the key must
+  be listed in the <code>channelKeys</code> hash (another Admin module
+  variable).</p>
+
+  <p>If it doesn't work, get the bot admin to say:</p>
+
+<pre>
+ <kbd>/msg mozbot join <var>#channel</var></kbd>
+</pre>
+
+  <p>Next, get a user account in the bot (if you are the admin you
+  already have one and can skip this step and the next one):</p>
+
+<pre>
+ <kbd>/msg mozbot newuser <var>username</var> <var>password</var> <var>password</var></kbd>
+*mozbot* New user '<var>username</var>' added with password '<var>password</var>' and no rights.
+</pre>
+
+  <p>Now get the bot admin to promote you in your channel by getting them to send
+  the bot the <code>promote</code> command:</p>
+
+<pre>
+ <kbd>/msg mozbot promote <var>username</var> in <var>#channel</var></kbd>
+*mozbot* User '<var>username</var>' promoted to channel administrator status in channel '<var>#channel</var>'.
+</pre>
+
+  <p>At this stage you should have channel admin status in your
+  channel as far as the bot is concerned.</p>
+
+
+  <h2>Adding Users</h2>
+
+  <p>First, authenticate with the bot:</p>
+
+<pre>
+ <kbd>/msg mozbot auth <var>username</var> <var>password</var></kbd>
+*mozbot* Hi <var>username</var>!
+</pre>
+
+  <p>Next, make sure the bot is opped, otherwise it can't op anyone
+  itself:</p>
+
+<pre>
+ <kbd>/mode <var>#channel</var> +o mozbot</kbd>
+--- IRCMonkey gives channel operator status to mozbot
+</pre>
+
+  <p>Now it's time to add users to your list of people to autoop. They
+  need to send the same commands you did to create an account:</p>
+
+<pre>
+ <kbd>/msg mozbot newuser <var>username</var> <var>password</var> <var>password</var></kbd>
+*mozbot* New user '<var>username</var>' added with password '<var>password</var>' and no rights.
+</pre>
+
+  <p>You then add them to the autoop list by saying:</p>
+
+<pre>
+&lt;IRCMonkey&gt; <kbd>mozbot: autoop <var>username</var> in <var>#channel</var></kbd>
+   &lt;mozbot&gt; IRCMonkey: User '<var>username</var>' added to the autoop list of channel '<var>#channel</var>'.
+</pre>
+
+  <p>Now, when they authenticate with the bot, they will get opped:</p>
+
+<pre>
+ <kbd>/msg mozbot auth <var>username</var> <var>password</var></kbd>
+*mozbot* Hi <var>username</var>!
+--- mozbot gives channel operator status to IRCMonkey2
+&lt;IRCMonkey2&gt; <kbd>thanks</kbd>
+    &lt;mozbot&gt; IRCMonkey2: np
+</pre>
+
+
+  <h2>Adding hostmasks</h2>
+
+  <p class="important"><strong>NOTE:</strong> This is discouraged. The
+  authentication method (previous section) is a lot safer.</p>
+
+  <p>Some people prefer to get mozbot to op people based on their
+  originating host, their username, or, even worse, their nick.</p>
+
+  <p>Using the host is suboptimal (host names can be spoofed). Using
+  the username or nick is just plain stupid.</p>
+
+  <p>To add a mask, you use the <code>add mask</code> command.</p>
+
+  <p>Masks can be either regular expressions matched against the
+  <code>user@host</code> string or hostmasks in the traditional IRC way.
+
+  <p>Example masks are:</p>
+
+  <dl>
+
+   <dt>hostmask: <code>*!*@*</code></dt>
+   <dt>regexp: <code>.*</code></dt>
+
+   <dd>These match any nick, any username, and any hostname, you
+   probably wouldn't want to use them because they would op everyone who
+   comes into your channel.</dd>
+
+
+   <dt>hostmask: <code>*!*@adsl-63-197-31-110.dsl.snfc21.pacbell.net</code></dt>
+   <dt>regexp: <code>^.*\@adsl-63-197-31-110\.dsl\.snfc21\.pacbell\.net$</code></dt>
+
+   <dd>Both of these match any user with a domain name of
+   <code>adsl-63-197-31-110.dsl.snfc21.pacbell.net</code>. This is
+   something that you would want to use because no matter what nick
+   someone is using they will get oped. However, they must have a
+   static IP address to do this.</dd>
+
+
+   <dt>regexp: <code>^.*\@adsl-63-197-31-[0-9]+\.dsl\.snfc21\.pacbell\.net$</code></dt>
+
+   <dd>This regexp will match a subset of Pacbell's users. It is a
+   compromise between the odds that no-one with bad intentions will
+   happen to have the same ISP in the same area as the user, and the
+   convenience of autoopping.</dd>
+
+
+   <dt>hostmask: <code>joeshmoe!*@*.ipt.aol.com</code></dt>
+
+   <dd>Matches anyone with the nick <code>joeshmoe</code> who uses 
+   AOL. This is a good way of opping anyone who uses AOL and has brains.</dd>
+
+
+   <dt>hostmask: <code>joeshmoe!joeiscool@*</code></dt>
+
+   <dd>Matches anyone with the brains to change their username.</dd>
+
+  </dl>
+
+  <p>Once you have constructed a mask you pass it to mozbot like this:</p>
+
+<pre>
+&lt;IRCMonkey&gt; <kbd>mozbot: add mask <var>mask</var> in <var>#channel</var></kbd>
+   &lt;mozbot&gt; IRCMonkey: Mask '<var>mask</var>' added to the autoop list of channel '<var>#channel</var>'.
+</pre>
+
+  <p>Now, when anyone matching that mask enters the channel, they will get opped:</p>
+
+<pre>
+--&gt; IRCMonkey2 (luser@user2.example.net) has joined <var>#channel</var>
+--- mozbot gives channel operator status to IRCMonkey2
+</pre>
+
+
+  <h2>Other Commands</h2>
+
+  <p>To get a list of who gets opped in a channel, use the
+  <code>ops</code> command. (Note. Anyone can do that, so don't rely
+  on the masks being secret. Security by obscurity is poor security
+  indeed.)</p>
+
+<pre>
+&lt;IRCMonkey&gt; <kbd>mozbot: ops in <var>#channel</var></kbd>
+   &lt;mozbot&gt; IRCMonkey: #ui admins: <var>username</var>
+   &lt;mozbot&gt; IRCMonkey: #ui ops: <var>username</var>
+   &lt;mozbot&gt; IRCMonkey: #ui autoop masks: <var>mask</var>
+</pre>
+
+  <p>The other commands available can be found through the online help
+  of the bot.</p>
+
+  <p>Return to <a href="./">documentation index</a>, <a href="../">main index</a>.</p>
+
+ 
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,55 @@
+<?php
+
+$html_title = 'OS/2 Code in Mozilla: Plugins';
+$page_title = 'Plugins';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<p>
+The only platform-specific code on the mozilla side of the plugin API is
+the code to load plugins.  This is found in
+<a href="http://lxr.mozilla.org/mozilla/source/modules/plugin/nglsrc/nsPluginHostImpl.cpp">mozilla/modules/plugin/nglsrc/nsPluginHostImpl.cpp</a>
+(the OS/2 code isn't yet checked in to mozilla.org cvs).
+<p>
+The code is straight-forward; it scans the <pp>plugins</pp> directory off of
+the mozilla executable for files matching <pp>np*.dll</pp> and tries to read
+off plugin information.
+<p>
+<img src="hamm.gif">Eventually this code will be written in an XP fashion
+using a class derived from nsFileSpec.  See
+<a href="http://lxr.mozilla.org/mozilla/source/modules/plugin/nglsrc/nsPluginsDir.h">nsObjectFrame.cpp</a>.
+<br>
+<img src="hamm.gif">There's a potential problem here: when mozilla is running
+as an embedded control, the plugins directory will not be found.  This isn't
+the only place in the code that suffers from this problem.  Either need an
+environment variable setting or an entry in OS2.INI.  This is a more general
+problem which should be addressed via nsSpecialSystemDirectories in base.
+<p>
+<img src="hamm.gif">The spec. for <strong>nsPluginWindow</strong> in
+<a href="http://lxr.mozilla.org/mozilla/source/modules/plugin/public/nsPluginDefs.h">nsPluginDefs.h</a>
+says that the position values are in the OS/2 coordinate system.  This doesn't
+happen at the moment.  The solution lies in changing
+<a href="http://lxr.mozilla.org/mozilla/source/webshell/src/nsPluginViewer.cpp">nsPluginViewer.cpp</a>
+and
+<a href="http://lxr.mozilla.org/mozilla/source/layout/html/base/src/nsObjectFrame.cpp">nsObjectFrame.cpp</a>.
+
+<p>
+<hr>
+<table width="100%">
+<tr>
+<th align="left"><a href="wzwidget.html">Back to Raptor widget</a></th>
+<th align="right"><a href="wznet.html">On to network library</a></th>
+</tr>
+</table>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

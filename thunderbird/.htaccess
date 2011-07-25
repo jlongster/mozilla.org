@@ -1,0 +1,45 @@
+AddType application/x-httpd-php .php .html
+DirectoryIndex index.php index.html
+
+# Merged in from the original mozilla.com
+ExpiresActive on
+ExpiresDefault "access plus 15 minutes"
+Options +MultiViews -Indexes
+
+# This should already be done in apache's config, but do it again anyway.
+RewriteEngine On
+
+#This needs to map to the url that gets to this directory.
+RewriteBase /
+
+#/[any-locale]/thunderbird/3.0a2/releasenotes/ => /en-US/thunderbird/3.0a2/releasenotes
+
+# It is a releasenotes page
+RewriteCond %{REQUEST_URI} /thunderbird/3.0a2/releasenotes
+
+# But not in english
+RewriteCond %{REQUEST_URI} !/en-US/thunderbird/3.0a2/releasenotes
+
+# Then redirect to the english version, no matter what.
+RewriteRule ^([^/]+)(/thunderbird/3.0a2/releasenotes.*)$ en-US$2 [L,R=301]
+
+# It is a releasenotes page
+RewriteCond %{REQUEST_URI} /thunderbird/3.0b1/releasenotes
+
+# But not in english
+RewriteCond %{REQUEST_URI} !/en-US/thunderbird/3.0b1/releasenotes
+
+# Then redirect to the english version, no matter what.
+RewriteRule ^([^/]+)(/thunderbird/3.0b1/releasenotes.*)$ en-US$2 [L,R=301]
+
+# Send /products/download.html?product=thunderbird-3.0.1&os=win&lang=en-US to mozilla.com
+RewriteCond %{REQUEST_URI} products/download.html$
+RewriteRule products/download.html thunderbird/download/ [L,R=302]
+
+# Bug 653747 - support website needs redirect
+RedirectMatch ^(/[a-z]{2}(?:-[A-Z]{2})?)/support(/.*)? http://support.mozillamessaging.com$1$2
+
+AddDefaultCharset UTF-8
+AddType image/x-icon .ico
+AddType text/xml .rdf
+AddType application/x-x509-ca-cert .crt

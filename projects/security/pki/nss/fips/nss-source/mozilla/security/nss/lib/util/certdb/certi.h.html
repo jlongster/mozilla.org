@@ -1,0 +1,265 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> /*
+<b><a name="37">   37</a></b>  * certi.h - private data structures for the certificate library
+<b><a name="38">   38</a></b>  *
+<b><a name="39">   39</a></b>  * $Id$
+<b><a name="40">   40</a></b>  */
+<b><a name="41">   41</a></b> #ifndef <a href="../certdb/certi.h.dep.html#_CERTI_H_">_CERTI_H_</a>
+<b><a name="42">   42</a></b> #define <a href="#42">_CERTI_H_</a>
+<b><a name="43">   43</a></b> 
+<b><a name="44">   44</a></b> #include "certt.h"
+<b><a name="45">   45</a></b> #include "nssrwlkt.h"
+<b><a name="46">   46</a></b> 
+<b><a name="47">   47</a></b> /*
+<b><a name="48">   48</a></b> #define GLOBAL_RWLOCK 1
+<b><a name="49">   49</a></b> */
+<b><a name="50">   50</a></b> 
+<b><a name="51">   51</a></b> #define <a href="#51">DPC_RWLOCK</a> 1
+<b><a name="52">   52</a></b> 
+<b><a name="53">   53</a></b> /* all definitions in this file are subject to change */
+<b><a name="54">   54</a></b> 
+<b><a name="55">   55</a></b> typedef struct <a href="#55">OpaqueCRLFields</a>Str OpaqueCRLFields;
+<b><a name="56">   56</a></b> typedef struct <a href="#56">CRLEntryCache</a>Str CRLEntryCache;
+<b><a name="57">   57</a></b> typedef struct <a href="#57">CRLDPCache</a>Str CRLDPCache;
+<b><a name="58">   58</a></b> typedef struct <a href="#58">CRLIssuerCache</a>Str CRLIssuerCache;
+<b><a name="59">   59</a></b> typedef struct <a href="../certdb/certi.h.dep.html#<a href="#59">CRLCache</a>Str">CRLCacheStr</a> CRLCache;
+<b><a name="60">   60</a></b> typedef struct <a href="../certdb/certi.h.dep.html#<a href="#60">CachedCrl</a>Str">CachedCrlStr</a> CachedCrl;
+<b><a name="61">   61</a></b> 
+<b><a name="62">   62</a></b> struct <a href="#62">OpaqueCRLFieldsStr</a> {
+<b><a name="63">   63</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> partial;
+<b><a name="64">   64</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> decodingError;
+<b><a name="65">   65</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> badEntries;
+<b><a name="66">   66</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> badDER;
+<b><a name="67">   67</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> badExtensions;
+<b><a name="68">   68</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> heapDER;
+<b><a name="69">   69</a></b> };
+<b><a name="70">   70</a></b> 
+<b><a name="71">   71</a></b> typedef struct <a href="#71">PreAllocator</a>Str PreAllocator;
+<b><a name="72">   72</a></b> 
+<b><a name="73">   73</a></b> struct <a href="#73">PreAllocatorStr</a>
+<b><a name="74">   74</a></b> {
+<b><a name="75">   75</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRSize">PRSize</a> <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>;
+<b><a name="76">   76</a></b>     void* <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;
+<b><a name="77">   77</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRSize">PRSize</a> used;
+<b><a name="78">   78</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>* arena;
+<b><a name="79">   79</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRSize">PRSize</a> extra;
+<b><a name="80">   80</a></b> };
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b> /*  CRL entry cache.
+<b><a name="83">   83</a></b>     This is the same as an entry plus the next/prev pointers for the hash table
+<b><a name="84">   84</a></b> */
+<b><a name="85">   85</a></b> 
+<b><a name="86">   86</a></b> struct <a href="#86">CRLEntryCacheStr</a> {
+<b><a name="87">   87</a></b>     <a href="../certdb/certt.h.dep.html#CERTCrlEntry">CERTCrlEntry</a> <a href="../mozilla/dbm/include/hsearch.h.dep.html#entry">entry</a><a href="../mozilla/dbm/include/search.h.dep.html#entry"><sup>[1]</sup></a>;
+<b><a name="88">   88</a></b>     <a href="../certdb/certi.h.dep.html#CRLEntryCache">CRLEntryCache</a> *prev, *<a href="../mozilla/nsprpub/pr/src/misc/prtrace.c.dep.html#next">next</a>;
+<b><a name="89">   89</a></b> };
+<b><a name="90">   90</a></b> 
+<b><a name="91">   91</a></b> #define <a href="#91">CRL_CACHE_INVALID_CRLS</a>              0x0001 /* this state will be set
+<b><a name="92">   92</a></b>         if we have CRL objects with an invalid DER or signature. Can be
+<b><a name="93">   93</a></b>         cleared if the invalid objects are deleted from the token */
+<b><a name="94">   94</a></b> #define <a href="#94">CRL_CACHE_LAST_FETCH_FAILED</a>         0x0002 /* this state will be set
+<b><a name="95">   95</a></b>         if the last CRL fetch encountered an error. Can be cleared if a
+<b><a name="96">   96</a></b>         new fetch succeeds */
+<b><a name="97">   97</a></b> 
+<b><a name="98">   98</a></b> #define <a href="#98">CRL_CACHE_OUT_OF_MEMORY</a>             0x0004 /* this state will be set
+<b><a name="99">   99</a></b>         if we don't have enough memory to build the hash table of entries */
+<b><a name="100">  100</a></b> 
+<b><a name="101">  101</a></b> typedef enum {
+<b><a name="102">  102</a></b>     CRL_OriginToken = 0,    /* CRL came from PKCS#11 token */
+<b><a name="103">  103</a></b>     CRL_OriginExplicit = 1  /* CRL was explicitly added to the cache, from RAM */
+<b><a name="104">  104</a></b> } <a href="#104">CRLOrigin</a>;
+<b><a name="105">  105</a></b> 
+<b><a name="106">  106</a></b> struct <a href="#106">CachedCrlStr</a> {
+<b><a name="107">  107</a></b>     <a href="../certdb/certt.h.dep.html#CERTSignedCrl">CERTSignedCrl</a>* crl;
+<b><a name="108">  108</a></b>     <a href="../certdb/certi.h.dep.html#CRLOrigin">CRLOrigin</a> origin;
+<b><a name="109">  109</a></b>     /* hash table of entries. We use a PLHashTable and pre-allocate the
+<b><a name="110">  110</a></b>        required amount of memory in one shot, so that our allocator can
+<b><a name="111">  111</a></b>        simply pass offsets into it when hashing.
+<b><a name="112">  112</a></b> 
+<b><a name="113">  113</a></b>        This won't work anymore when we support delta CRLs and iCRLs, because
+<b><a name="114">  114</a></b>        the size of the hash table will vary over time. At that point, the best
+<b><a name="115">  115</a></b>        solution will be to allocate large CRLEntry structures by modifying
+<b><a name="116">  116</a></b>        the DER decoding template. The extra space would be for next/prev
+<b><a name="117">  117</a></b>        pointers. This would allow entries from different CRLs to be mixed in
+<b><a name="118">  118</a></b>        the same hash table.
+<b><a name="119">  119</a></b>     */
+<b><a name="120">  120</a></b>     <a href="../mozilla/nsprpub/lib/ds/plhash.h.dep.html#PLHashTable">PLHashTable</a></a>* entries;
+<b><a name="121">  121</a></b>     <a href="../certdb/certi.h.dep.html#PreAllocator">PreAllocator</a>* prebuffer; /* big pre-allocated buffer mentioned above */
+<b><a name="122">  122</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> sigChecked; /* this CRL signature has already been checked */
+<b><a name="123">  123</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> sigValid; /* signature verification status .
+<b><a name="124">  124</a></b>                      Only meaningful if checked is PR_TRUE . */
+<b><a name="125">  125</a></b> };
+<b><a name="126">  126</a></b> 
+<b><a name="127">  127</a></b> /*  CRL distribution point cache object
+<b><a name="128">  128</a></b>     This is a cache of CRL entries for a given distribution point of an issuer
+<b><a name="129">  129</a></b>     It is built from a collection of one full and 0 or more delta CRLs.
+<b><a name="130">  130</a></b> */
+<b><a name="131">  131</a></b> 
+<b><a name="132">  132</a></b> struct <a href="#132">CRLDPCacheStr</a> {
+<b><a name="133">  133</a></b> #ifdef <a href="../certdb/certi.h.dep.html#DPC_RWLOCK">DPC_RWLOCK</a>
+<b><a name="134">  134</a></b>     <a href="../util/nssrwlkt.h.dep.html#NSSRWLock">NSSRWLock</a>* <a href="../mozilla/nsprpub/pr/tests/intrio.c.dep.html#lock">lock</a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#lock"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#lock"><sup>[2]</sup></a>;
+<b><a name="135">  135</a></b> #else
+<b><a name="136">  136</a></b>     <a href="../mozilla/nsprpub/pr/include/prlock.h.dep.html#PRLock">PRLock</a><a href="../mozilla/nsprpub/pr/include/private/primpl.h.dep.html#PRLock"><sup>[1]</sup></a>* <a href="../mozilla/nsprpub/pr/tests/intrio.c.dep.html#lock">lock</a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#lock"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#lock"><sup>[2]</sup></a>;
+<b><a name="137">  137</a></b> #endif
+<b><a name="138">  138</a></b>     <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a>* issuer;    /* cert issuer 
+<b><a name="139">  139</a></b>                                    XXX there may be multiple issuer certs,
+<b><a name="140">  140</a></b>                                        with different validity dates. Also
+<b><a name="141">  141</a></b>                                        need to deal with SKID/AKID . See
+<b><a name="142">  142</a></b>                                        bugzilla 217387, 233118 */
+<b><a name="143">  143</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* subject;           /* DER of issuer subject */
+<b><a name="144">  144</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* distributionPoint; /* DER of distribution point. This may be
+<b><a name="145">  145</a></b>                                    NULL when distribution points aren't
+<b><a name="146">  146</a></b>                                    in use (ie. the CA has a single CRL).
+<b><a name="147">  147</a></b>                                    Currently not used. */
+<b><a name="148">  148</a></b> 
+<b><a name="149">  149</a></b>     /* array of full CRLs matching this distribution point */
+<b><a name="150">  150</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRUint32">PRUint32</a></a> ncrls;              /* total number of CRLs in crls */
+<b><a name="151">  151</a></b>     <a href="../certdb/certi.h.dep.html#CachedCrl">CachedCrl</a>** crls;            /* array of all matching CRLs */
+<b><a name="152">  152</a></b>     /* XCRL With iCRLs and multiple DPs, the CRL can be shared accross several
+<b><a name="153">  153</a></b>        issuers. In the future, we'll need to globally recycle the CRL in a
+<b><a name="154">  154</a></b>        separate list in order to avoid extra lookups, decodes, and copies */
+<b><a name="155">  155</a></b> 
+<b><a name="156">  156</a></b>     /* pointers to good decoded CRLs used to build the cache */
+<b><a name="157">  157</a></b>     <a href="../certdb/certi.h.dep.html#CachedCrl">CachedCrl</a>* selected;    /* full CRL selected for use in the cache */
+<b><a name="158">  158</a></b> #if 0
+<b><a name="159">  159</a></b>     /* for future use */
+<b><a name="160">  160</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRInt32">PRInt32</a></a> numdeltas;      /* number of delta CRLs used for the cache */
+<b><a name="161">  161</a></b>     <a href="../certdb/certi.h.dep.html#CachedCrl">CachedCrl</a>** deltas;     /* delta CRLs used for the cache */
+<b><a name="162">  162</a></b> #endif
+<b><a name="163">  163</a></b>     /* cache invalidity bitflag */
+<b><a name="164">  164</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRUint16">PRUint16</a> invalid;       /* this state will be set if either
+<b><a name="165">  165</a></b>              CRL_CACHE_INVALID_CRLS or CRL_CACHE_LAST_FETCH_FAILED is set.
+<b><a name="166">  166</a></b>              In those cases, all certs are considered revoked as a
+<b><a name="167">  167</a></b>              security precaution. The invalid state can only be cleared
+<b><a name="168">  168</a></b>              during an update if all error states are cleared */
+<b><a name="169">  169</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> refresh;        /* manual refresh from tokens has been forced */
+<b><a name="170">  170</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> mustchoose;     /* trigger reselection algorithm, for case when
+<b><a name="171">  171</a></b>                               RAM CRL objects are dropped from the cache */
+<b><a name="172">  172</a></b>     <a href="../mozilla/nsprpub/pr/include/prtime.h.dep.html#PRTime">PRTime</a> lastfetch;      /* time a CRL token fetch was last performed */
+<b><a name="173">  173</a></b>     <a href="../mozilla/nsprpub/pr/include/prtime.h.dep.html#PRTime">PRTime</a> lastcheck;      /* time CRL token objects were last checked for
+<b><a name="174">  174</a></b>                               existence */
+<b><a name="175">  175</a></b> };
+<b><a name="176">  176</a></b> 
+<b><a name="177">  177</a></b> /*  CRL issuer cache object
+<b><a name="178">  178</a></b>     This object tracks all the distribution point caches for a given issuer.
+<b><a name="179">  179</a></b>     XCRL once we support multiple issuing distribution points, this object
+<b><a name="180">  180</a></b>     will be a hash table. For now, it just holds the single CRL distribution
+<b><a name="181">  181</a></b>     point cache structure.
+<b><a name="182">  182</a></b> */
+<b><a name="183">  183</a></b> 
+<b><a name="184">  184</a></b> struct <a href="#184">CRLIssuerCacheStr</a> {
+<b><a name="185">  185</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* subject;           /* DER of issuer subject */
+<b><a name="186">  186</a></b>     <a href="../certdb/certi.h.dep.html#CRLDPCache">CRLDPCache</a>* dpp;
+<b><a name="187">  187</a></b> #if 0
+<b><a name="188">  188</a></b>     /* XCRL for future use.
+<b><a name="189">  189</a></b>        We don't need to lock at the moment because we only have one DP,
+<b><a name="190">  190</a></b>        which gets created at the same time as this object */
+<b><a name="191">  191</a></b>     <a href="../util/nssrwlkt.h.dep.html#NSSRWLock">NSSRWLock</a>* <a href="../mozilla/nsprpub/pr/tests/intrio.c.dep.html#lock">lock</a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#lock"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#lock"><sup>[2]</sup></a>;
+<b><a name="192">  192</a></b>     <a href="../certdb/certi.h.dep.html#CRLDPCache">CRLDPCache</a>** dps;
+<b><a name="193">  193</a></b>     <a href="../mozilla/nsprpub/lib/ds/plhash.h.dep.html#PLHashTable">PLHashTable</a></a>* distributionpoints;
+<b><a name="194">  194</a></b>     <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a>* issuer;
+<b><a name="195">  195</a></b> #endif
+<b><a name="196">  196</a></b> };
+<b><a name="197">  197</a></b> 
+<b><a name="198">  198</a></b> /*  CRL revocation cache object
+<b><a name="199">  199</a></b>     This object tracks all the issuer caches
+<b><a name="200">  200</a></b> */
+<b><a name="201">  201</a></b> 
+<b><a name="202">  202</a></b> struct <a href="#202">CRLCacheStr</a> {
+<b><a name="203">  203</a></b> #ifdef GLOBAL_RWLOCK
+<b><a name="204">  204</a></b>     <a href="../util/nssrwlkt.h.dep.html#NSSRWLock">NSSRWLock</a>* <a href="../mozilla/nsprpub/pr/tests/intrio.c.dep.html#lock">lock</a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#lock"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#lock"><sup>[2]</sup></a>;
+<b><a name="205">  205</a></b> #else
+<b><a name="206">  206</a></b>     <a href="../mozilla/nsprpub/pr/include/prlock.h.dep.html#PRLock">PRLock</a><a href="../mozilla/nsprpub/pr/include/private/primpl.h.dep.html#PRLock"><sup>[1]</sup></a>* <a href="../mozilla/nsprpub/pr/tests/intrio.c.dep.html#lock">lock</a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#lock"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#lock"><sup>[2]</sup></a>;
+<b><a name="207">  207</a></b> #endif
+<b><a name="208">  208</a></b>     /* hash table of issuer to CRLIssuerCacheStr,
+<b><a name="209">  209</a></b>        indexed by issuer DER subject */
+<b><a name="210">  210</a></b>     <a href="../mozilla/nsprpub/lib/ds/plhash.h.dep.html#PLHashTable">PLHashTable</a></a>* issuers;
+<b><a name="211">  211</a></b> };
+<b><a name="212">  212</a></b> 
+<b><a name="213">  213</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#213">InitCRLCache</a>(void);
+<b><a name="214">  214</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#214">ShutdownCRLCache</a>(void);
+<b><a name="215">  215</a></b> 
+<b><a name="216">  216</a></b> /* Returns a pointer to an environment-like string, a series of
+<b><a name="217">  217</a></b> ** null-terminated strings, terminated by a zero-length string.
+<b><a name="218">  218</a></b> ** This function is intended to be internal to NSS.
+<b><a name="219">  219</a></b> */
+<b><a name="220">  220</a></b> extern char * <a href="#220"><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>_GetCertificateEmailAddresses</a>(<a href="../<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>db/<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>t.h.dep.html#CERTCertificate">CERTCertificate</a> *<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>);
+<b><a name="221">  221</a></b> 
+<b><a name="222">  222</a></b> /*
+<b><a name="223">  223</a></b>  * These functions are used to map subjectKeyID extension values to certs.
+<b><a name="224">  224</a></b>  */
+<b><a name="225">  225</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="226">  226</a></b> <a href="#226">cert_CreateSubjectKeyIDHashTable</a>(void);
+<b><a name="227">  227</a></b> 
+<b><a name="228">  228</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="229">  229</a></b> <a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>_AddSubjectKeyIDMapping(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *subjKeyID, <a href="../<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>db/<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>t.h.dep.html#CERTCertificate">CERTCertificate</a> *<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>);
+<b><a name="230">  230</a></b> 
+<b><a name="231">  231</a></b> /*
+<b><a name="232">  232</a></b>  * Call this function to remove an entry from the mapping table.
+<b><a name="233">  233</a></b>  */
+<b><a name="234">  234</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="235">  235</a></b> <a href="#235">cert_RemoveSubjectKeyIDMapping</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *subjKeyID);
+<b><a name="236">  236</a></b> 
+<b><a name="237">  237</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="238">  238</a></b> <a href="#238">cert_DestroySubjectKeyIDHashTable</a>(void);
+<b><a name="239">  239</a></b> 
+<b><a name="240">  240</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*
+<b><a name="241">  241</a></b> <a href="#241">cert_FindDERCertBySubjectKeyID</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *subjKeyID);
+<b><a name="242">  242</a></b> 
+<b><a name="243">  243</a></b> /* return maximum length of AVA value based on its type OID tag. */
+<b><a name="244">  244</a></b> extern int <a href="#244">cert_AVAOidTagToMaxLen</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> <a href="../mozilla/nsprpub/pr/tests/system.c.dep.html#tag">tag</a>);
+<b><a name="245">  245</a></b> 
+<b><a name="246">  246</a></b> #endif /* _CERTI_H_ */
+<b><a name="247">  247</a></b> 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

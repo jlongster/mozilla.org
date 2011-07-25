@@ -1,0 +1,854 @@
+<?php
+
+$html_title = 'NSPR Reference: Chapter&#32;14 Date and Time';
+$page_title = 'NSPR Reference';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+ <ul class="snav">
+  <li><a href="prinrvl.html">Previous</a>
+  <li><a href="./">Contents</a>
+  <li><a href="prmem2.html">Next</a>
+ </ul>
+
+ <h2><a name="21119">Chapter 14 Date and Time</a></h2>
+
+<A NAME="21121"> </A>This chapter describes the date and time functions in NSPR. 
+
+<P>
+
+<A NAME="21122"> </A>NSPR represents time in two ways, absolute time and clock/calendar time. NSPR 
+provides types and constants for both representations, and functions to convert 
+time values between the two. 
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="21123"> </A>Absolute time representation treats time instants as points along the time line. 
+A time instant is represented by its position on the time line relative to the 
+origin, called the epoch. NSPR defines the epoch to be midnight (00:00:00) 1 
+January 1970 UTC (Coordinated Universal Time). In this form, time is just a 
+point on the time line. There is no notion of time zone. 
+
+<P><B>  <li></B>
+<A NAME="21124"> </A>Clock/calendar time, used for human interfaces, represents time in the 
+familiar year, month, day, hour, minute, second components. In this form, the 
+time zone information is important. For example, without specifying the time 
+zone, the time 8:00AM 1 May 1998 is ambiguous. The NSPR data type for 
+clock/calendar time, called an exploded time, has the time zone information in 
+it, so that its corresponding point in absolute time is uniquely specified. 
+
+<P></ul>
+
+<A NAME="21125"> </A>Note that absolute and clock times are not normally used in timing operations. For 
+functions that deal with the measurement of elapsed time and with timeouts, see 
+<A HREF="prinrvl.html#20933"  >Chapter&#32;13 "Interval Timing</A>."
+
+<P>
+
+<A NAME="21132"> </A><A HREF="prtime.html#21137"  >Types and Constants</A> <br>
+<A HREF="prtime.html#21674"  >Time Parameter Callback Functions</A><br>
+<A HREF="prtime.html#21275"  >Functions</A>
+
+<P>
+
+
+
+<A NAME="21137"> </A>
+<A NAME="Types and Constants"> </A>
+<h2>
+Types and Constants
+</h2>
+
+
+<A NAME="21138"> </A>Types and constants defined for NSPR dates and times are:
+
+<P>
+
+<A NAME="21142"> </A><A HREF="prtime.html#21158"  ><CODE>Macros for Time Unit Conversion</CODE></A><CODE><br>
+</CODE><A HREF="prtime.html#21166"  ><CODE>PRTime</CODE></A><CODE><br>
+</CODE><A HREF="prtime.html#21180"  ><CODE>PRTimeParameters</CODE></A><CODE><br>
+</CODE><A HREF="prtime.html#21180"  ><CODE>PRTimeParameters</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="21152"> </A>In addition, callback functions are defined for determining time zone information:
+
+<P>
+
+<A NAME="21156"> </A><A HREF="prtime.html#21674"  >Time Parameter Callback Functions</A>
+
+<P>
+
+<A NAME="21158"> </A><A NAME="Macros for Time Unit Conversion"> </A><h4>
+Macros for Time Unit Conversion
+</h4>
+
+<A NAME="21159"> </A>Macros for converting between seconds, milliseconds, microseconds, and 
+nanoseconds.
+
+<P>
+
+<BR>
+<A NAME="21160"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="21161"></A>#include &lt;prtime.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="21162"></A>#define PR_MSEC_PER_SEC  1000UL<br>#define PR_USEC_PER_SEC  1000000UL<br>#define PR_NSEC_PER_SEC  1000000000UL<br>#define PR_USEC_PER_MSEC 1000UL<br>#define PR_NSEC_PER_MSEC 1000000UL
+</PRE>
+<P>
+<BR>
+<A NAME="21163"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="21164"> </A>These macros are provided for convenience, to improve the readability of your 
+code as well as to avoid mistakes in counting the number of zeros. <CODE>SEC</CODE> stands for 
+seconds, <CODE>MSEC</CODE> for milliseconds, <CODE>USEC</CODE> for microseconds, and <CODE>NSEC</CODE> for nanoseconds. 
+
+<P>
+
+<A NAME="21166"> </A><A NAME="PRTime"> </A><h4>
+PRTime
+</h4>
+
+<A NAME="21167"> </A>A representation of absolute times.
+
+<P>
+
+<BR>
+<A NAME="21168"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="21169"></A>#include &lt;prtime.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="21170"></A>typedef PRInt64 PRTime;
+</PRE>
+<P>
+<BR>
+<A NAME="21171"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="21172"> </A>This type is a 64-bit integer representing the number of microseconds since the 
+NSPR epoch, midnight (00:00:00) 1 January 1970 Coordinated Universal Time 
+(UTC). A time after the epoch has a positive value, and a time before the epoch has 
+a negative value. 
+
+<P>
+
+<A NAME="21173"> </A>In NSPR, we use the more familiar term Greenwich Mean Time (GMT) in place of 
+UTC. Although UTC and GMT are not exactly the same in their precise definitions, 
+they can generally be treated as if they were. 
+
+<P>
+
+<A NAME="21174"> </A>Because <CODE>PRTime</CODE> is a 64-bit integer, you must use the LL macros defined in 
+<CODE>prlong.h</CODE> to manipulate <CODE>PRTime</CODE> values. (See <A HREF="prlong.html#21961"  >Chapter&#32;18 "Long Long (64-bit) 
+Integers</A>)"
+
+<P>
+
+<A NAME="21180"> </A><A NAME="PRTimeParameters"> </A><h4>
+PRTimeParameters
+</h4>
+
+<A NAME="21181"> </A>A representation of time zone information.
+
+<P>
+
+<BR>
+<A NAME="21182"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="21183"></A>#include &lt;prtime.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="21184"></A>typedef struct PRTimeParameters {<br>&nbsp;&nbsp;&nbsp;&nbsp;PRInt32 tp_gmt_offset;<br>&nbsp;&nbsp;&nbsp;&nbsp;PRInt32 tp_dst_offset;<br>} PRTimeParameters;
+</PRE>
+<P>
+<BR>
+<A NAME="21185"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="21186"> </A>Each geographic location has a standard time zone, and if daylight saving time 
+(DST) is practiced, a daylight time zone. The <CODE>PRTimeParameters</CODE> structure 
+represents the local time zone information in terms of the offset (in seconds) from 
+GMT. The overall offset is broken into two components: 
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="21187"> </A><CODE>tp_gmt_offset</CODE>: The offset of the local standard time from GMT. 
+
+<P><B>  <li></B>
+<A NAME="21188"> </A><CODE>tp_dst_offset</CODE>: If daylight savings time (DST) is in effect, the DST adjustment 
+from the local standard time. This is most commonly 1 hour, but may also be 30 
+minutes or some other amount. If DST is not in effect, the <CODE>tp_dst_offset</CODE> 
+component is 0. 
+
+<P></ul>
+
+<A NAME="21189"> </A>For example, the US Pacific Time Zone has both a standard time zone (Pacific 
+Standard Time, or PST) and a daylight time zone (Pacific Daylight Time, or PDT). 
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="21190"> </A>In PST, the local time is 8 hours behind GMT, so <CODE>tp_gmt_offset</CODE> is -28800 
+seconds. <CODE>tp_dst_offset</CODE> is 0, indicating that daylight saving time is not in 
+effect. 
+
+<P><B>  <li></B>
+<A NAME="21191"> </A>In PDT, the clock is turned forward by one hour, so the local time is 7 hours 
+behind GMT. This is broken down as -8 + 1 hours, so <CODE>tp_gmt_offset</CODE> is<br>
+-28800 seconds, and <CODE>tp_dst_offset</CODE> is 3600 seconds. 
+
+<P></ul>
+
+<A NAME="21192"> </A>A second example is Japan, which is 9 hours ahead of GMT. Japan does not use 
+daylight saving time, so the only time zone is Japan Standard Time (JST). In JST 
+<CODE>tp_gmt_offset</CODE> is 32400 seconds, and <CODE>tp_dst_offset</CODE> is 0. 
+
+<P>
+
+<A NAME="21193"> </A><A NAME="PRExplodedTime"> </A><h4>
+PRExplodedTime
+</h4>
+
+<A NAME="21194"> </A>A clock/calendar representation of times.
+
+<P>
+
+<BR>
+<A NAME="21195"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="21196"></A>#include &lt;prtime.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="21197"></A>typedef struct PRExplodedTime {<br>&nbsp;&nbsp;&nbsp;&nbsp;PRInt32 tm_usec;<br>&nbsp;&nbsp;&nbsp;&nbsp;PRInt32 tm_sec;<br>&nbsp;&nbsp;&nbsp;&nbsp;PRInt32 tm_min;<br>&nbsp;&nbsp;&nbsp;&nbsp;PRInt32 tm_hour;<br>&nbsp;&nbsp;&nbsp;&nbsp;PRInt32 tm_mday;<br>&nbsp;&nbsp;&nbsp;&nbsp;PRInt32 tm_month;<br>&nbsp;&nbsp;&nbsp;&nbsp;PRInt16 tm_year;<br>&nbsp;&nbsp;&nbsp;&nbsp;PRInt8 tm_wday;<br>&nbsp;&nbsp;&nbsp;&nbsp;PRInt16 tm_yday;<br>&nbsp;&nbsp;&nbsp;&nbsp;PRTimeParameters tm_params;<br>} PRExplodedTime;
+</PRE>
+<P>
+<BR>
+<A NAME="21198"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="21524"> </A>The <CODE>PRExplodedTime</CODE> structure represents clock/calendar time. <CODE>PRExplodedTime</CODE> 
+has the familiar time components: year, month, day of month, hour, minute, 
+second. It also has a microsecond component, as well as the day of week and the 
+day of year. In addition, <CODE>PRExplodedTime</CODE><A HREF="prtime.html#21180"  ><CODE>PRTimeParameters</CODE></A> structure 
+representing the local time zone information, so that the time point is 
+non-ambiguously specified. 
+
+<P>
+
+<A NAME="21528"> </A>The <I>essential</I> members of <CODE>PRExplodedTime</CODE> are: 
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="21529"> </A><CODE>tm_year</CODE>: absolute year, AD. (Note that we do not count from 1900.) 
+
+<P><B>  <li></B>
+<A NAME="21205"> </A><CODE>tm_month</CODE>: number of months past <CODE>tm_year</CODE>. The range is [0, 11]. 0 is January 
+and 11 is December.
+
+<P><B>  <li></B>
+<A NAME="21206"> </A><CODE>tm_mday</CODE>: the day of month. The range is [1, 31]. Note that it starts from 1 as 
+opposed to 0. 
+
+<P><B>  <li></B>
+<A NAME="21207"> </A><CODE>tm_hour</CODE>: number of hours past <CODE>tm_mday</CODE>. The range is [0, 23]. 
+
+<P><B>  <li></B>
+<A NAME="21208"> </A><CODE>tm_min</CODE>: number of minutes past <CODE>tm_hour</CODE>. The range is [0, 59]. 
+
+<P><B>  <li></B>
+<A NAME="21209"> </A><CODE>tm_sec</CODE>: number of seconds past <CODE>tm_min</CODE>. The range is [0, 61]. The values 60 and 
+61 are for accommodating up to two leap seconds. 
+
+<P><B>  <li></B>
+<A NAME="21210"> </A><CODE>tm_usec</CODE>: number of microseconds past <CODE>tm_sec</CODE>. The range is [0, 999999]. 
+
+<P><B>  <li></B>
+<A NAME="21214"> </A><CODE>tm_params</CODE>: a <A HREF="prtime.html#21180"  ><CODE>PRTimeParameters</CODE></A> structure representing the local time zone 
+information. 
+
+<P></ul>
+
+<A NAME="21215"> </A>The <I>nonessential</I> members of <CODE>PRExplodedTime</CODE> are: 
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="21216"> </A><CODE>tm_wday</CODE>: day of week. The range is [0, 6]. 0 is Sunday, 1 is Monday, and 6 is 
+Saturday.
+
+<P><B>  <li></B>
+<A NAME="21217"> </A><CODE>tm_yday</CODE>: day of year. The range is [0, 365]. 0 is the 1st of January. 
+
+<P></ul>
+
+<A NAME="21218"> </A>On input to NSPR functions, only the essential members of <CODE>PRExplodedTime</CODE> must 
+be specified. The two nonessential members (day of week and day of year) are 
+ignored by NSPR functions as input. When an NSPR function returns a 
+<CODE>PRExplodedTime</CODE> object or sets a <CODE>PRExplodedTime</CODE> object as output, all of the 
+<CODE>PRExplodedTime</CODE> members are set, including the nonessential members. You can 
+also use <A HREF="prtime.html#21351"  ><CODE>PR_NormalizeTime</CODE></A> to calculate the values of the nonessential members.
+
+<P>
+
+
+
+<A NAME="21674"> </A>
+<A NAME="Time Parameter Callback Functions"> </A>
+<h2>
+Time Parameter Callback Functions
+</h2>
+
+
+<A NAME="21675"> </A>In some geographic locations, use of DST and the rule for determining the dates on 
+which DST starts and ends have changed a few times. Therefore, a callback 
+function is used to determine time zone information.
+
+<P>
+
+<A NAME="21225"> </A>You can define your own time parameter callback functions, which must conform 
+to the definition <A HREF="prtime.html#21237"  ><CODE>PRTimeParamFn</CODE></A>. Two often-used callback functions of this type are 
+provided by NSPR:
+
+<P>
+
+<A NAME="21232"> </A><A HREF="prtime.html#21237"  ><CODE>PRTimeParamFn</CODE></A><CODE><br>
+</CODE><A HREF="prtime.html#21245"  ><CODE>PR_LocalTimeParameters and PR_GMTParameters</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="21237"> </A><A NAME="PRTimeParamFn"> </A><h4>
+PRTimeParamFn
+</h4>
+
+<A NAME="21238"> </A>This type defines a callback function to calculate and return the time parameter 
+offsets from a calendar time object in GMT. 
+
+<P>
+
+<BR>
+<A NAME="21239"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="21240"></A><CODE>#include &lt;prtime.h&gt;</CODE> 
+</PRE>
+<P>
+<PRE>
+<A NAME="21241"></A><CODE>typedef PRTimeParameters (PR_CALLBACK_DECL *PRTimeParamFn) <br>&nbsp;&nbsp;&nbsp;(const PRExplodedTime *gmt);</CODE> 
+</PRE>
+<P>
+<BR>
+<A NAME="21242"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="21243"> </A>The type <CODE>PRTimeParamFn</CODE> represents a callback function that, when given a time 
+instant in GMT, returns the time zone information (offset from GMT and DST 
+offset) at that time instant. 
+
+<P>
+
+<A NAME="21245"> </A><A NAME="PR_LocalTimeParameters and PR_GMTParameters"> </A><h4>
+PR_LocalTimeParameters and PR_GMTParameters
+</h4>
+
+<A NAME="21248"> </A>Return time zone information for a clock/calendar time.
+
+<P>
+
+<BR>
+<A NAME="21249"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="21250"></A>#include &lt;prtime.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="21251"></A>PRTimeParameters PR_LocalTimeParameters (<br>&nbsp;&nbsp;&nbsp;const PRExplodedTime *gmt);
+</PRE>
+<P>
+<PRE>
+<A NAME="21252"></A>PRTimeParameters PR_GMTParameters (<br>&nbsp;&nbsp;&nbsp;const PRExplodedTime *gmt);
+</PRE>
+<P>
+<BR>
+<A NAME="21253"> </A><A NAME="Parameters&nbsp;&nbsp;&nbsp;"> </A><h5>
+Parameters&nbsp;&nbsp;&nbsp;
+</h5>
+
+
+<A NAME="21254"> </A>The functions each have this parameter:
+
+<P>
+
+<P>
+<A NAME="21260"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="21257"> </A>gmt
+
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="21259"> </A>A pointer to the clock/calendar time, in GMT.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="21261"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="21262"> </A>A time parameters structure that expresses the time zone offsets at the specified 
+time.
+
+<P>
+
+<BR>
+<A NAME="21263"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="21264"> </A>These are frequently-used time parameter callback functions. You do not normally 
+invoke these two functions directly. Rather, you pass them as arguments to 
+<A HREF="prtime.html#21307"  ><CODE>PR_ExplodeTime</CODE></A> and <A HREF="prtime.html#21351"  ><CODE>PR_NormalizeTime</CODE></A>. 
+
+<P>
+
+<A NAME="21271"> </A><CODE>PR_GMTParameters</CODE> encodes the rule of the GMT. This is a trivial function; for any 
+input, it returns a <CODE>PRTimeParameters</CODE> structure with both fields set to 0.
+
+<P>
+
+<A NAME="21272"> </A><CODE>PR_LocalTimeParameters</CODE> encodes the rule of the local time zone.
+
+<P>
+
+
+
+<A NAME="21275"> </A>
+<A NAME="Functions"> </A>
+<h2>
+Functions
+</h2>
+
+
+<A NAME="21276"> </A>The functions that create and manipulate time and date values are:
+
+<P>
+
+<A NAME="21280"> </A><A HREF="prtime.html#21291"  ><CODE>PR_Now</CODE></A><CODE><br>
+</CODE><A HREF="prtime.html#21307"  ><CODE>PR_ExplodeTime</CODE></A> <br>
+<A HREF="prtime.html#21333"  ><CODE>PR_ImplodeTime</CODE></A> <br>
+<A HREF="prtime.html#21351"  ><CODE>PR_NormalizeTime</CODE></A> 
+
+<P>
+
+<A NAME="21291"> </A><A NAME="PR_Now"> </A><h4>
+PR_Now
+</h4>
+
+<A NAME="21292"> </A>Returns the current time.
+
+<P>
+
+<BR>
+<A NAME="21293"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="21294"></A>#include &lt;prtime.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="21295"></A>PRTime PR_Now(void);
+</PRE>
+<P>
+<BR>
+<A NAME="21296"> </A><A NAME="Parameters&nbsp;&nbsp;&nbsp;"> </A><h5>
+Parameters&nbsp;&nbsp;&nbsp;
+</h5>
+
+
+<A NAME="21297"> </A>The function has no parameters.
+
+<P>
+
+<BR>
+<A NAME="21298"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="21299"> </A>The current time.
+
+<P>
+
+<BR>
+<A NAME="21300"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="21301"> </A><CODE>PR_Now</CODE> returns the current time as number of microseconds since the NSPR epoch, 
+midnight (00:00:00) 1 January 1970 UTC. 
+
+<P>
+
+<A NAME="21302"> </A>You cannot assume that the values returned by <CODE>PR_Now</CODE> are monotonically 
+increasing because the system clock of the computer may be reset. To obtain 
+monotonically increasing time stamps suitable for measuring elapsed time, use 
+<A HREF="prinrvl.html#20980"  ><CODE>PR_IntervalNow</CODE></A>. 
+
+<P>
+
+<A NAME="21307"> </A><A NAME="PR_ExplodeTime"> </A><h4>
+PR_ExplodeTime
+</h4>
+
+<A NAME="21308"> </A>Converts an absolute time to a clock/calendar time.
+
+<P>
+
+<BR>
+<A NAME="21309"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="21310"></A>#include &lt;prtime.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="21311"></A>void PR_ExplodeTime(<br>&nbsp;&nbsp;&nbsp;PRTime usecs, <br>&nbsp;&nbsp;&nbsp;PRTimeParamFn params,<br>&nbsp;&nbsp;&nbsp;PRExplodedTime *exploded);
+</PRE>
+<P>
+<BR>
+<A NAME="21312"> </A><A NAME="Parameters&nbsp;&nbsp;&nbsp;"> </A><h5>
+Parameters&nbsp;&nbsp;&nbsp;
+</h5>
+
+
+<A NAME="21313"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="21327"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="21316"> </A><CODE>usecs
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="21318"> </A>An absolute time in the <CODE>PRTime</CODE> format.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="21320"> </A><CODE>params
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="21322"> </A>A time parameter callback function.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="21324"> </A>exploded
+
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="21326"> </A>A pointer to a location where the converted time can be stored. This 
+location must be preallocated by the caller.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="21328"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="21329"> </A>Nothing
+
+<P>
+
+<BR>
+<A NAME="21330"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="21331"> </A>This function converts the specified absolute time to a clock/calendar time in the 
+specified time zone. Upon return, the location pointed to by the <CODE>exploded</CODE> 
+parameter contains the converted time value.
+
+<P>
+
+<A NAME="21333"> </A><A NAME="PR_ImplodeTime"> </A><h4>
+PR_ImplodeTime
+</h4>
+
+<A NAME="21334"> </A>Converts a clock/calendar time to an absolute time.
+
+<P>
+
+<BR>
+<A NAME="21335"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="21336"></A>#include &lt;prtime.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="21337"></A>PRTime PR_ImplodeTime(const PRExplodedTime *exploded);
+</PRE>
+<P>
+<BR>
+<A NAME="21338"> </A><A NAME="Parameters&nbsp;&nbsp;&nbsp;"> </A><h5>
+Parameters&nbsp;&nbsp;&nbsp;
+</h5>
+
+
+<A NAME="21339"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="21345"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="21342"> </A>exploded
+
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="21344"> </A>A pointer to the clock/calendar time to be converted.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="21346"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="21347"> </A>An absolute time value.
+
+<P>
+
+<BR>
+<A NAME="21348"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="21349"> </A>This function converts the specified clock/calendar time to an absolute time and 
+returns the converted time value. 
+
+<P>
+
+<A NAME="21351"> </A><A NAME="PR_NormalizeTime"> </A><h4>
+PR_NormalizeTime
+</h4>
+
+<A NAME="21352"> </A>Adjusts the fields of a clock/calendar time to their proper ranges, using a callback 
+function.
+
+<P>
+
+<BR>
+<A NAME="21353"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="21354"></A>#include &lt;prtime.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="21355"></A>void PR_NormalizeTime (<br>&nbsp;&nbsp;&nbsp;PR_ExplodedTime *time, <br>&nbsp;&nbsp;&nbsp;PRTimeParamFn params);
+</PRE>
+<P>
+<BR>
+<A NAME="21356"> </A><A NAME="Parameters&nbsp;&nbsp;&nbsp;"> </A><h5>
+Parameters&nbsp;&nbsp;&nbsp;
+</h5>
+
+
+<A NAME="21357"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="21367"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="21360"> </A><CODE>time
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="21362"> </A>A pointer to a clock/calendar time in the <CODE>PR_ExplodedTime</CODE> format.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="21364"> </A><CODE>params
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="21366"> </A>A time parameter callback function.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="21368"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="21369"> </A>Nothing
+
+<P>
+
+<BR>
+<A NAME="21370"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="21371"> </A>This function adjusts the fields of the specified time structure using the specified 
+time parameter callback function, so that they are in the proper range.
+
+<P>
+
+<A NAME="21372"> </A>Call this function in these situations:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="21373"> </A>To normalize a time after performing arithmetic operations directly on the field 
+values of the calendar time object. For example, if you have a <CODE>PRExplodedTime</CODE> 
+object that represents the date 3 March 1998 and you want to say "forty days 
+from 3 March 1998", you can simply add 40 to the <CODE>tm_mday</CODE> field and then call 
+<CODE>PR_NormalizeTime</CODE>. 
+
+<P><B>  <li></B>
+<A NAME="21374"> </A>To calculate the optional field values <CODE>tm_wday</CODE> and <CODE>tm_yday</CODE>. For example, 
+suppose you want to compute the day of week for 3 March 1998. You can set 
+<CODE>tm_mday</CODE> to 3, <CODE>tm_month</CODE> to 2, and <CODE>tm_year</CODE> to 1998, and all the other fields to 0, 
+then call <CODE>PR_NormalizeTime</CODE> with <CODE>PR_GMTParameters</CODE>. On return, <CODE>tm_wday</CODE> 
+(and <CODE>tm_yday</CODE>) are set for you. 
+
+<P><B>  <li></B>
+<A NAME="21375"> </A>To convert from one time zone to another. For example, if the input argument 
+<CODE>time</CODE> is in time zone A and the input argument <CODE>params</CODE> represents time zone B, 
+when <CODE>PR_NormalizeTime</CODE> returns, <CODE>time</CODE> will be in time zone B. 
+
+<P></ul>
+
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

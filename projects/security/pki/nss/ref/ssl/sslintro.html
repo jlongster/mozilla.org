@@ -1,0 +1,172 @@
+<?php
+
+$html_title = 'Overview of an SSL Application
+';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<FONT SIZE=-1><A HREF="index.html">Table of Contents</A> | <A HREF="index.html">Previous</A>
+ | <A HREF="gtstd.html">Next</A>
+ | <A HREF="bklast.html">Index</A>
+</FONT><BR><BR>
+
+
+<BR>
+<HR>
+<A NAME="1013894">
+<P></A><CENTER><H2>Chapter 1<BR>
+<A NAME="1028068">
+Overview of an SSL Application</A></H2></CENTER>
+<A NAME="1028153">
+SSL and related APIs allow compliant applications to configure sockets for authenticated, tamper-proof, and encrypted communications. This chapter introduces some of the basic SSL functions. <A HREF="gtstd.html#1005439">Chapter&nbsp;2, "Getting Started With SSL"</A> illustrates their use in sample client and server applications.</A></P>
+<A NAME="1028234">
+An SSL application typically includes five parts:</A></P>
+<A NAME="1028157">
+<A HREF="sslintro.html#1027662">Initialization</A><br><A HREF="sslintro.html#1027742">Configuration</A><br><A HREF="sslintro.html#1027816">Communication</A><br><A HREF="sslintro.html#1027820">Functions Used by Callbacks</A><br><A HREF="sslintro.html#1030535">Cleanup</A></A></P>
+<A NAME="1027661">
+Although the details differ somewhat for client and server applications, the concepts and many of the functions are the same for both.</A></P>
+<BLOCKQUOTE><B>WARNING: </B><A NAME="1039443">
+Some of the SSL header files provided as part of NSS 2.0 include both public 
+APIs documented in the NSS 2.0 documentation set and private APIs intended 
+for internal use by the NSS implementation of SSL. You should use only the SSL 
+APIs (and related certificate, key, and PKCS #11 APIs) that are described in this 
+document, the SSL Reference. Other APIs that may be exposed in the header 
+files are not supported for application use. 
+</A>
+</BLOCKQUOTE>
+
+<H2><A NAME="Initialization"></A>
+<A NAME="1027662">
+ Initialization
+</A></H2><A NAME="1027657">
+Initialization includes setting up configuration files, setting global defaults, and setting up callback functions. Functions used in the initialization part of an application can include the following: </A></P>
+<ul><P><LI><A NAME="1027672">
+<CODE><A href="../../../../../nspr/reference/html/prinit.html#15734">PR_Init</A></CODE>. Initializes NSPR. Must be called before any other NSS functions.</A></LI>
+<P><LI><A NAME="1029290">
+<A HREF="pkfnc.html#1023128"><CODE>PK11_SetPasswordFunc</CODE></A>. Sets the global callback function to obtain passwords for PKCS #11 modules. Required.</A></LI>
+<P><LI><A NAME="1029318">
+<CODE><A HREF="sslfnc.html#1067601">NSS_Init</A></CODE>. Sets up configuration files and performs other tasks required to run Network Security Services. <CODE>NSS_Init</CODE> is <I>not</I> idempotent, so call it only once. Required. </A></LI>
+<P><LI><A NAME="1027703">
+<CODE><A HREF="sslfnc.html#1068466">SSL_OptionSetDefault</A></CODE>. Changes default values for all subsequently opened sockets as long as the application is running (compare with <A HREF="sslfnc.html#1087792"><CODE>SSL_SetURL</CODE></A> which only configures the socket that is currently open). This function must be called once for each default value that needs to be changed. Optional.</A></LI>
+<P><LI><A NAME="1033790">
+<A HREF="sslfnc.html#1228530"><CODE>NSS_SetDomesticPolicy</CODE></A>, <A HREF="sslfnc.html#1100285"><CODE>NSS_SetExportPolicy</CODE></A>, <A HREF="sslfnc.html#1105952"><CODE>NSS_SetFrancePolicy</CODE></A>, or <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A>. These functions tell the library which cipher suites are permitted by policy (for example, to comply with export restrictions). Cipher suites disabled by policy cannot be enabled by user preference. One of these functions must be called before any cryptographic operations can be performed with NSS.</A></LI>
+<P><LI><A NAME="1029367">
+<A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A>. Enables all ciphers chosen by user preference. Optional.</A></LI>
+</ul>
+<H3><A NAME="Head2;"></A>
+<A NAME="1039943">
+ Initializing Caches
+</A></H3>
+
+<A NAME="1039999">
+SSL peers frequently reconnect after a relatively short time has passed. To avoid the overhead of repeating the full SSL handshake in situations like this, the SSL protocol supports the use of a session cache, which retains information about each connection, such as the master secret generated during the SSL handshake, for a predetermined length of time. If SSL can locate the information about a previous connection in the local session cache, it can reestablish the connection much more quickly than it can without the connection information.</A></P>
+<A NAME="1039954">
+By default, SSL allocates one session cache. This default cache is called the <EM>client session ID cache</EM>, (also known as the client session cache, or simply the client cache). The client cache is used for all sessions where the program handshakes as an SSL client. It is not configurable. You can initialize the client cache with the function <A HREF="sslfnc.html#1138601"><CODE>SSL_ClearSessionCache</CODE></A>.</A></P>
+<A NAME="1040057">
+If an application will use SSL sockets that handshake as a server, you must specifically create and configure a server cache, using either <A HREF="sslfnc.html#1143851"><CODE>SSL_ConfigServerSessionIDCache</CODE></A> or <A HREF="sslfnc.html#1142625"><CODE>SSL_ConfigMPServerSIDCache</CODE></A>. The server cache is used for all sessions where the program handshakes as an SSL server.</A></P>
+<ul><P><LI><A NAME="1040064">
+<A HREF="sslfnc.html#1138601"><CODE>SSL_ClearSessionCache</CODE></A>. Clears all sessions from the client session cache. Optional.</A></LI>
+<P><LI><A NAME="1029411">
+<A HREF="sslfnc.html#1143851"><CODE>SSL_ConfigServerSessionIDCache</CODE></A>. Sets up parameters for a server session cache for a single-process application. Required for single-process server applications. </A></LI>
+<P><LI><A NAME="1040019">
+<A HREF="sslfnc.html#1142625"><CODE>SSL_ConfigMPServerSIDCache</CODE></A>. Sets up parameters for a server cache for a multi-process application. Required for multi-process server applications. You can use either this function or <A HREF="sslfnc.html#1143851"><CODE>SSL_ConfigServerSessionIDCache</CODE></A>, not both.</A></LI>
+</ul>
+<H2><A NAME="Configuration"></A>
+<A NAME="1027742">
+ Configuration
+</A></H2><A NAME="1027743">
+The configuration portion of an SSL-enabled application typically begins by opening a new socket and then importing the new socket into the SSL environment:</A></P>
+<ul><P><LI><A NAME="1028523">
+<CODE><A href="../../../../../nspr/reference/html/priofnc.html#18671">PR_NewTCPSocket</A></CODE>. Opens a new socket. A legal NSPR socket is required to be passed to <CODE><A HREF="sslfnc.html#1085950">SSL_ImportFD</A></CODE>, whether it is created with this function or by another method.</A></LI>
+<P><LI><A NAME="1039862">
+<CODE><A HREF="sslfnc.html#1085950">SSL_ImportFD</A></CODE>. Makes an NSPR socket into an SSL socket. Required. Brings an ordinary NSPR socket into the SSL library, returning a new NSPR socket that can be used to make SSL calls. You can pass this function a <EM>model</EM> file descriptor to create the new SSL socket with the same configuration state as the model. </A></LI>
+</ul><A NAME="1039868">
+It is also possible for an application to import a socket into SSL after the TCP connection on that socket has already been established. In this case, initial configuration takes place in the same way: pass the existing NSPR file descriptor to <CODE><A HREF="sslfnc.html#1085950">SSL_ImportFD</A></CODE> and perform any additional configuration that has not already been determined by the model file descriptor. </A></P>
+<A NAME="1041087">
+Configuration functions control the configuration of an individual socket. </A></P>
+<ul><P><LI><A NAME="1039865">
+<CODE><A href="../../../../../nspr/reference/html/priofnc.html#19306">PR_GetSocketOption</A></CODE>. Retrieves the socket options currently set for a specified socket. Optional.</A></LI>
+<P><LI><A NAME="1029470">
+<CODE><A href="../../../../../nspr/reference/html/priofnc.html#19337">PR_SetSocketOption</A></CODE>. Sets the socket options for a specified socket., including making it blocking or nonblocking. Optional.</A></LI>
+<P><LI><A NAME="1029492">
+<A HREF="sslfnc.html#1086543"><CODE>SSL_OptionSet</CODE></A>. Sets a single configuration parameter of a specified socket. This function must be called once for each parameter whose settings you want to change from those established with <CODE><A HREF="sslfnc.html#1068466">SSL_OptionSetDefault</A></CODE>. Optional.</A></LI>
+<P><LI><A NAME="1029495">
+<A HREF="sslfnc.html#1217647"><CODE>SSL_ConfigSecureServer</CODE></A>. For servers only. Configures the socket with the information needed to handshake as an SSL server. Required for servers.</A></LI>
+<P><LI><A NAME="1029497">
+<A HREF="sslfnc.html#1087792"><CODE>SSL_SetURL</CODE></A>. For clients only. Records the target server URL for comparison with the URL specified by the server certificate. Required for clients.</A></LI>
+</ul><A NAME="1039878">
+Callbacks and helper functions allow you to specify such things as how authentication is accomplished and what happens if it fails.</A></P>
+<ul><P><LI><A NAME="1029499">
+<CODE><A HREF="sslfnc.html#1088040">SSL_SetPKCS11PinArg</A></CODE>. Sets the argument passed to the PKCS #11 password callback function. Required.</A></LI>
+<P><LI><A NAME="1029659">
+<CODE><A HREF="sslfnc.html#1088805">SSL_AuthCertificateHook</A></CODE>. Specifies a callback function used to authenticate an incoming certificate (optional for servers, necessary for clients to avoid "man-in-the-middle" attacks). Optional. If not specified, SSL uses the default callback function, <A HREF="sslfnc.html#1088888"><CODE>SSL_AuthCertificate</CODE></A>.</A></LI>
+<P><LI><A NAME="1029575">
+<CODE><A HREF="sslfnc.html#1088928">SSL_BadCertHook</A></CODE>. Specifies a callback function to deal with a situation where authentication has failed. Optional.</A></LI>
+<P><LI><A NAME="1029579">
+<CODE><A HREF="sslfnc.html#1126622">SSL_GetClientAuthDataHook</A></CODE>. Specifies a callback function for SSL to use when the server asks for client authentication information. This callback is required if you want to do client authentication. You can set the callback function to a standard one that is provided, <A HREF="sslfnc.html#1106762"><CODE>NSS_GetClientAuthData</CODE></A>.</A></LI>
+<P><LI><A NAME="1029583">
+<CODE><A HREF="sslfnc.html#1112702">SSL_HandshakeCallback</A></CODE>. Specifies a callback function that will be used by SSL to inform either a client application or a server application when the SSL handshake is completed. Optional.</A></LI>
+</ul>
+<H2><A NAME="Communication"></A>
+<A NAME="1027816">
+ Communication
+</A></H2><A NAME="1027817">
+At this point the application has set up the socket to communicate using SSL. For simple encrypted and authenticated communications, no further calls to SSL functions are required. A variety of additional SSL functions are available, however. These can be used, for example, when interrupting and restarting socket communications, when the application needs to change socket parameters, or when an application imports a socket into SSL after the TCP connection on that socket has already been established.</A></P>
+<A NAME="1028013">
+Communication between SSL sockets always begins with the SSL handshake. The handshake occurs automatically the first time communication is requested with a socket read/write or send/receive call. It is also possible to force the handshake explicitly with <A HREF="sslfnc.html#1133431"><CODE>SSL_ForceHandshake</CODE></A> or repeat it explicitly with <A HREF="sslfnc.html#1232052"><CODE>SSL_ReHandshake</CODE></A>. </A></P>
+<A NAME="1027941">
+Once the SSL sockets have been configured, authentication and encryption happen automatically whenever you use the communication functions from the NSPR library.</A></P>
+<A NAME="1027822">
+A server application typically uses these functions to establish a connection: </A></P>
+<A NAME="1027823">
+<CODE><A href="../../../../../nspr/reference/html/priofnc.html#18833">PR_Bind</A><br><A href="../../../../../nspr/reference/html/priofnc.html#18877">PR_Listen</A><br><A href="../../../../../nspr/reference/html/priofnc.html#18779">PR_Accept</A><br><A href="../../../../../nspr/reference/html/priofnc.html#19250">PR_GetSockName</A></CODE></A></P>
+<A NAME="1030011">
+A client application typically uses these functions to establish a connection: </A></P>
+<A NAME="1029710">
+<CODE><A href="../../../../../nspr/reference/html/prntdb.html#20553">PR_GetHostByName</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/prntdb.html#20630">PR_EnumerateHostEnt</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/priofnc.html#18727">PR_Connect</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/priofnc.html#19720">PR_GetConnectStatus</A></CODE> </A></P>
+<A NAME="1041160">
+When an application imports a socket into SSL after the TCP connection on that socket has already been established, it must call <CODE><A HREF="sslfnc.html#1058001"></CODE>SSL_ResetHandshake<CODE></A></CODE> to determine whether SSL should behave like an SSL client or an SSL server. Note that this step would not be necessary if the socket weren't already connected. For an SSL socket that is configured before it is connected, SSL figures this out when the application calls <CODE>PR_Connect</CODE> or <CODE>PR_Accept</CODE>. If the socket is already connected before SSL gets involved, you must provide this extra hint. </A></P>
+<A NAME="1041074">
+Functions that can be used by both clients and servers during communication include the following: </A></P>
+<A NAME="1034738">
+<CODE><A href="../../../../../nspr/reference/html/priofnc.html#18989">PR_Send</A></CODE> or <CODE><A href="../../../../../nspr/reference/html/priofnc.html#17945">PR_Write</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/priofnc.html#17910">PR_Read</A></CODE> or <CODE><A href="../../../../../nspr/reference/html/priofnc.html#18943">PR_Recv</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/prerr.html#26127">PR_GetError</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/priofnc.html#19278">PR_GetPeerName</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/prthrd.html#15508">PR_Sleep</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/prmem2.html#21428">PR_Malloc</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/prmem2.html#21499">PR_Free</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/priofnc.html#19653">PR_Poll</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/prtime.html#21291">PR_Now</CODE></A><br><CODE><A href="../../../../../nspr/reference/html/prinrvl.html#21066">PR_IntervalToMilliseconds</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/prinrvl.html#21032">PR_MillisecondsToInterval</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/priofnc.html#18909" >PR_Shutdown</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/priofnc.html#17887">PR_Close</A></CODE> <br><A HREF="sslfnc.html#1089420"><CODE>SSL_InvalidateSession</CODE></A> </A></P>
+<A NAME="1041247">
+After establishing a connection, an application first calls <CODE>PR_Send</CODE>, <CODE>PR_Recv</CODE>, <CODE>PR_Read</CODE>, <CODE>PR_Write</CODE>, or <CODE>SSL_ForceHandshake</CODE> to initiate the handshake. The application's protocol (for example, HTTP) determines which end has responsibility to talk first. The end that has to talk first should call <CODE>PR_Send</CODE> or <CODE>PR_Write</CODE>, and the other end should call <CODE>PR_Read</CODE> or <CODE>PR_Recv</CODE>. </A></P>
+<A NAME="1041377">
+Use <A HREF="sslfnc.html#1133431"><CODE>SSL_ForceHandshake</CODE></A> when the socket has been prepared for a handshake but neither end has anything to say immediately. This occurs, for example, when an HTTPS server has received a request and determines that before it can answer the request, it needs to request an authentication certificate from the client. At the HTTP protocol level, nothing more is being said (that is, no HTTP request or response is being sent), so the server first uses <A HREF="sslfnc.html#1232052"><CODE>SSL_ReHandshake</CODE></A> to begin a new handshake and then call <CODE>SSL_ForceHandshake</CODE> to drive the handshake to completion.</A></P>
+
+<H2><A NAME="Functions Used by Callbacks"></A>
+<A NAME="1027820">
+ Functions Used by Callbacks
+</A></H2><A NAME="1029817">
+An SSL application typically provides one or more callback functions that are called by the SSL or PKCS #11 library code under certain circumstances. Numerous functions provided by the NSS libraries are useful for such application callback functions, including these:<B> </B></A></P>
+<A NAME="1030355">
+<A HREF="sslcrt.html#1056662"><CODE>CERT_CheckCertValidTimes</CODE></A> <br><A HREF="sslcrt.html#1052308"><CODE>CERT_GetDefaultCertDB</CODE></A> <br><A HREF="sslcrt.html#1050532"><CODE>CERT_DestroyCertificate</CODE></A> <br><A HREF="sslcrt.html#1058344"><CODE>CERT_DupCertificate</CODE></A> <br><A HREF="sslcrt.html#1050345"><CODE>CERT_FindCertByName</CODE></A> <br><A HREF="sslcrt.html#1050349"><CODE>CERT_FreeNicknames</CODE></A> <br><A HREF="sslcrt.html#1050346"><CODE>CERT_GetCertNicknames</CODE></A> <br><A HREF="sslcrt.html#1050342"><CODE>CERT_VerifyCertName</CODE></A> <br><A HREF="sslcrt.html#1058011"><CODE>CERT_VerifyCertNow</CODE></A> <br><A HREF="pkfnc.html#1035673"><CODE>PK11_FindCertFromNickname</CODE></A> <br><A HREF="pkfnc.html#1026891"><CODE>PK11_FindKeyByAnyCert</CODE></A> <br><A HREF="pkfnc.html#1023128"><CODE>PK11_SetPasswordFunc</CODE></A> <br><CODE><A href="../../../../../nspr/reference/html/plstr.html#21732">PL_strcpy</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/plstr.html#21753">PL_strdup</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/plstr.html#21772">PL_strfree</A></CODE> <br><CODE><A href="../../../../../nspr/reference/html/plstr.html#21717">PL_strlen</A></CODE> <br><A HREF="sslfnc.html#1096168"><CODE>SSL_PeerCertificate</CODE></A><CODE> <br></CODE><A HREF="sslfnc.html#1081175"><CODE>SSL_RevealURL</CODE></A><br><A HREF="sslfnc.html#1123385"><CODE>SSL_RevealPinArg</CODE></A><CODE> </CODE></A></P>
+
+<H2><A NAME="Cleanup"></A>
+<A NAME="1030535">
+ Cleanup
+</A></H2><A NAME="1030536">
+This portion of an SSL-enabled application consists primarily of closing the socket and freeing memory. After these tasks have been performed, call <A HREF="sslfnc.html#1061858"><CODE>NSS_Shutdown</CODE></A> to close the certificate and key databases opened by <A HREF="sslfnc.html#1067601"><CODE>NSS_Init</CODE></A>, and <CODE><A href="../../../../../nspr/reference/html/prinit.html#15811">PR_Cleanup</A></CODE> to coordinate a graceful shutdown of NSPR.</A></P>
+
+<HR>
+
+<FONT SIZE=-1><A HREF="index.html">Table of Contents</A> | <A HREF="index.html">Previous</A>
+ | <A HREF="gtstd.html">Next</A>
+ | <A HREF="bklast.html">Index</A>
+</FONT>
+<P ALIGN=right>
+<FONT SIZE=-2><I>Last Updated:  10/18/00  09:17:41</I></FONT>
+<P> 
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

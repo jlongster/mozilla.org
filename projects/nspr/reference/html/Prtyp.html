@@ -1,0 +1,357 @@
+<?php
+
+$html_title = 'NSPR Reference: NSPR Types (Chapter 2)';
+$page_title = 'NSPR Types (Chapter 2)';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<link rel="prev" href="printro.html">
+<link rel="contents" href="./">
+<link rel="next" href="prthrd.html">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+ <ul class="snav">
+  <li><a href="printro.html">Previous</a>
+  <li><a href="./">Contents</a>
+  <li><a href="prthrd.html">Next</a>
+ </ul>
+ <p>This chapter describes the most common <abbr>NSPR</abbr> types. Other chapters describe
+  more specialized types when describing the functions that use them. 
+ <ul>
+  <li><a href="#calling-convention-types">Calling Convention Types</a> are used for externally visible functions and globals.
+  <li><a href="#algebraic-types">Algebraic Types</a> of various lengths are used for integer algebra.
+  <li><a href="#miscellaneous-types">Miscellaneous Types</a> are used for representing size, pointer difference, Boolean
+   values, and return values.
+ </ul>
+ <p>For information on naming conventions for <abbr>NSPR</abbr> types, functions, and macros, 
+  see <a href="printro.html#13332"><abbr>NSPR</abbr> Naming Conventions</a>.
+ <div class="section">
+  <h2 id="calling-convention-types">Calling Convention Types</h2>
+  <p>These types are used to support cross-platform declarations of prototypes and 
+   implementations:
+  <ul>
+   <li><a href="#PR_EXTERN"><code>PR_EXTERN</code></a> is used for definitions of external functions or variables. 
+   <li><a href="#PR_IMPLEMENT"><code>PR_IMPLEMENT</code></a> is used for declarations of external functions or variables. 
+   <li><a href="#PR_CALLBACK"><code>PR_CALLBACK</code></a> is used for definitions and declarations of functions that are
+    called via function pointers. A typical example is a function implemented in an 
+    application but called from a shared library.
+  </ul>
+  <p>Here are some simple examples of the use of these types: 
+  <p>In <code class="filename">dowhim.h</code>:
+  <pre class="example code">PR_EXTERN( void ) DoWhatIMean( void );</pre>
+  <pre class="example code">static void PR_CALLBACK RootFunction(void *arg);</pre>
+  <p>In <code class="filename">dowhim.c</code>:
+  <pre class="example code">PR_IMPLEMENT( void ) DoWhatIMean( void ) { return; };</pre>
+  <pre class="example code">PRThread *thread = PR_CreateThread(..., RootFunction, ...);</pre>
+  <div class="section">
+   <h3 id="PR_EXTERN">PR_EXTERN</h3>
+   <p>Used to define the prototypes for functions or variables that are to be exported 
+    from a shared library. 
+   <div class="section">
+    <h4>Syntax</h4>
+    <pre class="code">#include &lt;prtypes.h&gt;</pre>
+    <pre class="code">PR_EXTERN<var>(type) prototype</var></pre>
+   </div>
+   <div class="section">
+    <h4>Description</h4>
+    <p><code>PR_EXTERN</code> is used to define externally visible routines and globals. For syntax
+     details for each platform, see <code class="filename">prtypes.h</code>. The macro includes the proper 
+     specifications to declare the target <code>extern</code> and set up other required linkages. 
+   </div>
+   <div class="section">
+    <h4>Warning</h4>
+    <p>Some platforms do not allow the use of the underscore character (<code>_</code>) as the first
+     character of an exported symbol.
+   </div>
+  </div>
+  <div class="section">
+   <h3 id="PR_IMPLEMENT">PR_IMPLEMENT</h3>
+   <p>Used to define implementations of symbols that are to be exported from a shared
+    library. 
+   <div class="section">
+    <h4>Syntax</h4>
+    <pre class="code">#include &lt;prtypes.h&gt;</pre>
+    <pre class="code">PR_IMPLEMENT<var>type) implementation</var></pre>
+   </div>
+   <div class="section">
+    <h4>Description</h4>
+    <p><code>PR_IMPLEMENT</code> is used to define implementations of externally visible routines and
+     globals. For syntax details for each platform, see <code class="filename">prtypes.h</code>. 
+   </div>
+   <div class="section">
+    <h4>Warning</h4>
+    <p>Some platforms do not allow the use of the underscore character (<code>_</code>) as the first 
+     character of an exported symbol.
+   </div>
+  </div>
+  <div class="section">
+   <h3 id="PR_CALLBACK">PR_CALLBACK</h3>
+   <p>Used to define pointers to functions that will be implemented by the client but 
+    called from a (different) shared library.
+   <div class="section">
+    <h4>Syntax</h4>
+    <pre class="code">#include &lt;prtypes.h&gt;</pre>
+    <pre class="code"><var>type</var> PR_CALLBACK <var>implementation</var></pre>
+   </div>
+   <div class="section">
+    <h4>Description</h4>
+    <p>Functions that are implemented in an application (or shared library) that are 
+     intended to be called from another shared library (such as NSPR) must be declared 
+     with the <code>PR_CALLBACK</code> attribute. Normally such functions are passed by reference 
+     (pointer to function). The <code>PR_CALLBACK</code> attribute is included as part of the 
+     function's definition between its return value type and the function's name.
+   </div>
+  </div>
+ </div>
+ <div class="section">
+  <h2 id="algebraic-types">Algebraic Types</h2>
+  <p>NSPR provides the following type definitions with unambiguous bit widths for 
+   algebraic operations:
+  <ul>
+   <li><a href="#integer-types-8-16-32">8-, 16-, and 32-bit Integer Types</a>
+   <li><a href="#integer-types-64">64-bit Integer Types</a>
+   <li><a href="#floating-point-number-type">Floating-Point Number Type</a>
+  </ul>
+  <p>For convenience, NSPR also provides type definitions with platform-dependent bit 
+   widths:
+  <ul>
+   <li><a href="#native-os-integer-types">Native OS Integer Types</a>
+  </ul>
+  <div class="section">
+   <h3 id="integer-types-8-16-32">8-, 16-, and 32-bit Integer Types</h3>
+   <div class="section">
+    <h4>Signed Integers</h4>
+    <div class="section">
+     <h5>PRInt8</h5>
+     <p>Guaranteed to be a signed 8-bit integer on all platforms. 
+     <div class="section">
+      <h6>Syntax</h6>
+      <pre class="code">#include &lt;prtypes.h&gt;</pre>
+      <pre class="code">typedef <var>definition</var> PRInt8;</pre>
+     </div>
+    </div>
+    <div class="section">
+     <h5>PRInt16</h5>
+     <p>Guaranteed to be a signed 16-bit integer on all platforms.
+     <div class="section">
+      <h6>Syntax</h6>
+      <pre class="code">#include &lt;prtypes.h&gt;</pre>
+      <pre class="code">typedef <var>definition</var> PRInt16;</pre>
+     </div>
+    </div>
+    <div class="section">
+     <h5>PRInt32</h5>
+     <p>Guaranteed to be a signed 32-bit integer on all platforms.
+     <div class="section">
+      <h6>Syntax</h6>
+      <pre class="code">#include &lt;prtypes.h&gt;</pre>
+      <pre class="code">typedef <var>definition</var> PRInt32;</pre>
+     </div>
+     <div class="section">
+      <h6>Description</h6>
+      <p>May be defined as an <code>int</code> or a <code>long</code>, depending on the platform. For syntax details
+       for each platform, see <code class="filename">prtypes.h</code>. 
+     </div>
+    </div>
+   </div>
+   <div class="section">
+    <h4>Unsigned Integers</h4>
+    <div class="section">
+     <h5>PRUint8</h5>
+     <p>Guaranteed to be an unsigned 8-bit integer on all platforms. There is no type
+      equivalent to a plain <code>char</code>.
+     <div class="section">
+      <h6>Syntax</h6>
+      <pre class="code">#include &lt;prtypes.h&gt;</pre>
+      <pre class="code">typedef <var>definition</var> PRUint8;</pre>
+     </div>
+    </div>
+    <div class="section">
+     <h5>PRUint16</h5>
+     <p>Guaranteed to be an unsigned 16-bit integer on all platforms.
+     <div class="section">
+      <h6>Syntax</h6>
+      <pre class="code">#include &lt;prtypes.h&gt;</pre>
+      <pre class="code">typedef <var>definition</var> PRUint16;</pre>
+     </div>
+    </div>
+    <div class="section">
+     <h5>PRUint32</h5>
+     <p>Guaranteed to be an unsigned 32-bit integer on all platforms.
+     <div class="section"
+      <h6>Syntax</h6>
+      <pre class="code">#include &lt;prtypes.h&gt;</pre>
+      <pre class="code">typedef <var>definition</var> PRUint32;</pre>
+     </div>
+     <div class="section">
+      <h6>Description</h6>
+      <p>May be defined as an unsigned <code>int</code> or an unsigned <code>long</code>, depending on the 
+       platform. For syntax details for each platform, see <code class="filename">prtypes.h</code>. 
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="section">
+   <h3 id="integer-types-64">64-bit Integer Types</h3>
+   <p>Different platforms treat 64-bit numeric fields in different ways. Some systems 
+    require emulation of 64-bit fields by using two 32-bit numeric fields bound in a 
+    structure. Since the types (<code>long long</code> versus <code>struct LONGLONG</code>) are not type 
+    compatible, NSPR defines macros to manipulate 64-bit numeric fields. These 
+    macros are defined in <code>prlong.h</code>. Conscientious use of these macros ensures 
+    portability of code to all the platforms supported by NSPR and still provides 
+    optimal behavior on those systems that treat <code>long long</code> values directly.
+   <div class="section">
+    <h4>PRInt64</h4>
+    <p>Guaranteed to be a signed 64-bit integer on all platforms.
+    <div class="section">
+     <h5>Syntax</h5>
+     <pre class="code">#include &lt;prtypes.h&gt;</pre>
+     <pre class="code">typedef <var>definition</var> PRInt64;</pre>
+    </div>
+    <div class="section">
+     <h5>Description</h5>
+     <p>May be defined in several different ways, depending on the platform. For syntax 
+      details for each platform, see <code class="filename">prtypes.h</code>. 
+    </div>
+   </div>
+   <div class="section">
+    <h4>PRUint64</h4>
+    <p>Guaranteed to be an unsigned 64-bit integer on all platforms.
+    <div class="section">
+     <h5>Syntax</h5>
+     <pre class="code">#include &lt;prtypes.h&gt;</pre>
+     <pre class="code">typedef <var>definition</var> PRUint64;</pre>
+    </div>
+    <div class="section">
+     <h5>Description</h5>
+     <p>May be defined in several different ways, depending on the platform. For syntax 
+      details for each platform, see <code class="filename">prtypes.h</code>.
+    </div>
+   </div>
+  </div>
+  <div class="section">
+   <h3 id="floating-point-number-type">Floating-Point Number Type</h3>
+   <p>The NSPR floating-point type is always 64 bits. 
+   <div class="section">
+    <h4>Syntax</h4>
+    <pre class="code">#include &lt;prtypes.h&gt;</pre>
+    <pre class="code">typedef double PRFloat64;</pre>
+   </div>
+  </div>
+  <div class="section">
+   <h3 id="native-os-integer-types">Native OS Integer Types</h3>
+   <p>These types are most appropriate for automatic variables. They are guaranteed to 
+    be at least 16 bits, though various architectures may define them to be wider (for 
+    example, 32 or even 64 bits). These types are never valid for fields of a structure. 
+   <div class="section">
+    <h4>Syntax</h4>
+    <pre class="code">#include &lt;prtypes.h&gt;</pre>
+    <pre class="code">typedef int PRIntn;
+typedef unsigned int PRUintn;</pre>
+   </div>
+  </div>
+ </div>
+ <div class="section">
+  <h2 id="miscellaneous-types">Miscellaneous Types</h2>
+  <ul>
+   <li><a href="#size-type">Size Type</a>
+   <li><a href="#pointer-difference-types">Pointer Difference Types</a>
+   <li><a href="#boolean-types">Boolean Types</a>
+   <li><a href="#status-type-for-return-values">Status Type for Return Values</a> 
+  </ul>
+  <div class="section">
+   <h3 id="size-type">Size Type</h3>
+   <div class="section">
+    <h4>PRSize</h4>
+    <p>A type for representing the size of an object (not the size of a pointer). This is the 
+     same as the corresponding type in <code class="filename">lib.c</code>.
+    <div class="section">
+     <h5>Syntax</h5>
+     <pre class="code">#include &lt;prtypes.h&gt;</pre>
+     <pre class="code">typedef size_t PRSize;</pre>
+    </div>
+   </div>
+  </div>
+  <div class="section">
+   <h3 id="pointer-difference-types">Pointer Difference Types</h3>
+   <p>Types for pointer difference. Variables of these types are suitable for storing a 
+    pointer or pointer subtraction. These are the same as the corresponding types in 
+    <code>libc</code>.
+   <div class="section">
+    <h4>PRPtrdiff</h4>
+    <p>Signed pointer difference type.
+    <div class="section">
+     <h5>Syntax</h5>
+     <pre class="code">#include &lt;prtypes.h&gt;</pre>
+     <pre class="code">typedef ptrdiff_t PRPtrdiff;</pre>
+    </div>
+   </div>
+   <div class="section">
+    <h4>PRUptrdiff</h4>
+    <p>Unsigned pointer difference type.
+    <div class="section">
+     <h5>Syntax</h5>
+     <pre class="code">#include &lt;prtypes.h&gt;</pre>
+     <pre class="code">typedef unsigned long PRUptrdiff;</pre>
+    </div>
+   </div>
+  </div>
+  <div class="section">
+   <h3 id="boolean-types">Boolean Types</h3>
+   <p>Type and constants for Boolean values.
+   <div class="section">
+    <h4>PRBool</h4>
+    <p>Boolean value.
+    <div class="section">
+     <h5>Syntax</h5>
+     <pre class="code">#include &lt;prtypes.h&gt;</pre>
+     <pre class="code">typedef enum { PR_FALSE = 0, PR_TRUE = 1 } PRBool;</pre>
+    </div>
+    <div class="section">
+     <h5>Description</h5>
+     <p>Use <code>PRBool</code> for variables and parameter types. Use <code>PR_FALSE</code> and <code>PR_TRUE</code> for 
+      clarity of target type in assignments and actual arguments. Use <code>if (bool)</code>, <code>while (!bool)</code>,
+      <code>(bool) ? x : y</code>, and so on to test Boolean values, just as you would C 
+      <code>int</code>-valued conditions.
+    </div>
+   </div>
+   <div class="section">
+    <h4>PRPackedBool</h4>
+    <p>Packed Boolean value.
+    <div class="section">
+     <h5>Syntax</h5>
+     <pre class="code">#include &lt;prtypes.h&gt;</pre>
+     <pre class="code">typedef PRUint8 PRPackedBool;</pre>
+    </div>
+    <div class="section">
+     <h5>Description</h5>
+     <p>Use <code>PRPackedBool</code> within structures where bit fields are not desirable but 
+      minimum and consistent overhead matters.
+    </div>
+   </div>
+  </div>
+  <div class="section">
+   <h3 id="status-type-for-return-values">Status Type for Return Values</h3>
+   <div class="section">
+    <h4>PRStatus</h4>
+    <p>Type for status code returned by some functions.
+    <div class="section">
+     <h5>Syntax</h5>
+     <pre class="code">#include &lt;prtypes.h&gt;</pre>
+     <pre class="code">typedef enum { PR_FAILURE = -1, PR_SUCCESS = 0 } PRStatus;</pre>
+    </div>
+   </div>
+  </div>
+ </div>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

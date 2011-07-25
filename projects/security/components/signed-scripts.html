@@ -1,0 +1,684 @@
+<?php
+
+$html_title = 'JavaScript Security: Signed Scripts';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<!---->
+
+<center><a name="top"></a><h2>Signed Scripts in Mozilla</h2></center>
+
+<p><I>Page Maintained by <a href="mailto:jruderman@hmc.edu">Jesse Ruderman</a></i></p>
+
+<p>This document describes the security model used in Mozilla and provides 
+information on how you can create signed JavaScript applications which 
+can access expanded privileges.
+The component security <a href="terms.html">Terminology</a> page gives 
+a general explaination of many of the terms on this page.</p>
+
+
+<h2><a name="contents">Contents</a></h2>
+<ul>
+<li><a href="#signedscript">Signed Script Policy</a></li>
+<li><a href="#privs">Using Expanded Privileges</a></li>
+<li><a href="#writing">Writing the Script</a></li>
+<li><a href="#signing">Signing Scripts</a></li>
+<li><a href="#troubleshoot">Troubleshooting Signed Scripts</a></li>
+</ul>
+
+
+<h2><a name="signedscript">Signed Script Policy</a></h2>
+<p>Signing scripts involves generating a <a href="terms.html#sig">digital signature</a> and associating 
+that signature with the script it signs.
+In Communicator 4.x, this association was accomplished by adding the ARCHIVE="..." attribute to one <tt>SCRIPT</tt> tag
+to refer to the JAR archive containing the signatures for each of the scripts in the page. In Mozilla, this association is handled differently. 
+An entire HTML page and any scripts it includes using a <tt>&lt;SCRIPT SRC="..."&gt;</tt> tag are signed and placed in a <a href="terms.html#jar">JAR file</a>
+along with their associated signature. By referring to the HTML page using the <tt>jar:http://www.site.com/myjar.jar!/signed.html</tt>
+syntax, the signature is automatically associated with the script, and verified as part of the loading of the page.
+Special HTML syntax to identify signed scripts (the ARCHIVE and ID attributes) is unnecessary in Mozilla and is no longer 
+recognized.
+
+<p>The JavaScript security model for signed scripts is based upon the Java
+security model for signed objects from Communicator 4.x. By signing a script using a 
+valid <a href="terms.html#cert">certificate</a> issued from a <a href="terms.html#ca">certificate authority</a>
+ (such as <a href="http://www.verisign.com">VeriSign</a>)
+you certify that you are the owner of the script and that the script was not modified
+before reaching the end user. Because signed scripts offer this proof of identity, only signed scripts
+can be granted extended privileges by the user. Using this model you can sign any JavaScript in an <tt>HTML</tt>
+page or referred to by the <tt>HTML</tt> page with <tt>&lt;SCRIPT SRC="..."&gt;</tt>.
+
+<p>A signed script can request expanded privileges that give it access to restricted
+information and abilities. You can use these expanded privileges to exercise fine-grained
+control over activities beyond those which are normally allowed to JavaScript.
+
+<p>All access-control decisions boil down to who is allowed to do what.
+In this model, a <b>principal</b> represents the "who," the <b>target</b> represents the "what" and the <b>privilege</b>
+associated with a principal represents the authorization (or denial of authorization) for code signed by a principal
+to access a specific privilege.
+
+<p>Once you have written the script, you sign it using Mozilla's SignTool, which is one of the <a href="http://www.mozilla.org/projects/security/pki/nss/tools/">NSS tools</a>.  
+SignTool associates a digital signature with <tt>HTML</tt> and <tt>JS</tt> files. 
+That digital signature is owned by a particular principal (a real-world entity such as Netscape or John Smith).
+The digital signature and the files it signs are both placed in a <a href="terms.html#jar">Java Archive (JAR)</a> file.
+
+<p>The associated principal allows the user to confirm the identity of the entity which signed
+the script. It also allows the user to ensure
+that the script hasn't been tampered with since it was signed. The user
+then can decide whether to grant privileges based on the validated identity
+of the certificate owner and integrity of the script.
+
+<p>You should always keep in mind that a user may deny the privileges requested
+by your script. You should write your scripts to react gracefully to such
+decisions. See the <a href="#except">exception handling</a> section.
+<p>This document assumes that you are already familiar with the basic principals
+of object signing, using the JavaScript API and creating digital
+signatures. The following documents provide information on these subjects:
+<center>
+<table bgcolor="#000000" cellspacing=0>
+<tr><td>
+<table cellspacing=3 cellpadding=2>
+<tr bgcolor="#DDDDDD"><td><b>Object Signing References</b></td></tr>
+<tr><td bgcolor="#FFFFFF">
+<ul>
+<li><i><a href="http://developer.netscape.com/docs/manuals/signedobj/trust/index.htm" TARGET="_top">Netscape
+Object Signing: Establishing Trust for Downloaded Software</a></i> provides
+an overview of object signing. Be sure you understand this material before
+using signed scripts.</li>
+<li><i><a href="http://help.netscape.com:80/products/client/mc/mcguide406/docs/zig3.htm">Using
+SignTool</a></i> describes the signing tool for creating signed JavaScript
+scripts.</li>
+<li><i><a href="http://developer.netscape.com/docs/manuals/signedobj/jarfile/index.html">The JAR Format</a></i> contains
+detailed information on the <tt>JAR</tt> format.</li>
+<li><i><a href="http://home.netscape.com/eng/mozilla/3.0/handbook/javascript/index.html" TARGET="_top">JavaScript
+Guide</a></i> contains information about using JavaScript.</li>
+<li><i><a href="http://www.mozilla.org/js/" TARGET="_top">Mozilla JavaScript
+documentation</a></i> explains the current JavaScript projects and has helpful links to other helpful pages.</li>
+</ul></td></tr></table>
+</td></tr></table>
+</center>
+<h3><A name="codebase">Codebase Principals</a></h3>
+<p>JavaScript supports codebase principals. A <b>codebase principal</b>
+is a principal derived from the origin of the script rather than from verifying
+a digital signature of a certificate. Since codebase principals offer weaker
+security, they are disabled by default in Mozilla. Codebase principals do
+not offer as strong a proof of identity, thus end users are unable to make 
+informed choices on whether to grant the script extended privileges.
+
+<p>To enable codebase principals, end users must add this line to the prefs.js file in their Mozilla user profile directory:
+<pre>user_pref("signed.applets.codebase_principal_support", true);</pre>
+For deployment, your scripts should not rely on codebase principals
+being enabled. You might want to enable codebase principals when developing
+your scripts, but you should sign them before delivery. 
+
+<p>Even when codebase principals are disabled, Mozilla keeps track of
+codebase principals to use in enforcement of the same origin security policy,
+described in <a href="same-origin.html">"Same Origin Policy"</a>. Unsigned
+scripts have an associated set of principals that contains a single element,
+the codebase principal for the page containing the script. Signed scripts
+also have codebase principals in addition to the stronger certificate principals.
+<p>With codebase principals enabled, when the user accesses the script,
+a dialog displays similar to the one displayed with signed scripts. The
+difference is that this dialog asks the user to grant privileges based
+on the URL and doesn't provide author verification. 
+
+<br>
+<h3>
+Scripts Signed by Different Principals</h3>
+JavaScript differs from Java in several important ways that relate to security.
+Java signs classes and is able to protect internal methods of those classes
+through the public/private/protected mechanism. Marking a method as protected
+or private immediately protects it from an attacker. In addition, any class
+or method marked <tt>final</tt> in Java cannot be extended and so is protected
+from an attacker.
+<p>On the other hand, because JavaScript has no concept of public and private
+methods, there are no internal methods that could be protected by simply
+signing a class. In addition, all methods can be changed at runtime, so
+they must be protected at runtime.
+<p>In JavaScript you can add new properties to existing objects, or replace
+existing properties (including methods) at runtime. You cannot do this
+in Java. So, once again, protection that is automatic in Java must be handled
+separately in JavaScript.
+<p>While the signed script security model for JavaScript is based on the
+object signing model for Java, these differences in the languages mean
+that when JavaScript scripts produced by different principals interact,
+it is much harder to protect the scripts. Because all of the JavaScript
+code on a single HTML page runs in the same process, different scripts
+on the same page can change each other's behavior. For example, a script
+might redefine a function defined by an earlier script on the same page.
+<p>To ensure security, the basic assumption of the JavaScript signed script
+security model is that <i>mixed scripts on an HTML page operate as if they
+were all signed by the intersection of the principals that signed each
+script</i>. This is very important in Mozilla. If you have a web page with
+signed and unsigned code, the entire page will be regarded as unsigned. In 
+addition, only one signature should be assigned to each <tt>JAR</tt> file.
+Mozilla does not currently support multiple signatures.
+<br>
+<p><a href="#top">[Return to Top]</a>
+
+<br>
+<h2><a name="privs">Using Expanded Privileges</a></h2>
+<p>Mozilla uses a set of functions for JavaScript security similar to those used for Java and JavaScript security in Netscape Communicator 4.x.
+<p>In the simplest case, you add one line of code asking permission to
+enable a <a href="terms.html#priv">privilege</a> which allows a script to access a target.
+For example:
+<br>
+<pre>netscape.security.PrivilegeManager.enablePrivilege("UniversalPreferencesRead")
+	or
+netscape.security.PrivilegeManager.enablePrivilege("UniversalPreferencesRead UniversalPreferencesWrite")</pre>
+When the script calls this function, if the signature is valid or codebase principal are enabled, 
+expanded privileges can be granted. If a user has not accessed this principal before,
+a dialog asks the user if he wants to accept the signed code. Unlike Communicator 4.x,
+Mozilla does not display a detailed Java grant dialog, rather a simple dialog
+asking if the principal can be trusted. The user can accept or deny and allow their choice to 
+be remembered by the browser. As shown in the second example, two privileges may be 
+asked for at once, so only one dialog appears.
+<p>Privileges are granted only in the scope of the requesting function. This scope
+includes any functions called by the requesting function. When the script
+leaves the requesting function, privileges no longer apply.
+
+<h3>Example</h3>
+
+<p>Function <tt>g</tt> requests expanded privileges, and only the commands
+and functions called after the request and within function <tt>g</tt> are
+granted privileges. It is good practice to enable privileges only when needed,
+then disable the privilege soon after the code is executed. This will help 
+protect against potentially dangerous sections of code being run on the user's computer.
+<br>
+<pre>&lt;SCRIPT></pre>
+
+<pre>function printEnabled(i) {
+ if (history[0] == "") {
+ document.write(i + ": disabled&lt;BR>");
+ } else {
+ document.write(i + ": enabled&lt;BR>");
+ }
+}
+
+function f() {
+ printEnabled(1);
+}
+
+function g() {
+ printEnabled(2);
+ netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+ printEnabled(3);
+ f();
+ printEnabled(4);
+}
+
+function h() {
+ printEnabled(5);
+ g();
+ printEnabled(6);
+}
+
+printEnabled(7);
+h();
+printEnabled(8);
+
+&lt;/SCRIPT&gt;</pre>
+
+<br>
+<p>The example prints the following output:</p>
+<pre>7: disabled
+5: disabled
+2: disabled
+3: enabled
+1: enabled
+4: enabled
+6: disabled
+8: disabled</pre>
+
+<h3><A NAME="privs-list">Privileges</a></h3>
+Privilege represents permissions to access a specific target. The following table
+lists JavaScript built in privilege and the targets associated with them.
+
+<table BORDER=0 bgcolor="#000000">
+<tr><td>
+<table cellpadding=2 cellspacing=3 bgcolor="#FFFFFF">
+<tr bgcolor="#DDDDDD">
+<td ALIGN=LEFT VALIGN=BASELINE><b>Privileges</b></td>
+<th ALIGN=LEFT VALIGN=BASELINE><b>Targets</b></td>
+</tr>
+<tr><td ALIGN=LEFT VALIGN=BASELINE>
+<tt>UniversalBrowserRead</tt>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>Reading of sensitive browser data.<br>
+This allows the script to pass the same origin check when reading from any document.</td>
+</tr>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<tt>UniversalBrowserWrite</tt>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>Modification of sensitive browser data.<br>
+This allows the script to pass the same origin check when writing to any document.</td>
+</tr>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<pre>UniversalXPConnect</pre>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>Unrestricted access to browser APIs using XPConnect.</td>
+</tr>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<tt>UniversalPreferencesRead</tt>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>Read preferences using
+the <tt>navigator.preference</tt> method.</td>
+</tr>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<tt>UniversalPreferencesWrite</tt>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>Set preferences using
+the <tt>navigator.preference</tt> method.</td>
+</tr>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<tt>CapabilityPreferencesAccess</tt>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>Read/set the preferences which define security 
+policies, including which privileges have been granted and denied to scripts.  
+(You also need UniversalPreferencesRead/Write.)</td>
+</tr>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<tt>UniversalFileRead</tt>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE><ul><li>window.open of <tt>file://</tt> URLs.</li>
+<li>Making the browser upload files from the user's hard drive 
+using <tt>&lt;input type="file"&gt;</tt>.</li></ul></td>
+</tr></table>
+</td></tr></table>
+
+<p>In addition, any DOM property can be associated with a privilege (user defined) as discussed in the
+<a href="http://www.mozilla.org/projects/security/components/ConfigPolicy.html">"Configurable Security"</a> section.
+<br>
+<br>
+<h3>
+JavaScript Features Requiring Privileges</h3>
+This section lists the JavaScript features that require expanded privileges
+and the target used to access each feature. Unsigned scripts cannot use
+any of these features, unless the end user has enabled codebase principals.
+<br>
+<ul>
+<li>
+Using an <tt>about:</tt> URL other than <tt>about:blank</tt> requires <tt>UniversalBrowserRead</tt>.</li>
+<li>
+Using the <tt>history</tt> object to find out what other sites the user has visited, or how many other sites the user has visited in this session, requires <tt>UniversalBrowserRead</tt>.</li>
+<li>
+<tt>navigator</tt> object:</li>
+
+<ul>
+<li>
+Getting the value of a preference using the <tt>preference</tt> method
+requires <tt>UniversalPreferencesRead</tt>.</li>
+<li>
+Setting the value of a preference using the <tt>preference</tt> method
+requires <tt>UniversalPreferencesWrite</tt>.</li>
+</ul>
+
+<li>
+<tt>window</tt> object: All of the following operations require <tt>UniversalBrowserWrite</tt>.</li>
+
+<ul>
+<li>
+Adding or removing the directory bar, location bar, menu bar, personal
+bar, scroll bar, status bar, or toolbar.</li><br>
+<li>
+Using the methods in the following table under the indicated circumstances</li>
+
+<table BORDER=0 bgcolor="#000000">
+<tr><td>
+<table border=0 bgcolor="#FFFFFF" cellspacing=3 cellpadding=2>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<pre>enableExternalCapture</pre>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>To capture events in pages loaded from different
+servers. Follow this method with <tt>captureEvents</tt>.</td>
+</tr>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<pre>close</pre>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>To unconditionally close a browser window.</td>
+</tr>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<pre>moveBy, moveTo</pre>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>To move a window off of the screen.</td>
+</tr>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<pre>open</pre>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<ul>
+<li>To create a window smaller than 100 x 100 pixels or larger than the screen
+can accommodate by using<tt> innerWidth</tt>, <tt>innerHeight</tt>, <tt>outerWidth</tt>,
+and <tt>outerHeight</tt>.</li>
+<li>To place a window off screen by using<tt> screenX</tt> and <tt>screenY</tt>.</li>
+<li>To create a window without a title bar by using <tt>titlebar=no</tt>.</li>
+<li>To use <tt>alwaysRaised</tt>, <tt>alwaysLowered</tt>, or <tt>z-lock</tt>
+for any setting.</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<pre>resizeTo, resizeBy</pre>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>To resize a window smaller than 100 x 100
+pixels or larger than the screen can accommodate.</td>
+</tr>
+</table>
+</td><tr></table>
+<br>
+<li>
+Setting the properties in the following table under the indicated circumstances:</li>
+
+<table BORDER=0 bgcolor="#000000">
+<tr><td>
+<table border=0 bgcolor="#FFFFFF" cellspacing=3 cellpadding=2>
+<tr>
+<td ALIGN=LEFT VALIGN=BASELINE>
+<pre>innerWidth, innerHeight</pre>
+</td>
+<td ALIGN=LEFT VALIGN=BASELINE>To set the inner width of a window to a
+size smaller than 100 x 100 or larger than the screen can accommodate.</td>
+</tr>
+</table>
+
+</td></tr></table>
+
+</ul>
+</ul>
+
+<h4>
+Example</h4>
+The following script includes a button, that, when clicked, displays an
+alert dialog containing part of the URL history of the browser. To work
+properly, the script must be signed.
+<pre>&lt;SCRIPT>
+
+function getHistory(i) {
+ //Attempt to access privileged information
+ return history[i];
+}
+function getImmediateHistory() {
+ //Request privilege
+ netscape.security.PrivilegeManager.enablePrivilege(
+ "UniversalBrowserRead");
+ return getHistory(1);
+}
+
+&lt;/SCRIPT>
+
+...
+
+&lt;INPUT TYPE="button" onClick="alert(getImmediateHistory());" ID="b"></pre>
+<p><a href="#top">[Return to Top]</a>
+
+
+<h2><a name="writing">Writing the Script</a></h2>
+This section describes special considerations for writing signed scripts.
+
+<br>
+<h3>Hints for Writing Secure JavaScript</h3>
+<h4>Check the Location of the Script</h4>
+
+If you have signed scripts in pages you have posted to your site, it is
+possible to copy the JAR file from your site and post it on another site.
+As long as the signed scripts themselves are not altered, the scripts will
+continue to operate under your signature. (See <a href="#debughash">"Debugging
+Invalid Signature Errors"</a> for one exception to this rule.)
+<p>If you wish to prevent this, you can force your scripts to work only
+from your site.
+<pre>&lt;SCRIPT>
+if (location.href.match(/^http:\/\/www.company.com\//)) {
+ netscape.security.PrivilegeManager.enablePrivilege(...);
+ // Do your stuff
+}
+&lt;/SCRIPT></pre>
+Then if the JAR file and script are copied to another site, they no longer
+work. If the person who copies the script alters it to bypass the check
+on the source of the script, the signature is invalidated.
+<br>
+<h4>
+Minimize the Trusted Code Base</h4>
+In security parlance, the <b>trusted code base</b> (TCB) is the set of
+code that has privileges to perform restricted actions. One way to improve
+security is reduce the size of the TCB, which then gives fewer points for
+attack or opportunities for mistakes.
+<p>For example, the following code, if executed in a signed script with
+the user's approval, opens a new window containing the history of the browser:
+
+<pre>&lt;SCRIPT>
+netscape.security.PrivilegeManager.enablePrivilege(
+ "UniversalBrowserAccess");
+var win = window.open();
+for (var i=0; i &lt; history.length; i++) {
+ win.document.writeln(history[i] + "&lt;BR>");
+}
+win.close();
+&lt;/SCRIPT></pre>
+The TCB in this instance is the entire script because privileges are acquired
+at the beginning and never reverted. You could reduce the TCB by rewriting
+the program as follows:
+
+<pre>&lt;SCRIPT>
+var win = window.open();
+netscape.security.PrivilegeManager.enablePrivilege(
+ "UniversalBrowserAccess");
+for (var i=0; i &lt; history.length; i++) {
+ win.document.writeln(history[i] + "&lt;BR>");
+}
+netscape.security.PrivilegeManager.revertPrivilege(
+ "UniversalBrowserAccess");
+win.close();
+&lt;/SCRIPT></pre>
+With this change, the TCB becomes only the loop containing the accesses
+to the <tt>history</tt> property. You could avoid the extra call
+to revert the privilege by introducing a function:
+
+<pre>&lt;SCRIPT>
+function writeArray() {
+ netscape.security.PrivilegeManager.enablePrivilege(
+ "UniversalBrowserAccess");
+ for (var i=0; i &lt; history.length; i++) {
+ win.document.writeln(history[i] + "&lt;BR>");
+ }
+}
+var win = window.open();
+writeArray();
+win.close();
+&lt;/SCRIPT></pre>
+The privileges are automatically reverted when <tt>writeArray</tt> returns,
+so you don't have to do so explicitly.
+<br>
+<p><a href="#top">[Return to Top]</a>
+
+<h3>International Characters in Signed Scripts</h3>
+When used in scripts, international characters can appear in string constants
+and in comments. JavaScript keywords and variables cannot include special
+international characters.
+<p>Scripts that include international characters cannot be signed because
+the process of transforming the characters to the local character set invalidates
+the signature. To work around this limitation:
+<ul><li>
+Escape the international characters (<tt>'0x\ea'</tt>, and so on).</li>
+<br>
+<li>
+Put the data containing the international characters in a hidden form element,
+and access the form element through the signed script.</li>
+<br>
+<li>
+Separate signed and unsigned scripts into different layers, and use the
+international characters in the unsigned scripts.</li>
+<br>
+<li>
+Remove comments that include international characters.</li>
+</ul>
+
+
+
+<h2><a name="signing">Signing Scripts</a></h2>
+During development of a script you'll eventually sign, you can use codebase
+principals for testing, as described in <a href="#codebase">"Codebase
+Principals"</a>. Once you've finished modifying the script, you need to
+sign it. The major difference in signing scripts between 4.x and Mozilla is that in
+Mozilla, the entire page must be signed, as opposed to only the script
+running on the page. For any script to be granted expanded privileges, all scripts on
+or included by an HTML page must be signed.
+<p>You can sign JavaScript files (accessed with the
+<tt>SRC</tt> attribute
+of the <tt>SCRIPT</tt> tag), inline scripts, event handler scripts
+JavaScript entities and <tt>javascript:</tt> URLs.
+
+<h3>Using SignTool</h3>
+Use SignTool to sign scripts. SignTool is a program that signs scripts and HTML files, and 
+packages them in a <a href="terms.html#jar">JAR file</a> with the signature.  It can be 
+download from ftp.mozilla.org as part of the 
+<a href="http://ftp.mozilla.org/pub/security/nss/releases/">NSS package</a>.
+You'll also need to download <a href="http://ftp.mozilla.org/pub/nspr/releases">NSPR</a>.
+
+<p>The <tt>signtool</tt> program extracts scripts from HTML files, signs
+them, and places their <a href="terms.html#sog">digital signatures</a>
+ in the archive specified in the command line.
+It also takes care of copying external JavaScript files loaded by the <tt>SRC</tt>
+attribute of the <tt>SCRIPT</tt> tag. The <tt>SCRIPT</tt> tags in the HTML
+pages can specify more than one JAR file; if so, <tt>signtool</tt> creates
+as many JAR files as it needs.
+<p>For information on using this tool, see <i><a href="http://help.netscape.com:80/products/client/mc/mcguide406/docs/zig3.htm">Using
+SignTool</a></i>.
+<br>
+
+<p>Here is an example of the syntax needed for signing scripts
+<table bgcolor="#000000">
+<tr><td><table bgcolor="#FFFFFF" cellspacing=3 cellpadding=2>
+<tr><td>
+<pre>
+% signtool -k"Cert Name" -Z"secure.jar" secure-files/
+</pre>
+<p>This command will create a <tt>JAR</tt> file (<tt>secure.jar</tt>) signed by <tt>"Cert Name"</tt>. All the 
+JavaScript and HTML files in the directory <tt>secure-files/</tt> will be signed and stored in the JAR file.
+</td></td></table></td></tr></table>
+
+<h3>After Signing</h3>
+<p>Once you've signed a script, any time you change it you must resign it.
+For JavaScript files, this means you cannot change anything in the file. 
+A change can be as simple as adding or removing white space in the script.
+<p>For testing, use SignTool to create a test certificate (see <i><a href="http://help.netscape.com:80/products/client/mc/mcguide406/docs/zig3.htm">documentation</a></i>).
+However, end users will not be able to use the test certificate, so remember to obtain a certificate from a 
+certificate authority in order to serve a signed script on the web.
+
+<h3><a name="syntax">Accessing a Signed Page</a></h3>
+<p>New in Mozilla is the syntax needed to access signed scripts within <tt>JAR</tt> files. 
+The syntax is as follows:
+<pre>
+jar:http://www.domain.com/secure-scripts/secure.jar!/thepage.html
+</pre>
+
+<p>Scripts will only be treated as signed if the HTML page that contains
+them is using a URL of this form.
+
+<p class="important">CHANGE NOTE: Browsers based on Mozilla code version 1.8.1.10 or later
+(e.g. Firefox 2.0.0.10) will not open files using the jar: URI scheme unless
+the server sends a <code>Content-Type</code> header that indicates the archive
+is safe to be treated as active code. You must configure your server to send
+<code>application/java-archive</code> for these files (<code>application/x-jar</code>
+is also supported).
+
+<p>Changes to a signed script's byte stream invalidate the script's signature.
+This includes moving the HTML page between platforms that have different
+representations of text. For example, moving an HTML page from a Windows
+server to a UNIX server changes the byte stream and invalidates the signature.
+(This doesn't affect viewing pages from multiple platforms.) To avoid this,
+you can move the page in binary mode. Note that doing so changes the appearance
+of the page in your text editor but not in the browser.
+
+<p><a href="#top">[Return to Top]</a>
+
+<h2><a name="troubleshoot">Troubleshooting Signed Scripts</a></h2>
+
+<h3><a name="except">Exception Handling</a></h3>
+Exception handling is <i>highly</i> recommended when using signed scripts. It
+allows you to deal gracefully with errors or the user choosing to deny a privilege.
+<p><b>For example:</b></p>
+<pre>
+&lt;SCRIPT>
+function getPriv() {
+	try {
+		netscape.security.PrivilegeManager.enablePrivilege("UniversalPreferencesRead");
+	} catch (err) {   
+		document.write("Sorry, you can not enjoy this site because of " +err+ ".");
+		return false;
+	}
+	document.write("Thanks, privileges accepted");
+	
+	//... Do stuff
+
+	return true;
+}
+&lt;/SCRIPT>
+</pre>
+<p>If the user denies the privilege, an exception will be thrown and
+the program will immediately execute the code in the <tt>catch</tt> section.
+If there is no catch clause, the script will end abroptly, and an error will be
+shown in the JavaScript console.
+<h3>Errors on the JavaScript Console</h3>
+Be sure to check the JavaScript console for errors if your signed scripts do
+not function as expected. Remember, if you are using <a href="#except">exception handling</a>,
+you will not see the errors in the JS Console. You may see errors such as the following:
+
+<pre># Signature Verification Error: the signature on
+# securitycheck.jar is invalid because
+# the archive did not contain a valid PKCS7 signature.</pre>
+The path value printed for signed JavaScript is either the value of the
+<tt>ID</tt> attribute or the <tt>SRC</tt> attribute of the tag that supplied
+the script.
+
+<h3><a name="debughash">Debugging Invalid Signature Errors</a></h3>
+Invalid signature errors occur if the script has changed from when it was signed.
+The most common cause of this problem is that the scripts have been moved
+from one platform to another with a text transfer rather than a binary
+transfer. Because line separator characters can differ from platform to
+platform, the hash could change from when the script was originally signed.
+<br>
+<h3>
+"User did not grant privilege" Exception or Unsigned Script Dialog</h3>
+Depending on whether or not you have enabled codebase principals, you see
+different behavior if a script attempts to enable privileges when it isn't
+signed or when its principals have been downgraded due to mixing of signed and 
+unsigned scripts.
+<p>If you have not enabled codebase principals and an unsigned script attempts to
+enable privileges, it gets an exception from Java
+that the "Enable privilege not granted". If you did enable codebase principals,
+you will see a security dialog asking for permissions for the
+unsigned code.
+
+
+<p><a href="#top">[Return to Top]</a>
+<h3>Communicator 4.x links</h3>
+<ul>
+<li>For more tips on writing your scripts, see Danny Goodman's <i><a href="http://developer.netscape.com/viewsource/index.html" TARGET="_top">View
+Source</a></i> article, <i><a href="http://developer.netscape.com/viewsource/goodman_sscripts.html" TARGET="_top">Applying
+Signed Scripts</a></i>.</li>
+</ul>
+<p><a href="#top">[Return to Top]</a>
+<br>
+
+<p><!---->
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

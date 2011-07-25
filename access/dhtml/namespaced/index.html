@@ -1,0 +1,611 @@
+<?php
+
+$html_title = 'Accessible DHTML';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="DC.author" content="Aaron Leventhal">
+<meta name="DC.creator" content="Aaron Leventhal">
+<meta name="DC.title" content="Accessible DHTML">
+<meta name="DC.description" content="Detailed description of DHTML accessibility
+as it is implemented in Firefox 1.5 and Mozilla products. Information on writing accessible web applications for Firefox 1.5, the first browser to support this.">
+<meta name="DC.date.created" content="2005-04-18T09:07:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2006-04-27T09:54:03+11:00" scheme="W3CDTF">
+<link rel="up" type="text/html" href="../" title="Access Mozilla">
+<link rel="contents" href="#contents" title="Table of contents of Accessible DHTML">
+<link rel="section" href="#keynav" title="Keyboard Navigation">
+<link rel="section" href="#atsupport" title="Basic Support for Assistive Technologies">
+<link rel="section" href="#html" title="Choosing XHTML or HTML">
+<link rel="section" href="#examples" title="Sample Widgets">
+<link rel="subsection" href="#testenv" title="Testing with the Keyboard and Mouse Navigation">
+<link rel="subsection" href="#simple" title="Simple and Complex Examples">
+<link rel="subsection" href="#complex" title="Complex container widget examples">
+<link rel="section" href="#roles" title="Roles">
+<link rel="section" href="#advanced" title="Future of DHTML Accessibility">
+<link rel="bookmark" href="http://accessibility.kde.org/developer/atk.php" title="KDE Accessibility Project: GNOME Accessibility Architecture">
+<link rel="bookmark" href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnacc/html/actvaccess.asp" title="Microsoft Active Accessibility">
+<link rel="bookmark" href="http://www.w3.org/WAI/PF/" title="W3C Protocols and Formats Working Group">
+';
+
+$extra_style = '
+<style type="text/css"> ol > ol {list-style-type: lower-alpha;}
+em {font-style: italic;}
+table {empty-cells: show;}
+pre {font-size: larger;}
+</style>
+
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+		<!-- logo: mozilla in wheelchair -->
+<h1><a href="../" rel="up"><img style="border: medium none;" alt="Access Mozilla" width="680"
+height="115" src="../access-mozilla.png"></a></h1>
+
+		<p>Maintained by <a href="http://www.mozilla.org/access#community">Mozilla Accessibility Community</a>.</p>
+
+		<h1>Accessible DHTML</h1>
+
+<p>DHTML accessibility is implemented in Firefox 1.5. DHTML accessibility is being
+developed at <dfn><abbr>W3C</abbr> - World Wide Web Consortium</dfn>. It allows
+desktop-style widgets such as tree views, menu bars and spreadsheets which are
+accessible both with the keyboard and assistive technologies such as screen readers,
+screen magnifiers and alternative input devices. The code for DHTML accessibility
+in Firefox has been contributed by IBM.</p>
+
+		<h2><a name="contents">Table Of Contents</a></h2>
+		<ol class="toc">
+			<li>
+				<a href="#keynav">Standard desktop-style keyboard navigation</a>
+			(implemented in IE and Firefox 1.5)
+                        </li>
+			<li>
+				<a href="#atsupport">Assistive technology compatibility</a>
+			via basic semantics such as widget roles, properties, values and events
+			(implemented in Firefox 1.5)
+                        </li>
+			<li><a href="#html">Choosing XHTML or HTML</a>
+                        </li>
+			<li>
+				<a href="#examples">Sample widgets</a>
+		in XHTML and HTML, that are key navigable and work with the Window-Eyes 5.5 screen reader.
+		<ol>
+			<li>
+				<a href="#testenv">Setting up the development/test environment</a>
+                        </li>
+			<li>
+				<a href="#simple">Simple examples</a>
+                        </li>
+			<li>
+				<a href="#complex">Complex examples</a>
+                        </li>
+			<li>
+				<a href="#roles">Table of supported roles and states in Firefox</a>
+                        </li>
+		</ol></li>
+		<li>
+			<a href="#advanced">Future of DHTML accessibility</a>, such as support for
+			described actions, element relationships and web page keyboard accelerators
+			that never conflict with the web browser.
+		</li>
+		</ol>
+
+		<p>DHTML samples are available which demonstrate the Firefox 1.5+ implementation.
+		We are waiting for W3C's Protocols and Formats group to provide a relatively stable
+                version of the standard before pushing the Firefox implementation forward in any
+                significant way. Bug fixing and small tweaks are still occuring, so there will be
+                some small improvements in Firefox 2's support for DHTML accessibility.</p>
+
+		<h2><a name="keynav">Keyboard Navigation</a></h2>
+		<p>Keyboard navigation is supported via an extension to the HTML tabindex
+			attribute, originally implemented in Internet Explorer. This extension allows
+			any HTML element to be made tab navigable or merely focusable via script or the
+			mouse. Differentiating between elements that are tab navigable and merely
+			focusable allows the development of container widgets such as tree views and
+			spreadsheets, where the arrow keys are used to navigate between child elements
+			in the container. Because the support is built on technology already available
+			in IE, DHTML widgets can be made keyboard accessible for both Firefox 1.5 and
+			IE. The tabindex extension has also been included in specs for future
+			versions of Opera and Safari.</p>
+		<p><a href="http://www.mozilla.org/access/keyboard/tabindex">Practical documentation on
+				building key navigable custom widgets</a> is available describing
+			how to code the key navigable DHTML in a cross-browser compatible manner.</p>
+		<h2><a name="atsupport">Basic Support for Assistive Technologies</a></h2>
+		<p>Assistive technology support requires the <a href="http://www.mozilla.org/projects/firefox/">Firefox 1.5</a>
+			and specially marked-up content which uses namespaced attributes to describe
+			each widget. For example, each widget must uses these new DHTML accessibility
+			attributes to specify the role, a commonly known widget type such as menu,
+			slider or progress bar. Each role may support a small number of additional
+			property attributes such as checked, selected, required, invalid and expanded.
+			For example, a checkbox may be specified as:</p>
+		<pre class="code">
+  &lt;span tabindex="0" role="wairole:checkbox"
+        property:checked="true"
+        onkeydown="return checkBoxEvent(event);"
+        onclick="return checkBoxEvent(event);"&gt;
+    Any checkbox label
+  &lt;/span&gt;
+</pre>
+		<p>The above checkbox is custom built, but acts just like a normal checkbox as far
+			as assistive technologies and the user are concerned. It can have any visual
+			appearance the author wishes to code via CSS. Here is a breakdown of the
+			attributes:</p>
+		<table cellspacing="0" border="1" summary="">
+			<tr>
+				<th scope="col">
+					Attribute
+				</th>
+				<th scope="col">
+					Meaning
+				</th>
+			</tr>
+			<tr>
+				<td>tabindex="0"
+				</td>
+				<td>Put the &lt;span&gt;-based checkbox in the tab navigation cycle, and allow
+					click-to-focus with the mouse. In contrast, tabindex="-1" would make the
+					element focusable via script and mouse clicks, but not part of the default tab
+					cycle.
+				</td>
+			</tr>
+			<tr>
+				<td>role="wairole:checkbox"
+				</td>
+				<td>Specify that this is a checkbox, so that assistive technologies like screen
+					readers know what it is
+				</td>
+			</tr>
+			<tr>
+				<td>property:checked="true"
+				</td>
+				<td>Checkboxes support the checked property. Properties are also exposed to
+					assistive technologies.
+				</td>
+			</tr>
+			<tr>
+				<td><span class="attribute-name">onkeydown</span>=<span class="attribute-value">"return checkBoxEvent(event);" </span></td>
+				<td>Allows trapping of the space bar for toggling the checked property. The
+					checkBoxEvent() method is responsible for implementing this, as well as
+					returning false if the event should not continue to be propagated (has been
+					consumed).
+				</td>
+			</tr>
+			<tr>
+				<td><span class="attribute-name">onclick</span>=<span class="attribute-value">"return checkBoxEvent(event);"</span>
+				</td>
+				<td>This is also necessary, in addition to the keyboard handler
+				</td>
+			</tr>
+		</table>
+		<p>Please see the provided <a href="#examples">DHTML samples</a> for futher
+			examples how this markup is used. Firefox implements the mapping from these
+			markup roles and properties to <dfn>MSAA - Microsoft Active Accessibility</dfn> and <dfn>ATK - Accessibility Toolkit</dfn> (from Gnome Accessibility Project), which are the standard
+			accessibility <abbr title="Application Programming Interface">API</abbr>s on
+                        Windows and Linux. Because the widget information is
+			exposed via standard accessibility
+                        <abbr title="Application Programming Interface">API</abbr>s, assistive
+                        technologies get a large
+			portion of compatibility with these widgets without any new code. The most
+			complete support in screen readers currently requires <a class="ex-ref" href="http://www.gwmicro.com/">Window-Eyes 5.5</a>.
+			Screen magnifiers such as ZoomText are also compatible with the new
+			DHTML widgets.
+		</p>
+		<p>IE support is not currently available for the role and properties pieces. IE
+		currently supports only keyboard navigation for these widgets. Assistive
+                technology vendors should be able to support DHTML widget semantics without
+                changes in Internet Explorer, by looking directly at the DOM and DOM change events.</p>
+
+<h2><a name="html">Choosing XHTML or HTML</a></h2>
+<p>Current versions of IE (7 and earlier) do not support the loading of the XHTML mime type (application/xml+xhtml) documents. Therefore documents must be served as text/html to Internet Explorer.
+For more information on how to implement this type of mime type switching, please see <a href="http://www.xml.com/pub/a/2003/03/19/dive-into-xml.html" class="ex-ref">XHTML's Dirty Little Secret</a>.</p>
+
+<p>For those not wishing to migrate to XHTML, Accessible DHTML widgets can also be created using HTML. The <a class="ex-ref"
+ href="http://www.w3.org/WAI/PF/adaptable/HTML4/embedding-20060318.html">Embedding
+Accessibility Role and State Metadata in HTML Documents</a> paper
+on the W3C (World Wide Web Consortium) <dfn>WAI (Web Accessibility
+Initiative)</dfn> Protocolos and Formats site explains how to embed the role
+and state information into the class attribute. A script library parses
+the role and state information from the class
+attribute and sets it as namespaced attributes on the element.</p>
+
+<p>Some of the samples below are also provided in HTML. These versions work load in IE and the keyboard navigation works properly.</p>
+<p>Here is the script library which parses the role and state attributes
+out of the class attribute: <a href="class/enable.js">enable.js</a>.</p>
+
+		<h2><a name="examples">Sample Widgets</a></h2>
+
+		<h3><a name="testenv">Testing with the Keyboard and Mouse Navigation</a></h3>
+		<p>Keyboard or Mouse Navigation works in both IE and Firefox. Please note that only the HTML (not XHTML) versions of the samples have been tested and made to work in IE.</p>
+		<h3>Testing with Screen Readers</h3>
+		<p>Screen reader support is only available in Firefox 1.5 or later. Here are the required components to install:</p>
+		<ol>
+			<li>
+				Firefox: download and install the <a href="http://www.mozilla.com/firefox/">Firefox 1.5.</a>.
+			</li>
+			<li>
+				Screen reader: for testing with a screen reader, the <a class="ex-ref" href="http://www.gwmicro.com/">Window-Eyes 5.5</a> is
+				required. In addition, JAWS 7.x has partial support.for DHTML accessibility.
+			</li>
+		</ol>
+		<h3><a name="simple">Simple and Complex Examples</a></h3>
+
+		<p>Very simple examples, showing the basics of what can be done:</p>
+		<ol>
+			<li>
+				<a href="checkbox">XHTML Checkbox</a> &nbsp; <a href="class/checkbox">HTML Checkbox</a>
+                        </li>
+			<li>
+				<a href="slider">XHTML slider</a>
+                        </li>
+                        <li>
+				<a href="progressbar">XHTML progress bar</a>
+                        </li>
+			<li>
+				<a href="alert">XHTML alert</a> &nbsp; <a href="class/alert">HTML alert</a>
+			</li>
+		</ol>
+		<p><a name="complex">Complex container widget examples</a>, showing how arrow key navigation can be
+			implemented:</p>
+
+		<ol>
+			<li>
+				<a href="spreadsheet">XHTML spreadsheet with menubar</a>
+                        </li>
+			<li>
+				<a href="tabpanel">XHTML tab panel</a> &nbsp; <a href="class/tabpanel">HTML tab panel</a>
+                        </li>
+			<li>
+				<a href="tree">XHTML tree view</a> &nbsp; <a href="class/tree">HTML tree view</a>
+                        </li>
+               </ol>
+
+		<p>Here is a table delineating what roles and properties exist, and what currently
+			has examples.</p>
+	    <p>Unless otherwise stated, properties are boolean and support the
+			values "true" or "false". In the boolean case, an unset attribute is the equivalent of setting it to "false".</p>
+	    <p>Be aware that the attributes checked, selected and expanded are special -- "false" is different from no attribute present in that "false"
+	       indicates that the widget is checkable/selectable/expandable and no attribute indicates that it isn't.</p>
+
+		<table id="roles" cellspacing="0" border="1" summary="Summary to do">
+<thead>
+			<tr>
+				<th scope="col">
+					Role
+				</th>
+				<th scope="col">
+					<p>Author-defined properties*<BR>
+						* all allow disabled= "true"<BR>
+						describedby="[elementID]" and<BR>
+						labelledby= "[elementID]"</p>
+				</th>
+				<th scope="col">
+					<p>Automatically supported properties*<BR>
+						* all support focusable via tabindex, and focused</p>
+				</th>
+				<th scope="col">
+					Samples
+				</th>
+			</tr>
+</thead>
+
+<tfoot>
+			<tr>
+				<th>
+					Role
+				</th>
+				<th>
+					<p>Author-defined properties*<BR>
+						* all allow disabled= "true"<BR>
+						describedby="[elementID]" and<BR>
+						labelledby= "[elementID]"</p>
+				</th>
+				<th>
+					<p>Automatically supported properties*<BR>
+						* all support focusable via tabindex, and focused</p>
+				</th>
+				<th>
+					Samples
+				</th>
+			</tr>
+</tfoot>
+
+<tbody>
+			<tr>
+				<td>alert</td>
+				<td></td>
+				<td>name from child content or title attribute</td>
+				<td><a href="alert">XHTML</a> &nbsp; <a href="class/alert">HTML</a></td>
+			</tr>
+			<tr>
+				<td>application</td>
+				<td></td>
+				<td></td>
+				<td><a href="spreadsheet">XHTML</a></td>
+			</tr>
+			<tr>
+				<td>button</td>
+				<td>pressed, haspopup</td>
+				<td>name from child content or title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>buttonsubmit</td>
+				<td></td>
+				<td>name from title attribute, default (always true)</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>checkbox</td>
+				<td>checked, readonly, required, invalid</td>
+				<td>name from child content or title attribute</td>
+				<td><a href="checkbox">XHTML</a> &nbsp; <a href="class/checkbox">HTML</a>
+				</td>
+			</tr>
+			<tr>
+				<td>checkboxtristate</td>
+				<td>checked="true"|"false"|"mixed", readonly, invalid, required</td>
+				<td>name from child content or title attribute
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>columnheader</td>
+				<td><div>selected="true"|"false" (no selected attribute indicates not selectable)</div>
+				<div>readonly</div></td>
+				<td>name from child content or title attribute</td>
+				<td><a href="spreadsheet">XHTML</a>
+				</td>
+			</tr>
+			<tr>
+				<td>combobox</td>
+				<td>readonly, muiltiselect</td>
+				<td>name from title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>description</td>
+				<td></td>
+				<td>name from child content or title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>dialog</td>
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>document</td>
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>icon</td>
+				<td></td>
+				<td>name from child content or title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>label</td>
+				<td></td>
+				<td>name from child content or title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>list</td>
+				<td>readonly, multiselect</td>
+				<td>name from title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>listitem</td>
+				<td>
+				<div>selected="true"|"false" (no selected attribute indicates not selectable)</div>
+				<div>checked="true"|"false" (no checked attribute indicates not checkable)</div></td>
+				<td>name from child content or title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>menu</td>
+				<td></td>
+				<td>name from title attribute</td>
+				<td><a href="spreadsheet">XHTML</a>
+				</td>
+			</tr>
+			<tr>
+				<td>menubar</td>
+				<td></td>
+				<td>name from title attribute</td>
+				<td><a href="spreadsheet">XHTML</a>
+				</td>
+			</tr>
+			<tr>
+				<td>menuitem</td>
+				<td>haspopup</td>
+				<td>name from child content or title attribute</td>
+				<td><a href="spreadsheet">XHTML</a>
+				</td>
+			</tr>
+			<tr>
+				<td>menuitemcheckable</td>
+				<td>checked</td>
+				<td>checkable, name from child content or title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>menuitemradio</td>
+				<td>checked</td>
+				<td>checkable, name from child content or title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>grid</td>
+				<td>readonly</td>
+				<td>name from title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>gridcell</td>
+				<td>
+				<div>selected="true"|"false" (no selected attribute indicates not selectable)</div>
+				<div>readonly, invalid, required</div>
+				</td>
+				<td>name from child content or title attribute</td>
+				<td><a href="spreadsheet">XHTML</a>
+				</td>
+			</tr>
+			<tr>
+				<td>group</td>
+				<td></td>
+				<td>name from title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>link</td>
+				<td></td>
+				<td>name from title attribute, linked (always true)</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>progressbar</td>
+				<td>valuenow="#"|"unknown", valuemin= "#", valuemax= "#"</td>
+				<td>name from title attribute</td>
+				<td><a href="progressbar">XHTML</a></td>
+			</tr>
+			<tr>
+				<td>radio</td>
+				<td>checked</td>
+				<td>name from child content or title attribute
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>radiogroup</td>
+				<td>invalid, required</td>
+				<td>name from title attribute
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>presentation</td>
+				<td></td>
+				<td>These items are automatically removed from the accessibility hierarchy.<br>
+When put on a table, all table related descendants are also removed from the accessibility hierarchy.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>rowheader</td>
+				<td>
+				<div>selected="true"|"false" (no selected attribute indicates not selectable)</div>
+				<div>readonly</div></td>
+				<td>name from child content or title attribute</td>
+				<td><a href="spreadsheet">XHTML</a>
+				</td>
+			</tr>
+			<tr>
+				<td>secret</td>
+				<td>invalid, required</td>
+				<td>name from title attribute, protected (always true)</td>
+				<td></td>
+			</tr>
+			<tr style="height: 6px;">
+				<td>separator</td>
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>slider</td>
+				<td>invalid, readonly, required, valuenow="#", valuemin="#", valuemax= "#"</td>
+				<td>name from title attribute</td>
+				<td><a href="slider">XHTML</A>
+				</td>
+			</tr>
+			<tr>
+				<td>spinbutton</td>
+				<td>invalid, readonly, required, valuenow="#", valuemin="#", valuemax= "#"</td>
+				<td>name from title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>spreadsheet</td>
+				<td></td>
+				<td>name from title attribute, multiselectable (always true)</td>
+				<td><a href="spreadsheet">XHTML</a>
+				</td>
+			</tr>
+			<tr>
+				<td>tab</td>
+				<td></td>
+				<td>name from child content or title attribute</td>
+				<td><a href="tabpanel">XHTML</a> &nbsp; <a href="class/tabpanel">HTML</a></td>
+			</tr>
+			<tr>
+				<td>tablist</td>
+				<td></td>
+				<td></td>
+				<td><a href="tabpanel">XHTML</A> &nbsp; <a href="class/tabpanel">HTML</a></td>
+			</tr>
+			<tr>
+				<td>tabpanel</td>
+				<td></td>
+				<td></td>
+				<td><a href="tabpanel">XHTML</a> &nbsp; <a href="class/tabpanel">HTML</a></td>
+			</tr>
+			<tr>
+				<td>textarea</td>
+				<td>invalid, readonly, required, valuenow="#", valuemin="#", valuemax= "#"</td>
+				<td>name from title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>textfield</td>
+				<td>haspopup, invalid, readonly, required, valuenow="#", valuemin="#", valuemax= "#"</td>
+				<td>name from title attribute</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>toolbar</td>
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>tree</td>
+				<td>multiselectable, readonly</td>
+				<td>name from title attribute</td>
+				<td><a href="tree">XHTML</a> &nbsp; <a href="class/tree">HTML</a></td>
+			</tr>
+			<tr>
+				<td>treeitem</td>
+				<td>
+				<div>selected="true"|"false" (no selected attribute indicates not selectable)</div>
+				<div>checked="true"|"false" (no checked attribute indicates not checkable)</div>
+				<div>expanded="true"|"false" (no expanded attribute indicates not expandable)</div></td>
+				<td>name from child content or title attribute</td>
+				<td><a href="tree">XHTML</a> &nbsp; <a href="class/tree">HTML</a></td>
+			</tr>
+</tbody>
+		</table>
+
+		<h2><a name="advanced">Future of DHTML Accessibility</a></h2>
+		<p>Additional DHTML accessibility support is being planned for future releases.
+		    This work is dependent on getting a relatively stable standard from the W3C <abbr title="Protocols and Formats">PF</abbr> group.
+			These changes include support for allowing authors to define new
+			roles via inheritance from known roles, support for describable
+			actions, specifying relationships between elements, and semantic
+			accesskeys that work around today's keyboard conflicts between the browser and
+			a web page's keyboard accelerators.</p>
+	
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

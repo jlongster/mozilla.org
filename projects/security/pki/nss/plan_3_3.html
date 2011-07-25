@@ -1,0 +1,460 @@
+<?php
+
+$html_title = 'NSS 3.3 Plan';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>NSS 3.3 Plan</h2>
+<FONT SIZE="-1">
+
+<i>Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Engineering lead: 
+<A HREF="mailto:relyea@netscape.com?subject=NSS 3.3 Plan">Bob Relyea</A><BR>
+
+Product manager: 
+<A HREF="mailto:rolandj@netscape.com?subject=NSS 3.3 Plan">Roland Jones</A><BR>
+
+Engineering manager: 
+<A HREF="mailto:wtc@netscape.com?subject=NSS 3.3 Plan">Wan-Teh Chang</A>
+<br>Draft Version 0.4, 1 Mar. 2001</font></i></center>
+
+</center>
+<p>
+
+
+
+
+<p>
+<hr size="1" width="100%">
+<h3>
+Introduction</h3>
+In February 2001 we released <a href="release_notes_32.html">NSS
+3.2</a>. For the first time, this release provides NSS in the form of shared libraries,
+which make it significantly easier for us to deliver bug fixes and performance
+enhancements to our customers. Performance of RSA operations 
+also improved substantially on several platforms in NSS 3.2.
+<p>One issue we did not have time to address in NSS 3.2 was to enable <a href="../jss/">JSS</a>
+to use the NSS shared libraries. (JSS uses some private NSS functions that
+we do not want to export from the NSS shared libraries). This forces
+JSS to link in NSS static libraries. As a result, it is not practical to use JSS
+in a process that is already linked with NSS, since the process will have two
+copies of NSS.
+<p>The main goal of NSS 3.3 is to enable the use of NSS shared libraries by JSS.
+Other important goals are to implement the core certificate architecture of NSS
+4.0 (code name <i>Stan</i>) and continue to enhance SSL performance.
+<h3>
+<b><font size=+1>Features and Tasks</font></b></h3>
+NSS 3.3 has the following goals.
+<h4>
+P1: Must Have</h4>
+
+<ol>
+<li>
+Enable JSS to use the NSS shared libraries. We need six weeks to finish
+this work. Target Milestone 1. (relyea, nicolson)</li>
+
+<li>
+Put together a list of cert handling problems that need to be fixed (some
+have been filed in Bugzilla) and review NSS 4.0's cert architecture to
+verify that it addresses these problems. (relyea, mcgreer)</li>
+
+<li>
+Implement the core cert architecture of NSS 4.0. (relyea)</li>
+
+<ul>
+<li>
+Improve the robustness of handling certs in the cert database and PKCS
+#11 modules.</li>
+
+<li>
+PKCS #11 interface to the DBM module.</li>
+</ul>
+
+<li>
+Design and implement a method to store and load PKCS #11 modules on all
+platforms, such as in the registry or in a directory server, and propose
+it to the PKCS #11 Work Group.&nbsp; Use this method to turn secmod.db
+into a PKCS #11 module. (relyea)</li>
+
+<li>
+Performance: SSL server session cache.&nbsp; Use shared memory and reduce
+hash collision. (nelsonb)</li>
+
+<li>
+Performance: lock contention. (kirke, larryh)</li>
+
+<li>
+Performance: memory allocation.&nbsp; Reduce the contention on the heap
+lock.&nbsp; Ideally our clients should not need to use a specialized malloc
+package like SmartHeap. Possible solutions include free lists for frequently
+used data structures, zone allocators, and per-thread arena pools. (kirke)</li>
+
+<li>
+Performance: set the TCP_NODELAY socket option when appropriate in the
+SSL protocol. (nelsonb)</li>
+
+<li>
+AES support in TLS. (nelsonb)</li>
+
+<li>
+Merge Dr. Henson's contributions to NSS. (nelsonb)</li>
+
+<li>
+Update the <a href="http://www.mozilla.org/projects/security/pki/nss/algorithms.html">list
+of encryption technologies</a> and file a new CCR for NSS 3.3 as it will
+have AES and other new encryption technologies. (relyea, wtc)</li>
+</ol>
+
+<h4>
+P2: Highly Desirable</h4>
+
+<ol>
+<li>
+Conform to latest PKCS #11 revision (2.11). (relyea)</li>
+
+<li>
+Tools: review and implement <tt>signtool</tt> enhancement requests (Bugzilla
+bugs <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=66600">#66600</a>,
+<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=66603">#66603</a>,
+<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=66604">#66604</a>,
+<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=66606">#66606</a>,
+and <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=66608">#66608</a>).
+(relyea)</li>
+
+<li>
+Resolve the build issues with Mozilla client. Add an autoconf-like configure
+script that does not require fundamental changes to the NSS build system.
+(<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=52990">Bug #52990</a>)
+(relyea, wtc)</li>
+
+<li>
+Combine SVRCORE with NSS. (relyea)</li>
+
+<ul>
+<li>
+move the useful SVRCORE functions to NSS; or</li>
+
+<li>
+help LDAP C SDK replace SVRCORE with existing public NSS functions.</li>
+</ul>
+
+<li>
+Enable PSM to use NSS shared libraries. (relyea, javi)</li>
+
+<li>
+CMC support. (javi or nelsonb)</li>
+
+<li>
+Tools: <tt>dbck</tt> should work. (mcgreer)</li>
+
+<li>
+AES support in S/MIME. (nelsonb, mcgreer, chrisk)</li>
+</ol>
+
+<h4>
+P3: Nice to Have</h4>
+
+<ol>
+<li>
+Performance: coalesce small reads in SSL. (kirke)</li>
+
+<li>
+Elliptic Curve Cryptography (ECC). (unassigned)</li>
+</ol>
+
+<h3>
+International Requirements</h3>
+<i>TO DO</i>.
+<h3>
+Platforms Supported</h3>
+NSS is maintained on the platforms listed below. "Certify" means the iPlanet
+NSS team will build and run QA tests for NSS on a machine with the specified
+OS.
+<br>&nbsp;
+<table BORDER >
+<caption><tbody>
+<br></tbody></caption>
+
+<tr>
+<td VALIGN=CENTER><b>Platform</b></td>
+
+<td VALIGN=CENTER><b>Build</b></td>
+
+<td VALIGN=CENTER><b>Certify</b></td>
+
+<td VALIGN=CENTER><b>Compiler(s)</b></td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER ROWSPAN="2" HEIGHT="43">AIX</td>
+
+<td VALIGN=CENTER HEIGHT="43">4.3.3 (32 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="43">4.3.3 (32 bit)&nbsp;
+<br>4.3.3 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="43">xlC/C++ 3.6.6</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER HEIGHT="9">4.3.3 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="9">4.3.3 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="9">xlC/C++ 3.6.6</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER HEIGHT="61">Compaq Tru64</td>
+
+<td VALIGN=CENTER HEIGHT="61">4.0D</td>
+
+<td VALIGN=CENTER HEIGHT="61">4.0D&nbsp;
+<br>5.0A</td>
+
+<td VALIGN=CENTER HEIGHT="61">(cc) Digital C v5.6-071</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER ROWSPAN="2" HEIGHT="58">HP-UX</td>
+
+<td VALIGN=CENTER HEIGHT="58">11.0 (32 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="58">11.0 (32 bit)&nbsp;
+<br>11.0 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="58">C compiler: A.11.01.00</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER HEIGHT="9">11.0 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="9">11.0 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="9">C compiler A.11.01.00</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER>Linux</td>
+
+<td VALIGN=CENTER>Red Hat 6.0</td>
+
+<td VALIGN=CENTER>Red Hat 6.1&nbsp;
+<br>Red Hat 6.2</td>
+
+<td VALIGN=CENTER>egcs-1.1.2</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER>NT</td>
+
+<td VALIGN=CENTER>NT 4.0 w/ SP 6a</td>
+
+<td VALIGN=CENTER>NT 4.0 w/ SP 6a&nbsp;
+<br>Win2000</td>
+
+<td VALIGN=CENTER>VC++ 6.0 Service Pack 4</td>
+</tr>
+
+<tr>
+<td>Windows</td>
+
+<td>NT 4.0 w/ SP 6a</td>
+
+<td>NT 4.0 w/ SP 6a&nbsp;
+<br>Win2000&nbsp;
+<br>Win95 OSR2 *&nbsp;
+<br>Win98 SE *&nbsp;
+<br>Win Me *</td>
+
+<td>VC++ 6.0 Service Pack 4</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER ROWSPAN="2" HEIGHT="66">Solaris</td>
+
+<td VALIGN=CENTER HEIGHT="66">2.6</td>
+
+<td VALIGN=CENTER HEIGHT="66">2.6&nbsp;
+<br>8 (32 bit)&nbsp;
+<br>8 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="66">WorkShop Compilers&nbsp;
+<br>C/C++ version 5.0</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER HEIGHT="12">8 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="12">8 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="12">WorkShop Compilers&nbsp;
+<br>C/C++ version 5.0</td>
+</tr>
+
+<tr>
+<td>IRIX</td>
+
+<td>6.5</td>
+
+<td>6.5 **</td>
+
+<td>MIPSPro 7.3</td>
+</tr>
+
+<tr>
+<td>Mac OS</td>
+
+<td>9</td>
+
+<td>8.5 *&nbsp;
+<br>8.6 *&nbsp;
+<br>9 *</td>
+
+<td>Metrowerks CodeWarrior Pro 5</td>
+</tr>
+</table>
+
+
+<p>* Full QA certification will not be done on these platforms. We will
+only verify that <a href="http://www.mozilla.org/projects/security/pki/psm/">PSM</a>
+built with NSS 3.3 works on these platforms.
+<p>** Optional.
+
+<p>NSS has not yet been formally certified on any other platforms. If you
+have successfully run NSS QA tests on other platforms, please post the
+test output logs and results to <a href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a>.
+If you are interested in taking responsibility for testing and maintaining
+NSS on a particular platform that's not listed above, post a message to
+<a href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a>.
+
+<p><b>Note re NT builds:</b> The build listed in the left column above as the "NT" build will run on NT (including Windows 2000) only and hence can potentially take advantage of some Win32 functions that are only implemented on NT, such as fibers and I/O completion ports. The build listed above as the "Windows" build will run on all Windows flavors -- 95, 98, Me, NT, and 2000.
+
+<p>Only NSPR makes use of this NT vs. Windows distinction and provides different NT and Windows builds. Many Netscape products, including NSS, have NT and Windows builds that are essentially the same except one difference: one is linked with the NT version of NSPR and the other is linked with the Windows version of NSPR.
+
+
+<h3>
+QA Test Plan</h3>
+
+<ol>
+<li>
+Restructure the QA test scripts and rewrite portions of them to improve
+speed and readability. (sonmi)</li>
+
+<li>
+Clean up some tests such as <tt>tstclnt</tt> and <tt>strsclnt</tt>. (sonmi)</li>
+
+<li>
+Test the loadable root certs module. (mcgreer)</li>
+
+<li>
+Check the version identification strings in the shared libraries. (sonmi)</li>
+
+<li>
+Measure the test coverage. (sonmi)</li>
+
+<li>
+Test shared library backward compatibility against NSS 3.2. (sonmi)</li>
+
+<li>
+Improve the tools tests. (sonmi)</li>
+
+<li>
+Test NSS on hardware accelerators such as Chrysalis, nCipher, and Rainbow.
+(sonmi. relyea, nelsonb, and javi to install the hardware and drivers.)</li>
+
+<li>
+Make our QA test scripts run under the Cygwin tools as well as MKS Toolkit
+on Windows. (sonmi)</li>
+
+<li>
+Improve the readability of the output log of our tests. (sonmi)</li>
+</ol>
+
+<h3>
+Documentation Plan</h3>
+At a minimum, all the <a href="http://www.mozilla.org/projects/security/pki/nss/ref/nssfunctions.html">NSS
+public functions</a> should be documented.&nbsp; The NSS engineers will
+use an HTML template provided by our technical writer to document the functions
+in a consistent style.&nbsp; We should also document the S/MIME library
+in the same way the SSL library is documented in the <a href="http://www.mozilla.org/projects/security/pki/nss/ref/ssl/">SSL
+Reference</a>, with overviews, tutorials, and sample code.&nbsp; (The API
+of the NSS base library is going to change in NSS 4.0, so we are not planning
+to do a comprehensive documentation of it at this moment.)
+<h3>
+Schedule</h3>
+We have the following target dates.&nbsp; Feature development will proceed
+in three milestones to stay responsive to unexpected or changing requirements.&nbsp;
+At each milestone NSS should be in a good and stable state so that it can
+be easily turned into a release if necessary (for example, to enable JSS
+to use NSS shared libraries sooner).
+<br>&nbsp;
+<table BORDER >
+<caption><tbody>
+<br></tbody></caption>
+
+<tr>
+<td><b>Task</b></td>
+
+<td><b>Date</b></td>
+</tr>
+
+<tr>
+<td>Feature list frozen</td>
+
+<td><font color="#000000">3/2/01</font></td>
+</tr>
+
+<tr>
+<td>Milestone 1</td>
+
+<td>4/27/01</td>
+</tr>
+
+<tr>
+<td>Milestone 2</td>
+
+<td>6/29/01</td>
+</tr>
+
+<tr>
+<td>Milestone 3: feature complete</td>
+
+<td>8/31/01</td>
+</tr>
+
+<tr>
+<td>Beta</td>
+
+<td>9/7/01</td>
+</tr>
+
+<tr>
+<td>Certification (RTM Candidate)</td>
+
+<td>9/24/01</td>
+</tr>
+
+<tr>
+<td><b>RTM</b></td>
+
+<td>9/28/01</td>
+</tr>
+</table>
+
+<br>&nbsp;
+<br>&nbsp;
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

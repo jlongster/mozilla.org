@@ -1,0 +1,1205 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;23 Process Management and Interprocess  Communication';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:05:56">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="prlink.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prmwait.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="24348"> </A><A NAME=""> </A><h2>
+Chapter&#32;23 
+&nbsp;
+
+
+
+<A NAME="24349"> </A><A NAME="Process Management and Interprocess  Communication"> </A>Process Management and Interprocess  Communication
+</h2>
+</center>
+<A NAME="24350"> </A>This chapter describes the NSPR routines that deal with processes. A process is an 
+instance of a program. NSPR provides routines to create a  new process and to wait 
+for the termination of another process. 
+
+<P>
+
+<A NAME="24351"> </A>NSPR does not provide an equivalent of the Unix <CODE>fork()</CODE>. The newly-created 
+process executes its program from the beginning. A new process can inherit 
+specified file descriptors from its parent, and the parent can redirect the standard 
+I/O streams of the child process to specified file descriptors. 
+
+<P>
+
+<A NAME="24352"> </A>Note that the functions described in this chapter are not available for MacOS or 
+Win16 operating systems.
+
+<P>
+
+<A NAME="24356"> </A><A HREF="prprocess.html#24361"  >Process Management Types and Constants</A><br>
+<A HREF="prprocess.html#24387"  >Process Management Functions</A>
+
+<P>
+
+
+
+<A NAME="24361"> </A>
+<A NAME="Process Management Types and Constants"> </A>
+<h2>
+Process Management Types and Constants
+</h2>
+
+
+<A NAME="24362"> </A>The types defined for process management are:
+
+<P>
+
+<A NAME="24366"> </A><A HREF="prprocess.html#24371"  ><CODE>PRProcess</CODE></A><CODE><br>
+</CODE><A HREF="prprocess.html#24379"  ><CODE>PRProcessAttr</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="24371"> </A><A NAME="PRProcess"> </A><h4>
+PRProcess
+</h4>
+
+<A NAME="24372"> </A>Represents a process.
+
+<P>
+
+<BR>
+<A NAME="24373"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24374"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24375"></A>typedef struct PRProcess PRProcess;
+</PRE>
+<P>
+<BR>
+<A NAME="24376"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24377"> </A>A pointer to the opaque <CODE>PRProcess</CODE> structure identifies a process. 
+
+<P>
+
+<A NAME="24379"> </A><A NAME="PRProcessAttr"> </A><h4>
+PRProcessAttr
+</h4>
+
+<A NAME="24380"> </A>Represents the attributes of a new process.
+
+<P>
+
+<BR>
+<A NAME="24381"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24382"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24383"></A>typedef struct PRProcessAttr PRProcessAttr; 
+</PRE>
+<P>
+<BR>
+<A NAME="24384"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24385"> </A>This opaque structure describes the attributes of a process to be created. Pass a 
+pointer to a <CODE>PRProcessAttr</CODE> into <CODE>PR_CreateProcess</CODE> when you create a new 
+process, specifying information such as standard input/output redirection and file 
+descriptor inheritance. 
+
+<P>
+
+
+
+<A NAME="24387"> </A>
+<A NAME="Process Management Functions"> </A>
+<h2>
+Process Management Functions
+</h2>
+
+
+<A NAME="24388"> </A>The process manipulation function fall into these categories:
+
+<P>
+
+<A NAME="24392"> </A><A HREF="prprocess.html#24397"  >Setting the Attributes of a New Process</A><br>
+<A HREF="prprocess.html#24519"  >Creating and Managing Processes</A>
+
+<P>
+
+
+<A NAME="24397"> </A>
+<A NAME="Setting the Attributes of a New Process"> </A>
+<h3>
+Setting the Attributes of a New Process
+</h3>
+
+
+
+
+<A NAME="24398"> </A>The functions that create and manipulate attribute sets of new processes are:
+
+<P>
+
+<A NAME="24402"> </A><A HREF="prprocess.html#24416"  ><CODE>PR_NewProcessAttr</CODE></A><CODE><br>
+</CODE><A HREF="prprocess.html#24430"  ><CODE>PR_ResetProcessAttr</CODE></A><CODE><br>
+</CODE><A HREF="prprocess.html#24448"  ><CODE>PR_DestroyProcessAttr</CODE></A><CODE><br>
+</CODE><A HREF="prprocess.html#24466"  ><CODE>PR_ProcessAttrSetStdioRedirect</CODE></A><CODE><br>
+</CODE><A HREF="prprocess.html#24493"  ><CODE>PR_ProcessAttrSetCurrentDirectory</CODE></A><CODE><br>
+</CODE><A HREF="prprocess.html#24854"  ><CODE>PR_ProcessAttrSetInheritableFD</CODE></A>
+
+<P>
+
+<A NAME="24416"> </A><A NAME="PR_NewProcessAttr"> </A><h4>
+PR_NewProcessAttr
+</h4>
+
+<A NAME="24417"> </A>Creates a process attributes structure.
+
+<P>
+
+<BR>
+<A NAME="24418"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24419"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<A NAME="24420"> </A><CODE>PRProcessAttr *PR_NewProcessAttr(void);</CODE> 
+
+<P>
+
+<BR>
+<A NAME="24421"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24422"> </A>The function has no parameters.
+
+<P>
+
+<BR>
+<A NAME="24423"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24424"> </A>A pointer to the new process attributes structure.
+
+<P>
+
+<BR>
+<A NAME="24425"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24426"> </A>This function creates a new <CODE>PRProcessAttr</CODE> structure that specifies the attributes of 
+a new process, then returns a pointer to the structure. The new <CODE>PRProcessAttr</CODE> 
+structure is initialized with these default attributes: 
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="24427"> </A>The standard I/O streams (standard input, standard output, and standard 
+error) are not redirected 
+
+<P><B>  <li></B>
+<A NAME="24428"> </A>No file descriptors are inherited by the new process. 
+
+<P></ul>
+
+<A NAME="24430"> </A><A NAME="PR_ResetProcessAttr"> </A><h4>
+PR_ResetProcessAttr
+</h4>
+
+<A NAME="24431"> </A>Reinitializes a process attributes structure.
+
+<P>
+
+<BR>
+<A NAME="24432"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24433"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<A NAME="24434"> </A><CODE>void PR_ResetProcessAttr(PRProcessAttr *attr);</CODE> 
+
+<P>
+
+<BR>
+<A NAME="24435"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24436"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="24442"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24439"> </A>attr
+
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24441"> </A>A pointer to the process attributes structure to be reset.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24443"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24444"> </A>Nothing.
+
+<P>
+
+<BR>
+<A NAME="24445"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24446"> </A>This function initializes the specified process attributes structure to the default 
+attributes. A <CODE>PRProcessAttr</CODE> structure can be reused to create many new 
+processes. Before using it to create a different process, re-initialize the structure 
+with a call to <CODE>PR_ResetProcessAttr</CODE>. 
+
+<P>
+
+<A NAME="24448"> </A><A NAME="PR_DestroyProcessAttr"> </A><h4>
+PR_DestroyProcessAttr
+</h4>
+
+<A NAME="24449"> </A>Destroys a process attributes structure.
+
+<P>
+
+<BR>
+<A NAME="24450"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24451"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<A NAME="24452"> </A><CODE>void PR_DestroyProcessAttr(PRProcessAttr *attr);</CODE> 
+
+<P>
+
+<BR>
+<A NAME="24453"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24454"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="24460"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24457"> </A><CODE>attr
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24459"> </A>A pointer to the process attributes structure to be destroyed.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24461"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24462"> </A>Nothing.
+
+<P>
+
+<BR>
+<A NAME="24463"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24464"> </A>This function frees the memory associated with the specified process attributes 
+structure. On return, the value of <CODE>attr</CODE> becomes an invalid pointer and should not 
+be passed to other functions. 
+
+<P>
+
+<A NAME="24466"> </A><A NAME="PR_ProcessAttrSetStdioRedirect"> </A><h4>
+PR_ProcessAttrSetStdioRedirect
+</h4>
+
+<A NAME="24467"> </A>Sets the standard I/O redirection attribute in a process attributes structure.
+
+<P>
+
+<BR>
+<A NAME="24468"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24469"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24470"></A><CODE>void PR_ProcessAttrSetStdioRedirect (<br>&nbsp;&nbsp;&nbsp;PRProcessAttr *attr, <br>&nbsp;&nbsp;&nbsp;PRInt32 stdioFd, <br>&nbsp;&nbsp;&nbsp;PRFileDesc *redirectFd);</CODE> 
+</PRE>
+<P>
+<BR>
+<A NAME="24471"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24472"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="24487"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24475"> </A><CODE>attr
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24477"> </A>A pointer to the process attributes structure.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24479"> </A><CODE>stdioFd&nbsp;
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24481"> </A>A standard I/O stream. Possible values are:
+
+<P>
+
+<A NAME="24482"> </A>&nbsp;<CODE>PR_StandardInput</CODE> <br>
+&nbsp;<CODE>PR_StandardOutput<br>
+</CODE>&nbsp;<CODE>PR_StandardError
+</CODE>
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24484"> </A><CODE>redirectFd
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24486"> </A>A pointer to a file descriptor.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24488"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24489"> </A>Nothing.
+
+<P>
+
+<BR>
+<A NAME="24490"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24491"> </A>This function redirects the specified standard I/O stream of a process created with 
+the specified process attributes to the specified file descriptor. 
+
+<P>
+
+<A NAME="24493"> </A><A NAME="PR_ProcessAttrSetCurrentDirectory"> </A><h4>
+PR_ProcessAttrSetCurrentDirectory
+</h4>
+
+<A NAME="24494"> </A>Specifies the current working directory for a new process.
+
+<P>
+
+<BR>
+<A NAME="24495"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24496"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24497"></A><CODE>PrStatus PR_ProcessAttrSetCurrentDirectory (<br>&nbsp;&nbsp;&nbsp;PRProcess *attr,<br>&nbsp;&nbsp;&nbsp;const char *dir);</CODE> 
+</PRE>
+<P>
+<BR>
+<A NAME="24498"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24499"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="24509"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24502"> </A><CODE>attr
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24504"> </A>A pointer to the process attributes structure.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24506"> </A><CODE>dir
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24508"> </A>The pathname of the current working directory for the new process.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24510"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24511"> </A>If successful, <CODE>PR_SUCCESS</CODE>; otherwise, <CODE>PR_FAILURE</CODE>. Retrieve the reason for the 
+failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>. 
+
+<P>
+
+<BR>
+<A NAME="24515"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24516"> </A>This function sets the current working directory of the specified process attributes 
+structure to the specified pathname. If this function is not used to set the current 
+working directory, the new process inherits the current working directory of the 
+parent process.
+
+<P>
+
+<A NAME="24517"> </A>The runtime copies the pathname and maintains the copy. The function fails and 
+the error <CODE>PR_OUT_OF_MEMORY_ERROR</CODE> occurs when NSPR cannot make a copy of the 
+string <CODE>dir</CODE>.
+
+<P>
+
+<A NAME="24854"> </A><A NAME="PR_ProcessAttrSetInheritableFD"> </A><h4>
+PR_ProcessAttrSetInheritableFD
+</h4>
+
+<A NAME="24865"> </A>Sets the inheritable file descriptor in a process attributes structure. 
+
+<P>
+
+<BR>
+<A NAME="24870"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24871"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24860"></A>void PR_ProcessAttrSetInheritableFD(<br>&nbsp;&nbsp;&nbsp;PRProcess *attr, <br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd, <br>&nbsp;&nbsp;&nbsp;const char *name); 
+</PRE>
+<P>
+<BR>
+<A NAME="24906"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24907"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="24917"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="24910"></A>attr
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="24912"> </A>A pointer to the process attributes structure.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="24914"></A>fd
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="24916"> </A>A pointer to the file descriptor to be inherited by the process.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="24923"></A>name
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="24925"> </A>A pointer to the name for the inherited file descriptor.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24881"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24879"> </A>Nothing.
+
+<P>
+
+<BR>
+<A NAME="24856"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24886"> </A>The new process will inherit the file descriptor <CODE>fd</CODE>, which is given the string name 
+<CODE>name</CODE>. The new process can get the inherited file descriptor by specifying the string 
+<B>name</B> to PR_GetInheritedFileDesc. 
+
+<P>
+
+
+<A NAME="24519"> </A>
+<A NAME="Creating and Managing Processes"> </A>
+<h3>
+Creating and Managing Processes
+</h3>
+
+
+
+
+<A NAME="24520"> </A>The functions that create and manage processes are:
+
+<P>
+
+<A NAME="24524"> </A><A HREF="prprocess.html#24535"  ><CODE>PR_CreateProcess</CODE></A><CODE><br>
+</CODE><A HREF="prprocess.html#24574"  ><CODE>PR_DetachProcess</CODE></A><CODE><br>
+</CODE><A HREF="prprocess.html#24595"  ><CODE>PR_WaitProcess</CODE></A><CODE><br>
+</CODE><A HREF="prprocess.html#24620"  ><CODE>PR_KillProcess</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="24535"> </A><A NAME="PR_CreateProcess"> </A><h4>
+PR_CreateProcess
+</h4>
+
+<A NAME="24536"> </A>Creates a new process.
+
+<P>
+
+<BR>
+<A NAME="24537"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24538"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24539"></A>PRProcess *PR_CreateProcess(<br>&nbsp;&nbsp;&nbsp;&nbsp;const char *path,<br>&nbsp;&nbsp;&nbsp;&nbsp;char *const *argv,<br>&nbsp;&nbsp;&nbsp;&nbsp;char *const *envp,<br>&nbsp;&nbsp;&nbsp;&nbsp;const PRProcessAttr *attr
+</PRE>
+<P>
+<BR>
+<A NAME="24540"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24541"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="24563"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24544"> </A><CODE>path
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24546"> </A>Pathname of an executable file.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24548"> </A><CODE>argv
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24550"> </A>A null-terminated array of character strings specifying the command-line 
+arguments. The first argument (<CODE>argv[0]</CODE>) is the name of the executable 
+file.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24552"> </A><CODE>envp
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24554"> </A>A null-terminated array of character strings specifying the environment 
+strings. Each string in the array is of the form:&nbsp; <br>
+&nbsp;&nbsp;&nbsp;<CODE> name=value&nbsp;</CODE> 
+
+<P>
+
+<A NAME="24555"> </A>
+
+<P>
+
+<A NAME="24556"> </A>If <CODE>NULL</CODE>, the new process inherits the environment of the parent process. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24558"> </A>attr
+
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24560"> </A>A pointer to a <CODE>PRProcessAttr</CODE> structure that describes the attributes of 
+the new process.
+
+<P>
+
+<A NAME="24561"> </A>
+
+<P>
+
+<A NAME="24562"> </A>If <CODE>NULL</CODE>, the new process has the default attributes.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24564"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24565"> </A>On success, returns a pointer to a <CODE>PRProcess</CODE> structure representing the new 
+process. On failure, returns <CODE>NULL</CODE>. Retrieve the reason for the failure by calling 
+<A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="24569"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24570"> </A><CODE>PR_CreateProcess()</CODE> creates a new process that executes the file specified in 
+<CODE>argv[0]</CODE>, with the specified commmand-line arguments and environment. The 
+specified attribute structure determines the I/O redirection and file descriptor 
+inheritance of the new process. 
+
+<P>
+
+<A NAME="24571"> </A>The newly-created process must be either detached (<CODE>PR_DetachProcess</CODE>) or reaped 
+(<CODE>PR_WaitProcess</CODE>), otherwise the memory for its <CODE>PRProcess</CODE> structure is not 
+reclaimed and results in memory leaks. 
+
+<P>
+
+<A NAME="24572"> </A>This function can fail due to illegal access (permissions), invalid arguments, or 
+insufficient resources.
+
+<P>
+
+<A NAME="24574"> </A><A NAME="PR_DetachProcess"> </A><h4>
+PR_DetachProcess
+</h4>
+
+<A NAME="24575"> </A>Detaches a child process.
+
+<P>
+
+<BR>
+<A NAME="24576"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24577"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24578"></A>PRStatus PR_DetachProcess(PRProcess *process); 
+</PRE>
+<P>
+<BR>
+<A NAME="24579"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24580"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="24586"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24583"> </A><CODE>process
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24585"> </A>A pointer to the nondetached process to be detached.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24587"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24588"> </A>If successful, <CODE>PR_SUCCESS</CODE>; otherwise, <CODE>PR_FAILURE</CODE>. Retrieve the reason for the 
+failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>. 
+
+<P>
+
+<BR>
+<A NAME="24592"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24593"> </A>This function detaches the specified process. A detached process does not need to 
+be and cannot be reaped. On return, the value of <CODE>process</CODE> becomes an invalid 
+pointer and should not be passed to other functions. 
+
+<P>
+
+<A NAME="24595"> </A><A NAME="PR_WaitProcess"> </A><h4>
+PR_WaitProcess
+</h4>
+
+<A NAME="24596"> </A>Waits for a process to terminate.
+
+<P>
+
+<BR>
+<A NAME="24597"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24598"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24599"></A>PRStatus PR_WaitProcess (<br>&nbsp;&nbsp;&nbsp;PRProcess *process,<br>&nbsp;&nbsp;&nbsp;PRInt32 *exitCode); 
+</PRE>
+<P>
+<BR>
+<A NAME="24600"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24601"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="24611"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24604"> </A><CODE>process
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24606"> </A>A pointer to the nondetached process whose termination you want to 
+wait for.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24608"> </A><CODE>exitCode
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24610"> </A>A pointer to a pre-allocated location to contain the exit code of the 
+process. Can be <CODE>NULL</CODE>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24612"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24613"> </A>If successful, <CODE>PR_SUCCESS</CODE>; otherwise, <CODE>PR_FAILURE</CODE>. Retrieve the reason for the 
+failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="24617"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24618"> </A>This function blocks the calling thread until the specified nondetached process has 
+terminated. On successful completion, the function returns <CODE>PR_SUCCESS</CODE>. If 
+<CODE>exitCode</CODE> is not <CODE>NULL</CODE>, the variable to which it points contains the exit status code of 
+<CODE>process</CODE>. 
+
+<P>
+
+<A NAME="24620"> </A><A NAME="PR_KillProcess"> </A><h4>
+PR_KillProcess
+</h4>
+
+<A NAME="24621"> </A>Terminates a process.
+
+<P>
+
+<BR>
+<A NAME="24622"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24623"></A>#include &lt;prproces.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24624"></A>PRStatus PR_KillProcess(PRProcess *process); 
+</PRE>
+<P>
+<BR>
+<A NAME="24625"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24626"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="24632"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24629"> </A><CODE>process
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24631"> </A>A pointer to the process to be killed.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24633"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24634"> </A>If successful, <CODE>PR_SUCCESS</CODE>; otherwise, <CODE>PR_FAILURE</CODE>. Retrieve the reason for the 
+failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="24638"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24639"> </A>Terminates the specified process.
+
+<P>
+
+<A NAME="24640"> </A><B>NOTE</B>: It is not clear whether this function is useful, or that it can be implemented 
+everywhere. 
+
+<P>
+
+<A NAME="24931"> </A>
+
+<P>
+
+<A NAME="24932"> </A><A NAME="PR_GetInheritedFD"> </A><h4>
+PR_GetInheritedFD
+</h4>
+
+<A NAME="24933"> </A><B>&lt;&lt;In Mozilla version, but can't find in header&gt;&gt; 
+</B>
+<P>
+
+<BR>
+<A NAME="24976"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24958"></A>PRFileDesc * PR_GetInheritedFD(const char *name); 
+</PRE>
+<P>
+<A NAME="24959"> </A>
+
+<P>
+
+<A NAME="24960"> </A>From Mozilla:
+
+<P>
+
+<A NAME="24997"> </A>The newly created process can use PR_GetInheritedFileDesc to get the inherited 
+file descriptor with the name name. The name is given by its parent process. The 
+parent and child must have some prearranged agreement on the names of 
+inherited file descriptors. &lt;&lt;
+
+<P>
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="prlink.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prmwait.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

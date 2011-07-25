@@ -1,0 +1,230 @@
+<?php
+
+$html_title = 'NSPR 4.8.3 Release';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<br>
+<center>
+<h2>NSPR 4.8.3 Release</h2>
+</center>
+<center>1 February 2010</center>
+<h2>
+Table of Contents</h2>
+<ol>
+  <li> <a href="#Introduction">Introduction</a></li>
+  <li> <a href="#What%27s">What's New</a></li>
+  <li> <a href="#New%20Release%20naming">Library Version Specification</a></li>
+  <li> <a href="#Platforms">Platforms</a></li>
+  <li> <a href="#Compatibility">Compatibility</a></li>
+  <li> <a href="#Release">Release Components</a></li>
+  <li> <a href="#Test">Test Data</a></li>
+  <li> <a href="#How%20to%20file%20bug">Reporting bugs</a></li>
+  <li> <a href="#Building%20from">Building from source</a></li>
+  <li> <a href="#Contact">Contact Info</a></li>
+</ol>
+<h3>
+1. <a name="Introduction"></a>Introduction</h3>
+<p>The NSPR 4.8.3 release is a bug-fix patch release for NSPR 4.8.</p>
+<h3>
+2. <a name="What's"></a>What's New</h3>
+NSPR 4.8.3 provides bug fixes.
+<h4>2.1 Bug fixes</h4>
+<ul>
+  <li><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=520359">Bug
+520359</a>: pymake fails to build Firefox.
+Mitchell Field.</li>
+  <li><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=521306">Bug
+521306</a>: DoS in prdtoa after bug 516396 is fixed.</li>
+  <li><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=522992">Bug
+522992</a>: NSPR logging timestamp month number is off by one. Contributed
+by Hiroyuki Ikezoe.</li>
+  <li><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=525221">Bug
+525221</a>: Loop over DIRS better. Contributed by Benjamin Smedberg.</li>
+  <li><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=533093">Bug
+533093</a>: Fix a test exit status bug in runtests.pl when there is no
+timeout for tests.</li>
+</ul>
+<h3>3. <a name="New Release naming"></a>Library Name and Versioning</h3>
+The binaries for this release are named libnspr4 (nspr4 in the "WIN95"
+build configuration for Windows).
+<p>The full release number of nspr library can be determined in several
+ways:
+</p>
+<p>1. The nspr library exports a function, libVersionPoint, that can be
+called to retrieve the version of the library. The function and data
+prototypes are available for other libraries to provide similar version
+information.
+<br>
+2. On Win32 systems, the version number is embedded in the resource
+descriptor of the DLL and can be viewed using Windows Explorer. On Unix
+system, the "what" command of sccs or the "ident" command of rcs can be
+used to obtain the version information.
+<br>
+3. The PR_VersionCheck function can be called to check for
+compatibility;
+given a version number the function returns success condition if the
+version
+of the nspr library loaded into the application is compatible.
+</p>
+<h3>4. <a name="Platforms"></a>Platforms</h3>
+NSPR has been ported to all major Unix platforms (including Linux and
+Mac OS X), Windows, OS/2, and BeOS. The NSPR team regularly builds and
+tests NSPR on AIX, HP-UX, Linux, Mac OS X, Solaris, and Windows. On
+most
+platforms, a single release of the nspr library is used to support all
+the current releases of the OS.<br>
+<h3>5. <a name="Compatibility"></a>Compatibility</h3>
+The NSPR 4.8.3 release is backward compatible with NSPR 4.0.x, 4.1.x,
+4.2.x, 4.3.x, 4.4.x, 4.5.x, 4.6.x, 4.7.x, 4.8, 4.8.1, and 4.8.2.
+<p>For the nspr library, backward compatibility does not preclude the
+addition
+of new error codes to the set of <a
+ href="http://www.mozilla.org/docs/refList/refNSPR/prerr.html#1027954">nspr
+error codes </a>already defined. An application should allow for nspr
+functions
+returning error codes not documented for the particular release with
+which
+it is linked. This helps to retain backward compatibility as new error
+codes are added upon discovery of new information about
+platform-specific
+error codes.
+</p>
+<h3>6. <a name="Release"></a>Release Components</h3>
+The main components of this release are a set of shared libraries and
+header
+files for each platform. A debug build and a release (optimized) build
+of the libraries are made available for each platform.
+<h4>6.1 Platform Directory</h4>
+The platform-dependent name of the directory where the components are
+placed
+is of the form
+<p>&lt;os-name&gt;&lt;os-version&gt;[_&lt;compiler&gt;][cpu-arch][_&lt;implementation
+strategy&gt;][_&lt;addr-bits&gt;]_&lt;DBG|OPT&gt;.OBJ
+</p>
+<p> For example,
+<br>
+SunOS5.9_OPT.OBJ (optimized build)
+<br>
+HP-UXB.11.11_64_DBG.OBJ (64-bit, debug build)
+</p>
+<h4>6.2 Implementation Strategy</h4>
+For the implementation of nspr, different strategies
+are used on different platforms. On some platforms the nspr threads
+map directly to the native threads on the platform, while on others
+nspr
+supports both threads that are scheduled by nspr and the native
+threads.
+<p> The default implementation strategies in this release are:
+<br>
+- pthreads: all Unix platforms
+<br>
+- classic: Win NT (combined MxN model, with Windows threads
+and fibers)
+<br>
+- native threads: Win95
+</p>
+<h4>6.3 Components</h4>
+Under each &lt;platform&gt; directory, there are:
+<p>1. include directory, containing the header files
+<br>
+2. lib directory, containing the libraries. Three libraries are built
+on all platforms: nspr, plc, plds. Only shared (dynamic link) versions
+of the libraries are built.
+</p>
+<p>The nspr library exports the core nspr functions.
+</p>
+<p>The plc (Portable Library C) library is a separate library from the
+core nspr. You do
+<br>
+not need to use plc if you just want to use the core nspr functions.
+The plc library currently
+<br>
+contains thread-safe string functions and functions for processing
+command-line options.
+</p>
+<p>The plds (Portable Library Data Structures) library supports data
+structures
+such as arenas and hash tables. It is important to note that services
+of plds are not thread-safe. To use these services in a multi-threaded
+environment,
+clients have to implement their own thread-safe access, by acquiring
+locks/monitors,
+for example.
+</p>
+<p>For Solaris platforms with UltraSPARC processors only, a
+platform-specific
+library, libnspr_flt, is also supplied. (libnspr_flt replaces
+the libultrasparc library in NSPR 4.2.x or earlier.)
+This library implements optimized
+versions of atomic operations by using the features present in the
+UltraSPARC
+(V9) processors, but not in the SPARC (V8) processors. This library
+is linked into libnspr by use of the auxiliary
+filter mechanism of the Solaris linker. To use this library at runtime
+on UltraSPARC systems, libnspr_flt4.so should be installed in a
+subdirectory named cpu/sparcv8plus relative to the directory where
+libnspr4.so resides.
+</p>
+<p>3. bin directory, containing a perl script, compile-et.pl, and a
+Java
+bundle, prerr.properties.
+<br>
+4. mdheader.jar, jar file for the header files.
+<br>
+5. mdbinary.jar, jar for the libraries, executable programs,
+and scripts.
+</p>
+<h3>7. <a name="Test"></a>Test Data</h3>
+All the major functional areas of nspr were tested using the programs
+in
+the nspr test suite. Both functional and stress tests in the pr/tests
+directory
+were successfully run on multi-processor systems for most platforms,
+except
+for Win95/98.
+<h3> 8. <a name="How to file bug"></a>Reporting bugs</h3>
+Bugs discovered should be reported by filing a report in <a
+ href="http://bugzilla.mozilla.org/enter_bug.cgi?product=NSPR">Bugzilla</a>.
+The following information is required
+<ul>
+  <li>platform (Solaris 9, HP-UX 11.11, etc.)</li>
+  <li>number of cpus in the system</li>
+  <li>a stack trace, in the event of a crash</li>
+  <li>reproducibility of the problem</li>
+  <li>location of core dump, if available, along with those for the
+libraries
+and executables</li>
+</ul>
+<h3> 9. <a name="Building from"></a>Building from source</h3>
+This release is built from the source, at the CVS repository rooted at
+cvs.mozilla.org:/cvsroot, with the CVS tag
+<br>
+NSPR_4_8_3_RTM. You can check out the source from CVS by
+<br>
+cvs co -r NSPR_4_8_3_RTM mozilla/nsprpub
+<p>To build, do
+<br>
+cd mozilla/nsprpub
+<br>
+./configure<br>
+gmake export
+</p>
+<h3>10. <a name="Contact"></a>Contact Info</h3>
+<a href="http://www.mozilla.org/projects/nspr/">http://www.mozilla.org/projects/nspr/</a>
+and <a href="http://developer.mozilla.org/en/NSPR">http://developer.mozilla.org/en/NSPR</a>
+- NSPR documentation<br>
+<a href="news://news.mozilla.org/mozilla.dev.tech.nspr">mozilla.dev.tech.nspr</a>
+- NSPR newsgroup at mozilla.org
+<hr width="100%">
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,295 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"  "http://www.w3.org/TR/html4/loose.dtd" >
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Tabbed UI</title>
+<style type="text/css">
+.atab {
+	color: navy;
+ 	background-color: white;
+	border: thin solid navy;
+	position: absolute;
+	top: 10px;
+	width: 140px;
+	text-align: center;
+	font: 9pt Verdana,sans-serif;
+	z-index: 2;
+	padding: 3px;
+
+}
+.tabActive {
+	color:black;
+	font-weight:bold;
+	border:thin dashed black;
+}
+.tabTitle {
+}
+/* would like to just tabTitle:Focus but that only works in IE for links :-( */
+.tabTitleFocus {
+	background-color:white;
+}
+
+.panel {
+	position:absolute;
+	top: 32px;
+	left: 10px;
+	width: 95%;
+	z-index: 1;
+	height: 400px;
+	font: 12pt Verdana,sans-serif;
+	color: navy;
+	border: thin solid navy;
+	padding: 10px;
+	overflow: auto;
+	}
+
+</style>
+<script type="text/javascript"  src="enable.js"></script>
+<script type="text/javascript">
+
+function setStyle(theObj, styleName, styleValue, priority) {
+	var bSuccess = false;
+
+	try {
+		if (theObj.style && theObj.style.setProperty) {
+			theObj.style.setProperty(styleName, styleValue,priority);
+			bSuccess = true;
+		}
+	} catch (ex) {
+		alert('exception caught setting style: ' + ex.message); // cannot do anything try the next method
+	}
+	if (!bSuccess) {
+		try {
+			theObj.style[styleName] = styleValue;
+			bSuccess = true;
+		} catch (exNext) {
+			alert('exception caught setting direct style: ' + exNext.message); // cannot do anything
+		}
+	}
+	return bSuccess;
+} // end of setStyle
+
+// global to store the item to be focused
+gFocusItem =null;
+// global to pass the item needing focus to doBlur() via a setTimeout()
+var gBlurItem= null;
+
+function doFocus() {
+	try {
+		if (gFocusItem != null) {
+			gFocusItem.focus();
+			gFocusItem=null;
+		}
+	} catch (error) {
+		alert("DEBUG: error in doFocus()");
+	}
+}
+function doBlur() {
+	try {
+		if (gBlurItem != null) {
+			gBlurItem.blur();
+			gBlurItem=null;
+		}
+	} catch (error) {
+		alert("DEBUG: error in doBlur()");
+	}
+}
+
+
+var KEY_UP = 38;
+var KEY_DOWN = 40;
+var KEY_LEFT = 37;
+var KEY_RIGHT = 39;
+var KEY_ESCAPE = 27;
+var KEY_M = 77;
+var KEY_F10 = 121;
+var KEY_SPACE = 32;
+var KEY_TAB = 9;
+var KEY_PAGEUP = 33;
+var KEY_PAGEDOWN = 34;
+
+// globals to store current tab information
+var gCurrentTab = 0;
+var gNumTabs = 5;
+
+
+function doNavigation(event) {
+	var key = event.keyCode; //alert(key);
+	var bEventContinue = true;
+	var nextTabNum;
+	var bDoNextTab = true;  // requires less code if init to true
+	var bCtrlKey = event.ctrlKey;
+	var bAltKey = event.altKey;
+	var direction = 0;
+	var bCycle = false;
+	if ((key == KEY_LEFT || key == KEY_RIGHT) && !bAltKey) {
+		bCycle = false;
+		bEventContinue = false;
+		if (key == KEY_RIGHT) {
+			direction = 1;
+		}
+		else if (key == KEY_LEFT) {
+			direction = -1;
+		}
+	}
+	else if (bCtrlKey && event.shiftKey) {
+		bCycle = true;  //ctrl-shift-pageup, ctrl-shift-pagedown,
+		switch (key) {
+		case KEY_PAGEUP:
+			direction = -1;
+			break;
+		case KEY_PAGEDOWN:
+			direction = 1;
+			break;
+		default:
+			bDoNextTab = false;
+			break;
+		} // end switch
+	} // end of if ctrlKey and shiftKey
+	else {
+		// not a key we care about
+		bDoNextTab = false;
+	}
+
+	if (bDoNextTab == true) {
+		if (direction > 0) {
+			nextTabNum = gCurrentTab + 1;
+		}
+		else if  (direction < 0) {
+			nextTabNum = gCurrentTab -1;
+		}
+		if (nextTabNum == gNumTabs && bCycle == true) {
+			nextTabNum = 0;
+		}
+		else if (nextTabNum < 0 && bCycle == true) {
+			nextTabNum = gNumTabs -1;
+		}
+		else if ((nextTabNum == gNumTabs || nextTabNum < 0) && bCycle == false)  {
+			bDoNextTab = false; // do nothing
+		}
+ 		// test again - last section may have changed value of bDoNextTab
+		if (bDoNextTab == true)  {
+			showTab(nextTabNum);
+		}
+	}
+
+	return bEventContinue;
+}
+
+function showTab(tabNum) {
+	//alert("showTab(" + tabNum + ")");
+	var newTab = document.getElementById("tab" + tabNum);
+	var curTab = document.getElementById("tab" + gCurrentTab);
+	var newPanel = document.getElementById("panel" + tabNum);
+	setStyle(newPanel, "display", "block", "");
+	//setStyle(newPanel, "visibility", "visible", "");
+	var curPanel = document.getElementById("panel" + gCurrentTab);
+	setStyle(curPanel, "display", "none","");
+	curTab.className = "atab";
+	newTab.className = "atab tabActive";
+	// set tabindex of new tab title to 0 and old one to -1
+	var curTitle = document.getElementById("tabTitle" + gCurrentTab);
+	var newTitle = document.getElementById("tabTitle" + tabNum);
+	curTitle.setAttribute("tabIndex", "-1");
+	newTitle.setAttribute("tabIndex", "0");
+	// there are onfocus and onblur handlers to update the style on the tabTitle.  This is necessary since IE does not
+	// currently support the :Focus CSS attribute on items other than anchor tags :-(
+	gCurrentTab = tabNum;
+	gFocusItem = newTitle;
+
+	setTimeout("doFocus()", 0);
+}
+
+</script>
+</head>
+<body >
+
+<div>
+<div id="panelComp" class="axs tablist" onkeydown="return doNavigation(event);"  >
+	<div id="tab0" class="atab tabActive" style="left:10px;background-color:#CCCCCC;"  onclick="showTab(0);">
+		<span tabindex="0" class="tabTitle axs tab" id="tabTitle0"  onfocus="this.className='tabTitleFocus';" onblur="this.className='tabTitle';">Tab One</span>
+	</div>
+	<div id="tab1" class="atab" style="left:150px;background-color:#FFCCCC;" onclick="showTab(1);" >
+		<span tabindex="-1" class="tabTitle axs tab" id="tabTitle1"  onfocus="this.className='tabTitleFocus';" onblur="this.className='tabTitle';">Tab Two</span>
+	</div>
+	<div id="tab2" class="atab" style="left: 290px;background-color:#99CCCC;"  onclick="showTab(2);">
+
+		<span tabindex="-1" class="tabTitle axs tab" id="tabTitle2"   onfocus="this.className='tabTitleFocus';" onblur="this.className='tabTitle';">Tab Three</span>
+	</div>
+	<div id="tab3" class="atab" style="left: 430px;background-color:#9999CC;"  onclick="showTab(3);">
+		<span tabindex="-1" class="tabTitle axs tab" id="tabTitle3"   onfocus="this.className='tabTitleFocus';" onblur="this.className='tabTitle';">Tab Four</span>
+	</div>
+	<div id="tab4" class="atab" style="left: 570px;background-color:#CCCC66;"  onclick="showTab(4);">
+		<span tabindex="-1" class="tabTitle axs tab" id="tabTitle4"  onfocus="this.className='tabTitleFocus';" onblur="this.className='tabTitle';">Tab Five</span>
+
+	</div>
+</div>
+<!-- hidden panels -->
+ 	<div id="panel0"  class="panel axs tabpanel" tabindex="-1" style="background-color:#CCCCCC;" >
+ 		<span >Panel 1</span>
+ 		<div>Use tab key to reach the tab. Once a tab has focus use:
+ 			<ul>
+ 				<li>left and right arrows to move from tab to tab.  Panel is made visible when tab gets focus.  Arrow keys do not cycle around the tabs</li>
+ 				<li>ctrl-left and ctrl-right arrows behave the same as left and right arrows</li>
+
+ 				<li>ctrl-shift-pageup / ctrl-shift-pagedown is the same as left and right arrows but WILL cycle around the tab order (shift was added as a modifier
+ 				so as not to conflict with the Firefox tabbing keys and the WindowEyes keys)</li>
+ 				<li> I did not implement ctrl-shift-tab /ctrl-tab since these keys conflict with the Firefox tabbing keys.</li>
+ 			</ul>
+ 		</div>
+  	</div>
+	<div id="panel1" class="panel axs tabpanel" tabindex="-1" style="display:none;background-color:#FFCCCC;" >
+		<span >Panel 2</span>
+
+		<div>Some fields on the panel </div>
+		<div>
+			<p>Enter month and year: <label for="month" >Select Month</label>
+			<select id="month">
+			<option value="1">01</option>
+			<option value="2">02</option>
+
+			<option value="3">03</option>
+			<option value="4">04</option>
+			<option value="5">05</option>
+			<option value="6">06</option>
+			<option value="7">07</option>
+			<option value="8">08</option>
+
+			<option value="9">09</option>
+			<option value="10">10</option>
+			<option value="11">11</option>
+			<option value="12">12</option>
+			</select>
+			<label for="year" >Select Year</label>
+
+			<select id="year">
+			<option value="2004">2004</option>
+			<option value="2005">2005</option>
+			<option value="2006">2006</option>
+			</select>
+			</p>
+		</div>
+
+	</div>
+	<div id="panel2" class="panel axs tabpanel" style="display:none;background-color:#99CCCC;" >
+		<span >Panel 3</span>
+		<div>Some fields on the panel</div>
+		<div>
+		 		<input type="radio" id="internal" name="urlType" value="internal" checked  /><label for="internal" >Internal Portal Bookmark</label>
+				<input type="radio" id="external" name="urlType" value="external" /><label for="external" >External URL</label>
+
+				<br /><label for="externalAssoc">URL: </label><input type="text" id="externalAssoc" value=""  />
+				<hr />
+ 		</div>
+	</div>
+	<div id="panel3" class="panel axs tabpanel" style="display:none;background-color:#9999CC;" >
+		<span >Panel 4</span>
+	</div>
+   <div id="panel4" class="panel axs tabpanel" style="display:none;background-color:#CCCC66;" >
+
+   	<span >Panel 5</span>
+   </div>
+
+  </div> <!-- end of panel composite div -->
+  </body>
+   </html>

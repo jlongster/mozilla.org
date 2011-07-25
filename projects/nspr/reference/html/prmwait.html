@@ -1,0 +1,1289 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;24 Multiwait Receive';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:05:59">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="prprocess.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prsystem.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="24650"> </A><A NAME=""> </A><h2>
+Chapter&#32;24 
+&nbsp;
+
+
+
+<A NAME="24651"> </A><A NAME="Multiwait Receive"> </A>Multiwait Receive
+</h2>
+</center>
+<A NAME="24652"> </A>This chapter describes the multiwait helper API. Multiwait allows its clients to 
+service an arbitrary number of network file descriptors with a relatively small 
+number of threads. 
+
+<P>
+
+<A NAME="24653"> </A>Multiwait trades off the simplicity of fully synchronous I/O for a limited amount 
+of asynchronous behavior. Its premise is that the connections are mostly idle, 
+spending most of their time waiting for network input. This premise is based on 
+the anticipated behavior of the passive partner (the server) in a client/server 
+relationship. In that environment, the server receives a request from the network, 
+processes that request, sends back the response, and then waits for the next request 
+to arrive. This scenario repeats itself for the lifetime of the connection. If the time of 
+waiting for a request is an order of magnitude or more greater than the time spent 
+in formulating and delivering the response, then multiwait should be applicable.&nbsp; 
+
+<P>
+
+<A NAME="24654"> </A>An incoming request is serviced by a thread from a pool of threads supplied by the 
+client. All threads are assumed to be equivalent and the runtime selects the one 
+most convenient from those available. The client can define different <I>wait</I> <I>groups</I>, 
+that allow separate pools of threads to be associated with different collections of 
+file descriptors.&nbsp; 
+
+<P>
+
+<A NAME="24658"> </A><A HREF="prmwait.html#24663"  >Multiwait Types</A><br>
+<A HREF="prmwait.html#24784"  >Multiwait Client Functions</A>
+
+<P>
+
+
+
+<A NAME="24663"> </A>
+<A NAME="Multiwait Types"> </A>
+<h2>
+Multiwait Types
+</h2>
+
+
+<A NAME="24664"> </A>The multiwait receive interface defines and uses these types:
+
+<P>
+
+<A NAME="24668"> </A><A HREF="prmwait.html#24679"  ><CODE>PRRecvWait</CODE></A><CODE><br>
+</CODE><A HREF="prmwait.html#24715"  ><CODE>PRWaitGroup</CODE></A><CODE><br>
+</CODE><A HREF="prmwait.html#24724"  ><CODE>PRMWStatus</CODE></A><CODE><br>
+</CODE><A HREF="prmwait.html#24766"  ><CODE>PRMemoryDescriptor</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="24679"> </A><A NAME="PRRecvWait"> </A><h4>
+PRRecvWait
+</h4>
+
+<A NAME="24680"> </A>Represents a receive wait object.
+
+<P>
+
+<BR>
+<A NAME="24681"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24682"></A>#include &lt;prmwait.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24683"></A>typedef struct PRRecvWait<br>{<br>&nbsp;&nbsp;&nbsp;PRCList internal;<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd;<br>&nbsp;&nbsp;&nbsp;PRMWStatus outcome;<br>&nbsp;&nbsp;&nbsp;PRIntervalTime timeout;<br>&nbsp;&nbsp;&nbsp;PRInt32 bytesRecv;<br>&nbsp;&nbsp;&nbsp;PRMemoryDescriptor buffer;<br>&nbsp;&nbsp;&nbsp;PRMWaitClientData *client;<br>} PRRecvWait; 
+</PRE>
+<P>
+<BR>
+<A NAME="24684"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24685"> </A>A receive wait object contains the file descriptor that is subject to the wait and the 
+amount of time the channel should block before abandoning the process. (The 
+beginning epoch is established when the object is presented to the runtime.) &nbsp; 
+
+<P>
+
+<A NAME="24686"> </A>The completion status of the wait operation is noted in the object's <CODE>outcome</CODE> field. 
+The fields are not valid when the NSPR runtime is in possession of the object.&nbsp; 
+
+<P>
+
+<A NAME="24687"> </A>The memory descriptor describes an interval of writable memory in the caller's 
+address space where data from an initial read can be placed. The description can 
+indicate a null interval.&nbsp; 
+
+<P>
+
+<P>
+<A NAME="24713"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24690"> </A>internal
+
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24692"> </A>This field is for internal runtime linkages. Clients should not 
+attempt to modify anything in this area.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24694"> </A><CODE>fd
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24696"> </A>A pointer to a valid file descriptor that is associated with this object. 
+This is the network file descriptor that is expected to become ready 
+for receive.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24698"> </A><CODE>outcome
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24700"> </A>The <CODE>outcome</CODE> field constrains the status of the object. It is set by the 
+runtime to <CODE>PR_MW_PENDING</CODE> when the object is first accepted. As 
+long as the value remains <CODE>PR_MW_PENDING</CODE>, none of the other fields 
+are assumed valid.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24702"> </A><CODE>bytesRecv
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24704"> </A>When the operation is complete, this field contains the number of 
+bytes transferred from the network to the client's buffer,<CODE> buffer</CODE>. 
+Any number of bytes from zero to the length of the buffer can be 
+indicated.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24706"> </A><CODE>buffer
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24708"> </A>A description of the memory reserved by the client in which to store 
+data arriving from the network. This descriptor can indicate a null 
+(zero-length) buffer, which implies that the file descriptor is <I>receive 
+ready</I> only.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24710"> </A><CODE>client
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24712"> </A>A pointer to arbitrary client data associated with this wait 
+operation. The client defines the data type <CODE>PRMWaitClientData</CODE>. 
+This field is ignored by the runtime.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<A NAME="24715"> </A><A NAME="PRWaitGroup"> </A><h4>
+PRWaitGroup
+</h4>
+
+<A NAME="24716"> </A>Represents a wait group.
+
+<P>
+
+<BR>
+<A NAME="24717"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24718"></A>#include &lt;prmwait.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24719"></A>typedef struct PRWaitGroup PRWaitGroup;
+</PRE>
+<P>
+<BR>
+<A NAME="24720"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24721"> </A>The client can define several wait groups in order to semantically tie a collection of 
+file descriptors for a single purpose. This allows easier dispatching of threads that 
+returned with active file descriptors from the wait function.&nbsp;
+
+<P>
+
+<A NAME="24722"> </A>The <CODE>PRWaitGroup</CODE> structure is opaque. The runtime deals with its creation, 
+destruction, and internal structure. Most of the API's methods require a pointer to a 
+wait group (also known as the<I> </I>wait group's<I> identity</I>) as an argument. There is a 
+default wait group, represented by a <CODE>NULL</CODE> identity.
+
+<P>
+
+<A NAME="24724"> </A><A NAME="PRMWStatus"> </A><h4>
+PRMWStatus
+</h4>
+
+<A NAME="24725"> </A>Represents the completion status of a receive wait object.
+
+<P>
+
+<BR>
+<A NAME="24726"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24727"></A>#include &lt;prmwait.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24728"></A>typedef enum PRMWStatus<br>{<br>&nbsp;&nbsp;&nbsp; PR_MW_PENDING = 1,<br>&nbsp;&nbsp;&nbsp; PR_MW_SUCCESS = 0,<br>&nbsp;&nbsp;&nbsp; PR_MW_FAILURE = -1,<br>&nbsp;&nbsp;&nbsp; PR_MW_TIMEOUT = -2,<br>&nbsp;&nbsp;&nbsp; PR_MW_INTERRUPT = -3<br>} PRMWStatus; 
+</PRE>
+<P>
+<BR>
+<A NAME="24729"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24730"> </A>The <CODE>PRMWStatus</CODE> enumeration is used to indicate the completion status of a receive 
+wait object. Generally stated, a positive value indicates that the operation is not yet 
+complete. A zero value indicates success (similar to <CODE>PR_SUCCESS</CODE>) and any negative 
+value is an indication of failure. The reason for the failure can be retrieved by 
+calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.&nbsp; 
+
+<P>
+
+<P>
+<A NAME="24764"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24736"> </A><CODE>PR_MW_PENDING
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24738"> </A>The operation is still pending. None of the other fields of the 
+object is currently valid.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24740"> </A><CODE>PR_MW_SUCCESS
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24742"> </A>The operation is complete and it was successful.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24744"> </A><CODE>PR_MW_FAILURE
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24746"> </A>The operation failed. The reason for the failure can be retrieved 
+by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24751"> </A><CODE>PR_MW_TIMEOUT
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24753"> </A>The amount of time allowed for by the object's <CODE>timeout</CODE> field has 
+expired without the operation otherwise coming to closure.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24755"> </A><CODE>PR_MW_INTERRUPT
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24757"> </A>The operation was canceled by the client, either by calling 
+<A HREF="prmwait.html#24982"  ><CODE>PR_CancelWaitFileDesc</CODE></A> or by canceling the entire wait 
+group using <A HREF="prmwait.html#25031"  ><CODE>PR_CancelWaitGroup</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<A NAME="24766"> </A><A NAME="PRMemoryDescriptor"> </A><h4>
+PRMemoryDescriptor
+</h4>
+
+<A NAME="24767"> </A>Represents an interval of memory.
+
+<P>
+
+<BR>
+<A NAME="24768"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24769"></A>#include &lt;prmwait.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24770"></A>typedef struct PRMemoryDescriptor<br>{<br>&nbsp;&nbsp;&nbsp; void *start;<br>&nbsp;&nbsp;&nbsp; PRSize length;<br>} PRMemoryDescriptor;
+</PRE>
+<P>
+<BR>
+<A NAME="24771"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24772"> </A>A descriptor for an interval of memory. 
+
+<P>
+
+<P>
+<A NAME="24782"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24775"> </A><CODE>start
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24777"> </A>This is the address of the first byte of memory that the descriptor 
+defines.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24779"> </A><CODE>length
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24781"> </A>The length of the memory in bytes.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+
+
+<A NAME="24784"> </A>
+<A NAME="Multiwait Client Functions"> </A>
+<h2>
+Multiwait Client Functions
+</h2>
+
+
+<A NAME="24785"> </A>Multiwait functions that create and operate on wait groups and wait receive objects 
+are:
+
+<P>
+
+<A NAME="24789"> </A><A HREF="prmwait.html#24806"  ><CODE>PR_CreateWaitGroup</CODE></A><CODE><br>
+</CODE><A HREF="prmwait.html#24834"  ><CODE>PR_DestroyWaitGroup</CODE></A><CODE><br>
+</CODE><A HREF="prmwait.html#24875"  ><CODE>PR_AddWaitFileDesc</CODE></A><CODE><br>
+</CODE><A HREF="prmwait.html#24929"  ><CODE>PR_WaitRecvReady</CODE></A><CODE><br>
+</CODE><A HREF="prmwait.html#24982"  ><CODE>PR_CancelWaitFileDesc</CODE></A><CODE><br>
+</CODE><A HREF="prmwait.html#25031"  ><CODE>PR_CancelWaitGroup</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="24806"> </A><A NAME="PR_CreateWaitGroup"> </A><h4>
+PR_CreateWaitGroup
+</h4>
+
+<A NAME="24807"> </A>Creates a wait group.
+
+<P>
+
+<BR>
+<A NAME="24808"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24809"></A>#include &lt;prmwait.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24810"></A><CODE>PRWaitGroup</CODE>* PR_CreateWaitGroup (PRInt32 size_hint);
+</PRE>
+<P>
+<BR>
+<A NAME="24811"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24812"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="24818"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24815"> </A><CODE>size_hint
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24817"> </A>A hint as to the size of the hash table used to manage the set of 
+descriptors. This number may be applied to the initial size of the 
+table, but does not limit the number of entries that the wait group 
+can handle.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24819"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24820"> </A>If successful, returns a reference to an object that was allocated by and owned by 
+the runtime. The reference becomes the wait group identifier. The reference 
+remains valid until it is explicitly destroyed by calling <A HREF="prmwait.html#24834"  ><CODE>PR_DestroyWaitGroup</CODE></A>. 
+
+<P>
+
+<A NAME="24824"> </A>If unsuccessful, returns <CODE>NULL</CODE>. Retrieve the reason for the failure using 
+<A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>. The only reason for failure is a heap allocation failure 
+(<CODE>PR_OUT_OF_MEMORY_ERROR</CODE>).&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="24828"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24829"> </A>This function creates a new wait group, using the specified size hint. A wait group 
+allows a client to partition the set of file descriptors according to some arbitrary 
+rules. Each wait group is unique, including the default wait group, specified by a 
+<CODE>NULL</CODE> identifier. A wait request that was added under a wait group is serviced by a 
+call to <A HREF="prmwait.html#24929"  ><CODE>PR_WaitRecvReady</CODE></A> that specifies the same wait group.&nbsp; 
+
+<P>
+
+<A NAME="24834"> </A><A NAME="PR_DestroyWaitGroup"> </A><h4>
+PR_DestroyWaitGroup
+</h4>
+
+<A NAME="24835"> </A>Destroys a wait group.
+
+<P>
+
+<BR>
+<A NAME="24836"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24837"></A>#include &lt;prmwait.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24838"></A>PRStatus PR_DestroyWaitGroup (<CODE>PRWaitGroup</CODE> *group);
+</PRE>
+<P>
+<BR>
+<A NAME="24839"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24840"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="24846"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24843"> </A><CODE>group
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24845"> </A>The identity of the wait group to cancel. This must refer to a valid 
+wait group and the group must not have any waiting threads or 
+wait descriptors.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24847"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24848"> </A>If the wait group can be successfully destroyed, returns <CODE>PR_SUCCESS</CODE>. Otherwise, 
+returns <CODE>PR_FAILURE</CODE>. Retrieve the reason for the failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="24852"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24856"> </A>This function frees the memory allocated by <A HREF="prmwait.html#24806"  ><CODE>PR_CreateWaitGroup</CODE></A>. The wait group 
+must not contain any receive wait objects. Clear the wait group of all receive wait 
+objects using the <A HREF="prmwait.html#25031"  ><CODE>PR_CancelWaitGroup</CODE></A>, before calling this function. 
+
+<P>
+
+<A NAME="24863"> </A>Error codes that can be returned by <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A> when this function fails are:
+
+<P>
+
+<P>
+<A NAME="24873"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24866"> </A><CODE>PR_INVALID_ARGUMENT_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24868"> </A>The wait group identity was not known to the 
+runtime.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24870"> </A><CODE>PR_INVALID_STATE_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24872"> </A>The specified wait group was not empty. It had 
+either wait receive objects or threads waiting.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<A NAME="24875"> </A><A NAME="PR_AddWaitFileDesc"> </A><h4>
+PR_AddWaitFileDesc
+</h4>
+
+<A NAME="24876"> </A>Adds a receive wait descriptor to the set of those waiting for network receive.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="24877"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24878"></A>#include &lt;prmwait.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24879"></A>PRStatus PR_AddWaitFileDesc (<br>&nbsp;&nbsp;&nbsp;PRWaitGroup *group,<br>&nbsp;&nbsp;&nbsp;PRRecvWait *desc);
+</PRE>
+<P>
+<BR>
+<A NAME="24880"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24881"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="24891"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24884"> </A><CODE>group
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24886"> </A>A pointer to the wait group to which to add the file descriptor, or 
+<CODE>NULL</CODE>. When <CODE>NULL</CODE>, the default group is used.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24888"> </A><CODE>desc
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24890"> </A>A pointer to a valid receive wait descriptor. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24892"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24893"> </A>If the operation is successful, returns <CODE>PR_SUCCESS</CODE>. Otherwise, returns <CODE>PR_FAILURE</CODE>. 
+Retrieve the reason for the failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="24897"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24898"> </A>This function adds the specified receive wait descriptor to the specified wait group. 
+The value of <CODE>group</CODE> must be either a valid group identifier as returned from 
+<A HREF="prmwait.html#24806"  ><CODE>PR_CreateWaitGroup</CODE></A>, or <CODE>NULL</CODE>, which specifies the default group. 
+
+<P>
+
+<A NAME="24902"> </A>Completions of the wait operation are reported when you specify the same wait 
+group in a call to <A HREF="prmwait.html#24929"  ><CODE>PR_WaitRecvReady</CODE></A>. 
+
+<P>
+
+<A NAME="24906"> </A>Ownership of the specified receive wait descriptor is temporarily passed to the 
+runtime; the caller may not alter any portion of the object as long as the runtime 
+has ownership. The runtime relinquishes ownership when the reference to the 
+object is returned as a result of <A HREF="prmwait.html#24929"  ><CODE>PR_WaitRecvReady</CODE></A>.
+
+<P>
+
+<A NAME="24913"> </A>Error codes that can be returned by <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A> when this function fails are:
+
+<P>
+
+<P>
+<A NAME="24927"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24916"> </A><CODE>PR_INVALID_ARGUMENT_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24918"> </A>The <CODE>group</CODE> argument is not a valid group 
+identifier or the <CODE>desc</CODE> argument refers to a 
+receive descriptor that is already known by the 
+runtime.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24920"> </A><CODE>PR_OUT_OF_MEMORY_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24922"> </A>The runtime was not able to allocate the 
+resources required to process the request.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24924"> </A><CODE>PR_INVALID_STATE_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24926"> </A>The specified group is being destroyed.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<A NAME="24929"> </A><A NAME="PR_WaitRecvReady"> </A><h4>
+PR_WaitRecvReady
+</h4>
+
+<A NAME="24930"> </A>Returns a completed receive wait descriptor from a wait group.
+
+<P>
+
+<BR>
+<A NAME="24931"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24932"></A>#include &lt;prmwait.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24933"></A>PRRecvWait* PR_WaitRecvReady(PRWaitGroup *group);
+</PRE>
+<P>
+<BR>
+<A NAME="24934"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24935"> </A>&nbsp;The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="24941"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24938"> </A><CODE>group
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24940"> </A>A pointer to the wait group where receive descriptors were added.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24942"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24943"> </A>Returns a reference to a receive wait descriptor, or <CODE>NULL</CODE> in case of error. Retrieve 
+the reason for the error by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="24947"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24948"> </A>This function blocks the calling thread until one of the receive wait descriptors in 
+the specified group has completed. Only descriptors that were added to the 
+specified group identity using <A HREF="prmwait.html#24875"  ><CODE>PR_AddWaitFileDesc</CODE></A> are returned.
+
+<P>
+
+<A NAME="24952"> </A>The descriptor returned may have completed and have input data available, or it 
+may have encountered some error (timeout or interrupt). Check the <CODE>outcome</CODE> field 
+of the returned object and test it for success. If the function returns <CODE>NULL</CODE> or the 
+<CODE>outcome</CODE> field indicates other than success, retrieve the reason for the error by 
+calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>. Possible errors are:
+
+<P>
+
+<P>
+<A NAME="24980"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24958"> </A><CODE>PR_INVALID_ARGUMENT_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24960"> </A>The value of <CODE>group</CODE> does not represent a group 
+identifier known to the runtime.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24962"> </A><CODE>PR_PENDING_INTERRUPT_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24964"> </A>If the function returned <CODE>NULL</CODE>, the call to 
+<A HREF="prmwait.html#24929"  ><CODE>PR_WaitRecvReady</CODE></A> was interrupted by 
+another thread.
+
+<P>
+
+<A NAME="24969"> </A>Otherwise, the descriptor was specifically 
+canceled (see <A HREF="prmwait.html#24982"  ><CODE>PR_CancelWaitFileDesc</CODE></A>) or 
+was a member of a wait group that was canceled 
+(see <A HREF="prmwait.html#25031"  ><CODE>PR_CancelWaitGroup</CODE></A>).
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24977"> </A><CODE>PR_INVALID_STATE_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24979"> </A>The call specified a wait group that is being 
+destroyed.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<A NAME="24982"> </A><A NAME="PR_CancelWaitFileDesc"> </A><h4>
+PR_CancelWaitFileDesc
+</h4>
+
+<A NAME="24983"> </A>Cancels the wait operation for a receive wait descriptor.
+
+<P>
+
+<BR>
+<A NAME="24984"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24985"></A>#include &lt;prmwait.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="24986"></A>PRStatus PR_CancelWaitFileDesc (<br>&nbsp;&nbsp;&nbsp;PRWaitGroup *group, <br>&nbsp;&nbsp;&nbsp;PRRecvWait *desc);
+</PRE>
+<P>
+<BR>
+<A NAME="24987"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24988"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="24998"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24991"> </A><CODE>group
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24993"> </A>A pointer to a wait group, or <CODE>NULL</CODE>, which indicates the default wait 
+group.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24995"> </A><CODE>desc
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24997"> </A>A pointer to the receive wait descriptor to be canceled. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24999"> </A><A NAME="Return"> </A><h5>
+Return
+</h5>
+
+
+<A NAME="25000"> </A>If successful, <CODE>PR_SUCCESS</CODE>. Otherwise, returns <CODE>PR_FAILURE</CODE>. Retrieve the reason for 
+the failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="25004"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25005"> </A>This function cancels operations on objects previously submitted to the runtime 
+using <A HREF="prmwait.html#24875"  ><CODE>PR_AddWaitFileDesc</CODE></A>. If the runtime locates the specified descriptor in the 
+specified wait group, it is marked as having failed because it was interrupted 
+(similar to <A HREF="prthrd.html#15471"  ><CODE>PR_Interrupt</CODE></A>).
+
+<P>
+
+<A NAME="25015"> </A>The first available thread blocked in <A HREF="prmwait.html#24929"  ><CODE>PR_WaitRecvReady</CODE></A> is made to return with the 
+reference to the specified descriptor. The object's <CODE>outcome</CODE> field indicates that the 
+operation was canceled.&nbsp; 
+
+<P>
+
+<A NAME="25016"> </A>If the function returns a value of <CODE>PR_FAILURE</CODE>, retrieve the exact cause of the failure 
+by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>. Possible errors are:
+
+<P>
+
+<P>
+<A NAME="25029"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25022"> </A><CODE>PR_INVALID_ARGUMENT_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25024"> </A>The <CODE>group</CODE> identity was not known to the runtime, 
+or the referenced object <CODE>desc</CODE> could not be located 
+in the set of receive wait descriptors associated 
+with the <CODE>group</CODE>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25026"> </A><CODE>PR_INVALID_STATE_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25028"> </A>The <CODE>group</CODE> is being destroyed.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<A NAME="25031"> </A><A NAME="PR_CancelWaitGroup"> </A><h4>
+PR_CancelWaitGroup
+</h4>
+
+<A NAME="25032"> </A>Cancels all pending wait operations for a wait group.
+
+<P>
+
+<BR>
+<A NAME="25033"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25034"></A>#include &lt;prmwait.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25035"></A>PRRecvWait* PR_CancelWaitGroup (PRWaitGroup *group);
+</PRE>
+<P>
+<BR>
+<A NAME="25036"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="25037"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="25043"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25040"> </A><CODE>group
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25042"> </A>A pointer to the wait group to be canceled.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="25044"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="25045"> </A><CODE>A</CODE> pointer to a wait receive object, or <CODE>NULL</CODE> if no objects are contained in the group or 
+in case of error. Retrieve the reason for the failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="25049"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25050"> </A>This function cancels all the operations registered with the specified wait group. 
+
+<P>
+
+<A NAME="25051"> </A>Each successive call returns a pointer to a receive wait descriptor that was 
+previously registered with the specified group using <A HREF="prmwait.html#24875"  ><CODE>PR_AddWaitFileDesc</CODE></A>. The 
+returned object's <CODE>outcome</CODE> field contains the indication that the operation had been 
+canceled.
+
+<P>
+
+<A NAME="25055"> </A>If no wait objects are associated with the specified wait group, the function returns 
+<CODE>NULL</CODE>. Call this function in a loop until it returns <CODE>NULL</CODE> to reclaim all the wait objects 
+from a wait group, prior to calling <A HREF="prmwait.html#24834"  ><CODE>PR_DestroyWaitGroup</CODE></A>.
+
+<P>
+
+<A NAME="25059"> </A>When the function returns <CODE>NULL</CODE>, retrieve the exact cause by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>. 
+Possible errors are:
+
+<P>
+
+<P>
+<A NAME="25072"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25065"> </A><CODE>PR_INVALID_ARGUMENT_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25067"> </A>The value of the <CODE>group</CODE> argument was not the 
+identity of a valid wait group.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25069"> </A><CODE>PR_GROUP_EMPTY_ERROR
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25071"> </A>The group's wait receive set is empty. This is the 
+natural termination of the loop used to destroy a 
+wait group.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="prprocess.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prsystem.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,195 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* 
+<b><a name="2">    2</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="3">    3</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="4">    4</a></b>  *
+<b><a name="5">    5</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="6">    6</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="7">    7</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="8">    8</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="9">    9</a></b>  *
+<b><a name="10">   10</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="11">   11</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="12">   12</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="13">   13</a></b>  * License.
+<b><a name="14">   14</a></b>  *
+<b><a name="15">   15</a></b>  * The Original Code is the elliptic curve math library for prime field curves using floating point operations.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Initial Developer of the Original Code is
+<b><a name="18">   18</a></b>  * Sun Microsystems, Inc.
+<b><a name="19">   19</a></b>  * Portions created by the Initial Developer are Copyright (C) 2003
+<b><a name="20">   20</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="21">   21</a></b>  *
+<b><a name="22">   22</a></b>  * Contributor(s):
+<b><a name="23">   23</a></b>  *   Stephen Fung &lt;fungstep@hotmail.com&gt;, Sun Microsystems Laboratories
+<b><a name="24">   24</a></b>  *
+<b><a name="25">   25</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="26">   26</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="27">   27</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="28">   28</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="29">   29</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="30">   30</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="31">   31</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="32">   32</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="33">   33</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="34">   34</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="35">   35</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="36">   36</a></b>  *
+<b><a name="37">   37</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> #include "ecp_fp.h"
+<b><a name="40">   40</a></b> #include &lt;stdlib.h&gt;
+<b><a name="41">   41</a></b> 
+<b><a name="42">   42</a></b> #define <a href="#42">ECFP_BSIZE</a> 192
+<b><a name="43">   43</a></b> #define <a href="#43">ECFP_NUMDOUBLES</a> 8
+<b><a name="44">   44</a></b> 
+<b><a name="45">   45</a></b> #include "ecp_fpinc.c"
+<b><a name="46">   46</a></b> 
+<b><a name="47">   47</a></b> /* Performs a single step of reduction, just on the uppermost float
+<b><a name="48">   48</a></b>  * (assumes already tidied), and then retidies. Note, this does not
+<b><a name="49">   49</a></b>  * guarantee that the result will be less than p. */
+<b><a name="50">   50</a></b> void
+<b><a name="51">   51</a></b> <a href="#51">ecfp192_singleReduce</a>(double *d, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group)
+<b><a name="52">   52</a></b> {
+<b><a name="53">   53</a></b>         double q;
+<b><a name="54">   54</a></b> 
+<b><a name="55">   55</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ASSERT">ECFP_ASSERT</a></a>(group-&gt;doubleBitSize == 24);
+<b><a name="56">   56</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ASSERT">ECFP_ASSERT</a></a>(group-&gt;primeBitSize == 192);
+<b><a name="57">   57</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ASSERT">ECFP_ASSERT</a></a>(group-&gt;numDoubles == 8);
+<b><a name="58">   58</a></b> 
+<b><a name="59">   59</a></b>         q = d[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a> - 1] - <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_beta_192">ecfp_beta_192</a>;
+<b><a name="60">   60</a></b>         q += group-&gt;bitSize_alpha;
+<b><a name="61">   61</a></b>         q -= group-&gt;bitSize_alpha;
+<b><a name="62">   62</a></b> 
+<b><a name="63">   63</a></b>         d[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a> - 1] -= q;
+<b><a name="64">   64</a></b>         d[0] += q * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom192">ecfp_twom192</a>;
+<b><a name="65">   65</a></b>         d[2] += q * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom128">ecfp_twom128</a>;
+<b><a name="66">   66</a></b>         <a href="../../freebl/ecl/ecp_fp.c.dep.html#ecfp_positiveTidy">ecfp_positiveTidy</a>(d, group);
+<b><a name="67">   67</a></b> }
+<b><a name="68">   68</a></b> 
+<b><a name="69">   69</a></b> /* 
+<b><a name="70">   70</a></b>  * Performs imperfect reduction.  This might leave some negative terms,
+<b><a name="71">   71</a></b>  * and one more reduction might be required for the result to be between 0 
+<b><a name="72">   72</a></b>  * and p-1. x should be be an array of at least 16, and r at least 8 x and 
+<b><a name="73">   73</a></b>  * r can be the same, but then the upper parts of r are not zeroed */
+<b><a name="74">   74</a></b> void
+<b><a name="75">   75</a></b> <a href="#75">ecfp_reduce_192</a>(double *r, double *x, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group)
+<b><a name="76">   76</a></b> {
+<b><a name="77">   77</a></b>         double x8, x9, x10, q;
+<b><a name="78">   78</a></b> 
+<b><a name="79">   79</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ASSERT">ECFP_ASSERT</a></a>(group-&gt;doubleBitSize == 24);
+<b><a name="80">   80</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ASSERT">ECFP_ASSERT</a></a>(group-&gt;primeBitSize == 192);
+<b><a name="81">   81</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ASSERT">ECFP_ASSERT</a></a>(group-&gt;numDoubles == 8);
+<b><a name="82">   82</a></b> 
+<b><a name="83">   83</a></b>         /* Tidy just the upper portion, the lower part can wait */
+<b><a name="84">   84</a></b>         <a href="../../freebl/ecl/ecp_fp.c.dep.html#ecfp_tidyUpper">ecfp_tidyUpper</a>(x, group);
+<b><a name="85">   85</a></b> 
+<b><a name="86">   86</a></b>         x8 = x[8] + x[14] * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom128">ecfp_twom128</a>;        /* adds bits 16-40 */
+<b><a name="87">   87</a></b>         x9 = x[9] + x[15] * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom128">ecfp_twom128</a>;        /* adds bits 16-40 */
+<b><a name="88">   88</a></b> 
+<b><a name="89">   89</a></b>         /* Tidy up, or we won't have enough bits later to add it in */
+<b><a name="90">   90</a></b> 
+<b><a name="91">   91</a></b>         q = x8 + group-&gt;alpha[9];
+<b><a name="92">   92</a></b>         q -= group-&gt;alpha[9];
+<b><a name="93">   93</a></b>         x8 -= q;
+<b><a name="94">   94</a></b>         x9 += q;
+<b><a name="95">   95</a></b> 
+<b><a name="96">   96</a></b>         q = x9 + group-&gt;alpha[10];
+<b><a name="97">   97</a></b>         q -= group-&gt;alpha[10];
+<b><a name="98">   98</a></b>         x9 -= q;
+<b><a name="99">   99</a></b>         x10 = x[10] + q;
+<b><a name="100">  100</a></b> 
+<b><a name="101">  101</a></b>         r[7] = x[7] + x[15] * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom192">ecfp_twom192</a> + x[13] * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom128">ecfp_twom128</a>;        /* adds
+<b><a name="102">  102</a></b>                                                                                                                                  * bits
+<b><a name="103">  103</a></b>                                                                                                                                  * 0-40 */
+<b><a name="104">  104</a></b>         r[6] = x[6] + x[14] * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom192">ecfp_twom192</a> + x[12] * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom128">ecfp_twom128</a>;
+<b><a name="105">  105</a></b>         r[5] = x[5] + x[13] * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom192">ecfp_twom192</a> + x[11] * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom128">ecfp_twom128</a>;
+<b><a name="106">  106</a></b>         r[4] = x[4] + x[12] * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom192">ecfp_twom192</a> + x10 * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom128">ecfp_twom128</a>;
+<b><a name="107">  107</a></b>         r[3] = x[3] + x[11] * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom192">ecfp_twom192</a> + x9 * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom128">ecfp_twom128</a>;        /* adds bits
+<b><a name="108">  108</a></b>                                                                                                                          * 0-40 */
+<b><a name="109">  109</a></b>         r[2] = x[2] + x10 * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom192">ecfp_twom192</a> + x8 * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom128">ecfp_twom128</a>;
+<b><a name="110">  110</a></b>         r[1] = x[1] + x9 * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom192">ecfp_twom192</a>;        /* adds bits 16-40 */
+<b><a name="111">  111</a></b>         r[0] = x[0] + x8 * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom192">ecfp_twom192</a>;
+<b><a name="112">  112</a></b> 
+<b><a name="113">  113</a></b>         /* 
+<b><a name="114">  114</a></b>          * Tidy up just r[group-&gt;numDoubles-2] so that the number of
+<b><a name="115">  115</a></b>          * reductions is accurate plus or minus one.  (Rather than tidy all to 
+<b><a name="116">  116</a></b>          * make it totally accurate) */
+<b><a name="117">  117</a></b>         q = r[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a> - 2] + group-&gt;alpha[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a> - 1];
+<b><a name="118">  118</a></b>         q -= group-&gt;alpha[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a> - 1];
+<b><a name="119">  119</a></b>         r[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a> - 2] -= q;
+<b><a name="120">  120</a></b>         r[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a> - 1] += q;
+<b><a name="121">  121</a></b> 
+<b><a name="122">  122</a></b>         /* Tidy up the excess bits on r[group-&gt;numDoubles-1] using reduction */
+<b><a name="123">  123</a></b>         /* Use ecfp_beta so we get a positive res */
+<b><a name="124">  124</a></b>         q = r[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a> - 1] - <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_beta_192">ecfp_beta_192</a>;
+<b><a name="125">  125</a></b>         q += group-&gt;bitSize_alpha;
+<b><a name="126">  126</a></b>         q -= group-&gt;bitSize_alpha;
+<b><a name="127">  127</a></b> 
+<b><a name="128">  128</a></b>         r[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a> - 1] -= q;
+<b><a name="129">  129</a></b>         r[0] += q * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom192">ecfp_twom192</a>;
+<b><a name="130">  130</a></b>         r[2] += q * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_twom128">ecfp_twom128</a>;
+<b><a name="131">  131</a></b> 
+<b><a name="132">  132</a></b>         /* Tidy the result */
+<b><a name="133">  133</a></b>         <a href="../../freebl/ecl/ecp_fp.c.dep.html#ecfp_tidyShort">ecfp_tidyShort</a>(r, group);
+<b><a name="134">  134</a></b> }
+<b><a name="135">  135</a></b> 
+<b><a name="136">  136</a></b> /* Sets group to use optimized calculations in this file */
+<b><a name="137">  137</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="138">  138</a></b> <a href="#138">ec_group_set_nistp192_fp</a>(<a href="../../freebl/ecl/ecl.h.dep.html#ECGroup">ECGroup</a> *group)
+<b><a name="139">  139</a></b> {
+<b><a name="140">  140</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> *fpg;
+<b><a name="141">  141</a></b> 
+<b><a name="142">  142</a></b>         /* Allocate memory for floating point group data */
+<b><a name="143">  143</a></b>         fpg = (<a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> *) malloc(sizeof(<a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a>));
+<b><a name="144">  144</a></b>         if (fpg == NULL) {
+<b><a name="145">  145</a></b>                 return <a href="../../freebl/mpi/mpi.h.dep.html#MP_MEM">MP_MEM</a>;
+<b><a name="146">  146</a></b>         }
+<b><a name="147">  147</a></b> 
+<b><a name="148">  148</a></b>         fpg-&gt;numDoubles = <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>;
+<b><a name="149">  149</a></b>         fpg-&gt;primeBitSize = <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_BSIZE">ECFP_BSIZE</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_BSIZE"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_BSIZE"><sup>[2]</sup></a>;
+<b><a name="150">  150</a></b>         fpg-&gt;orderBitSize = 192;
+<b><a name="151">  151</a></b>         fpg-&gt;doubleBitSize = 24;
+<b><a name="152">  152</a></b>         fpg-&gt;numInts = (<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_BSIZE">ECFP_BSIZE</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_BSIZE"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_BSIZE"><sup>[2]</sup></a> + <a href="../../freebl/ecl/ecl-priv.h.dep.html#ECL_BITS">ECL_BITS</a> - 1) / <a href="../../freebl/ecl/ecl-priv.h.dep.html#ECL_BITS">ECL_BITS</a>;
+<b><a name="153">  153</a></b>         fpg-&gt;aIsM3 = 1;
+<b><a name="154">  154</a></b>         fpg-&gt;ecfp_singleReduce = &amp;<a href="../../freebl/ecl/ecp_fp192.c.dep.html#ecfp192_singleReduce">ecfp192_singleReduce</a>;
+<b><a name="155">  155</a></b>         fpg-&gt;ecfp_reduce = &amp;<a href="../../freebl/ecl/ecp_fp192.c.dep.html#ecfp_reduce_192">ecfp_reduce_192</a>;
+<b><a name="156">  156</a></b>         fpg-&gt;<a href="../../freebl/ecl/ecp_fp.c.dep.html#ecfp_tidy">ecfp_tidy</a> = &amp;<a href="../../freebl/ecl/ecp_fp.c.dep.html#ecfp_tidy">ecfp_tidy</a>;
+<b><a name="157">  157</a></b> 
+<b><a name="158">  158</a></b>         fpg-&gt;<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_jac_aff">pt_add_jac_aff</a> = &amp;ecfp192_<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_jac_aff">pt_add_jac_aff</a>;
+<b><a name="159">  159</a></b>         fpg-&gt;<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_jac">pt_add_jac</a> = &amp;ecfp192_<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_jac">pt_add_jac</a>;
+<b><a name="160">  160</a></b>         fpg-&gt;<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_jm_chud">pt_add_jm_chud</a> = &amp;ecfp192_<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_jm_chud">pt_add_jm_chud</a>;
+<b><a name="161">  161</a></b>         fpg-&gt;<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_chud">pt_add_chud</a> = &amp;ecfp192_<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_chud">pt_add_chud</a>;
+<b><a name="162">  162</a></b>         fpg-&gt;<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_dbl_jac">pt_dbl_jac</a> = &amp;ecfp192_<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_dbl_jac">pt_dbl_jac</a>;
+<b><a name="163">  163</a></b>         fpg-&gt;<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_dbl_jm">pt_dbl_jm</a> = &amp;ecfp192_<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_dbl_jm">pt_dbl_jm</a>;
+<b><a name="164">  164</a></b>         fpg-&gt;<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_dbl_aff2chud">pt_dbl_aff2chud</a> = &amp;ecfp192_<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_dbl_aff2chud">pt_dbl_aff2chud</a>;
+<b><a name="165">  165</a></b>         fpg-&gt;<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#precompute_chud">precompute_chud</a> = &amp;ecfp192_<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#precompute_chud">precompute_chud</a>;
+<b><a name="166">  166</a></b>         fpg-&gt;<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#precompute_jac">precompute_jac</a> = &amp;ecfp192_<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#precompute_jac">precompute_jac</a>;
+<b><a name="167">  167</a></b> 
+<b><a name="168">  168</a></b>         group-&gt;point_mul = &amp;<a href="../../freebl/ecl/ecp_fp.c.dep.html#ec_GFp_point_mul_wNAF_fp">ec_GFp_point_mul_wNAF_fp</a>;
+<b><a name="169">  169</a></b>         group-&gt;points_mul = &amp;<a href="../../freebl/ecl/ecl_mult.c.dep.html#ec_pts_mul_basic">ec_pts_mul_basic</a>;
+<b><a name="170">  170</a></b>         group-&gt;extra1 = fpg;
+<b><a name="171">  171</a></b>         group-&gt;extra_free = &amp;<a href="../../freebl/ecl/ecp_fp.c.dep.html#ec_GFp_extra_free_fp">ec_GFp_extra_free_fp</a>;
+<b><a name="172">  172</a></b> 
+<b><a name="173">  173</a></b>         <a href="../../freebl/ecl/ecp_fp.c.dep.html#ec_set_fp_precision">ec_set_fp_precision</a>(fpg);
+<b><a name="174">  174</a></b>         fpg-&gt;bitSize_alpha = <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_TWO192">ECFP_TWO192</a> * fpg-&gt;alpha[0];
+<b><a name="175">  175</a></b> 
+<b><a name="176">  176</a></b>         return <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="177">  177</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

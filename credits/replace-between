@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+
+usage() if (!$ARGV[3]);
+
+my ($base_filename, $start_marker, $end_marker, $insert_filename) = @ARGV;
+
+my $base = read_file_utf8($base_filename);
+my $new = read_file_utf8($insert_filename);
+
+$base =~ s/$start_marker.*$end_marker/$start_marker\n$new\n$end_marker/s;
+
+write_file_utf8($base_filename, $base);
+
+sub usage {
+    print "Usage: replace-between <file-to-process> START_MARKER END_MARKER <file-to-insert>\n";
+}
+
+sub read_file_utf8 {
+    my $name = shift;
+    open my $fh, '<:encoding(UTF-8)', $name
+        or die "Couldn't open '$name': $!";
+    local $/;
+    my $data = <$fh>;
+    return $data;
+};
+
+sub write_file_utf8 {
+    my $name = shift;
+    open my $fh, '>:encoding(UTF-8)', $name
+        or die "Couldn't create '$name': $!";
+    local $/;
+    print {$fh} $_ for @_;
+};

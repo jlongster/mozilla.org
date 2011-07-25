@@ -1,0 +1,607 @@
+<?php
+
+$html_title = 'Mozilla Security Review and Best Practices Guide';
+$page_title = 'Draft 3 - May 17, 2002';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="generator" content=
+"HTML Tidy for Windows (vers 14 February 2006), see www.w3.org">
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="DC.author" content="Mike Stoltz">
+<meta name="DC.creator" content="Mike Stoltz">
+<meta name="DC.title" content="Mozilla Security Review and Best Practices Guide">
+<meta name="DC.date.created" content="2002-03-22T17:52:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2006-09-07T09:54:03+11:00" scheme="W3CDTF">
+<link rel="section" href="#chrome" title="The Problem">
+<link rel="section" href="#solutions" title="The Solutions">
+<link rel="section" href="#challenges" title="Challenges">
+<link rel="section" href="#c++" title="C++">
+<link rel="subsection" href="#bufferoverruns" title="Buffer Overruns">
+<link rel="subsection" href="#formatbugs" title="Format Bugs">
+<link rel="subsection" href="#riskyfunctions" title="Dangerous Functions">
+<link rel="glossary" href="terms.html" title="Terminology in Javascript Security">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+    <h3>Some Key Points</h3>
+
+
+    <ul>
+        <li>Good security cannot be tacked on to a product after the fact, it must be
+        designed in.</li>
+
+
+        <li>A bug anywhere in the product can create a security vulnerability. Security
+        bugs don't necessarily occur in PSM or ScriptSecurityManager.</li>
+
+
+        <li>Writing secure code is an integral and necessary part of writing correct
+        code. You wouldn't check in, or give reviewer's approval to code that contains
+        memory leaks, references uninitialized variables, et cetera. Likewise, code that
+        contains buffer overruns, cross-site scripting problems, or any of the mistakes
+        described below, is unacceptable for check-in.</li>
+
+
+        <li>In short, <strong class="stronger" style="color: red; background-color: inherit;">security
+        is everyone's responsibility</strong>.</li>
+    </ul>
+
+
+    <h2><a name="chrome" id="chrome">The Problem</a>
+    </h2>
+
+
+    <h3>Goals: What Are We Protecting Against?</h3>
+
+
+    <p>"Security" is a pretty vague term. So is "privacy." Here, more specifically, are
+    the things we need to protect against as we write code for Mozilla:</p>
+
+
+    <ul>
+        <li><strong>Running Arbitrary Code / General File-System Access</strong> - the
+        "holy grail" of security compromises. If an attacker can cause some code of the
+        attacker's choosing to be written into a user's memory and executed, then the
+        attacker owns the user's system and can read, modify, or delete any data at will,
+        access other machines that the user has access to, impersonate the user online,
+        and use the compromised machine as a launching point for further attacks. This is
+        the most dangerous class of attack against our software. Note that running
+        arbitrary code and having general read-write access to the user's file system are
+        equivalent; one leads easily to the other.</li>
+
+
+        <li><strong>Arbitrary Code Revisited</strong> - The attack described above
+        doesn't require the presence of a buffer overflow or other subtle vulnerability.
+        It could be as simple as convincing or tricking the user into explicitly
+        downloading and running a Trojan horse program from the attacker's FTP site. We
+        can't protect against all forms of possible user stupidity, but we can make sure
+        that users understand <em>when</em> they have downloaded potentially dangerous
+        code and <em>who</em> that code came from. We should be sure users know that a
+        download has occurred, and give them enough information to decide whether to
+        trust a given download.</li>
+
+
+        <li><strong>Stealing Privileges</strong> - an attacker makes use of some
+        privilege or credential of the user's - often without obtaining the credential
+        itself. For example, suppose you're logged in to your banking site in one browser
+        window, and happen to visit an attacker's page in a second window. If the
+        attacker can submit a form in the bank window requesting an account transfer,
+        then he has used your credentials at the bank to steal from you, without actually
+        getting your password.</li>
+
+
+        <li><strong>Limited Local File Access / Cache Population</strong> - Sometimes, an
+        attacker can plant malicious code (primarily JavaScript) on a user's system
+        without having general access to the file system. Sometimes, Mozilla does the
+        attacker the favor of saving his scripts to disk in particular locations - the
+        cookie file, the browser cache, and so on.</li>
+
+
+        <li><strong>Information Leakage</strong> - Mozilla should not reveal the user's
+        email address, real name, or any other personally identifiable information
+        without the user's express consent.</li>
+
+
+        <li><strong>Spoofing</strong> - If the attacker can create a page that looks
+        exactly like your bank's login page, and convince you to enter your password
+        there, then he has stolen your bank account. All the cryptography in the world
+        doesn't prevent this attack - only careful UI design will make it more
+        difficult.</li>
+
+
+        <li><strong>Denial of Service -</strong> Crashing the browser, opening windows in
+        an infinite loop, and sending large numbers of emails are all forms of
+        denial-of-service attacks. While annoying, we don't consider these dangerous
+        exploits if they don't cause any corruption of data or other permanent damage, or
+        leave the system in a compromised state. THe best fix for these is simply not to
+        visit the offending site again.</li>
+    </ul>
+
+
+    <h3>What are we <span class="stronger">not</span> protecting against?</h3>
+
+
+    <p>The most secure computer is one that's turned off, unplugged, and buried in
+    concrete. Because security and functionality are always in competiion, we need to
+    draw a line between what we protect against and what we don't. In particular:</p>
+
+
+    <ul>
+        <li>
+            <strong>Downloaded Native Code</strong> - We can and should protect users
+            against anything they might encounter on a Web page, or in a mail message. We
+            cannot protect them against executables they have downloaded and run. Native
+            executables have no access control beyond what the operating system enforces
+            - in general, a binary executable can do anything the user can do. Once an
+            attacker has planted some native code on a user's machine, through a security
+            hole or simply by asking a gullible user to download and run
+            <em>MyTrojan.exe</em>, the attacker has won and we have lost. That's why we
+            work so hard to prevent native code from being downloaded and run, unless the
+            user has made an <em>explicit</em> and <em>informed</em> decision to do so.
+
+            <ul>
+                <li><strong>Installer Files</strong>: Files delivered via XPInstall can
+                do anything the user can do - we have no way of limiting this. The user
+                must trust the originator of the install files before consenting to the
+                install, because after that, all bets are off.</li>
+
+
+                <li><strong>Plugins</strong>, likewise, once installed, can do just about
+                anything.</li>
+            </ul>
+        </li>
+
+
+        <li><strong>Physical Access</strong> - If an attacker (or a nosy family member)
+        is sitting at the keyboard of your machine, he or she can access anything and
+        everything on your machine. Some protection can be gained by using an OS that
+        requires logins, or by using disk- or file-level encryption software . None of
+        these are responsibilities of the Mozilla project.</li>
+    </ul>
+
+
+    <p>In short, our main goal is to prevent attacks encountered in the course of
+    browsing and mail reading. There are other sources of attack, but they are not our
+    major concern.</p>
+
+
+    <h3><a name="challenges">Challenges</a></h3>
+
+
+    <p>Mozilla's open source code gives us a distinct advantage in finding security
+    problems - we place no limits on the number of people who can be looking through the
+    code for problems. At the same time, we have some specific challenges to
+    overcome:</p>
+
+
+    <ul>
+        <li>Mozilla is embedded in many very different types of applications, and is
+        distributed to many types of users. This means we can't rely on the presence of a
+        knowledgeable IT staff to configure the browser and keep it up to date for every
+        user. It also means that distributing patches to all users of Mozilla-based
+        products may be slow and cumbersome.</li>
+
+
+        <li>Mozilla is a very complex application developed in a distributed fashion.
+        Complexity is the enemy of security. It is in the complex interactions between
+        modules, potentially written by different groups with little coordination, that
+        security problems often appear. That's why each module must be designed to work
+        correctly, even when given bad data by another module.</li>
+
+
+        <li>Mozilla's user interface is written in the same languages used to create Web
+        content (XML, HTML, and JavaScript). This makes it easy to confuse untrusted Web
+        content with trusted UI code.</li>
+
+
+        <li>Many of our potential users are inexperienced computer users, who do not
+        understand the risks involved in using interactive Web content. This means we
+        must rely on the user's judgement as little as possible. As Edward Felten says,
+        <q cite="http://en.wikipedia.org/wiki/Edward_Felten#Quote">given the choice
+        between dancing pigs and security, users will choose dancing pigs every
+        time.</q></li>
+    </ul>
+
+
+    <h2><a name="solutions">The Solutions</a></h2>
+
+
+    <p>What follows are guidelines for Mozilla coders, reviewers, and UI creators on how
+    to design secure features, anticipate problems, and be on the lookout for common
+    pitfalls.</p>
+
+
+    <h3>The Golden Rule of Security: Don't Trust Any Source of Input</h3>
+
+
+    <p>It sounds paranoid, but it works. Think about where your input comes from: data
+    from the network, files on disk, user input, environment variables, the arguments to
+    your function. If your input couuld possibly have come from any source outside your
+    control, <strong>verify it</strong> to assure it's in the form you expect. Assume
+    that all remote servers, configuration files, and command-line arguments were created
+    by evil hackers intent on mischief. Make sure that no combination of inputs can cause
+    your code to behave unexpectedly. Looking at your code this way will improve its
+    reliability too - security and reliability are close cousins. Most of the points
+    below are really instances of this basic rule: never assume that your input is safe
+    without making sure.</p>
+
+
+    <h3>Chrome JS</h3>
+
+
+    <p>Writing chrome is very much like writing web pages, and raises similar security
+    concerns. The stakes are higher for chrome, however, because chrome JS is considered
+    part of the native browser code, and has no restrictions on what it can do.</p>
+
+
+    <p>The most important thing to remember is to treat all user input, and (more
+    importantly) data from the Web, including URLs, as untrusted and potentially
+    malicious. Wherever data from the Web is used in chrome, it must be filtered for
+    potentially dangerous content.</p>
+
+
+    <ul>
+        <li>Remember that anywhere we render HTML, XML, or XUL, or load a URL, JavaScript
+        may be run. HTML and XML content can contain &lt;SCRIPT&gt; tags, and URLs in
+        Mozilla can use the javascript: and data: schemes to cause scripts to run. On a
+        web page displayed in the main browser window, this is harmless, since everything
+        in the browser window's content area are treated as untrusted and run in a
+        protective 'sandbox.' Not so for dialogs or other special windows. Does your
+        dialog contain any data derived from the current Web page or mail message? Does
+        it display links taken from the page? If so, you must either filter out
+        Javascript or ensure that scripts will run in a safe environment.
+        **examples**</li>
+    </ul>
+
+
+    <ul>
+        <li>The location or origin of a file determines its trustworthiness,
+        <strong>not</strong> the language or format it's written in. Everything in the
+        browser's chrome directory is treated like part of the application.. Any
+        JavaScript contained in the chrome directory has full access to the native
+        browser APIs through XPConnect and can do anything that compiled C++ code can do,
+        including reading and writing arbitrary files. Script files on the user's local
+        drive outside of the chrome directory do not, by default, have full access to the
+        browser APIs - they are treated just like scripts from the Web. Finally, Web
+        scripts are by default untrusted and are very limited in what they can do. This
+        is true whether they are contained in HTML, XML, or XUL files. Simply being in a
+        XUL file should not give a script any special privileges, since privileges are
+        based on where the script comes from, not what type of file it comes in.</li>
+    </ul>
+
+
+    <ul>
+        <li>Avoid using eval() whenever possible. Also avoid passing a string as the
+        first argument to setTimeout() and setInterval(), as this causes an eval(). Eval,
+        besides being slow, provides a good avenue for inserting and running malicious
+        code. There is usually an alternative. If you must use eval(), be sure to verify
+        that the string being passed to it contains an expected value.</li>
+
+
+        <li>In chrome Javascript, be careful of calls into _content, because everything
+        in _content is untrusted. Be careful what parameters you pass, and be wary of the
+        results. Don't assume things in _content have the expected type.
+
+            <p>Specifically:</p>
+
+
+            <ul>
+                <li>Use ToString(obj) instead of obj.toString() if obj comes from
+                content. The webpage may have redefined the toString function of
+                obj.</li>
+
+
+                <li>Don't assume that an object from content is a string, even if you
+                expect it to be.</li>
+
+
+                <li>If you call a function in content, remember that the web page can
+                read the arguments you pass. This is rarely a problem, but be careful not
+                to give any information to the page that you wouldn't want sent back over
+                the net (the user's email address, for example).</li>
+            </ul>
+        </li>
+
+
+        <li>If you write a string to a window (writing into either chrome or content
+        using document.write, apending to innerHTML, or any other method), and the value
+        of the string could have come from a web page, html-escape the string before
+        writing it. <a href=
+        "http://lxr.mozilla.org/seamonkey/source/xpfe/global/resources/content/config.js#167">
+        This is a sample HTML-escape function</a> you can use.</li>
+
+
+        <li>Any time you write a URL to a page or window as the target of a link, the
+        location of an image or embed, etc., and the URL could have come from a web page,
+        look at the URL and don't write it out if its protocol is javascript: or data:.
+        Loading those types of URLs can cause a script to run. If you want to allow
+        javascript: and data: URLs, you must ensure that any script that runs does not
+        run with all the privileges of chrome scripts.</li>
+    </ul>
+
+
+    <p>With javascript: URLs, be aware of both the return value (which is generally
+    rendered as HTML/XML content) and of the side effects of the script execution.</p>
+
+
+    <h3><a name="c++">C++</a>
+    </h3>
+
+
+    <p>C and C++, while versatile, make security mistakes very easy. Certain functions in
+    particular are quite risky and should be avoided or used very carefully. This section
+    describes common security pitfalls to avoid when writing C and C++ code. Remember,
+    mistakes like these <em>anywhere in Mozilla</em> could create a security
+    vulnerability.</p>
+
+
+    <h4><a name="bufferoverruns">Buffer Overruns</a></h4>
+
+
+    <p>A buffer is any contiguous block of memory. A buffer overrun means writing more
+    data into a buffer than it can hold - the additional data overwrites other values in
+    memory adjacent to the buffer. Depending on what those values are, overwriting them
+    can allow an attacker to change the way the program operates, or even to execute
+    arbitrary commands of the attacker's choosing. C and C++ provide no built-in
+    protection against this. (JavaScript does, by dynamically growing buffers as needed
+    to accomodate additional data.) Here's a bare-bones example:</p>
+
+    <pre class="code">
+    void dangerousFunction(char* input)<br>    {<br>      char buf[100];<br><br>      PL_strcpy(buf, input);<br><br>      // Additional tasks...<br>    }
+</pre>
+
+    <p>This is a very dangerous situation. In general, wherever you see PL_strcpy (or the
+    standard C library function strcpy) with no size checking, you should be very
+    worried. In this example, buffer is stored on the program's stack. Also on the stack
+    are any other local variables, arguments, and the return address to which the program
+    execution will jump when this function is finished. If an attacker can pass more than
+    100 characters as the input to this function, the PL_strcpy function will fill buf
+    and then overwrite other values on the stack, including the return address. If an
+    attacker can figure out where the return address is located relative to buf, he can
+    craft the input to cause PL_strcpy to set the return address to a value of his
+    choosing. A common technique is to fill buf with assembly code that gives the
+    attacker aditional access to the user's machine, then set the return address to the
+    beginning of buf.</p>
+
+
+    <p>That's the most simple example - buffer overruns occur in many forms, some more
+    subtle than this example. For one thing, overruns can occur on the heap as well as
+    the stack. That is, storage space allocated with malloc or new can be overflowed as
+    well, and adjacent data modified. Overruns on the heap are more difficult to exploit
+    for malicious gain, since it is more difficult to predict the layout of data adjacent
+    to the buffer. However, exploits are still possible.</p>
+
+
+    <p>The solution to most buffer overflow problems is to limit the amount of data that
+    can be copied to the buffer. In the above example, the easiest way to do this is to
+    replace PL_strcpy with PL_strncpy, the bounded version:</p>
+
+    <pre class="code">
+void saferFunction(char* input)<br>{<br>  char buf[100];<br><br>  PL_strncpy(buf, input, sizeof(buf) - 1);<br>  buf[sizeof(buf) - 1] = '\0';<br><br>  // Additional tasks...<br>}
+</pre>
+
+    <p>Note that I could have used PL_strncpy(buf, input, 99), but then if someone were
+    to change the size of buf, they would have to remember to change the PL_strncpy call
+    as well. It's much safer to use sizeof(buf), which is calculated at compile time and
+    so has no performance impact. The other thing to note is that I explicitly set the
+    last byte of buf to be the null character. This is necessary becasue PL_strncpy (as
+    well as the C-library version, strncpy) are not guaranteed to null-terminate the
+    buffer.</p>
+
+
+    <p>Other functions besides {PL_}strcpy are at risk for buffer overrun problems, such
+    as {PL_}strcat, the sprintf family of calls, scanf, and gets. A complete list can be
+    found below **link**.</p>
+
+
+    <h4><a name="formatbugs">Format Bugs</a></h4>
+
+
+    <p>Functions such as printf(), fprintf(), sprintf(), and snprintf() are known as
+    format functions. These functions take a <em>format string</em> argument which can
+    contain directives like '%s'. When these markers are encountered, the function
+    inserts data into the resulting string based on the arguments following the format
+    string. For example,</p>
+
+    <pre class="code">
+    printf("Today is the %ith day of %s", 5, "May");    </pre>
+
+    <p>prints the string "Today is the 5th day of May" to the console. The danger of
+    format functions comes when an attacker can influence the contents of the format
+    string. This is because if a format string contains more '%' directives then there
+    are additional arguments to the function, the function will begin to read function
+    arguments or local variables from the stack and include them in the output string.
+    This could allow an attacker to read data about the internal state of your function.
+    Worse than that, the '%n' directive writes the number of bytes written to the output
+    string into the corresponding argument, or, if there are more percent-directives than
+    arguments, into other locations on the stack. This creates a condition much like a
+    buffer overrun, in that it allows an attacker to modify a running program or even
+    execute arbitrary code, such as by overwriting the return address.</p>
+
+
+    <p>** example **</p>
+
+
+    <p>The solution to these problems is not to let untrusted Web content (or the user,
+    for that matter) specify the format string. Ideally, the format string should be
+    hardcoded. For a simple printf call:</p>
+
+
+    <div class="bad example">
+        <pre class="bad code">
+    printf(str);    </pre>
+    </div>
+
+
+    <p>always do this instead:</p>
+
+
+    <div class="good example">
+        <pre class="good code">
+    printf("%s", str);    </pre>
+    </div>
+
+
+    <p>"Locking" the format string in this way eliminates the vulnerability. If you can't
+    hard-code the format string, and the data it contains may have come from an untrusted
+    source, filter it beforehand. For example, if you expect a format string that will
+    include no more than three other strings using %s directives, you could validate the
+    input like so:</p>
+
+    <pre class="code">
+    void buildString(char* formatIn, char* data1, char* data2, char* data3)<br>    {<br>      PRInt32 percentCount = 0;<br>      for (PRInt32 j = 0; j &lt; PR_strlen(formatIn); j++)<br>      {<br>        if (formatIn[j] == '%')<br>        {<br>          percentCount++; // Increment our count of % directives<br> <br>          if (formatIn[j+1] != 's')<br>            // We found a format directive other than %s, <br>//so abort the function with an error<br>            return NS_ERROR_FAILURE;<br><br>          if (percentCount &gt; 3)<br>            // More than three % directives, so abort with an error<br>            return NS_ERROR_FAILURE;<br>        }<br>      }<br>      <br>      char buf[1000];<br>      snprintf(buf, sizeof(buf) -1, formatIn, data1, data2, data3);<br>      buf[sizeof(buf)-1] = '/0'<br>    }
+</pre>
+
+    <p>Before calling snprintf, we check to make sure that the format string contains
+    only three %-directives, and only of the %s variety. Note that we use snprintf with a
+    sizeof() limit instead of sprintf to avoid buffer overruns, and we explicitly
+    null-terminate buf.</p>
+
+
+    <h4><a name="riskyfunctions">Dangerous Functions</a></h4>
+
+
+    <table cellpadding="8" cellspacing="2" border="1" summary=
+    "List of risky functions and their respective risk level, problem they may cause and available replacement/substitute">
+    <caption>
+            Dangerous C++ Functions
+        </caption>
+
+
+        <thead>
+            <tr>
+                <th scope="col">Name</th>
+
+                <th scope="col">Risk Level</th>
+
+                <th scope="col">Problem</th>
+
+                <th scope="col">Solution</th>
+            </tr>
+        </thead>
+
+
+        <tfoot>
+            <tr>
+                <th>Name</th>
+
+                <th>Risk Level</th>
+
+                <th>Problem</th>
+
+                <th>Solution</th>
+            </tr>
+        </tfoot>
+
+
+        <tbody>
+            <tr>
+                <td>gets</td>
+
+                <td>Very High</td>
+
+                <td>No bounds checking</td>
+
+                <td>Do not use gets. Use fgets instead.</td>
+            </tr>
+
+
+            <tr>
+                <td>strcpy</td>
+
+                <td>Very High</td>
+
+                <td>No bounds checking</td>
+
+                <td>strcpy is safe only if the source string is a constant and the
+                destination is large enough to hold it. Otherwise, use strncpy.</td>
+            </tr>
+
+
+            <tr>
+                <td>sprintf</td>
+
+                <td>Very High</td>
+
+                <td>No bounds checking, format string attacks</td>
+
+                <td>sprintf is very hard to use safely. Use snprintf instead.</td>
+            </tr>
+
+
+            <tr>
+                <td>scanf, sscanf</td>
+
+                <td>High</td>
+
+                <td>Possibly no bounds checking, format string attacks</td>
+
+                <td>Make sure all %-directives match the corresponding argument types. Do
+                not use '%s' directives with no bounds checking. Use '%xs' where x is the
+                buffer size of the corresponding argument. Do not use untrusted,
+                un-validated data in the format string.</td>
+            </tr>
+
+
+            <tr>
+                <td>strcat</td>
+
+                <td>High</td>
+
+                <td>No bounds checking</td>
+
+                <td>If input sizes are not well-known and fixed, use strncat
+                instead.</td>
+            </tr>
+
+
+            <tr>
+                <td>printf, fprintf, snprintf, vfprintf, vsprintf, syslog</td>
+
+                <td>High</td>
+
+                <td>format string attacks</td>
+
+                <td>Do not use untrusted, un-validated data in the format string. If the
+                format string can be influenced by Web content or user input, validate it
+                for the proper number and type of %-directives before calling these
+                functions. Make sure destination size arguments are correct.</td>
+            </tr>
+
+
+            <tr>
+                <td>strncpy, fgets, strncat</td>
+
+                <td>Low</td>
+
+                <td>May not null-terminate</td>
+
+                <td>Always explicitly null-terminate the destination buffer. Make sure
+                the size argument is correct. Be sure to leave room in the destination
+                buffer to add the null character!</td>
+            </tr>
+        </tbody>
+    </table>
+
+
+    <h4>File Access Issues</h4>
+
+
+    <p>Races<br>
+    Temp Files<br>
+    Permissions<br>
+    Symlink attacks</p>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

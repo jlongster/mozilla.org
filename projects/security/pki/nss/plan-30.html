@@ -1,0 +1,205 @@
+<?php
+
+$html_title = 'NSS 3.0 Project Plan';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>Network Security Services (NSS) 3.0 Plan</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup:
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">
+mozilla.dev.tech.crypto</A><BR>
+
+Technical contact:
+<A HREF="mailto:relyea@netscape.com?subject=Open Source NSS PRD Feedback">Bob Relyea
+</A><BR>
+
+Yell at the manager:
+<A HREF="mailto:lord@netscape.com?subject=Open Source NSS PRD Feedback">Bob Lord</A>
+</FONT></i>
+</center>
+
+
+<H3>Introduction</H3>
+In January of this year, we <a href="http://www.iplanet.com:80/alliance/press_room/press_releases/011800.html">announced</a>
+that we would contribute NSS and PSM to Mozilla. On 2/11, we released tar
+files which included all the code we knew we could publish.  Now that
+we have gotten through the first publishing process and have committed
+ourselves to developing our code in the open, it's time to get our code
+checked into the Mozilla CVS server. Our goals include:
+<ol>
+<li>
+All our unencumbered code is available on the Mozilla CVS server. 
+The Netscape engineers use that server.</P></li>
+
+<li>
+Our encumbered code remains inside the firewall.</P></li>
+
+<li>
+We bundle OpenNSS with RSAref.  It compiles.  Sample code compiles
+and runs.</P></li>
+
+<li>
+Netscape engineers (who build NSS for iPlanet server products) will pull
+from the Mozilla CVS server <i>and</i> the internal server to form a complete
+package equivalent to what we have today.</P></li>
+
+<li>
+In summary: most of the time NSS developers do not notice any significant
+difference from the time when all the code was inside the firewall.</P></li>
+
+<li>
+The end result is that we will have two similar, but different products.</P></li>
+
+<ol>
+<li>
+<b>Mozilla NSS 3.0</b>:  This product will be based on RSAref. 
+It may not have the same performance characteristics as the iPlanet version
+at this time.  Over time, we will add back any lost performance.</P></li>
+
+<li>
+<b>iPlanet NSS 3.0</b>: This product will contain our licensed version
+of BSAFE.  It will have similar functionality and performance to NSS
+2.8.  This is the version that all iPlanet servers and PSM will take. 
+We will QA it, and support it.  This is the version we license to
+the OEMs.  It is a commercial product.</P></li>
+</ol>
+</ol>
+
+
+
+<H3>Schedule</H3>
+<UL>
+    This is still <i>very</i> tentative.</P>
+
+    The only major milestone we want to track at this point is
+    making NSS code that compiles available on mozilla.org. Our
+    current target is mid-April, 2000.</P>
+</UL>
+ 
+ 
+
+<H3>Features</H3>
+<ul>
+<li>
+NSPR 4.0 support (and not 3.51).  We need NSPR 4.0 for PSM 1.2 (which
+needs to use the Mozilla standard). <b>Note</b>: By using NSPR 4.0, we
+lose <I>binary</I> backwards compatibility with NSS 2.8</P></li>
+
+<li>
+As much API backwards compatibility with NSS 2.8 as possible We will need
+to document all the changes.  There are some items listed below.</P></li>
+
+<li>
+Improved <A HREF="smime/">S/MIME Toolkit</A> first landing</P></li>
+</ul>
+  
+<H3>API Changes</H3>
+Here are some of the items we already know will change:
+<ol>
+<li>
+There will be some new header files, and some stuff will move around, so
+current NSS users will probably have to change some #includes in their
+sources.</P></li>
+
+<li>
+We're adding new libraries, so developers will have to change their Makefiles
+to link with a new list of NSS libraries.</P></li>
+
+<li>
+The RNG interface (Random number generator) is being completely replaced,
+because it was RSA proprietary.  So, if NSS developers have any RNG 
+calls, they'll have to change them.</P></li>
+
+</ol>
+
+<H3>Proposal to Isolate Licensed Code</H3>
+We want to maintain our source so that we have two separate builds, from
+two separate sets of sources: one open source and public, one that continues
+to use the crypto code we have licensed (and so cannot make public).</P>
+
+The major parts of the proposal are:</P>
+<ol>
+<li>
+We define a new abstracted interface (API) that will be the definition
+of the APIs provided by the different implementations.  This API will
+be free of RSA encumbrance.  Each and every one of the implementations
+will implement one library that provides exactly this API.  Let's
+call this the bottom-layer crypto API.  There will be no calls to
+functions in these libraries from code outside these libraries, other than
+to the functions defined in the bottom layer API.</P></li>
+
+<li>
+Each of the different implementations will live in a separate directory.</P></li>
+
+<ol>
+<li>
+All our existing, licensed BSAFE source code goes into one
+directory.  No Netscape code that is independent of that RSA-encumbered
+code will be in that directory.</P></li>
+
+<li>
+A second directory/library will be the "glue" that implements this
+API atop BSAFE's public API.</P></li>
+
+<li>
+A third directory/library will be the "glue" that implements this
+API atop RSAref (probably a modified version of RSAref).</P></li>
+
+<li>
+There is a "line" that separates the PK11 wrapper layer above
+from the PKCS11 implementation below (e.g. the software tokens). 
+In this proposal, no directory will contain both "above" code and "below"
+code. Each source directory in security/lib will be either above or below,
+not both.  The libraries produced from these source directories will
+also reflect this separation.  That means that security/lib/pkcs11
+must be split in two, as well as numerous other source directories.</P>
+</li>
+
+<li>
+All the calls to functions in the "bottom layer" API must come from code
+in "below the line" libraries (that is, from inside the software PKCS #11 
+token).  No "above the line" code may include
+the header file that defines the bottom layer API, or call any of its functions.</P></li>
+
+<LI>
+These changes will mean a reorganization of the code and breaking up the 
+header files. Lots of <TT>#include</TT> directives will have to be changed
+in existing code, but the function prototypes should remain the same.
+</P></LI>
+</ol>
+</OL>
+
+<p>Benefits of this proposal:
+<ol>
+<li>
+This proposal allows us to have multiple different implementations of basic
+crypto library functions (public key, symmetric crypto, hashes, MACs, RNG...)
+some of which can live on mozilla.org, others of which can live 
+inside the Netscape firewall and can "overlay" a working tree from mozilla.org.</P></li>
+
+<li>
+This proposal allows us to have BSAFE-public-API-based and RSAREF-based
+implementations on mozilla.org, and BSAFE-internal-based implementation internally,
+as well as a complete non-BSAFE replacement alternative internally that's
+waiting to be put on mozilla.org when the patent expires.</P></li>
+
+<li>
+This proposal also facilitates multiple people working in parallel on the
+short term tasks of replacing BSAFE-internal code with BSAFE-public or
+RSAREF code, and of producing the long term replacement crypto code.</P></li>
+</ol>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

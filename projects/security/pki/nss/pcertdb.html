@@ -1,0 +1,623 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<HTML>
+<HEAD>
+<TITLE>Physical Format of pcertdb</TITLE>
+</HEAD>
+
+<center><h2>
+Physical Format of pcertdb</h2>
+<i><FONT SIZE="-1">
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A>
+</FONT></i>
+</center>
+
+<P>There are currently seven record types stored in the permanent cert database.
+<BR>
+<H2>
+RowID</H2>
+Usually one uses "keys" to find records in a database. However, since
+we have various encryption keys floating around, and in fact an entire
+"key database," I use the term "RowID" here to refer to the things used
+to specify records in databases.
+<P>All rowIDs begin with a single byte, whose value indicates the record
+type.
+<BR>
+<H2>
+Payloads</H2>
+All payloads begin with a three-byte header. The first byte indicates
+the database format version. The second byte indicates the record
+type, and should match the record type byte of the corresponding rowID.
+The third byte consists of flags <FONT COLOR="#FF0000">[flag info to come].</FONT>
+<BR>
+<H2>
+Specific record types</H2>
+
+<H3>
+Database version</H3>
+
+<H4>
+RowID</H4>
+The rowID of this database record is a fixed null-terminated ascii string,
+"Version."
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4"><TT><FONT COLOR="#D21400">0</FONT></TT></TD>
+
+<TD NOSAVE><TT><FONT COLOR="#965A00">V</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">e</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">r</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">s</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">i</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">o</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">n</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">\0</FONT></TT></TD>
+</TR>
+</TABLE>
+
+<H4>
+Payload</H4>
+The only point of this record is to store the database format version,
+which is stored as the first byte of all payloads. Therefore, this
+payload only includes the common header.
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#FFF0B4" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">7</FONT></TT></TD>
+
+<TD NOSAVE><TT><FONT COLOR="#D21400">0</FONT></TT></TD>
+
+<TD BGCOLOR="#FFFFE6" NOSAVE><TT><FONT COLOR="#3C3CC8">f</FONT></TT></TD>
+</TR>
+</TABLE>
+
+<H3>
+Certificate</H3>
+
+<H4>
+RowID</H4>
+RowIDs are the guaranteed unique combination of the certificate issuer's
+(DER-encoded) distinguished name, and that serial number of the cert as
+assigned by that issuer. The issuer's DN is provided in DER-encoded
+format in the certificate <FONT COLOR="#FF0000">[description
+of DER encoding of DNs to come]</FONT>, and the serial number is DER-encoded as
+an integer. To make a rowID, the DN is not decoded, though the integer
+serial number is.
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">1</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00">DER-encoded issuer</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">integer serial number</FONT></I></TD>
+</TR>
+</TABLE>
+
+<H4>
+Payload</H4>
+The first three elements of this record after the common header are each
+two-byte sets of flags, indicating for what purposes this cert is "trusted."
+The first set of flags is for SSL, the second is for S/MIME e-mail, and
+the third is for object signing. Then comes a two-byte integer (most
+significant byte first) indicating the length in bytes of the DER-encoded
+certificate. Then comes a two-byte integer indicating the length
+of the certificate's nickname; this nickname length may be zero, in which
+case no nickname is present. Then comes the DER-encoded certificate
+itself, and finally any nickname as a null-terminated ascii string.
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">7</FONT></TT></TD>
+
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">1</FONT></TT></TD>
+
+<TD BGCOLOR="#FFFFE6" NOSAVE><TT><FONT COLOR="#3C3CC8">f</FONT></TT></TD>
+
+<TD BGCOLOR="#FFFFE6" NOSAVE><TT><FONT COLOR="#3C3CC8">ssl</FONT></TT></TD>
+
+<TD BGCOLOR="#FFFFE6" NOSAVE><TT><FONT COLOR="#3C3CC8">email</FONT></TT></TD>
+
+<TD BGCOLOR="#FFFFE6" NOSAVE><TT><FONT COLOR="#3C3CC8">os</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00">length of DER-encoded cert</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">length of nickname or zero</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">DER-encoded cert</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">nickname (optional)</FONT></I></TD>
+</TR>
+</TABLE>
+
+<P>The trust bits are defined by or'ing together the following values:
+<BR>
+<BR>
+<TABLE BORDER BGCOLOR="#FFFFE6" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0001</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">Valid peer</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0002</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">Trusted</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0004</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">Warn before posting over ssl connections with
+this server cert</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0008</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">Valid CA cert</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0010</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">CA cert trusted for issuing server certs</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0020</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">NS trusted CA </FONT><FONT COLOR="#FF0000">[means
+what?]</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0040</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">User certificate</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0080</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">CA cert trusted for issuing client certs</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0100</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">"Invisible" cert -- don't show in UI (was
+used for policy-file cert)</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0200</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">"Government approved" -- can do strong crypto
+in export clients</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0400</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">May do object signing, even if not marked
+for object signing </FONT><FONT COLOR="#FF0000">[is this set on disk? or
+just memory?]</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x0800</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">(unused)</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x1000</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">(unused)</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x2000</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">(unused)</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x4000</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">(unused)</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">0x8000</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#3C3CC8">(unused)</FONT></I></TD>
+</TR>
+</TABLE>
+
+<P>Version six of this entry only had one byte for each of the ssl, email,
+and object signing flags; with only the eight least significant bits defined.
+<H3>
+Nickname</H3>
+Nickname entries map ascii strings to cert subjects, which are described
+below.
+<H4>
+RowID</H4>
+The rowID is just a null-terminated ascii string.
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">2</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00">Nickname as an ascii string</FONT></I></TD>
+
+<TD><TT><FONT COLOR="#965A00">\0</FONT></TT></TD>
+</TR>
+</TABLE>
+
+<H4>
+Payload</H4>
+The payload contains a two-byte integer (most significant byte first) specifying
+the length of the following DER-encoded cert subject, followed by the DER-encoded
+subject itself.
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">7</FONT></TT></TD>
+
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">2</FONT></TT></TD>
+
+<TD BGCOLOR="#FFFFE6" NOSAVE><TT><FONT COLOR="#3C3CC8">f</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00">Length of DER-encoded cert subject</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">DER-encoded cert subject</FONT></I></TD>
+</TR>
+</TABLE>
+
+<H3>
+Subject</H3>
+Subject entries map cert subjects (distinguished names) to the certs themselves
+(well, the cert's rowIDs, which are composed of their issuer and serial
+number) and to the <FONT COLOR="#FF0000">[keyIDs]</FONT>.
+<H4>
+RowID</H4>
+The rowID is just the DER-encoded subject of the cert, which is a distinguished
+name.
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">3</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00">DER-encoded distinguished name</FONT></I></TD>
+</TR>
+</TABLE>
+
+<H4>
+Payload</H4>
+The payloads of these records are complex. The first thing after the
+common header is a two-byte integer specifying how many cert rowIDs and
+keyIDs are listed in this entry. That integer, like all others in
+this record, is most-significant-byte first. After that comes another
+two-byte integer, specifying the length of the nickname for this subject.
+The nickname is presented as a null-terminated ascii string. If there
+is no nickname, the string consists of merely the null terminating byte,
+and hence the minimum nickname length is one. After that comes another
+two-byte integer, this one specifying the length of the email address corresponding
+to this subject. It, too, is a null-terminated ascii string with
+a minimum length of one. After these lengths comes the null-terminated
+nickname, and after that, the null-terminated e-mail address.
+<P>Next, there are N two-byte integers, each one specifying the length
+of a cert rowID. After that, there are N more two-byte integers,
+each one specifying the length of a keyID. Finally, there are the
+N cert rowIDs, and the N keyIDs.
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">7</FONT></TT></TD>
+
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">3</FONT></TT></TD>
+
+<TD BGCOLOR="#FFFFE6" NOSAVE><TT><FONT COLOR="#3C3CC8">f</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00"># of certs N</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">nickname length</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">email length</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">ascii nickname</FONT></I></TD>
+
+<TD><TT><FONT COLOR="#965A00">\0</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00">email address</FONT></I></TD>
+
+<TD><TT><FONT COLOR="#965A00">\0</FONT></TT></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="4" NOSAVE><I><FONT COLOR="#965A00">len of cert 0 rowID</FONT></I></TD>
+
+<TD COLSPAN="2" NOSAVE><I><FONT COLOR="#965A00">len of cert 1 rowID</FONT></I></TD>
+
+<TD ALIGN=CENTER NOSAVE><I><FONT COLOR="#965A00">(...)</FONT></I></TD>
+
+<TD COLSPAN="3" NOSAVE><I><FONT COLOR="#965A00">len of cert (N-1) rowID</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="4" NOSAVE><I><FONT COLOR="#965A00">len of keyID 0</FONT></I></TD>
+
+<TD COLSPAN="2" NOSAVE><I><FONT COLOR="#965A00">len of keyID 1</FONT></I></TD>
+
+<TD ALIGN=CENTER NOSAVE><I><FONT COLOR="#965A00">(...)</FONT></I></TD>
+
+<TD COLSPAN="3" NOSAVE><I><FONT COLOR="#965A00">len of keyID (N-1)</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="10" NOSAVE><I><FONT COLOR="#965A00">cert 0 rowID</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="10" NOSAVE><I><FONT COLOR="#965A00">cert 1 rowID</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="10" NOSAVE><I><FONT COLOR="#965A00">(...)</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="10" NOSAVE><I><FONT COLOR="#965A00">cert (N-1) rowID</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="10" NOSAVE><I><FONT COLOR="#965A00">keyID 0</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="10" NOSAVE><I><FONT COLOR="#965A00">keyID 1</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="10" NOSAVE><I><FONT COLOR="#965A00">(...)</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="10" NOSAVE><I><FONT COLOR="#965A00">keyID (N-1)</FONT></I></TD>
+</TR>
+</TABLE>
+
+<H3>
+CRL</H3>
+
+<H4>
+RowID</H4>
+The rowID for CRLs is the DER-encoded distinguished name of the cert server
+issuing the CRL.
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">4</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00">DER-encoded DN of the issuing cert server</FONT></I></TD>
+</TR>
+</TABLE>
+
+<H4>
+Payload</H4>
+The first part of this record after the common header is a two-byte integer
+indicating the length of the DER-encoded CRL itself. Next, there
+is a two-byte integer indicating the length of the "nickname" URL associated
+with the CRL <FONT COLOR="#FF0000">[more info describing the purpose of
+the url to come]</FONT>. The URL is a null-terminated ascii string.
+If there is no URL, merely the null termination is present. Therefore,
+the minimum URL length is 1. Next comes the DER-encoded CRL, then
+the URL as a null-terminated ASCII string.
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">7</FONT></TT></TD>
+
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">4</FONT></TT></TD>
+
+<TD BGCOLOR="#FFFFE6" NOSAVE><TT><FONT COLOR="#3C3CC8">f</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00">length of DER-encoded CRL</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">length of URL</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">DER-encoded CRL </FONT><FONT COLOR="#FF0000"> [more
+info to come]</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">URL </FONT><FONT COLOR="#FF0000">[more info to come]</FONT></I></TD>
+
+<TD><TT><FONT COLOR="#965A00">\0</FONT></TT></TD>
+</TR>
+</TABLE>
+
+<H3>
+KRL</H3>
+
+<H4>
+RowID</H4>
+There can only be one key revocation list (KRL) in a database, so its rowID consists merely of
+the record type. (KRLs are used with FORTEZZA only.)
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">5</FONT></TT></TD>
+</TR>
+</TABLE>
+
+<H4>
+Payload</H4>
+The first part of this record after the common header is a two-byte integer
+indicating the length of the DER-encoded KRL itself. Next, there
+is a two-byte integer indicating the length of the "nickname" URL associated
+with the KRL <FONT COLOR="#FF0000">[more info describing the purpose of
+the url to come]</FONT>. The URL is a null-terminated ascii string.
+If there is no URL, merely the null termination is present. Therefore,
+the minimum URL length is 1. Next comes the DER-encoded KRL, then
+the URL as a null-terminated ASCII string.
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">7</FONT></TT></TD>
+
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">5</FONT></TT></TD>
+
+<TD BGCOLOR="#FFFFE6" NOSAVE><TT><FONT COLOR="#3C3CC8">f</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00">length of DER-encoded KRL</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">length of URL</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">DER-encoded KRL </FONT><FONT COLOR="#FF0000">[more
+info to come]</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">URL </FONT><FONT COLOR="#FF0000">[more info to come]</FONT></I></TD>
+
+<TD><TT><FONT COLOR="#965A00">\0</FONT></TT></TD>
+</TR>
+</TABLE>
+
+<H3>
+S/MIME profile</H3>
+
+<H4>
+RowID</H4>
+The rowID for an S/MIME profile is a null-terminated ascii string containing
+the e-mail address for which this profile applies. <FONT COLOR="#FF0000">[Info
+to come on what formats are valid for the e-mail address]</FONT>
+<BR><FONT COLOR="#FF0000"></FONT>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">6</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00">e-mail address</FONT></I></TD>
+
+<TD><TT><FONT COLOR="#965A00">\0</FONT></TT></TD>
+</TR>
+</TABLE>
+
+<H4>
+Payload</H4>
+After the common header, there are three two-byte integers indicating the
+lengths of (respectively), the subject name field, the options field, and
+the options date field. Following those lengths come the subject
+name, which is the DER-encoded distinguished name associated with this
+e-mail address; the S/MIME options, which is the value of the PKCS#7 attribute
+tagged by SEC_OID_PKCS9_SMIME_CAPABILITIES <FONT COLOR="#FF0000">[format 
+details to come]</FONT>; and the timestamp of those options, inUTCTime format.
+The timestamp is usually the signing time of the message from which these
+capabilities are taken.
+<BR>
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">7</FONT></TT></TD>
+
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">6</FONT></TT></TD>
+
+<TD BGCOLOR="#FFFFE6" NOSAVE><TT><FONT COLOR="#3C3CC8">f</FONT></TT></TD>
+
+<TD><I><FONT COLOR="#965A00">length of subject name</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">length of S/MIME options</FONT></I></TD>
+
+<TD><I><FONT COLOR="#965A00">length of options timestamp</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="6" NOSAVE><I><FONT COLOR="#965A00">DER-encoded distinguished
+name associated with this e-mail address</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="6" NOSAVE><I><FONT COLOR="#965A00">S/MIME options</FONT></I></TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="6" NOSAVE><I><FONT COLOR="#965A00">options timestamp, in UTCTime
+format.</FONT></I></TD>
+</TR>
+</TABLE>
+
+<H3>
+Content Version</H3>
+
+<H4>
+RowID</H4>
+The rowID of this database record is the fixed null-terminated ascii string,
+"ContentVersion."
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR>
+<TD><TT><FONT COLOR="#D21400">7</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">C</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">o</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">n</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">t</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">e</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">n</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">t</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">V</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">e</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">r</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">s</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">i</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">o</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">n</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">\0</FONT></TT></TD>
+</TR>
+</TABLE>
+
+<H4>
+Payload</H4>
+After the common header, there is a one-byte integer, with the version
+number of the database contents. This number is revised when the
+permanent data compiled into the security library changes, so that the
+initialization code knows what changes to make to the permanent database
+to bring it into line with the compiled-in data.
+<BR>
+<TABLE BORDER CELLSPACING=0 CELLPADDING=0 BGCOLOR="#F0F0AA" NOSAVE >
+<TR NOSAVE>
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">7</FONT></TT></TD>
+
+<TD BGCOLOR="#FFF0B4" NOSAVE><TT><FONT COLOR="#D21400">7</FONT></TT></TD>
+
+<TD BGCOLOR="#FFFFE6" NOSAVE><TT><FONT COLOR="#3C3CC8">f</FONT></TT></TD>
+
+<TD><TT><FONT COLOR="#965A00">7</FONT></TT></TD>
+</TR>
+</TABLE>
+
+<P>
+</BODY>
+</HTML>

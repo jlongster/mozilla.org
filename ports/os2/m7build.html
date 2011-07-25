@@ -1,0 +1,345 @@
+<?php
+
+$html_title = 'GeckOS/2 Build Instructions';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="GENERATOR" CONTENT="Mozilla/4.04 [en] (OS/2; I) [Netscape]">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<H1>
+<FONT FACE="Arial,Helvetica">GeckOS/2 Build Instructions</FONT></H1>
+This document explains how to build Warpzilla Gecko (the OS/2 port of the new Mozilla NGLayout browser)
+with <TT>autoconf</TT> and the emx+gcc development kit. The build using VisualAge C++ (vacpp) is presently broken but in the process of being autoconfed and revived.<p>
+<HR>
+<P><FONT SIZE=+1><B>WHAT'S NEW (1998/12/12):</B></FONT>
+<UL>
+<LI>The long list of manual tweaks and gawky workarounds for build breaks is history, and the build itself is now a simple, three-step process (the Lizard Waltz):
+<CENTER>
+<TABLE WIDTH="30%" CELLPADDING=10 BORDER=0><TR><TD>
+<OL>
+<LI>
+<TT>autoconf</TT></LI>
+<LI>
+<TT>configure</TT></LI>
+<LI>
+<TT>gmake</TT></LI>
+</OL>
+</TD></TR></TABLE>
+</CENTER>
+<LI>
+<B>GNU make 3.76.1 is now required</B> instead of version 3.75.<P>
+<LI>You have the option of using prebuilt versions of the standard jpeg, zlib and png libraries.
+</UL>
+
+<P>
+<HR WIDTH="100%">
+<CENTER>
+<H2><U>Getting Ready</U></H2>
+</CENTER>
+
+<BR><B><FONT SIZE=+1>System requirements:</FONT></B>
+<UL>
+<UL>
+<LI>
+Pentium with at least a 133 MHz processor</LI>
+<LI>
+About 125 megs of <B>HPFS</B>-formatted hard drive space (50MB for the
+sources and 75MB for compiler output, less with debugging turned off).</LI>
+<LI>
+Minimum 64 megs of RAM</LI>
+</UL>
+</UL>
+
+<B><FONT SIZE=+1>Tools:</FONT></B>
+<P>
+Downloading and installing the tools is probably the most painstaking part of the build process. Yet chances are you already have some or all of them on your system. If so, make sure you have the specified versions.
+<P>
+<UL>
+<UL>
+<LI>
+<A HREF="ftp://hobbes.nmsu.edu/pub/os2/dev/emx/v0.9c/">GNU emx+gcc v0.9c
+development kit</A>. Be sure to get <A HREF="ftp://hobbes.nmsu.edu/pub/os2/dev/emx/v0.9c/bsddev.zip">bsddev.zip</A>
+which has the socket support (essential) as well as the <A HREF="ftp://hobbes.nmsu.edu/pub/os2/dev/emx/v0.9c/emxfix04.zip">latest
+patch</A>. This <B>must</B> be installed on an HPFS drive, as long header
+file names are assumed. Once you've installed the package, expand the header
+names to their full filenames:</LI>
+
+<BLOCKQUOTE><TT>cd emx\include</TT>
+<BR><TT>long</TT></BLOCKQUOTE>
+Also, make <TT>.lib</TT> libraries from the <TT>.a</TT> libraries that
+come with emx:
+<BLOCKQUOTE><TT>cd emx\lib</TT>
+<BR><TT>omflibs</TT></BLOCKQUOTE>
+
+<LI>
+<A HREF="ftp://ftp.leo.org/pub/comp/os/os2/leo/gnu/emx+gcc/contrib/pgcc-os2.zip">pgcc
+development kit v1.0.2</A>. Note we do not currently support pgcc for the
+build process; this support is on its way. You will specifically need to
+install <TT>gas-2.8.1.0.1-bin.zip</TT> and the <TT>dll.new</TT> directory
+from <TT>pgcc-os2-1.0.2-gcc.zip</TT> from this library. Be sure to place
+the <TT>dll.new</TT> directory in your <TT>LIBPATH</TT>, or copy the two
+files in that directory to <TT>\emx\dll</TT>.</LI>
+
+<LI>
+<A HREF="ftp://ftp.leo.org/pub/comp/os/os2/leo/gnu/shells/bash-os2-2.0-266.zip">GNU
+bash 2.00.0(266)</A> shell which you should rename <TT>gbash.exe</TT>,
+because that's what the build process expects.</LI>
+
+<LI>
+<A HREF="ftp://hobbes.nmsu.edu/pub/os2/unix/dev/gnumake.zip">GNU make
+3.76.1</A>. Using version 3.75 produces garbage instead of a slash in <TT>/js</TT>
+and <TT>/libpref</TT>. Meanwhile the bug that kept us from using 3.76.1,
+namely the deletion of <TT>config/nspwd.pl</TT> and <TT>revdepth.pl</TT>,
+has been found and fixed. The instructions below assume GNU make has been
+renamed <TT>gmake.exe</TT>.</LI>
+
+<LI>
+<A HREF="ftp://hobbes.nmsu.edu/pub/os2/unix/util/gnused.zip">GNU sed v3.00</A></LI>
+
+<LI>
+GNU <A HREF="ftp://hobbes.nmsu.edu/pub/os2/unix/util/gnufutil.zip">file</A>,
+<A HREF="ftp://hobbes.nmsu.edu/pub/os2/unix/util/gnusutil.zip">shell</A>
+and <A HREF="ftp://hobbes.nmsu.edu/pub/os2/unix/util/gnututil.zip">text</A>
+utilities.</LI>
+
+<LI>
+Perl from <A HREF="ftp://hobbes.nmsu.edu/pub/os2/unix/dev/perl502b.zip">Hobbes</A>
+or the <A HREF="ftp://ftp.funet.fi/pub/languages/perl/CPAN/ports/os2/">latest
+version</A></LI>
+
+<LI>
+<A HREF="ftp://hobbes.nmsu.edu/pub/os2/unix/dev/gnuawk.zip">GNU awk v3.0.3</A>,
+which you should rename to <TT>awk.exe</TT> (again, expected by the build).</LI>
+
+<LI>
+<A HREF="ftp://joyce.eng.yale.edu/pub/warpzilla/autoconf-2_12-5-emxbin.zip">GNU
+autoconf v2.12 patchlevel 5</A></LI>. Install instructions are available at <A HREF="http://www.arrakis.es/~worm/acemx.htm">the
+former maintainer's site.</A>
+<LI>
+<A HREF="ftp://ftp.leo.org/pub/comp/os/os2/leo/gnu/systools/gnum4.zip">GNU
+m4 v1.4</A> (required for autoconf)</LI>
+
+<LI>
+<A HREF="ftp://hobbes.nmsu.edu/pub/os2/unix/dev/cvs110.zip">CVS v1.10</A>.
+You'll want this for grabbing the latest source.</LI>
+
+<LI>
+(Optional) Patched version of <A HREF="ftp://joyce.eng.yale.edu/pub/warpzilla/emxomf.zip">emxomf.exe</A>
+which turns off some warnings. Not strictly needed, but useful if you are
+looking for a cleaner build TODAY. (Don't worry, the warnings <B>will</B>
+eventually be fixed.)</LI>
+</UL>
+</UL>
+
+<HR WIDTH="100%">
+<CENTER>
+<H2><U>Getting Set</U></H2>
+</CENTER>
+
+<OL>
+<LI>
+<B>Download and carefully install all of the above tools</B> that you don't
+already have on your system. If you already have a tool, be sure you have
+the latest version of that tool. Make sure they're all in your path and,
+while you're there, add <TT>[x:\...]\warpzilla\config\OS24.0_EMX_DBG.OBJ</TT>
+to it so that the build process can find <TT>nsinstall.exe</TT> immediately
+after building it. A cool way to avoid dumping everything into <TT>emx/bin</TT>
+and have a shorter PATH statement is <A HREF="ftp://hobbes.nmsu.edu/pub/os2/system/drivers/filesys/tvfs211.zip">TVFS</A>
+in case you haven't already discovered this little gem of a utility.</LI>
+
+
+<P>&nbsp;
+<LI>
+<B>Install the NGLayout source</B>. You have two options:</LI>
+<p>
+<OL type=a>&nbsp;
+<LI>
+CVS. Get the latest source from the developers' OS/2 CVS server:</LI>
+
+<BR><TT>set CVSROOT=:pserver:anonymous@joyce.eng.yale.edu:/warpzilla</TT>
+<BR><TT>cvs login</TT>. Use <TT>anonymous</TT> as your password.
+<BR><TT>cvs <I>-z[X]</I> co warpzilla</TT> to pull the code.
+
+<P>&nbsp;The optional <I><TT>-z[X]</TT></I> runs gzip compression which
+speeds things up, and <TT>X</TT> is the degree of compression (1 to 9).
+<I>3 is the recommended value.</I> See the <A HREF="http://www.mozilla.org/cvs.html">Mozilla
+CVS page</A> for more details, tools and links.
+
+<P>&nbsp;
+<LI>
+A <A HREF="ftp://joyce.eng.yale.edu/pub/warpzilla/nglwarpzilla-src-1.0.2.zip">ZIP</A>
+which currently contains the 1998/11/21 source tree. This is already outdated
+by the latest changes on the CVS tree. Eventually, this ZIP file will be
+automatically updated every evening.</LI>
+
+
+<P></OL>
+
+<LI>
+<B>Set the following environment variables</B> at the command line, with a script,
+or in <tt>config.sys</tt> if they're not already there:</LI>
+
+<BLOCKQUOTE><TT>set TMPDIR=[drive:/path/to/tmp/space] <B>&lt;--</B></TT>
+<B>Note the use of / as the path delimiter.</B></BLOCKQUOTE>
+Also, add the following setting to <tt>config.sys</tt> <B>if you do not have Visual Age C++ installed</B>.
+<BLOCKQUOTE><TT>set INCLUDE=</TT>[copy whatever you have for the environment
+variable <TT>C_INCLUDE_PATH</TT>]</BLOCKQUOTE> so that <tt>rc</tt> can find <tt>&lt;os2.h&gt;</tt>.
+
+<p>Finally, to help <tt>configure</tt> get things right:
+<ul><ul><ul>
+<tt>
+<br>set SHELL=cmd.exe
+<br>set CC=gcc
+<br>set CXX=gcc
+<br>set MAKE=gmake
+<br>set AWK=awk
+<br>set RANLIB=echo
+<br>set INSTALL=nsinstall
+</tt>
+</ul></ul></ul>
+<p>Now, if necessary, reboot for the settings to take effect.<p>
+<LI>
+<B>Install or build NSPR:</B></LI>
+
+<tt>configure</tt> tests for the presence of NSPR (Netscape Portable Runtime) library, and fails if it can't find and link with it. You therefore either have to build NSPR, or install the binaries available at Hobbes and Leo in nspr30-e.zip. If you grab the zip, follow the installation instructions it contains. Otherwise, here's how to build NSPR.
+
+<p>
+<ol type=a>
+<li>
+As the NSPR build uses static makefiles, you first have to set the right environment variables. The simplest way to do this is to create a <tt>.cmd</tt> file containing the following lines, fill in the value of MOZ_SRC (which should not include the root directory, e.g. <tt>MOZ_SRC=g:\dev</tt> if the source code is in <tt>g:\dev\warpzilla</tt> on your machine), and run it.
+<p>
+<OL>
+<OL><TT>set MOZ_OS2_TOOLS=EMX</TT>
+<BR><TT>set MOZ_BITS=32</TT>
+<BR><TT>set MOZ_DEBUG=1</TT>
+<BR><TT>set MOZ_GOLD=1</TT>
+<BR><TT>set MOZ_MEDIUM=1</TT>
+<BR><TT>set MOZ_SRC=[drive:\path to warpzilla root directory]</TT>
+<BR><TT>set NO_SECURITY=1</TT>
+<BR><TT>set NSPR20=1</TT>
+<BR><TT>set MOZ_OS2_EMX_OBJECTFORMAT=OMF</TT>
+</ol></ol>
+<p>Do <b>not</b> set these environment variables in <tt>config.sys</tt> because running <tt>configure</tt> sets them for the GeckOS/2 build, and assumes they are not set (i.e. a vanilla shell).<p>
+
+<LI>Then start by making <tt>warpzilla/config</tt> with:<p>
+<ol>
+<tt>cd config<br>
+gmake</tt>
+</ol>
+<p>This builds <TT>nsinstall.exe</TT> and <TT>bsdecho.exe</TT> which end up
+in <TT>warpzilla\dist\os24.0_emx_dbg.obj\bin</TT>.<p>
+
+<LI>Next, with <TT>nsinstall.exe</TT> in your PATH:
+<BLOCKQUOTE><TT>cd warpzilla\nsprpub</TT>
+<BR><TT>gmake</TT></BLOCKQUOTE>
+<LI>Finally, make sure the three 3 new DLLs (<TT>nspr21.dll</TT>, <TT>plc21.dll</TT>, and <TT>plds21.dll</TT>) you should now find in <tt>warpzilla\dist\os24.0_emx_dbg.obj\bin</tt> are in your <TT>LIBPATH</TT> by either copying them to a directory in LIBPATH, or adding <TT>[drive:]\warpzilla\dist\OS24.0_EMX_DBG.OBJ\LIB</TT> to your LIBPATH in <tt>config.sys</tt>. You CANNOT use <TT>SET ENDLIBPATH</TT> or
+<TT>BEGINLIBPATH</TT>. (why not? we're not sure...)
+</OL>
+<P>Now you're all set to spawn the lizard...
+<p>
+<HR WIDTH="100%">
+<CENTER>
+<H2><U>Building GeckOS/2</U></H2>
+</CENTER>
+
+<OL>
+
+<LI>Open an OS/2 command prompt, change to the drive and root directory of the source tree and launch <tt>gbash</tt>.<p>
+<LI>At the <tt>gbash</tt> prompt, run <TT>autoconf</TT>, which reads <tt>warpzilla/configure.in</tt> and writes <tt>warpzilla/configure</tt>. It runs quietly, i.e. no output messages. If after a few seconds you're back at the <tt>gbash</tt> prompt, everything's (probably) okay. <b>N.B. Do not run <tt>autoconf --auxfiles</tt> as instructed in the <tt>autoconf</tt> doc (acemx.html)</b> because it'll copy <tt>config.guess</tt> and <tt>config.sub</tt> to the wrong directory. The Warpzilla versions of those files (in <tt>warpzilla/build/autoconf/config.guess</tt> have been patched to recognize OS/2, so it's completely unnecessary.<p>
+
+<LI>Create a directory for your build tree. Although this step is only mandatory if you want to build more than one version of GeckOS/2 (e.g. emx and vacpp), if you opt to build in the source tree, you'll likely get "no such directory" failures at certain points where files get copied to the build tree so that <tt>rc</tt> can find them. You can name the directory anything you want, but the "standard procedure" is:
+
+<P><TT>mkdir obj-`build/autoconf/config.guess` &lt;--</TT> <B>Backticks, not single quotes!</B><P>
+
+which creates a directory named <TT>obj-i386-os2.40</TT>. This will soon be changed to <tt>obj-i386-os2.40_emx</tt>, <tt>[...]_vacpp</tt> or <tt>[...]_pgcc</tt> to support multiple side-by-side builds.
+<p>
+<LI>Now <tt>cd</tt> to your build directory and run <tt>configure</tt>.
+
+<BLOCKQUOTE><TT>../configure --without-x [options] --with-nspr=[path]</TT></BLOCKQUOTE>
+
+<b><tt>configure</tt> options:</b> For the full list of options, enter "<tt>configure --help | more</tt>". For us, <tt>--without-x</tt> and <tt>--with-nspr</tt> are <b>mandatory</b> or <tt>configure</tt> will fail. <tt>--enable-dom</tt> works, as does <tt>--enable editor</tt> which builds <tt>ender.dll</tt>. For development, you'll want to use <tt>--enable-debug</tt>.
+
+<p>To reduce build time and redundancy, you can use <tt>--with-jpeg=</tt>, <tt>--with-zlib=</tt> and <tt>--with-png=</tt> if you have or install those libraries. The versions must be jpeg 6b, zlib 1.1.3 and png 1.0.2 because <tt>configure</tt> checks and won't use a version older than the one in the mozilla tree. The path you set (and this also applies to <tt>--with-nspr</tt>) must be a directory with an <tt>/include</tt> and a <tt>/lib</tt> subdirectory. For example, if you have <tt>d:\imagelibs\jpeg6b\include</tt> and <tt>lib</tt>, you would use <tt>--with-jpeg=d:/imagelibs/jpeg6b</tt>. These paths are passed to gcc for the <tt>-I</tt> and <tt>-L</tt> flags. Equally important, the corresponding dlls must also be in your LIBPATH so the linker can find them.
+
+<p>We haven't yet had a chance to test the packages of jpeg, zlib and png libraries available at the <a href=http://borneo.gmd.de/~veit/os2/xf86plib.html>XFree86 OS/2</a> site; we used our own builds of the original sources. We have no reason to believe those distributions won't work. If you try them before we do, please let us know that they can be used and provide details should you encounter any problems. The jpeg6b-e.zip package recently uploaded to Hobbes will not work with the Warpzilla code which expects jpeg.dll rather than jpeg6b.dll; it has been withdrawn from distribution to avoid creating confusion and possibly duplicating an existing release. If, however, we find out that for some reason the XF86 packages do not work with Warpzilla, we will make compatible versions available.
+
+<p>Running <tt>configure</tt> first checks your system type, then for the compiler and various tools, and finally for headers and libraries. If it fails, you can examine the compiler or linker input and output in <tt>config.log</tt>. If everything's okay, <tt>configure</tt> next writes <tt>config.status</tt> and creates a "mirror tree" holding all the makefiles necessary to build Warpzilla, but separate from the actual source.
+
+<p><i>A few random tips</i>:<ul>
+<li>You don't have to run <tt>configure</tt> every time you want to build GeckOS/2. Just the first time, then whenever <tt>configure.in</tt>, <tt>autoconf.mk.in</tt>, or your system change, or whenever you change options. In that case, delete <tt>config.cache</tt> before running <tt>configure</tt>.
+<li>Once <tt>configure</tt> starts creating the <tt>Makefile</tt> mirror tree, it's hard to stop with Ctrl-C because it just keeps going...and going...and going...
+<li>To refresh your <tt>Makefile</tt> tree, which you have to do when a <tt>Makefile.in</tt> changes, run <tt>config.status</tt>.
+<li>And, just in case you haven't noticed, <tt>gbash</tt> saves its history on disk (in <tt>home/.bash_history</tt>) so you can use the up-arrow to scroll back to a <tt>configure</tt> command instead of retyping it.</ul>
+<p>
+<li>When <tt>configure</tt> is done, enter<p>
+<ol>
+<BLOCKQUOTE><TT>gmake</TT></BLOCKQUOTE>
+</ol>
+
+<p>to build the beast. Anywhere from 45 minutes (on a PII-266, 160MB RAM) to several hours
+later, you should end up with all the binaries in
+<TT>warpzilla/obj-i386-os2.40/dist/OS24.0_AC.OBJ/bin</TT>
+and libraries in <TT>[ditto]/lib</TT>.
+
+<P>The build loops through three cycles: <TT>export</TT>, in which headers
+are copied from the various modules primarily into <TT>warpzilla/dist/include</TT>
+and NSPR is built; <TT>libs</TT> during which the remaining components
+get built; and <TT>install</TT> which builds vreg.exe and several tests while
+(re)copying binaries, libraries and resource files to <TT>warpzilla/dist/OS24.0_AC.OBJ</TT> subdirectories.
+</ol>
+<p>
+<HR WIDTH="100%">
+<CENTER>
+<H2><U>Done!</U></H2>
+</CENTER>
+
+<P><B><FONT SIZE=+1>Running GeckOS/2:</FONT></B>
+
+<p>Upon launch, GeckOS/2 tries to load http://developer.netscape.com/software/communicator/ngl/index.html so you should get online first before entering "<tt>xpviewer</tt>". Otherwise, select <tt>File/Samples</tt> from the menubar and load any of the demos, or open a local file. Enlarge to display the toolbars, explore, enjoy, and contribute to its development if you can.<p>
+<B><FONT SIZE=+1>Useful links:</FONT></B><p>
+<UL>
+<LI>
+For the latest Warpzilla NGLayout developments, <A HREF="mailto:mjf35@hermes.cam.ac.uk">John
+Fairhurst</A>'s <A HREF="http://yuggoth.ucam.org/~mjf35/warpzilla/nglayout/">NGLayout
+OS/2</A> site is homebase.</LI>
+
+<LI>
+For NGLayout in general, the <A HREF="http://www.mozilla.org/newlayout/">mozilla
+site</A> is a goldmine.</LI>
+
+<LI>
+For XPViewer testing, try the <A HREF="http://www.mozilla.org/newlayout/testcases">testcases</A>
+or really funky <A HREF="http://www.mozilla.org/newlayout/demo/index.html">demos</A>.</LI>
+
+<LI>
+Some older but still useful general build and NSPR information, tools and
+links can be found on <A HREF="http://www.axess.com/users/sobotka/nsprtest/wzbldpjs.htm">Henry's
+pages</A>.</LI>
+
+
+<P>&nbsp;</UL>
+
+<CENTER><B>Please <A HREF="mailto:mozilla-os2@mozilla.org">report</A> build
+problems and bugs to our <A HREF="news://news.mozilla.org/netscape.public.mozilla.os2news">newsgroup</A></B>.</CENTER>
+<p>
+<DIV ALIGN=right><I>- <A HREF="mailto:sobotka@axess.com">Henry Sobotka</A>
+&amp; <A HREF="mailto:joant@joyce.eng.yale.edu">Joan Touzet</A></I></DIV>
+<DIV ALIGN=right><I>Last modified: 1998/12/12 23h55</I>&nbsp;
+<HR WIDTH="100%"></DIV>
+
+<CENTER><FONT SIZE=-1>Copyright &copy; 1998 <A HREF="http://home.netscape.com/misc/contact_info.html">Netscape
+Communications Corporation</A></FONT></CENTER>
+&nbsp;
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,347 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is SPARC optimized Montgomery multiply functions.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Sun Microsystems Inc.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1999-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *   Netscape Communications Corporation
+<b><a name="23">   23</a></b>  *
+<b><a name="24">   24</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="25">   25</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="26">   26</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="27">   27</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="28">   28</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="29">   29</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="30">   30</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="31">   31</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="32">   32</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="33">   33</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="34">   34</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="35">   35</a></b>  *
+<b><a name="36">   36</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="37">   37</a></b> /* $Id$ */
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> #ifdef SOLARIS
+<b><a name="40">   40</a></b> #define <a href="#40">RF_INLINE_MACROS</a> 1
+<b><a name="41">   41</a></b> #endif
+<b><a name="42">   42</a></b> 
+<b><a name="43">   43</a></b> static const double <a href="#43">TwoTo16</a>=65536.0;
+<b><a name="44">   44</a></b> static const double <a href="#44">TwoToMinus16</a>=1.0/65536.0;
+<b><a name="45">   45</a></b> static const double <a href="#45">Zero</a>=0.0;
+<b><a name="46">   46</a></b> static const double <a href="#46">TwoTo32</a>=65536.0*65536.0;
+<b><a name="47">   47</a></b> static const double <a href="#47">TwoToMinus32</a>=1.0/(65536.0*65536.0);
+<b><a name="48">   48</a></b> 
+<b><a name="49">   49</a></b> #ifdef <a href="../../freebl/mpi/montmulf.c.dep.html#RF_INLINE_MACROS">RF_INLINE_MACROS</a>
+<b><a name="50">   50</a></b> 
+<b><a name="51">   51</a></b> double <a href="#51">upper32</a>(double);
+<b><a name="52">   52</a></b> double <a href="#52">lower32</a>(double, double);
+<b><a name="53">   53</a></b> double <a href="#53">mod</a>(double, double, double);
+<b><a name="54">   54</a></b> 
+<b><a name="55">   55</a></b> void <a href="#55">i16_to_d16_and_d32x4</a>(const double * /*1/(2^16)*/, 
+<b><a name="56">   56</a></b>                           const double * /* 2^16*/,
+<b><a name="57">   57</a></b>                           const double * /* 0 */,
+<b><a name="58">   58</a></b>                           double *       /*result16*/, 
+<b><a name="59">   59</a></b>                           double *       /* result32 */,
+<b><a name="60">   60</a></b>                           float *  /*source - should be unsigned int*
+<b><a name="61">   61</a></b>                                          converted to float* */);
+<b><a name="62">   62</a></b> 
+<b><a name="63">   63</a></b> #else
+<b><a name="64">   64</a></b> #ifdef MP_USE_FLOOR
+<b><a name="65">   65</a></b> #include &lt;math.h&gt;
+<b><a name="66">   66</a></b> #else
+<b><a name="67">   67</a></b> #define <a href="#67">floor</a>(d) ((double)((unsigned long long)(d)))
+<b><a name="68">   68</a></b> #endif
+<b><a name="69">   69</a></b> 
+<b><a name="70">   70</a></b> static double upper32(double x)
+<b><a name="71">   71</a></b> {
+<b><a name="72">   72</a></b>   return <a href="../../freebl/mpi/montmulf.c.dep.html#floor">floor</a>(x*<a href="../../freebl/mpi/montmulf.c.dep.html#TwoToMinus32">TwoToMinus32</a>);
+<b><a name="73">   73</a></b> }
+<b><a name="74">   74</a></b> 
+<b><a name="75">   75</a></b> static double lower32(double x, double y)
+<b><a name="76">   76</a></b> {
+<b><a name="77">   77</a></b>   return x-<a href="../../freebl/mpi/montmulf.c.dep.html#TwoTo32">TwoTo32</a>*<a href="../../freebl/mpi/montmulf.c.dep.html#floor">floor</a>(x*<a href="../../freebl/mpi/montmulf.c.dep.html#TwoToMinus32">TwoToMinus32</a>);
+<b><a name="78">   78</a></b> }
+<b><a name="79">   79</a></b> 
+<b><a name="80">   80</a></b> static double mod(double x, double oneoverm, double m)
+<b><a name="81">   81</a></b> {
+<b><a name="82">   82</a></b>   return x-m*<a href="../../freebl/mpi/montmulf.c.dep.html#floor">floor</a>(x*oneoverm);
+<b><a name="83">   83</a></b> }
+<b><a name="84">   84</a></b> 
+<b><a name="85">   85</a></b> #endif
+<b><a name="86">   86</a></b> 
+<b><a name="87">   87</a></b> 
+<b><a name="88">   88</a></b> static void <a href="#88">cleanup</a>(double *dt, int from, int tlen)
+<b><a name="89">   89</a></b> {
+<b><a name="90">   90</a></b>  <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="91">   91</a></b>  double <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>,<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>1,x,x1;
+<b><a name="92">   92</a></b> 
+<b><a name="93">   93</a></b>  <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>=<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>1=<a href="../../freebl/mpi/montmulf.c.dep.html#Zero">Zero</a>;
+<b><a name="94">   94</a></b>  /* original code **
+<b><a name="95">   95</a></b>  for(i=2*from;i&lt;2*tlen-2;i++)
+<b><a name="96">   96</a></b>    {
+<b><a name="97">   97</a></b>      x=dt[i];
+<b><a name="98">   98</a></b>      dt[i]=lower32(x,Zero)+tmp1;
+<b><a name="99">   99</a></b>      tmp1=tmp;
+<b><a name="100">  100</a></b>      tmp=upper32(x);
+<b><a name="101">  101</a></b>    }
+<b><a name="102">  102</a></b>  dt[tlen-2]+=tmp1;
+<b><a name="103">  103</a></b>  dt[tlen-1]+=tmp;
+<b><a name="104">  104</a></b>  **end original code ***/
+<b><a name="105">  105</a></b>  /* new code ***/
+<b><a name="106">  106</a></b>  for(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>=2*from;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;2*tlen;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>+=2)
+<b><a name="107">  107</a></b>    {
+<b><a name="108">  108</a></b>      x=dt[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>];
+<b><a name="109">  109</a></b>      x1=dt[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>+1];
+<b><a name="110">  110</a></b>      dt[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]=lower32(x,<a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/montmulf.c.dep.html#Zero">Zero</a>)+<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="111">  111</a></b>      dt[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>+1]=lower32(x1,<a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/montmulf.c.dep.html#Zero">Zero</a>)+tmp1;
+<b><a name="112">  112</a></b>      <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>=upper32(x);
+<b><a name="113">  113</a></b>      tmp1=upper32(x1);
+<b><a name="114">  114</a></b>    }
+<b><a name="115">  115</a></b>   /** end new code **/
+<b><a name="116">  116</a></b> }
+<b><a name="117">  117</a></b> 
+<b><a name="118">  118</a></b> 
+<b><a name="119">  119</a></b> void <a href="#119">conv_d16_to_i32</a>(unsigned int *i32, double *d16, long long *<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, int ilen)
+<b><a name="120">  120</a></b> {
+<b><a name="121">  121</a></b> <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="122">  122</a></b> long long t, t1, a, b, c, d;
+<b><a name="123">  123</a></b> 
+<b><a name="124">  124</a></b>  t1=0;
+<b><a name="125">  125</a></b>  a=(long long)d16[0];
+<b><a name="126">  126</a></b>  b=(long long)d16[1];
+<b><a name="127">  127</a></b>  for(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>len-1; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++)
+<b><a name="128">  128</a></b>    {
+<b><a name="129">  129</a></b>      c=(long long)d16[2*<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>+2];
+<b><a name="130">  130</a></b>      t1+=(unsigned int)a;
+<b><a name="131">  131</a></b>      t=(a&gt;&gt;32);
+<b><a name="132">  132</a></b>      d=(long long)d16[2*<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>+3];
+<b><a name="133">  133</a></b>      t1+=(b&amp;0xffff)&lt;&lt;16;
+<b><a name="134">  134</a></b>      t+=(b&gt;&gt;16)+(t1&gt;&gt;32);
+<b><a name="135">  135</a></b>      <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]=(uns<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt)t1;
+<b><a name="136">  136</a></b>      t1=t;
+<b><a name="137">  137</a></b>      a=c;
+<b><a name="138">  138</a></b>      b=d;
+<b><a name="139">  139</a></b>    }
+<b><a name="140">  140</a></b>  t1+=(unsigned int)a;
+<b><a name="141">  141</a></b>  t=(a&gt;&gt;32);
+<b><a name="142">  142</a></b>  t1+=(b&amp;0xffff)&lt;&lt;16;
+<b><a name="143">  143</a></b>  <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]=(uns<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt)t1;
+<b><a name="144">  144</a></b> }
+<b><a name="145">  145</a></b> 
+<b><a name="146">  146</a></b> void <a href="#146">conv_i32_to_d32</a>(double *d32, unsigned int *i32, int len)
+<b><a name="147">  147</a></b> {
+<b><a name="148">  148</a></b> <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="149">  149</a></b> 
+<b><a name="150">  150</a></b> #pragma pipeloop(0)
+<b><a name="151">  151</a></b>  for(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;len;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) d32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]=(double)(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]);
+<b><a name="152">  152</a></b> }
+<b><a name="153">  153</a></b> 
+<b><a name="154">  154</a></b> 
+<b><a name="155">  155</a></b> void <a href="#155">conv_i32_to_d16</a>(double *d16, unsigned int *i32, int len)
+<b><a name="156">  156</a></b> {
+<b><a name="157">  157</a></b> <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="158">  158</a></b> unsigned int a;
+<b><a name="159">  159</a></b> 
+<b><a name="160">  160</a></b> #pragma pipeloop(0)
+<b><a name="161">  161</a></b>  for(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;len;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++)
+<b><a name="162">  162</a></b>    {
+<b><a name="163">  163</a></b>      a=<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>];
+<b><a name="164">  164</a></b>      d16[2*<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]=(double)(a&amp;0xffff);
+<b><a name="165">  165</a></b>      d16[2*<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>+1]=(double)(a&gt;&gt;16);
+<b><a name="166">  166</a></b>    }
+<b><a name="167">  167</a></b> }
+<b><a name="168">  168</a></b> 
+<b><a name="169">  169</a></b> 
+<b><a name="170">  170</a></b> void <a href="#170">conv_i32_to_d32_and_d16</a>(double *d32, double *d16, 
+<b><a name="171">  171</a></b>                              unsigned int *i32, int len)
+<b><a name="172">  172</a></b> {
+<b><a name="173">  173</a></b> <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0;
+<b><a name="174">  174</a></b> unsigned int a;
+<b><a name="175">  175</a></b> 
+<b><a name="176">  176</a></b> #pragma pipeloop(0)
+<b><a name="177">  177</a></b> #ifdef <a href="../../freebl/mpi/montmulf.c.dep.html#RF_INLINE_MACROS">RF_INLINE_MACROS</a>
+<b><a name="178">  178</a></b>  for(;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;len-3;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>+=4)
+<b><a name="179">  179</a></b>    {
+<b><a name="180">  180</a></b>      i16_to_d16_and_d32x4(&amp;<a href="../../freebl/mpi/montmulf.c.dep.html#TwoToMinus16">TwoToMinus16</a>, &amp;<a href="../../freebl/mpi/montmulf.c.dep.html#TwoTo16">TwoTo16</a>, &amp;<a href="../../freebl/mpi/montmulf.c.dep.html#Zero">Zero</a>,
+<b><a name="181">  181</a></b>                           &amp;(d16[2*<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]), &amp;(d32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]), (float *)(&amp;(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>])));
+<b><a name="182">  182</a></b>    }
+<b><a name="183">  183</a></b> #endif
+<b><a name="184">  184</a></b>  for(;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;len;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++)
+<b><a name="185">  185</a></b>    {
+<b><a name="186">  186</a></b>      a=<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>];
+<b><a name="187">  187</a></b>      d32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]=(double)(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]);
+<b><a name="188">  188</a></b>      d16[2*<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]=(double)(a&amp;0xffff);
+<b><a name="189">  189</a></b>      d16[2*<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>+1]=(double)(a&gt;&gt;16);
+<b><a name="190">  190</a></b>    }
+<b><a name="191">  191</a></b> }
+<b><a name="192">  192</a></b> 
+<b><a name="193">  193</a></b> 
+<b><a name="194">  194</a></b> void <a href="#194">adjust_montf_result</a>(unsigned int *i32, unsigned int *nint, int len)
+<b><a name="195">  195</a></b> {
+<b><a name="196">  196</a></b> long long acc;
+<b><a name="197">  197</a></b> <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="198">  198</a></b> 
+<b><a name="199">  199</a></b>  <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>f(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[len]&gt;0) <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>=-1;
+<b><a name="200">  200</a></b>  else
+<b><a name="201">  201</a></b>    {
+<b><a name="202">  202</a></b>      for(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>=len-1; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&gt;=0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>--)
+<b><a name="203">  203</a></b>        {
+<b><a name="204">  204</a></b>          <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>f(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]!=n<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]) break;
+<b><a name="205">  205</a></b>        }
+<b><a name="206">  206</a></b>    }
+<b><a name="207">  207</a></b>  <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>f((<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;0)||(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]&gt;n<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]))
+<b><a name="208">  208</a></b>    {
+<b><a name="209">  209</a></b>      acc=0;
+<b><a name="210">  210</a></b>      for(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;len;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++)
+<b><a name="211">  211</a></b>        {
+<b><a name="212">  212</a></b>          acc=acc+(uns<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned long long)(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>])-(uns<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned long long)(n<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]);
+<b><a name="213">  213</a></b>          <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>32[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]=(uns<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt)acc;
+<b><a name="214">  214</a></b>          acc=acc&gt;&gt;32;
+<b><a name="215">  215</a></b>        }
+<b><a name="216">  216</a></b>    }
+<b><a name="217">  217</a></b> }
+<b><a name="218">  218</a></b> 
+<b><a name="219">  219</a></b> 
+<b><a name="220">  220</a></b> 
+<b><a name="221">  221</a></b> 
+<b><a name="222">  222</a></b> /*
+<b><a name="223">  223</a></b> ** the lengths of the input arrays should be at least the following:
+<b><a name="224">  224</a></b> ** result[nlen+1], dm1[nlen], dm2[2*nlen+1], dt[4*nlen+2], dn[nlen], nint[nlen]
+<b><a name="225">  225</a></b> ** all of them should be different from one another
+<b><a name="226">  226</a></b> **
+<b><a name="227">  227</a></b> */
+<b><a name="228">  228</a></b> void <a href="#228">mont_mulf_noconv</a>(unsigned int *result,
+<b><a name="229">  229</a></b>                      double *dm1, double *dm2, double *dt,
+<b><a name="230">  230</a></b>                      double *dn, unsigned int *nint,
+<b><a name="231">  231</a></b>                      int nlen, double dn0)
+<b><a name="232">  232</a></b> {
+<b><a name="233">  233</a></b>  <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>, j, jj;
+<b><a name="234">  234</a></b>  int <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="235">  235</a></b>  double digit, m2j, nextm2j, a, b;
+<b><a name="236">  236</a></b>  double *dptmp, *pdm1, *pdm2, *pdn, *pdtj, pdn_0, pdm1_0;
+<b><a name="237">  237</a></b> 
+<b><a name="238">  238</a></b>  pdm1=&amp;(dm1[0]);
+<b><a name="239">  239</a></b>  pdm2=&amp;(dm2[0]);
+<b><a name="240">  240</a></b>  pdn=&amp;(dn[0]);
+<b><a name="241">  241</a></b>  pdm2[2*nlen]=<a href="../../freebl/mpi/montmulf.c.dep.html#Zero">Zero</a>;
+<b><a name="242">  242</a></b> 
+<b><a name="243">  243</a></b>  if (nlen!=16)
+<b><a name="244">  244</a></b>    {
+<b><a name="245">  245</a></b>      for(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;4*nlen+2;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) dt[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]=<a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/montmulf.c.dep.html#Zero">Zero</a>;
+<b><a name="246">  246</a></b> 
+<b><a name="247">  247</a></b>      a=dt[0]=pdm1[0]*pdm2[0];
+<b><a name="248">  248</a></b>      digit=mod(lower32(a,<a href="../../freebl/mpi/montmulf.c.dep.html#Zero">Zero</a>)*dn0,<a href="../../freebl/mpi/montmulf.c.dep.html#TwoToMinus16">TwoToMinus16</a>,<a href="../../freebl/mpi/montmulf.c.dep.html#TwoTo16">TwoTo16</a>);
+<b><a name="249">  249</a></b> 
+<b><a name="250">  250</a></b>      pdtj=&amp;(dt[0]);
+<b><a name="251">  251</a></b>      for(j=jj=0;j&lt;2*nlen;j++,jj++,pdtj++)
+<b><a name="252">  252</a></b>        {
+<b><a name="253">  253</a></b>          m2j=pdm2[j];
+<b><a name="254">  254</a></b>          a=pdtj[0]+pdn[0]*digit;
+<b><a name="255">  255</a></b>          b=pdtj[1]+pdm1[0]*pdm2[j+1]+a*<a href="../../freebl/mpi/montmulf.c.dep.html#TwoToMinus16">TwoToMinus16</a>;
+<b><a name="256">  256</a></b>          pdtj[1]=b;
+<b><a name="257">  257</a></b> 
+<b><a name="258">  258</a></b> #pragma pipeloop(0)
+<b><a name="259">  259</a></b>          for(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>=1;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;nlen;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++)
+<b><a name="260">  260</a></b>            {
+<b><a name="261">  261</a></b>              pdtj[2*<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]+=pdm1[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]*m2j+pdn[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>]*d<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>g<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>t;
+<b><a name="262">  262</a></b>            }
+<b><a name="263">  263</a></b>           if((jj==30)) {<a href="../../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>(dt,j/2+1,2*nlen+1); jj=0;}
+<b><a name="264">  264</a></b>          
+<b><a name="265">  265</a></b>          digit=mod(lower32(b,<a href="../../freebl/mpi/montmulf.c.dep.html#Zero">Zero</a>)*dn0,<a href="../../freebl/mpi/montmulf.c.dep.html#TwoToMinus16">TwoToMinus16</a>,<a href="../../freebl/mpi/montmulf.c.dep.html#TwoTo16">TwoTo16</a>);
+<b><a name="266">  266</a></b>        }
+<b><a name="267">  267</a></b>    }
+<b><a name="268">  268</a></b>  else
+<b><a name="269">  269</a></b>    {
+<b><a name="270">  270</a></b>      a=dt[0]=pdm1[0]*pdm2[0];
+<b><a name="271">  271</a></b> 
+<b><a name="272">  272</a></b>      dt[65]=     dt[64]=     dt[63]=     dt[62]=     dt[61]=     dt[60]=
+<b><a name="273">  273</a></b>      dt[59]=     dt[58]=     dt[57]=     dt[56]=     dt[55]=     dt[54]=
+<b><a name="274">  274</a></b>      dt[53]=     dt[52]=     dt[51]=     dt[50]=     dt[49]=     dt[48]=
+<b><a name="275">  275</a></b>      dt[47]=     dt[46]=     dt[45]=     dt[44]=     dt[43]=     dt[42]=
+<b><a name="276">  276</a></b>      dt[41]=     dt[40]=     dt[39]=     dt[38]=     dt[37]=     dt[36]=
+<b><a name="277">  277</a></b>      dt[35]=     dt[34]=     dt[33]=     dt[32]=     dt[31]=     dt[30]=
+<b><a name="278">  278</a></b>      dt[29]=     dt[28]=     dt[27]=     dt[26]=     dt[25]=     dt[24]=
+<b><a name="279">  279</a></b>      dt[23]=     dt[22]=     dt[21]=     dt[20]=     dt[19]=     dt[18]=
+<b><a name="280">  280</a></b>      dt[17]=     dt[16]=     dt[15]=     dt[14]=     dt[13]=     dt[12]=
+<b><a name="281">  281</a></b>      dt[11]=     dt[10]=     dt[ 9]=     dt[ 8]=     dt[ 7]=     dt[ 6]=
+<b><a name="282">  282</a></b>      dt[ 5]=     dt[ 4]=     dt[ 3]=     dt[ 2]=     dt[ 1]=<a href="../../freebl/mpi/montmulf.c.dep.html#Zero">Zero</a>;
+<b><a name="283">  283</a></b> 
+<b><a name="284">  284</a></b>      pdn_0=pdn[0];
+<b><a name="285">  285</a></b>      pdm1_0=pdm1[0];
+<b><a name="286">  286</a></b> 
+<b><a name="287">  287</a></b>      digit=mod(lower32(a,<a href="../../freebl/mpi/montmulf.c.dep.html#Zero">Zero</a>)*dn0,<a href="../../freebl/mpi/montmulf.c.dep.html#TwoToMinus16">TwoToMinus16</a>,<a href="../../freebl/mpi/montmulf.c.dep.html#TwoTo16">TwoTo16</a>);
+<b><a name="288">  288</a></b>      pdtj=&amp;(dt[0]);
+<b><a name="289">  289</a></b> 
+<b><a name="290">  290</a></b>      for(j=0;j&lt;32;j++,pdtj++)
+<b><a name="291">  291</a></b>        {
+<b><a name="292">  292</a></b> 
+<b><a name="293">  293</a></b>          m2j=pdm2[j];
+<b><a name="294">  294</a></b>          a=pdtj[0]+pdn_0*digit;
+<b><a name="295">  295</a></b>          b=pdtj[1]+pdm1_0*pdm2[j+1]+a*<a href="../../freebl/mpi/montmulf.c.dep.html#TwoToMinus16">TwoToMinus16</a>;
+<b><a name="296">  296</a></b>          pdtj[1]=b;
+<b><a name="297">  297</a></b> 
+<b><a name="298">  298</a></b>          /**** this loop will be fully unrolled:
+<b><a name="299">  299</a></b>          for(i=1;i&lt;16;i++)
+<b><a name="300">  300</a></b>            {
+<b><a name="301">  301</a></b>              pdtj[2*i]+=pdm1[i]*m2j+pdn[i]*digit;
+<b><a name="302">  302</a></b>            }
+<b><a name="303">  303</a></b>          *************************************/
+<b><a name="304">  304</a></b>              pdtj[2]+=pdm1[1]*m2j+pdn[1]*digit;
+<b><a name="305">  305</a></b>              pdtj[4]+=pdm1[2]*m2j+pdn[2]*digit;
+<b><a name="306">  306</a></b>              pdtj[6]+=pdm1[3]*m2j+pdn[3]*digit;
+<b><a name="307">  307</a></b>              pdtj[8]+=pdm1[4]*m2j+pdn[4]*digit;
+<b><a name="308">  308</a></b>              pdtj[10]+=pdm1[5]*m2j+pdn[5]*digit;
+<b><a name="309">  309</a></b>              pdtj[12]+=pdm1[6]*m2j+pdn[6]*digit;
+<b><a name="310">  310</a></b>              pdtj[14]+=pdm1[7]*m2j+pdn[7]*digit;
+<b><a name="311">  311</a></b>              pdtj[16]+=pdm1[8]*m2j+pdn[8]*digit;
+<b><a name="312">  312</a></b>              pdtj[18]+=pdm1[9]*m2j+pdn[9]*digit;
+<b><a name="313">  313</a></b>              pdtj[20]+=pdm1[10]*m2j+pdn[10]*digit;
+<b><a name="314">  314</a></b>              pdtj[22]+=pdm1[11]*m2j+pdn[11]*digit;
+<b><a name="315">  315</a></b>              pdtj[24]+=pdm1[12]*m2j+pdn[12]*digit;
+<b><a name="316">  316</a></b>              pdtj[26]+=pdm1[13]*m2j+pdn[13]*digit;
+<b><a name="317">  317</a></b>              pdtj[28]+=pdm1[14]*m2j+pdn[14]*digit;
+<b><a name="318">  318</a></b>              pdtj[30]+=pdm1[15]*m2j+pdn[15]*digit;
+<b><a name="319">  319</a></b>          /* no need for cleenup, cannot overflow */
+<b><a name="320">  320</a></b>          digit=mod(lower32(b,<a href="../../freebl/mpi/montmulf.c.dep.html#Zero">Zero</a>)*dn0,<a href="../../freebl/mpi/montmulf.c.dep.html#TwoToMinus16">TwoToMinus16</a>,<a href="../../freebl/mpi/montmulf.c.dep.html#TwoTo16">TwoTo16</a>);
+<b><a name="321">  321</a></b>        }
+<b><a name="322">  322</a></b>    }
+<b><a name="323">  323</a></b> 
+<b><a name="324">  324</a></b>  <a href="../../freebl/mpi/montmulf.c.dep.html#conv_d16_to_i32">conv_d16_to_i32</a>(result,dt+2*nlen,(long long *)dt,nlen+1);
+<b><a name="325">  325</a></b> 
+<b><a name="326">  326</a></b>  <a href="../../freebl/mpi/montmulf.c.dep.html#adjust_montf_result">adjust_montf_result</a>(result,nint,nlen); 
+<b><a name="327">  327</a></b>  
+<b><a name="328">  328</a></b> }
+<b><a name="329">  329</a></b> 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

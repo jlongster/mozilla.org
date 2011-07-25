@@ -1,0 +1,232 @@
+<?php
+
+$html_title = 'Audit Requirements in FIPS 140-2';
+$page_title = 'Audit Requirements in FIPS 140-2';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<address>Author: Wan-Teh Chang<br>
+</address>
+<br>
+FIPS 140-2 <a href="#Reference_1">[1]</a> is a US Federal standard
+that specifies
+the security requirements for cryptographic modules. Cryptographic
+modules can be validated to FIPS 140-2 at Security Levels 1, 2, 3, and
+4. Security Level 2 or higher has audit requirements that must be met
+with the audit mechanism of the OS.<br>
+<br>
+This document summarizes the audit requirements in FIPS 140-2 in the
+hope that it will help cryptographic module developers seeking FIPS
+140-2 validation at Security Level 2 or higher, and OS developers
+working on auditing.
+<h2>Terms and Definitions</h2>
+FIPS 140-2 and the Derived Test Requirements (DTR) for FIPS 140-2 <a
+ href="#Reference_2">[2]</a> use the following audit-related terms
+without definitions. Hopefully people working on auditing know
+what these terms mean.<br>
+<ul>
+  <li>auditable events</li>
+  <li>audited events</li>
+  <li>audit data</li>
+  <li>audit functions</li>
+  <li>audit mechanism</li>
+  <li>audit trail</li>
+  <li>audit log</li>
+  <li>auditing capability (of the cryptographic module)</li>
+  <li>audit capabilities (of the OS)</li>
+</ul>
+The following terms are defined in FIPS 140-2 and are essential to
+understanding its audit requirements.<br>
+<br>
+<a name="CSP"></a><span style="font-style: italic;">Critical security
+parameter (CSP)</span>: security-related
+information whose disclosure or modification can compromise the
+security of a cryptographic module. Examples include:<br>
+<ul>
+  <li>secret and private cryptographic keys (public keys are not
+considered CSPs)</li>
+  <li>authentication data such as passwords and PINs</li>
+  <li>audited
+events and audit
+data</li>
+</ul>
+An <span style="font-style: italic;"><a name="operator"></a>operator</span>
+is an individual (or a process operating on behalf of the individual)
+accessing a cryptographic module, regardless of the assumed role.<br>
+<br>
+A cryptographic module shall support the following authorized <span
+ style="font-style: italic;">roles</span> for operators:<br>
+<ul>
+  <li><span style="font-style: italic;">User Role</span>: the role
+assumed to perform general security services, including cryptographic
+operations and other security functions.</li>
+  <li><span style="font-style: italic;"><a name="Crypto_Officer_Role"></a>Crypto
+Officer Role</span>: the role assumed to perform <span
+ style="font-style: italic;">cryptographic initialization</span> or <span
+ style="font-style: italic;">management</span> functions (e.g., <span
+ style="font-style: italic;">module initialization</span>, <span
+ style="font-style: italic;">input/output of cryptographic keys and CSPs</span>,
+and <span style="font-style: italic;">audit functions</span>). Note:
+it's not clear what <span style="font-style: italic;">management</span>
+means here. It seems to mean module
+management (Sec. 4.10.4 on p. 38):
+<div style="margin-left: 40px;"><span style="font-style: italic;">Crypto
+officer guidance</span> is concerned with the correct configuration,
+maintenance, and administration of
+the cryptographic module.<br>
+</div>
+but it may (also) mean <a
+ href="#key_management">key management</a> (Sec. 4.4 on p. 19):<br>
+<div style="margin-left: 40px;">A cryptographic module shall include
+the following operational and error states:<br>
+...<br>
+<span style="font-style: italic;">Crypto officer states</span>. States
+in which the crypto officer services are performed (e.g., cryptographic
+initialization and key management).<br>
+</div></li>
+</ul>
+A <span style="font-style: italic;"><a name="crypto_officer_function"></a>crypto
+officer function</span> is a
+duty or activity assigned to the crypto officer role. Crypto officer
+functions include:<br>
+<ul>
+  <li>cryptographic module initialization: this includes <span
+ style="font-style: italic;">initializing the authentication mechanisms</span>
+the first time the module is accessed.</li>
+  <li>input/output of cryptographic keys and other CSPs</li>
+  <li>audit functions</li>
+</ul>
+<span style="font-style: italic;"><a name="authentication_data"></a>Authentication
+data</span> include passwords, PINs, and biometric data.<br>
+<br>
+<a name="key_management"></a><span style="font-style: italic;">Key
+management</span> mechanisms: random number and key generation, key
+establishment, key distribution, key entry/outpout, key storage, and
+key zeroization.<br>
+<h2>Requirements on the OS</h2>
+FIPS 140-2 has four Security Levels: 1, 2, 3, and 4. Security Level 1
+only requires a basic operating system, so we omit it for brevity.
+Security Levels 2 and higher require that the OS be <a
+ href="#Common_Criteria_Evaluation_of_the_OS">Common Criteria
+certified</a>, have an <a href="#Audit_Mechanism_of_the_OS">audit
+mechanism</a>, and have discretionary access
+control that must be used to <a href="#Protection_of_Audit_Data">protect
+audit data</a>. We delve into each of
+these requirements next.<br>
+<h3><a name="Common_Criteria_Evaluation_of_the_OS"></a>Common Criteria
+Evaluation of the OS</h3>
+Security Levels 2 and higher have the following requirements on the OS
+(from FIPS 140-2, Table 1, on p. 12 and Sec. 4.6.1 on pp. 28-30):<br>
+<ul>
+  <li>Security Level 2: any of the approved protection profiles (PPs)
+evaluated at EAL2 with specified discretionary access control
+mechanisms and <span style="font-style: italic; font-weight: bold;">auditing</span>.</li>
+  <li>Security Level 3: any of the approved PPs plus trusted path
+(FTP_TRP.1) evaluated at EAL3 plus security policy modeling (ADV_SPM.1).</li>
+  <li>Security Level 4: any of the approved PPs plus trusted path
+evaluated at EAL4.</li>
+</ul>
+where the approved PPs are (from FIPS 140-2 Annex B):<br>
+<ul>
+  <li>Controlled Access Protection Profile (CAPP), Version 1.d,
+Protection Profile NoPP006, 8 October 1999.</li>
+  <li>Protection Profile for Single-Level Operating Systems in
+Environments Requiring Medium Robustness, Version 1.22, 23 May 2001.</li>
+</ul>
+Note that in Security Level 2, 3, or 4, an equivalent evaluated trusted
+OS may be used instead of the above.
+<h3><a name="Audit_Mechanism_of_the_OS"></a>Audit Mechanism of the OS</h3>
+FIPS 140-2 says the OS must provide an audit mechanism to record
+modifications, accesses, deletions, and additions of cryptographic data
+(cryptographic keys and audit data) and CSPs.
+<h3><a name="Protection_of_Audit_Data"></a>Protection of Audit Data</h3>
+FIPS 140-2 (Sec. 4.1 on p. 14) considers audited events and audit data
+as <a href="#CSP">critical information</a> whose disclosure or
+modification can compromise the security of the cryptographic module.<br>
+<br>
+Audited events and audit data must be protected by configuring the
+discretionary access control mechanisms of the OS to:<br>
+<ul>
+  <li>specify the <span style="font-style: italic;">roles</span> that
+can <span style="font-style: italic;">modify</span> (i.e., write,
+replace, and delete) audit data</li>
+  <li>specify the <span style="font-style: italic;">roles</span> that
+can <span style="font-style: italic;">read</span> audit data</li>
+</ul>
+Note that FIPS 140-2 says audit data are stored within the
+cryptographic boundary.<br>
+<h4>Discussions</h4>
+In the Medium Robustness (MR) PP, only authorized administrators (not
+to be confused with the cryptographic administrators in MR) can modify
+or read audit data.
+<h2>Requirements on Audited and Auditable Events</h2>
+<h3>Security Level 2</h3>
+The audit requirements of Security Level 2 are as follows.<br>
+<br>
+The following events shall be recorded by the audit mechanism:<br>
+<ul>
+  <li>attempts to provide invalid input for <a
+ href="#crypto_officer_function">crypto officer functions</a>, and</li>
+  <li>the addition or deletion of an <a href="#operator">operator</a>
+to/from a <a href="#Crypto_Officer_Role">crypto officer role</a></li>
+</ul>
+The audit mechanism shall be capable of auditing the following events:<br>
+<ul>
+  <li>operations to process audit data stored in the audit trail,</li>
+  <li>requests to use <a href="#authentication_data">authentication
+data</a> management mechanisms,</li>
+  <li>use of a security-relevant <a href="#crypto_officer_function">crypto
+officer function</a>,</li>
+  <li>requests to access user <a href="#authentication_data">authentication
+data</a> associated with the cryptographic module</li>
+  <li>use of an authentication mechanism (e.g., login) associated with
+the cryptographic module</li>
+  <li>explicit requests to assume a <a href="#Crypto_Officer_Role">crypto
+officer role</a>, and</li>
+  <li>the allocation of a function to a <a href="#Crypto_Officer_Role">crypto
+officer role</a>. Paraphrase: the assignment of a duty/activity to a
+crypto officer role.</li>
+</ul>
+<h4>Discussions</h4>
+A cryptographic module may have its own login that's independent of the
+OS login, so that logging into the cryptographic module is orthogonal
+to logging into an OS user account or entering an OS role. This means
+that the <span style="font-style: italic;">roles</span> (user and
+crypto officer) of a cryptographic modules may not be implemented
+directly as the <span style="font-style: italic;">roles</span> in the
+OS (such as the Crypto Admin role in some OS).<br>
+<br>
+An OS may have <span style="font-style: italic;">multiple</span>
+cryptographic modules, including
+<span style="font-style: italic;">third-party</span> cryptographic
+modules that are not built into the standard OS. These (third-party)
+cryptographic modules need to be able to hook into the audit system of
+the OS.
+<h3>Security Level 3</h3>
+In addition to the audit requirements of Security Level 2, the
+following events shall be recorded by the audit mechanism (Sec. 4.6.1
+on p. 29):<br>
+<ul>
+  <li>attempts to use the trusted path function, and</li>
+  <li>identification of the initiator and target of a trusted path.</li>
+</ul>
+<h3>Security Level 4</h3>
+Security Level 4 doesn't have additional audit requirements.<br>
+<h2>References</h2>
+<a name="Reference_1"></a>[1] FIPS PUB 140-2, Security Requirements for
+Cryptographic Modules, <a
+ href="http://csrc.nist.gov/publications/fips/fips140-2/fips1402.pdf">http://csrc.nist.gov/publications/fips/fips140-2/fips1402.pdf</a>.<br>
+<a name="Reference_2"></a>[2] Derived Test Requirements (DTR) for FIPS
+PUB 140-2, <a
+ href="http://csrc.nist.gov/cryptval/140-1/fips1402DTR.pdf">http://csrc.nist.gov/cryptval/140-1/fips1402DTR.pdf</a>.
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,1175 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> #include &lt;stdio.h&gt;
+<b><a name="38">   38</a></b> #include &lt;string.h&gt;
+<b><a name="39">   39</a></b> #include &lt;signal.h&gt;
+<b><a name="40">   40</a></b> #include &lt;unistd.h&gt;
+<b><a name="41">   41</a></b> #include &lt;errno.h&gt;
+<b><a name="42">   42</a></b> #include &lt;stdlib.h&gt;
+<b><a name="43">   43</a></b> #include &lt;sys/time.h&gt;
+<b><a name="44">   44</a></b> #include &lt;sys/wait.h&gt;
+<b><a name="45">   45</a></b> #include &lt;sys/stat.h&gt;
+<b><a name="46">   46</a></b> #include "secrng.h"
+<b><a name="47">   47</a></b> #include "secerr.h"
+<b><a name="48">   48</a></b> #include "prerror.h"
+<b><a name="49">   49</a></b> 
+<b><a name="50">   50</a></b> size_t <a href="#50">RNG_FileUpdate</a>(const char *fileName, size_t limit);
+<b><a name="51">   51</a></b> 
+<b><a name="52">   52</a></b> /*
+<b><a name="53">   53</a></b>  * When copying data to the buffer we want the least signicant bytes
+<b><a name="54">   54</a></b>  * from the input since those bits are changing the fastest. The address
+<b><a name="55">   55</a></b>  * of least significant byte depends upon whether we are running on
+<b><a name="56">   56</a></b>  * a big-endian or little-endian machine.
+<b><a name="57">   57</a></b>  *
+<b><a name="58">   58</a></b>  * Does this mean the least signicant bytes are the most significant
+<b><a name="59">   59</a></b>  * to us? :-)
+<b><a name="60">   60</a></b>  */
+<b><a name="61">   61</a></b>     
+<b><a name="62">   62</a></b> static size_t <a href="#62">CopyLowBits</a>(void *dst, size_t dstlen, void *src, size_t srclen)
+<b><a name="63">   63</a></b> {
+<b><a name="64">   64</a></b>     union endianness {
+<b><a name="65">   65</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt32 <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="66">   66</a></b>         char c[4];
+<b><a name="67">   67</a></b>     } u;
+<b><a name="68">   68</a></b> 
+<b><a name="69">   69</a></b>     if (srclen &lt;= dstlen) {
+<b><a name="70">   70</a></b>         memcpy(dst, src, srclen);
+<b><a name="71">   71</a></b>         return srclen;
+<b><a name="72">   72</a></b>     }
+<b><a name="73">   73</a></b>     u.<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0x01020304;
+<b><a name="74">   74</a></b>     if (u.c[0] == 0x01) {
+<b><a name="75">   75</a></b>         /* big-endian case */
+<b><a name="76">   76</a></b>         memcpy(dst, (char*)src + (srclen - dstlen), dstlen);
+<b><a name="77">   77</a></b>     } else {
+<b><a name="78">   78</a></b>         /* little-endian case */
+<b><a name="79">   79</a></b>         memcpy(dst, src, dstlen);
+<b><a name="80">   80</a></b>     }
+<b><a name="81">   81</a></b>     return dstlen;
+<b><a name="82">   82</a></b> }
+<b><a name="83">   83</a></b> 
+<b><a name="84">   84</a></b> #ifdef SOLARIS
+<b><a name="85">   85</a></b> 
+<b><a name="86">   86</a></b> #include &lt;kstat.h&gt;
+<b><a name="87">   87</a></b> 
+<b><a name="88">   88</a></b> static const PRUint32 <a href="#88">entropy_buf_len</a> = 4096; /* buffer up to 4 KB */
+<b><a name="89">   89</a></b> 
+<b><a name="90">   90</a></b> /* Buffer entropy data, and feed it to the RNG, entropy_buf_len bytes at a time.
+<b><a name="91">   91</a></b>  * Returns error if RNG_RandomUpdate fails. Also increments *total_fed
+<b><a name="92">   92</a></b>  * by the number of bytes successfully buffered.
+<b><a name="93">   93</a></b>  */
+<b><a name="94">   94</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#94">BufferEntropy</a>(char* inbuf, PRUint32 inlen,
+<b><a name="95">   95</a></b>                                 char* entropy_buf, PRUint32* entropy_buffered,
+<b><a name="96">   96</a></b>                                 PRUint32* total_fed)
+<b><a name="97">   97</a></b> {
+<b><a name="98">   98</a></b>     PRUint32 tocopy = 0;
+<b><a name="99">   99</a></b>     PRUint32 avail = 0;
+<b><a name="100">  100</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECSuccess;
+<b><a name="101">  101</a></b> 
+<b><a name="102">  102</a></b>     while (inlen) {
+<b><a name="103">  103</a></b>         avail = <a href="../freebl/unix_rand.c.dep.html#entropy_buf_len">entropy_buf_len</a> - *entropy_buffered;
+<b><a name="104">  104</a></b>         if (!avail) {
+<b><a name="105">  105</a></b>             /* Buffer is full, time to feed it to the RNG. */
+<b><a name="106">  106</a></b>             rv = <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(entropy_buf, <a href="../freebl/unix_rand.c.dep.html#entropy_buf_len">entropy_buf_len</a>);
+<b><a name="107">  107</a></b>             if (SECSuccess != rv) {
+<b><a name="108">  108</a></b>                 break;
+<b><a name="109">  109</a></b>             }
+<b><a name="110">  110</a></b>             *entropy_buffered = 0;
+<b><a name="111">  111</a></b>             avail = <a href="../freebl/unix_rand.c.dep.html#entropy_buf_len">entropy_buf_len</a>;
+<b><a name="112">  112</a></b>         }
+<b><a name="113">  113</a></b>         tocopy = PR_MIN(avail, inlen);
+<b><a name="114">  114</a></b>         memcpy(entropy_buf + *entropy_buffered, inbuf, tocopy);
+<b><a name="115">  115</a></b>         *entropy_buffered += tocopy;
+<b><a name="116">  116</a></b>         inlen -= tocopy;
+<b><a name="117">  117</a></b>         inbuf += tocopy;
+<b><a name="118">  118</a></b>         *total_fed += tocopy;
+<b><a name="119">  119</a></b>     }
+<b><a name="120">  120</a></b>     return rv;
+<b><a name="121">  121</a></b> }
+<b><a name="122">  122</a></b> 
+<b><a name="123">  123</a></b> /* Feed kernel statistics structures and ks_data field to the RNG.
+<b><a name="124">  124</a></b>  * Returns status as well as the number of bytes successfully fed to the RNG.
+<b><a name="125">  125</a></b>  */
+<b><a name="126">  126</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#126">RNG_kstat</a>(PRUint32* fed)
+<b><a name="127">  127</a></b> {
+<b><a name="128">  128</a></b>     kstat_ctl_t*    kc = NULL;
+<b><a name="129">  129</a></b>     kstat_t*        ksp = NULL;
+<b><a name="130">  130</a></b>     PRUint32        entropy_buffered = 0;
+<b><a name="131">  131</a></b>     char*           entropy_buf = NULL;
+<b><a name="132">  132</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>       rv = SECSuccess;
+<b><a name="133">  133</a></b> 
+<b><a name="134">  134</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(fed);
+<b><a name="135">  135</a></b>     if (!fed) {
+<b><a name="136">  136</a></b>         return SECFailure;
+<b><a name="137">  137</a></b>     }
+<b><a name="138">  138</a></b>     *fed = 0;
+<b><a name="139">  139</a></b> 
+<b><a name="140">  140</a></b>     kc = kstat_open();
+<b><a name="141">  141</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(kc);
+<b><a name="142">  142</a></b>     if (!kc) {
+<b><a name="143">  143</a></b>         return SECFailure;
+<b><a name="144">  144</a></b>     }
+<b><a name="145">  145</a></b>     entropy_buf = (char*) <a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(<a href="../freebl/unix_rand.c.dep.html#entropy_buf_len">entropy_buf_len</a>);
+<b><a name="146">  146</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(entropy_buf);
+<b><a name="147">  147</a></b>     if (entropy_buf) {
+<b><a name="148">  148</a></b>         for (ksp = kc-&gt;kc_chain; ksp != NULL; ksp = ksp-&gt;ks_next) {
+<b><a name="149">  149</a></b>             if (-1 == kstat_read(kc, ksp, NULL)) {
+<b><a name="150">  150</a></b>                 /* missing data from a single kstat shouldn't be fatal */
+<b><a name="151">  151</a></b>                 continue;
+<b><a name="152">  152</a></b>             }
+<b><a name="153">  153</a></b>             rv = <a href="../freebl/unix_rand.c.dep.html#BufferEntropy">BufferEntropy</a>((char*)ksp, sizeof(kstat_t),
+<b><a name="154">  154</a></b>                                     entropy_buf, &amp;entropy_buffered,
+<b><a name="155">  155</a></b>                                     fed);
+<b><a name="156">  156</a></b>             if (SECSuccess != rv) {
+<b><a name="157">  157</a></b>                 break;
+<b><a name="158">  158</a></b>             }
+<b><a name="159">  159</a></b> 
+<b><a name="160">  160</a></b>             if (ksp-&gt;ks_data &amp;&amp; ksp-&gt;ks_data_size&gt;0 &amp;&amp; ksp-&gt;ks_ndata&gt;0) {
+<b><a name="161">  161</a></b>                 rv = <a href="../freebl/unix_rand.c.dep.html#BufferEntropy">BufferEntropy</a>((char*)ksp-&gt;ks_data, ksp-&gt;ks_data_size,
+<b><a name="162">  162</a></b>                                         entropy_buf, &amp;entropy_buffered,
+<b><a name="163">  163</a></b>                                         fed);
+<b><a name="164">  164</a></b>                 if (SECSuccess != rv) {
+<b><a name="165">  165</a></b>                     break;
+<b><a name="166">  166</a></b>                 }
+<b><a name="167">  167</a></b>             }
+<b><a name="168">  168</a></b>         }
+<b><a name="169">  169</a></b>         if (SECSuccess == rv &amp;&amp; entropy_buffered) {
+<b><a name="170">  170</a></b>             /* Buffer is not empty, time to feed it to the RNG */
+<b><a name="171">  171</a></b>             rv = <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(entropy_buf, entropy_buffered);
+<b><a name="172">  172</a></b>         }
+<b><a name="173">  173</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(entropy_buf);
+<b><a name="174">  174</a></b>     } else {
+<b><a name="175">  175</a></b>         rv = SECFailure;
+<b><a name="176">  176</a></b>     }
+<b><a name="177">  177</a></b>     if (kstat_close(kc)) {
+<b><a name="178">  178</a></b>         <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(0);
+<b><a name="179">  179</a></b>         rv = SECFailure;
+<b><a name="180">  180</a></b>     }
+<b><a name="181">  181</a></b>     return rv;
+<b><a name="182">  182</a></b> }
+<b><a name="183">  183</a></b> 
+<b><a name="184">  184</a></b> #endif
+<b><a name="185">  185</a></b> 
+<b><a name="186">  186</a></b> #if defined(SCO) || defined(UNIXWARE) || defined(BSDI) || defined(FREEBSD) \
+<b><a name="187">  187</a></b>     || defined(NETBSD) || defined(NTO) || defined(DARWIN) || defined(OPENBSD)
+<b><a name="188">  188</a></b> #include &lt;sys/times.h&gt;
+<b><a name="189">  189</a></b> 
+<b><a name="190">  190</a></b> #define <a href="#190">getdtablesize</a>() sysconf(_SC_OPEN_MAX)
+<b><a name="191">  191</a></b> 
+<b><a name="192">  192</a></b> static size_t
+<b><a name="193">  193</a></b> <a href="#193">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="194">  194</a></b> {
+<b><a name="195">  195</a></b>     int ticks;
+<b><a name="196">  196</a></b>     struct tms buffer;
+<b><a name="197">  197</a></b> 
+<b><a name="198">  198</a></b>     ticks=times(&amp;buffer);
+<b><a name="199">  199</a></b>     return <a href="../freebl/mac_rand.c.dep.html#CopyLowBits">CopyLowBits</a><a href="../freebl/unix_rand.c.dep.html#CopyLowBits"><sup>[1]</sup></a>(buf, maxbytes, &amp;ticks, sizeof(ticks));
+<b><a name="200">  200</a></b> }
+<b><a name="201">  201</a></b> 
+<b><a name="202">  202</a></b> static void
+<b><a name="203">  203</a></b> <a href="#203">GiveSystemInfo</a>(void)
+<b><a name="204">  204</a></b> {
+<b><a name="205">  205</a></b>     long si;
+<b><a name="206">  206</a></b> 
+<b><a name="207">  207</a></b>     /* 
+<b><a name="208">  208</a></b>      * Is this really necessary?  Why not use rand48 or something?
+<b><a name="209">  209</a></b>      */
+<b><a name="210">  210</a></b>     si = sysconf(_SC_CHILD_MAX);
+<b><a name="211">  211</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;si, sizeof(si));
+<b><a name="212">  212</a></b> 
+<b><a name="213">  213</a></b>     si = sysconf(_SC_STREAM_MAX);
+<b><a name="214">  214</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;si, sizeof(si));
+<b><a name="215">  215</a></b> 
+<b><a name="216">  216</a></b>     si = sysconf(_SC_OPEN_MAX);
+<b><a name="217">  217</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;si, sizeof(si));
+<b><a name="218">  218</a></b> }
+<b><a name="219">  219</a></b> #endif
+<b><a name="220">  220</a></b> 
+<b><a name="221">  221</a></b> #if defined(__sun)
+<b><a name="222">  222</a></b> #if defined(__svr4) || defined(SVR4)
+<b><a name="223">  223</a></b> #include &lt;sys/systeminfo.h&gt;
+<b><a name="224">  224</a></b> #include &lt;sys/times.h&gt;
+<b><a name="225">  225</a></b> #include &lt;wait.h&gt;
+<b><a name="226">  226</a></b> 
+<b><a name="227">  227</a></b> int <a href="#227">gettimeofday</a>(struct timeval *);
+<b><a name="228">  228</a></b> int <a href="#228">gethostname</a>(char *, int);
+<b><a name="229">  229</a></b> 
+<b><a name="230">  230</a></b> #define <a href="#230">getdtablesize</a>() sysconf(_SC_OPEN_MAX)
+<b><a name="231">  231</a></b> 
+<b><a name="232">  232</a></b> static void
+<b><a name="233">  233</a></b> <a href="#233">GiveSystemInfo</a>(void)
+<b><a name="234">  234</a></b> {
+<b><a name="235">  235</a></b>     int rv;
+<b><a name="236">  236</a></b>     char buf[2000];
+<b><a name="237">  237</a></b> 
+<b><a name="238">  238</a></b>     rv = sysinfo(SI_MACHINE, buf, sizeof(buf));
+<b><a name="239">  239</a></b>     if (rv &gt; 0) {
+<b><a name="240">  240</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="241">  241</a></b>     }
+<b><a name="242">  242</a></b>     rv = sysinfo(SI_RELEASE, buf, sizeof(buf));
+<b><a name="243">  243</a></b>     if (rv &gt; 0) {
+<b><a name="244">  244</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="245">  245</a></b>     }
+<b><a name="246">  246</a></b>     rv = sysinfo(SI_HW_SERIAL, buf, sizeof(buf));
+<b><a name="247">  247</a></b>     if (rv &gt; 0) {
+<b><a name="248">  248</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="249">  249</a></b>     }
+<b><a name="250">  250</a></b> }
+<b><a name="251">  251</a></b> 
+<b><a name="252">  252</a></b> static size_t
+<b><a name="253">  253</a></b> <a href="#253">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="254">  254</a></b> {
+<b><a name="255">  255</a></b>     hrtime_t t;
+<b><a name="256">  256</a></b>     t = gethrtime();
+<b><a name="257">  257</a></b>     if (t) {
+<b><a name="258">  258</a></b>         return <a href="../freebl/mac_rand.c.dep.html#CopyLowBits">CopyLowBits</a><a href="../freebl/unix_rand.c.dep.html#CopyLowBits"><sup>[1]</sup></a>(buf, maxbytes, &amp;t, sizeof(t));
+<b><a name="259">  259</a></b>     }
+<b><a name="260">  260</a></b>     return 0;
+<b><a name="261">  261</a></b> }
+<b><a name="262">  262</a></b> #else /* SunOS (Sun, but not SVR4) */
+<b><a name="263">  263</a></b> 
+<b><a name="264">  264</a></b> extern long <a href="#264">sysconf</a>(int name);
+<b><a name="265">  265</a></b> 
+<b><a name="266">  266</a></b> static size_t
+<b><a name="267">  267</a></b> <a href="../freebl/unix_rand.c.dep.html#GetHighResClock">GetHighResClock</a></a></a></a></a></a></a></a></a></a></a></a></a>(void *buf, size_t maxbytes)
+<b><a name="268">  268</a></b> {
+<b><a name="269">  269</a></b>     return 0;
+<b><a name="270">  270</a></b> }
+<b><a name="271">  271</a></b> 
+<b><a name="272">  272</a></b> static void
+<b><a name="273">  273</a></b> <a href="../freebl/unix_rand.c.dep.html#GiveSystemInfo">GiveSystemInfo</a></a></a></a></a></a></a></a></a></a></a></a></a>(void)
+<b><a name="274">  274</a></b> {
+<b><a name="275">  275</a></b>     long si;
+<b><a name="276">  276</a></b> 
+<b><a name="277">  277</a></b>     /* This is not very good */
+<b><a name="278">  278</a></b>     si = sysconf(_SC_CHILD_MAX);
+<b><a name="279">  279</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;si, sizeof(si));
+<b><a name="280">  280</a></b> }
+<b><a name="281">  281</a></b> #endif
+<b><a name="282">  282</a></b> #endif /* Sun */
+<b><a name="283">  283</a></b> 
+<b><a name="284">  284</a></b> #if defined(__hpux)
+<b><a name="285">  285</a></b> #include &lt;sys/unistd.h&gt;
+<b><a name="286">  286</a></b> 
+<b><a name="287">  287</a></b> #define <a href="#287">getdtablesize</a>() sysconf(_SC_OPEN_MAX)
+<b><a name="288">  288</a></b> 
+<b><a name="289">  289</a></b> #if defined(__ia64)
+<b><a name="290">  290</a></b> #include &lt;ia64/sys/inline.h&gt;
+<b><a name="291">  291</a></b> 
+<b><a name="292">  292</a></b> static size_t
+<b><a name="293">  293</a></b> <a href="#293">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="294">  294</a></b> {
+<b><a name="295">  295</a></b>     PRUint64 t;
+<b><a name="296">  296</a></b> 
+<b><a name="297">  297</a></b>     t = _Asm_mov_from_ar(_AREG44);
+<b><a name="298">  298</a></b>     return <a href="../freebl/mac_rand.c.dep.html#CopyLowBits">CopyLowBits</a><a href="../freebl/unix_rand.c.dep.html#CopyLowBits"><sup>[1]</sup></a>(buf, maxbytes, &amp;t, sizeof(t));
+<b><a name="299">  299</a></b> }
+<b><a name="300">  300</a></b> #else
+<b><a name="301">  301</a></b> static size_t
+<b><a name="302">  302</a></b> <a href="../freebl/unix_rand.c.dep.html#GetHighResClock">GetHighResClock</a></a></a></a></a></a></a></a></a></a></a></a></a>(void *buf, size_t maxbytes)
+<b><a name="303">  303</a></b> {
+<b><a name="304">  304</a></b>     extern int ret_cr16();
+<b><a name="305">  305</a></b>     int cr16val;
+<b><a name="306">  306</a></b> 
+<b><a name="307">  307</a></b>     cr16val = ret_cr16();
+<b><a name="308">  308</a></b>     return <a href="../freebl/mac_rand.c.dep.html#CopyLowBits">CopyLowBits</a><a href="../freebl/unix_rand.c.dep.html#CopyLowBits"><sup>[1]</sup></a>(buf, maxbytes, &amp;cr16val, sizeof(cr16val));
+<b><a name="309">  309</a></b> }
+<b><a name="310">  310</a></b> #endif
+<b><a name="311">  311</a></b> 
+<b><a name="312">  312</a></b> static void
+<b><a name="313">  313</a></b> <a href="#313">GiveSystemInfo</a>(void)
+<b><a name="314">  314</a></b> {
+<b><a name="315">  315</a></b>     long si;
+<b><a name="316">  316</a></b> 
+<b><a name="317">  317</a></b>     /* This is not very good */
+<b><a name="318">  318</a></b>     si = sysconf(_AES_OS_VERSION);
+<b><a name="319">  319</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;si, sizeof(si));
+<b><a name="320">  320</a></b>     si = sysconf(_SC_CPU_VERSION);
+<b><a name="321">  321</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;si, sizeof(si));
+<b><a name="322">  322</a></b> }
+<b><a name="323">  323</a></b> #endif /* HPUX */
+<b><a name="324">  324</a></b> 
+<b><a name="325">  325</a></b> #if defined(OSF1)
+<b><a name="326">  326</a></b> #include &lt;sys/types.h&gt;
+<b><a name="327">  327</a></b> #include &lt;sys/sysinfo.h&gt;
+<b><a name="328">  328</a></b> #include &lt;sys/systeminfo.h&gt;
+<b><a name="329">  329</a></b> #include &lt;c_asm.h&gt;
+<b><a name="330">  330</a></b> 
+<b><a name="331">  331</a></b> static void
+<b><a name="332">  332</a></b> <a href="#332">GiveSystemInfo</a>(void)
+<b><a name="333">  333</a></b> {
+<b><a name="334">  334</a></b>     char buf[BUFSIZ];
+<b><a name="335">  335</a></b>     int rv;
+<b><a name="336">  336</a></b>     int off = 0;
+<b><a name="337">  337</a></b> 
+<b><a name="338">  338</a></b>     rv = sysinfo(SI_MACHINE, buf, sizeof(buf));
+<b><a name="339">  339</a></b>     if (rv &gt; 0) {
+<b><a name="340">  340</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="341">  341</a></b>     }
+<b><a name="342">  342</a></b>     rv = sysinfo(SI_RELEASE, buf, sizeof(buf));
+<b><a name="343">  343</a></b>     if (rv &gt; 0) {
+<b><a name="344">  344</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="345">  345</a></b>     }
+<b><a name="346">  346</a></b>     rv = sysinfo(SI_HW_SERIAL, buf, sizeof(buf));
+<b><a name="347">  347</a></b>     if (rv &gt; 0) {
+<b><a name="348">  348</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="349">  349</a></b>     }
+<b><a name="350">  350</a></b> }
+<b><a name="351">  351</a></b> 
+<b><a name="352">  352</a></b> /*
+<b><a name="353">  353</a></b>  * Use the "get the cycle counter" instruction on the alpha.
+<b><a name="354">  354</a></b>  * The low 32 bits completely turn over in less than a minute.
+<b><a name="355">  355</a></b>  * The high 32 bits are some non-counter gunk that changes sometimes.
+<b><a name="356">  356</a></b>  */
+<b><a name="357">  357</a></b> static size_t
+<b><a name="358">  358</a></b> <a href="#358">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="359">  359</a></b> {
+<b><a name="360">  360</a></b>     unsigned long t;
+<b><a name="361">  361</a></b> 
+<b><a name="362">  362</a></b>     t = asm("rpcc %v0");
+<b><a name="363">  363</a></b>     return <a href="../freebl/mac_rand.c.dep.html#CopyLowBits">CopyLowBits</a><a href="../freebl/unix_rand.c.dep.html#CopyLowBits"><sup>[1]</sup></a>(buf, maxbytes, &amp;t, sizeof(t));
+<b><a name="364">  364</a></b> }
+<b><a name="365">  365</a></b> 
+<b><a name="366">  366</a></b> #endif /* Alpha */
+<b><a name="367">  367</a></b> 
+<b><a name="368">  368</a></b> #if defined(_IBMR2)
+<b><a name="369">  369</a></b> static size_t
+<b><a name="370">  370</a></b> <a href="#370">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="371">  371</a></b> {
+<b><a name="372">  372</a></b>     return 0;
+<b><a name="373">  373</a></b> }
+<b><a name="374">  374</a></b> 
+<b><a name="375">  375</a></b> static void
+<b><a name="376">  376</a></b> <a href="#376">GiveSystemInfo</a>(void)
+<b><a name="377">  377</a></b> {
+<b><a name="378">  378</a></b>     /* XXX haven't found any yet! */
+<b><a name="379">  379</a></b> }
+<b><a name="380">  380</a></b> #endif /* IBM R2 */
+<b><a name="381">  381</a></b> 
+<b><a name="382">  382</a></b> #if defined(LINUX)
+<b><a name="383">  383</a></b> #include &lt;sys/sysinfo.h&gt;
+<b><a name="384">  384</a></b> 
+<b><a name="385">  385</a></b> static size_t
+<b><a name="386">  386</a></b> <a href="#386">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="387">  387</a></b> {
+<b><a name="388">  388</a></b>     return 0;
+<b><a name="389">  389</a></b> }
+<b><a name="390">  390</a></b> 
+<b><a name="391">  391</a></b> static void
+<b><a name="392">  392</a></b> <a href="#392">GiveSystemInfo</a>(void)
+<b><a name="393">  393</a></b> {
+<b><a name="394">  394</a></b>     struct sysinfo si;
+<b><a name="395">  395</a></b>     if (sysinfo(&amp;si) == 0) {
+<b><a name="396">  396</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;si, sizeof(si));
+<b><a name="397">  397</a></b>     }
+<b><a name="398">  398</a></b> }
+<b><a name="399">  399</a></b> #endif /* LINUX */
+<b><a name="400">  400</a></b> 
+<b><a name="401">  401</a></b> #if defined(NCR)
+<b><a name="402">  402</a></b> 
+<b><a name="403">  403</a></b> #include &lt;sys/utsname.h&gt;
+<b><a name="404">  404</a></b> #include &lt;sys/systeminfo.h&gt;
+<b><a name="405">  405</a></b> 
+<b><a name="406">  406</a></b> #define <a href="#406">getdtablesize</a>() sysconf(_SC_OPEN_MAX)
+<b><a name="407">  407</a></b> 
+<b><a name="408">  408</a></b> static size_t
+<b><a name="409">  409</a></b> <a href="#409">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="410">  410</a></b> {
+<b><a name="411">  411</a></b>     return 0;
+<b><a name="412">  412</a></b> }
+<b><a name="413">  413</a></b> 
+<b><a name="414">  414</a></b> static void
+<b><a name="415">  415</a></b> <a href="#415">GiveSystemInfo</a>(void)
+<b><a name="416">  416</a></b> {
+<b><a name="417">  417</a></b>     int rv;
+<b><a name="418">  418</a></b>     char buf[2000];
+<b><a name="419">  419</a></b> 
+<b><a name="420">  420</a></b>     rv = sysinfo(SI_MACHINE, buf, sizeof(buf));
+<b><a name="421">  421</a></b>     if (rv &gt; 0) {
+<b><a name="422">  422</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="423">  423</a></b>     }
+<b><a name="424">  424</a></b>     rv = sysinfo(SI_RELEASE, buf, sizeof(buf));
+<b><a name="425">  425</a></b>     if (rv &gt; 0) {
+<b><a name="426">  426</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="427">  427</a></b>     }
+<b><a name="428">  428</a></b>     rv = sysinfo(SI_HW_SERIAL, buf, sizeof(buf));
+<b><a name="429">  429</a></b>     if (rv &gt; 0) {
+<b><a name="430">  430</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="431">  431</a></b>     }
+<b><a name="432">  432</a></b> }
+<b><a name="433">  433</a></b> 
+<b><a name="434">  434</a></b> #endif /* NCR */
+<b><a name="435">  435</a></b> 
+<b><a name="436">  436</a></b> 
+<b><a name="437">  437</a></b> #if defined(sgi)
+<b><a name="438">  438</a></b> #include &lt;fcntl.h&gt;
+<b><a name="439">  439</a></b> #undef <a href="#439">PRIVATE</a>
+<b><a name="440">  440</a></b> #include &lt;sys/mman.h&gt;
+<b><a name="441">  441</a></b> #include &lt;sys/syssgi.h&gt;
+<b><a name="442">  442</a></b> #include &lt;sys/immu.h&gt;
+<b><a name="443">  443</a></b> #include &lt;sys/systeminfo.h&gt;
+<b><a name="444">  444</a></b> #include &lt;sys/utsname.h&gt;
+<b><a name="445">  445</a></b> #include &lt;wait.h&gt;
+<b><a name="446">  446</a></b> 
+<b><a name="447">  447</a></b> static void
+<b><a name="448">  448</a></b> <a href="#448">GiveSystemInfo</a>(void)
+<b><a name="449">  449</a></b> {
+<b><a name="450">  450</a></b>     int rv;
+<b><a name="451">  451</a></b>     char buf[4096];
+<b><a name="452">  452</a></b> 
+<b><a name="453">  453</a></b>     rv = syssgi(SGI_SYSID, &amp;buf[0]);
+<b><a name="454">  454</a></b>     if (rv &gt; 0) {
+<b><a name="455">  455</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, MAXSYSIDSIZE);
+<b><a name="456">  456</a></b>     }
+<b><a name="457">  457</a></b> #ifdef SGI_RDUBLK
+<b><a name="458">  458</a></b>     rv = syssgi(SGI_RDUBLK, getpid(), &amp;buf[0], sizeof(buf));
+<b><a name="459">  459</a></b>     if (rv &gt; 0) {
+<b><a name="460">  460</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, sizeof(buf));
+<b><a name="461">  461</a></b>     }
+<b><a name="462">  462</a></b> #endif /* SGI_RDUBLK */
+<b><a name="463">  463</a></b>     rv = syssgi(SGI_INVENT, SGI_INV_READ, buf, sizeof(buf));
+<b><a name="464">  464</a></b>     if (rv &gt; 0) {
+<b><a name="465">  465</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, sizeof(buf));
+<b><a name="466">  466</a></b>     }
+<b><a name="467">  467</a></b>     rv = sysinfo(SI_MACHINE, buf, sizeof(buf));
+<b><a name="468">  468</a></b>     if (rv &gt; 0) {
+<b><a name="469">  469</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="470">  470</a></b>     }
+<b><a name="471">  471</a></b>     rv = sysinfo(SI_RELEASE, buf, sizeof(buf));
+<b><a name="472">  472</a></b>     if (rv &gt; 0) {
+<b><a name="473">  473</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="474">  474</a></b>     }
+<b><a name="475">  475</a></b>     rv = sysinfo(SI_HW_SERIAL, buf, sizeof(buf));
+<b><a name="476">  476</a></b>     if (rv &gt; 0) {
+<b><a name="477">  477</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="478">  478</a></b>     }
+<b><a name="479">  479</a></b> }
+<b><a name="480">  480</a></b> 
+<b><a name="481">  481</a></b> static size_t <a href="#481">GetHighResClock</a>(void *buf, size_t maxbuf)
+<b><a name="482">  482</a></b> {
+<b><a name="483">  483</a></b>     unsigned phys_addr, raddr, cycleval;
+<b><a name="484">  484</a></b>     static volatile unsigned *iotimer_addr = NULL;
+<b><a name="485">  485</a></b>     static int tries = 0;
+<b><a name="486">  486</a></b>     static int cntr_size;
+<b><a name="487">  487</a></b>     int mfd;
+<b><a name="488">  488</a></b>     long <a href="../freebl/sha512.c.dep.html#s0">s0</a></a></a>[2];
+<b><a name="489">  489</a></b>     struct timeval tv;
+<b><a name="490">  490</a></b> 
+<b><a name="491">  491</a></b> #ifndef <a href="../freebl/unix_rand.c.dep.html#SGI_CYCLECNTR_SIZE">SGI_CYCLECNTR_SIZE</a>
+<b><a name="492">  492</a></b> #define <a href="#492">SGI_CYCLECNTR_SIZE</a>      165     /* Size user needs to use to read CC */
+<b><a name="493">  493</a></b> #endif
+<b><a name="494">  494</a></b> 
+<b><a name="495">  495</a></b>     if (iotimer_addr == NULL) {
+<b><a name="496">  496</a></b>         if (tries++ &gt; 1) {
+<b><a name="497">  497</a></b>             /* Don't keep trying if it didn't work */
+<b><a name="498">  498</a></b>             return 0;
+<b><a name="499">  499</a></b>         }
+<b><a name="500">  500</a></b> 
+<b><a name="501">  501</a></b>         /*
+<b><a name="502">  502</a></b>         ** For SGI machines we can use the cycle counter, if it has one,
+<b><a name="503">  503</a></b>         ** to generate some truly random numbers
+<b><a name="504">  504</a></b>         */
+<b><a name="505">  505</a></b>         phys_addr = syssgi(SGI_QUERY_CYCLECNTR, &amp;cycleval);
+<b><a name="506">  506</a></b>         if (phys_addr) {
+<b><a name="507">  507</a></b>             int pgsz = getpagesize();
+<b><a name="508">  508</a></b>             int pgoffmask = pgsz - 1;
+<b><a name="509">  509</a></b> 
+<b><a name="510">  510</a></b>             raddr = phys_addr &amp; ~pgoffmask;
+<b><a name="511">  511</a></b>             mfd = open("/dev/mmem", O_RDONLY);
+<b><a name="512">  512</a></b>             if (mfd &lt; 0) {
+<b><a name="513">  513</a></b>                 return 0;
+<b><a name="514">  514</a></b>             }
+<b><a name="515">  515</a></b>             iotimer_addr = (unsigned *)
+<b><a name="516">  516</a></b>                 mmap(0, pgoffmask, PROT_READ, MAP_PRIVATE, mfd, (int)raddr);
+<b><a name="517">  517</a></b>             if (iotimer_addr == (void*)-1) {
+<b><a name="518">  518</a></b>                 close(mfd);
+<b><a name="519">  519</a></b>                 iotimer_addr = NULL;
+<b><a name="520">  520</a></b>                 return 0;
+<b><a name="521">  521</a></b>             }
+<b><a name="522">  522</a></b>             iotimer_addr = (unsigned*)
+<b><a name="523">  523</a></b>                 ((__psint_t)iotimer_addr | (phys_addr &amp; pgoffmask));
+<b><a name="524">  524</a></b>             /*
+<b><a name="525">  525</a></b>              * The file 'mfd' is purposefully not closed.
+<b><a name="526">  526</a></b>              */
+<b><a name="527">  527</a></b>             cntr_size = syssgi(<a href="../freebl/unix_rand.c.dep.html#SGI_CYCLECNTR_SIZE">SGI_CYCLECNTR_SIZE</a>);
+<b><a name="528">  528</a></b>             if (cntr_size &lt; 0) {
+<b><a name="529">  529</a></b>                 struct utsname utsinfo;
+<b><a name="530">  530</a></b> 
+<b><a name="531">  531</a></b>                 /* 
+<b><a name="532">  532</a></b>                  * We must be executing on a 6.0 or earlier system, since the
+<b><a name="533">  533</a></b>                  * SGI_CYCLECNTR_SIZE call is not supported.
+<b><a name="534">  534</a></b>                  * 
+<b><a name="535">  535</a></b>                  * The only pre-6.1 platforms with 64-bit counters are
+<b><a name="536">  536</a></b>                  * IP19 and IP21 (Challenge, PowerChallenge, Onyx).
+<b><a name="537">  537</a></b>                  */
+<b><a name="538">  538</a></b>                 uname(&amp;utsinfo);
+<b><a name="539">  539</a></b>                 if (!strncmp(utsinfo.machine, "IP19", 4) ||
+<b><a name="540">  540</a></b>                     !strncmp(utsinfo.machine, "IP21", 4))
+<b><a name="541">  541</a></b>                         cntr_size = 64;
+<b><a name="542">  542</a></b>                 else
+<b><a name="543">  543</a></b>                         cntr_size = 32;
+<b><a name="544">  544</a></b>             }
+<b><a name="545">  545</a></b>             cntr_size /= 8;        /* Convert from bits to bytes */
+<b><a name="546">  546</a></b>         }
+<b><a name="547">  547</a></b>     }
+<b><a name="548">  548</a></b> 
+<b><a name="549">  549</a></b>     <a href="../freebl/sha512.c.dep.html#s0">s0</a></a></a>[0] = *iotimer_addr;
+<b><a name="550">  550</a></b>     if (cntr_size &gt; 4)
+<b><a name="551">  551</a></b>         <a href="../freebl/sha512.c.dep.html#s0">s0</a></a></a>[1] = *(iotimer_addr + 1);
+<b><a name="552">  552</a></b>     memcpy(buf, (char *)&amp;<a href="../freebl/sha512.c.dep.html#s0">s0</a></a></a>[0], cntr_size);
+<b><a name="553">  553</a></b>     return <a href="../freebl/mac_rand.c.dep.html#CopyLowBits">CopyLowBits</a><a href="../freebl/unix_rand.c.dep.html#CopyLowBits"><sup>[1]</sup></a>(buf, maxbuf, &amp;<a href="../freebl/sha512.c.dep.html#s0">s0</a></a></a>, cntr_size);
+<b><a name="554">  554</a></b> }
+<b><a name="555">  555</a></b> #endif
+<b><a name="556">  556</a></b> 
+<b><a name="557">  557</a></b> #if defined(sony)
+<b><a name="558">  558</a></b> #include &lt;sys/systeminfo.h&gt;
+<b><a name="559">  559</a></b> 
+<b><a name="560">  560</a></b> #define <a href="#560">getdtablesize</a>() sysconf(_SC_OPEN_MAX)
+<b><a name="561">  561</a></b> 
+<b><a name="562">  562</a></b> static size_t
+<b><a name="563">  563</a></b> <a href="#563">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="564">  564</a></b> {
+<b><a name="565">  565</a></b>     return 0;
+<b><a name="566">  566</a></b> }
+<b><a name="567">  567</a></b> 
+<b><a name="568">  568</a></b> static void
+<b><a name="569">  569</a></b> <a href="#569">GiveSystemInfo</a>(void)
+<b><a name="570">  570</a></b> {
+<b><a name="571">  571</a></b>     int rv;
+<b><a name="572">  572</a></b>     char buf[2000];
+<b><a name="573">  573</a></b> 
+<b><a name="574">  574</a></b>     rv = sysinfo(SI_MACHINE, buf, sizeof(buf));
+<b><a name="575">  575</a></b>     if (rv &gt; 0) {
+<b><a name="576">  576</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="577">  577</a></b>     }
+<b><a name="578">  578</a></b>     rv = sysinfo(SI_RELEASE, buf, sizeof(buf));
+<b><a name="579">  579</a></b>     if (rv &gt; 0) {
+<b><a name="580">  580</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="581">  581</a></b>     }
+<b><a name="582">  582</a></b>     rv = sysinfo(SI_HW_SERIAL, buf, sizeof(buf));
+<b><a name="583">  583</a></b>     if (rv &gt; 0) {
+<b><a name="584">  584</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="585">  585</a></b>     }
+<b><a name="586">  586</a></b> }
+<b><a name="587">  587</a></b> #endif /* sony */
+<b><a name="588">  588</a></b> 
+<b><a name="589">  589</a></b> #if defined(sinix)
+<b><a name="590">  590</a></b> #include &lt;sys/systeminfo.h&gt;
+<b><a name="591">  591</a></b> #include &lt;sys/times.h&gt;
+<b><a name="592">  592</a></b> 
+<b><a name="593">  593</a></b> int <a href="#593">gettimeofday</a>(struct timeval *, struct timezone *);
+<b><a name="594">  594</a></b> int <a href="#594">gethostname</a>(char *, int);
+<b><a name="595">  595</a></b> 
+<b><a name="596">  596</a></b> #define <a href="#596">getdtablesize</a>() sysconf(_SC_OPEN_MAX)
+<b><a name="597">  597</a></b> 
+<b><a name="598">  598</a></b> static size_t
+<b><a name="599">  599</a></b> <a href="#599">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="600">  600</a></b> {
+<b><a name="601">  601</a></b>     int ticks;
+<b><a name="602">  602</a></b>     struct tms buffer;
+<b><a name="603">  603</a></b> 
+<b><a name="604">  604</a></b>     ticks=times(&amp;buffer);
+<b><a name="605">  605</a></b>     return <a href="../freebl/mac_rand.c.dep.html#CopyLowBits">CopyLowBits</a><a href="../freebl/unix_rand.c.dep.html#CopyLowBits"><sup>[1]</sup></a>(buf, maxbytes, &amp;ticks, sizeof(ticks));
+<b><a name="606">  606</a></b> }
+<b><a name="607">  607</a></b> 
+<b><a name="608">  608</a></b> static void
+<b><a name="609">  609</a></b> <a href="#609">GiveSystemInfo</a>(void)
+<b><a name="610">  610</a></b> {
+<b><a name="611">  611</a></b>     int rv;
+<b><a name="612">  612</a></b>     char buf[2000];
+<b><a name="613">  613</a></b> 
+<b><a name="614">  614</a></b>     rv = sysinfo(SI_MACHINE, buf, sizeof(buf));
+<b><a name="615">  615</a></b>     if (rv &gt; 0) {
+<b><a name="616">  616</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="617">  617</a></b>     }
+<b><a name="618">  618</a></b>     rv = sysinfo(SI_RELEASE, buf, sizeof(buf));
+<b><a name="619">  619</a></b>     if (rv &gt; 0) {
+<b><a name="620">  620</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="621">  621</a></b>     }
+<b><a name="622">  622</a></b>     rv = sysinfo(SI_HW_SERIAL, buf, sizeof(buf));
+<b><a name="623">  623</a></b>     if (rv &gt; 0) {
+<b><a name="624">  624</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="625">  625</a></b>     }
+<b><a name="626">  626</a></b> }
+<b><a name="627">  627</a></b> #endif /* sinix */
+<b><a name="628">  628</a></b> 
+<b><a name="629">  629</a></b> #if defined(VMS)
+<b><a name="630">  630</a></b> #include &lt;c_asm.h&gt;
+<b><a name="631">  631</a></b> 
+<b><a name="632">  632</a></b> static void
+<b><a name="633">  633</a></b> <a href="#633">GiveSystemInfo</a>(void)
+<b><a name="634">  634</a></b> {
+<b><a name="635">  635</a></b>     long si;
+<b><a name="636">  636</a></b>  
+<b><a name="637">  637</a></b>     /* 
+<b><a name="638">  638</a></b>      * This is copied from the SCO/UNIXWARE etc section. And like the comment
+<b><a name="639">  639</a></b>      * there says, what's the point? This isn't random, it generates the same
+<b><a name="640">  640</a></b>      * stuff every time its run!
+<b><a name="641">  641</a></b>      */
+<b><a name="642">  642</a></b>     si = sysconf(_SC_CHILD_MAX);
+<b><a name="643">  643</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;si, sizeof(si));
+<b><a name="644">  644</a></b>  
+<b><a name="645">  645</a></b>     si = sysconf(_SC_STREAM_MAX);
+<b><a name="646">  646</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;si, sizeof(si));
+<b><a name="647">  647</a></b>  
+<b><a name="648">  648</a></b>     si = sysconf(_SC_OPEN_MAX);
+<b><a name="649">  649</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;si, sizeof(si));
+<b><a name="650">  650</a></b> }
+<b><a name="651">  651</a></b>  
+<b><a name="652">  652</a></b> /*
+<b><a name="653">  653</a></b>  * Use the "get the cycle counter" instruction on the alpha.
+<b><a name="654">  654</a></b>  * The low 32 bits completely turn over in less than a minute.
+<b><a name="655">  655</a></b>  * The high 32 bits are some non-counter gunk that changes sometimes.
+<b><a name="656">  656</a></b>  */
+<b><a name="657">  657</a></b> static size_t
+<b><a name="658">  658</a></b> <a href="#658">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="659">  659</a></b> {
+<b><a name="660">  660</a></b>     unsigned long t;
+<b><a name="661">  661</a></b>  
+<b><a name="662">  662</a></b>     t = asm("rpcc %v0");
+<b><a name="663">  663</a></b>     return <a href="../freebl/mac_rand.c.dep.html#CopyLowBits">CopyLowBits</a><a href="../freebl/unix_rand.c.dep.html#CopyLowBits"><sup>[1]</sup></a>(buf, maxbytes, &amp;t, sizeof(t));
+<b><a name="664">  664</a></b> }
+<b><a name="665">  665</a></b>  
+<b><a name="666">  666</a></b> #endif /* VMS */
+<b><a name="667">  667</a></b> 
+<b><a name="668">  668</a></b> #ifdef BEOS
+<b><a name="669">  669</a></b> #include &lt;be/kernel/OS.h&gt;
+<b><a name="670">  670</a></b> 
+<b><a name="671">  671</a></b> static size_t
+<b><a name="672">  672</a></b> <a href="#672">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="673">  673</a></b> {
+<b><a name="674">  674</a></b>     bigtime_t bigtime; /* Actually an int64 */
+<b><a name="675">  675</a></b> 
+<b><a name="676">  676</a></b>     bigtime = real_time_clock_usecs();
+<b><a name="677">  677</a></b>     return <a href="../freebl/mac_rand.c.dep.html#CopyLowBits">CopyLowBits</a><a href="../freebl/unix_rand.c.dep.html#CopyLowBits"><sup>[1]</sup></a>(buf, maxbytes, &amp;bigtime, sizeof(bigtime));
+<b><a name="678">  678</a></b> }
+<b><a name="679">  679</a></b> 
+<b><a name="680">  680</a></b> static void
+<b><a name="681">  681</a></b> <a href="#681">GiveSystemInfo</a>(void)
+<b><a name="682">  682</a></b> {
+<b><a name="683">  683</a></b>     system_info *info = NULL;
+<b><a name="684">  684</a></b>     int32 val;                     
+<b><a name="685">  685</a></b>     get_system_info(info);
+<b><a name="686">  686</a></b>     if (info) {
+<b><a name="687">  687</a></b>         val = info-&gt;boot_time;
+<b><a name="688">  688</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;val, sizeof(val));
+<b><a name="689">  689</a></b>         val = info-&gt;used_pages;
+<b><a name="690">  690</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;val, sizeof(val));
+<b><a name="691">  691</a></b>         val = info-&gt;used_ports;
+<b><a name="692">  692</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;val, sizeof(val));
+<b><a name="693">  693</a></b>         val = info-&gt;used_threads;
+<b><a name="694">  694</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;val, sizeof(val));
+<b><a name="695">  695</a></b>         val = info-&gt;used_teams;
+<b><a name="696">  696</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;val, sizeof(val));
+<b><a name="697">  697</a></b>     }
+<b><a name="698">  698</a></b> }
+<b><a name="699">  699</a></b> #endif /* BEOS */
+<b><a name="700">  700</a></b> 
+<b><a name="701">  701</a></b> #if defined(nec_ews)
+<b><a name="702">  702</a></b> #include &lt;sys/systeminfo.h&gt;
+<b><a name="703">  703</a></b> 
+<b><a name="704">  704</a></b> #define <a href="#704">getdtablesize</a>() sysconf(_SC_OPEN_MAX)
+<b><a name="705">  705</a></b> 
+<b><a name="706">  706</a></b> static size_t
+<b><a name="707">  707</a></b> <a href="#707">GetHighResClock</a>(void *buf, size_t maxbytes)
+<b><a name="708">  708</a></b> {
+<b><a name="709">  709</a></b>     return 0;
+<b><a name="710">  710</a></b> }
+<b><a name="711">  711</a></b> 
+<b><a name="712">  712</a></b> static void
+<b><a name="713">  713</a></b> <a href="#713">GiveSystemInfo</a>(void)
+<b><a name="714">  714</a></b> {
+<b><a name="715">  715</a></b>     int rv;
+<b><a name="716">  716</a></b>     char buf[2000];
+<b><a name="717">  717</a></b> 
+<b><a name="718">  718</a></b>     rv = sysinfo(SI_MACHINE, buf, sizeof(buf));
+<b><a name="719">  719</a></b>     if (rv &gt; 0) {
+<b><a name="720">  720</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="721">  721</a></b>     }
+<b><a name="722">  722</a></b>     rv = sysinfo(SI_RELEASE, buf, sizeof(buf));
+<b><a name="723">  723</a></b>     if (rv &gt; 0) {
+<b><a name="724">  724</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="725">  725</a></b>     }
+<b><a name="726">  726</a></b>     rv = sysinfo(SI_HW_SERIAL, buf, sizeof(buf));
+<b><a name="727">  727</a></b>     if (rv &gt; 0) {
+<b><a name="728">  728</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, rv);
+<b><a name="729">  729</a></b>     }
+<b><a name="730">  730</a></b> }
+<b><a name="731">  731</a></b> #endif /* nec_ews */
+<b><a name="732">  732</a></b> 
+<b><a name="733">  733</a></b> size_t <a href="#733">RNG_GetNoise</a>(void *buf, size_t maxbytes)
+<b><a name="734">  734</a></b> {
+<b><a name="735">  735</a></b>     struct timeval tv;
+<b><a name="736">  736</a></b>     int n = 0;
+<b><a name="737">  737</a></b>     int c;
+<b><a name="738">  738</a></b> 
+<b><a name="739">  739</a></b>     n = <a href="../freebl/unix_rand.c.dep.html#GetHighResClock">GetHighResClock</a></a></a></a></a></a></a></a></a></a></a></a></a>(buf, maxbytes);
+<b><a name="740">  740</a></b>     maxbytes -= n;
+<b><a name="741">  741</a></b> 
+<b><a name="742">  742</a></b> #if defined(__sun) &amp;&amp; (defined(_svr4) || defined(SVR4)) || defined(sony)
+<b><a name="743">  743</a></b>     (void)gettimeofday(&amp;tv);
+<b><a name="744">  744</a></b> #else
+<b><a name="745">  745</a></b>     (void)gettimeofday(&amp;tv, 0);
+<b><a name="746">  746</a></b> #endif
+<b><a name="747">  747</a></b>     c = <a href="../freebl/mac_rand.c.dep.html#CopyLowBits">CopyLowBits</a><a href="../freebl/unix_rand.c.dep.html#CopyLowBits"><sup>[1]</sup></a>((char*)buf+n, maxbytes, &amp;tv.tv_usec, sizeof(tv.tv_usec));
+<b><a name="748">  748</a></b>     n += c;
+<b><a name="749">  749</a></b>     maxbytes -= c;
+<b><a name="750">  750</a></b>     c = <a href="../freebl/mac_rand.c.dep.html#CopyLowBits">CopyLowBits</a><a href="../freebl/unix_rand.c.dep.html#CopyLowBits"><sup>[1]</sup></a>((char*)buf+n, maxbytes, &amp;tv.tv_sec, sizeof(tv.tv_sec));
+<b><a name="751">  751</a></b>     n += c;
+<b><a name="752">  752</a></b>     return n;
+<b><a name="753">  753</a></b> }
+<b><a name="754">  754</a></b> 
+<b><a name="755">  755</a></b> #define <a href="#755">SAFE_POPEN_MAXARGS</a>        10        /* must be at least 2 */
+<b><a name="756">  756</a></b> 
+<b><a name="757">  757</a></b> /*
+<b><a name="758">  758</a></b>  * safe_popen is static to this module and we know what arguments it is
+<b><a name="759">  759</a></b>  * called with. Note that this version only supports a single open child
+<b><a name="760">  760</a></b>  * process at any time.
+<b><a name="761">  761</a></b>  */
+<b><a name="762">  762</a></b> static pid_t <a href="#762">safe_popen_pid</a>;
+<b><a name="763">  763</a></b> static struct sigaction <a href="#763">oldact</a>;
+<b><a name="764">  764</a></b> 
+<b><a name="765">  765</a></b> static FILE *
+<b><a name="766">  766</a></b> <a href="#766">safe_popen</a>(char *cmd)
+<b><a name="767">  767</a></b> {
+<b><a name="768">  768</a></b>     int p[2], fd, argc;
+<b><a name="769">  769</a></b>     pid_t pid;
+<b><a name="770">  770</a></b>     char *argv[<a href="../freebl/unix_rand.c.dep.html#SAFE_POPEN_MAXARGS">SAFE_POPEN_MAXARGS</a> + 1];
+<b><a name="771">  771</a></b>     FILE *fp;
+<b><a name="772">  772</a></b>     static char blank[] = " \t";
+<b><a name="773">  773</a></b>     static struct sigaction newact;
+<b><a name="774">  774</a></b> 
+<b><a name="775">  775</a></b>     if (pipe(p) &lt; 0)
+<b><a name="776">  776</a></b>         return 0;
+<b><a name="777">  777</a></b> 
+<b><a name="778">  778</a></b>     /* Setup signals so that SIGCHLD is ignored as we want to do waitpid */
+<b><a name="779">  779</a></b>     newact.sa_handler = SIG_DFL;
+<b><a name="780">  780</a></b>     newact.sa_flags = 0;
+<b><a name="781">  781</a></b>     sigfillset(&amp;newact.sa_mask);
+<b><a name="782">  782</a></b>     sigaction (SIGCHLD, &amp;newact, &amp;<a href="../freebl/unix_rand.c.dep.html#oldact">oldact</a>);
+<b><a name="783">  783</a></b> 
+<b><a name="784">  784</a></b>     pid = fork();
+<b><a name="785">  785</a></b>     switch (pid) {
+<b><a name="786">  786</a></b>       case -1:
+<b><a name="787">  787</a></b>         close(p[0]);
+<b><a name="788">  788</a></b>         close(p[1]);
+<b><a name="789">  789</a></b>         sigaction (SIGCHLD, &amp;<a href="../freebl/unix_rand.c.dep.html#oldact">oldact</a>, NULL);
+<b><a name="790">  790</a></b>         return 0;
+<b><a name="791">  791</a></b> 
+<b><a name="792">  792</a></b>       case 0:
+<b><a name="793">  793</a></b>         /* dup write-side of pipe to stderr and stdout */
+<b><a name="794">  794</a></b>         if (p[1] != 1) dup2(p[1], 1);
+<b><a name="795">  795</a></b>         if (p[1] != 2) dup2(p[1], 2);
+<b><a name="796">  796</a></b>         close(0);
+<b><a name="797">  797</a></b>         {
+<b><a name="798">  798</a></b>             int ndesc = <a href="../freebl/unix_rand.c.dep.html#getdtablesize">getdtablesize</a></a></a></a></a></a></a>();
+<b><a name="799">  799</a></b>             for (fd = PR_MIN(65536, ndesc); --fd &gt; 2; close(fd));
+<b><a name="800">  800</a></b>         }
+<b><a name="801">  801</a></b> 
+<b><a name="802">  802</a></b>         /* clean up environment in the child process */
+<b><a name="803">  803</a></b>         putenv("PATH=/bin:/usr/bin:/sbin:/usr/sbin:/etc:/usr/etc");
+<b><a name="804">  804</a></b>         putenv("SHELL=/bin/sh");
+<b><a name="805">  805</a></b>         putenv("IFS= \t");
+<b><a name="806">  806</a></b> 
+<b><a name="807">  807</a></b>         /*
+<b><a name="808">  808</a></b>          * The caller may have passed us a string that is in text
+<b><a name="809">  809</a></b>          * space. It may be illegal to modify the string
+<b><a name="810">  810</a></b>          */
+<b><a name="811">  811</a></b>         cmd = strdup(cmd);
+<b><a name="812">  812</a></b>         /* format argv */
+<b><a name="813">  813</a></b>         argv[0] = strtok(cmd, blank);
+<b><a name="814">  814</a></b>         argc = 1;
+<b><a name="815">  815</a></b>         while ((argv[argc] = strtok(0, blank)) != 0) {
+<b><a name="816">  816</a></b>             if (++argc == <a href="../freebl/unix_rand.c.dep.html#SAFE_POPEN_MAXARGS">SAFE_POPEN_MAXARGS</a>) {
+<b><a name="817">  817</a></b>                 argv[argc] = 0;
+<b><a name="818">  818</a></b>                 break;
+<b><a name="819">  819</a></b>             }
+<b><a name="820">  820</a></b>         }
+<b><a name="821">  821</a></b> 
+<b><a name="822">  822</a></b>         /* and away we go */
+<b><a name="823">  823</a></b>         execvp(argv[0], argv);
+<b><a name="824">  824</a></b>         exit(127);
+<b><a name="825">  825</a></b>         break;
+<b><a name="826">  826</a></b> 
+<b><a name="827">  827</a></b>       default:
+<b><a name="828">  828</a></b>         close(p[1]);
+<b><a name="829">  829</a></b>         fp = fdopen(p[0], "r");
+<b><a name="830">  830</a></b>         if (fp == 0) {
+<b><a name="831">  831</a></b>             close(p[0]);
+<b><a name="832">  832</a></b>             sigaction (SIGCHLD, &amp;<a href="../freebl/unix_rand.c.dep.html#oldact">oldact</a>, NULL);
+<b><a name="833">  833</a></b>             return 0;
+<b><a name="834">  834</a></b>         }
+<b><a name="835">  835</a></b>         break;
+<b><a name="836">  836</a></b>     }
+<b><a name="837">  837</a></b> 
+<b><a name="838">  838</a></b>     /* non-zero means there's a cmd running */
+<b><a name="839">  839</a></b>     <a href="../freebl/unix_rand.c.dep.html#safe_popen_pid">safe_popen_pid</a> = pid;
+<b><a name="840">  840</a></b>     return fp;
+<b><a name="841">  841</a></b> }
+<b><a name="842">  842</a></b> 
+<b><a name="843">  843</a></b> static int
+<b><a name="844">  844</a></b> <a href="#844">safe_pclose</a>(FILE *fp)
+<b><a name="845">  845</a></b> {
+<b><a name="846">  846</a></b>     pid_t pid;
+<b><a name="847">  847</a></b>     int count, status;
+<b><a name="848">  848</a></b> 
+<b><a name="849">  849</a></b>     if ((pid = <a href="../freebl/unix_rand.c.dep.html#safe_popen_pid">safe_popen_pid</a>) == 0)
+<b><a name="850">  850</a></b>         return -1;
+<b><a name="851">  851</a></b>     <a href="../freebl/unix_rand.c.dep.html#safe_popen_pid">safe_popen_pid</a> = 0;
+<b><a name="852">  852</a></b> 
+<b><a name="853">  853</a></b>     /* if the child hasn't exited, kill it -- we're done with its output */
+<b><a name="854">  854</a></b>     count = 0;
+<b><a name="855">  855</a></b>     while (waitpid(pid, &amp;status, WNOHANG) == 0) {
+<b><a name="856">  856</a></b>             if (kill(pid, SIGKILL) &lt; 0 &amp;&amp; errno == ESRCH)
+<b><a name="857">  857</a></b>             break;
+<b><a name="858">  858</a></b>         if (++count == 1000)
+<b><a name="859">  859</a></b>             break;
+<b><a name="860">  860</a></b>     }
+<b><a name="861">  861</a></b> 
+<b><a name="862">  862</a></b>     /* Reset SIGCHLD signal hander before returning */
+<b><a name="863">  863</a></b>     sigaction(SIGCHLD, &amp;<a href="../freebl/unix_rand.c.dep.html#oldact">oldact</a>, NULL);
+<b><a name="864">  864</a></b> 
+<b><a name="865">  865</a></b>     fclose(fp);
+<b><a name="866">  866</a></b>     return status;
+<b><a name="867">  867</a></b> }
+<b><a name="868">  868</a></b> 
+<b><a name="869">  869</a></b> 
+<b><a name="870">  870</a></b> #if !defined(VMS)
+<b><a name="871">  871</a></b> 
+<b><a name="872">  872</a></b> #ifdef DARWIN
+<b><a name="873">  873</a></b> #include &lt;crt_externs.h&gt;
+<b><a name="874">  874</a></b> #endif
+<b><a name="875">  875</a></b> 
+<b><a name="876">  876</a></b> /* Fork netstat to collect its output by default. Do not unset this unless
+<b><a name="877">  877</a></b>  * another source of entropy is available
+<b><a name="878">  878</a></b>  */
+<b><a name="879">  879</a></b> #define <a href="#879">DO_NETSTAT</a> 1
+<b><a name="880">  880</a></b> 
+<b><a name="881">  881</a></b> void <a href="#881">RNG_SystemInfoForRNG</a>(void)
+<b><a name="882">  882</a></b> {
+<b><a name="883">  883</a></b>     FILE *fp;
+<b><a name="884">  884</a></b>     char buf[BUFSIZ];
+<b><a name="885">  885</a></b>     size_t bytes;
+<b><a name="886">  886</a></b>     const char * const *cp;
+<b><a name="887">  887</a></b>     char *randfile;
+<b><a name="888">  888</a></b> #ifdef DARWIN
+<b><a name="889">  889</a></b>     char **environ = *_NSGetEnviron();
+<b><a name="890">  890</a></b> #else
+<b><a name="891">  891</a></b>     extern char **environ;
+<b><a name="892">  892</a></b> #endif
+<b><a name="893">  893</a></b> #ifdef BEOS
+<b><a name="894">  894</a></b>     static const char * const files[] = {
+<b><a name="895">  895</a></b>         "/boot/var/swap",
+<b><a name="896">  896</a></b>         "/boot/var/log/syslog",
+<b><a name="897">  897</a></b>         "/boot/var/<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>",
+<b><a name="898">  898</a></b>         "/boot/home/config/settings",
+<b><a name="899">  899</a></b>         "/boot/home",
+<b><a name="900">  900</a></b>         0
+<b><a name="901">  901</a></b>     };
+<b><a name="902">  902</a></b> #else
+<b><a name="903">  903</a></b>     static const char * const files[] = {
+<b><a name="904">  904</a></b>         "/etc/passwd",
+<b><a name="905">  905</a></b>         "/etc/utmp",
+<b><a name="906">  906</a></b>         "/<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>",
+<b><a name="907">  907</a></b>         "/var/<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>",
+<b><a name="908">  908</a></b>         "/usr/<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>",
+<b><a name="909">  909</a></b>         0
+<b><a name="910">  910</a></b>     };
+<b><a name="911">  911</a></b> #endif
+<b><a name="912">  912</a></b> 
+<b><a name="913">  913</a></b> #ifdef DO_PS
+<b><a name="914">  914</a></b> For <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a> it is considered that it is too expensive to run the ps command
+<b><a name="915">  915</a></b> for the small amount of entropy it provides.
+<b><a name="916">  916</a></b> #if defined(__sun) &amp;&amp; (!defined(__svr4) &amp;&amp; !defined(SVR4)) || defined(bsdi) || defined(LINUX)
+<b><a name="917">  917</a></b>     static char ps_cmd[] = "ps aux";
+<b><a name="918">  918</a></b> #else
+<b><a name="919">  919</a></b>     static char ps_cmd[] = "ps -el";
+<b><a name="920">  920</a></b> #endif
+<b><a name="921">  921</a></b> #endif /* DO_PS */
+<b><a name="922">  922</a></b> #if defined(BSDI)
+<b><a name="923">  923</a></b>     static char netstat_ni_cmd[] = "netstat -nis";
+<b><a name="924">  924</a></b> #else
+<b><a name="925">  925</a></b>     static char netstat_ni_cmd[] = "netstat -ni";
+<b><a name="926">  926</a></b> #endif
+<b><a name="927">  927</a></b> 
+<b><a name="928">  928</a></b>     <a href="../freebl/unix_rand.c.dep.html#GiveSystemInfo">GiveSystemInfo</a></a></a></a></a></a></a></a></a></a></a></a></a>();
+<b><a name="929">  929</a></b> 
+<b><a name="930">  930</a></b>     bytes = <a href="../freebl/mac_rand.c.dep.html#RNG_GetNoise">RNG_GetNoise</a><a href="../freebl/os2_rand.c.dep.html#RNG_GetNoise"><sup>[1]</sup></a><a href="../freebl/unix_rand.c.dep.html#RNG_GetNoise"><sup>[2]</sup></a><a href="../freebl/win_rand.c.dep.html#RNG_GetNoise"><sup>[3]</sup></a>(buf, sizeof(buf));
+<b><a name="931">  931</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, bytes);
+<b><a name="932">  932</a></b> 
+<b><a name="933">  933</a></b>     /*
+<b><a name="934">  934</a></b>      * Pass the C environment and the addresses of the pointers to the
+<b><a name="935">  935</a></b>      * hash function. This makes the random number function depend on the
+<b><a name="936">  936</a></b>      * execution environment of the user and on the platform the program
+<b><a name="937">  937</a></b>      * is running on.
+<b><a name="938">  938</a></b>      */
+<b><a name="939">  939</a></b>     if (environ != NULL) {
+<b><a name="940">  940</a></b>         cp = (const char * const *) environ;
+<b><a name="941">  941</a></b>         while (*cp) {
+<b><a name="942">  942</a></b>             <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(*cp, strlen(*cp));
+<b><a name="943">  943</a></b>             cp++;
+<b><a name="944">  944</a></b>         }
+<b><a name="945">  945</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(environ, (char*)cp - (char*)environ);
+<b><a name="946">  946</a></b>     }
+<b><a name="947">  947</a></b> 
+<b><a name="948">  948</a></b>     /* Give in system information */
+<b><a name="949">  949</a></b>     if (gethostname(buf, sizeof(buf)) == 0) {
+<b><a name="950">  950</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, strlen(buf));
+<b><a name="951">  951</a></b>     }
+<b><a name="952">  952</a></b>     <a href="../freebl/unix_rand.c.dep.html#GiveSystemInfo">GiveSystemInfo</a></a></a></a></a></a></a></a></a></a></a></a></a>();
+<b><a name="953">  953</a></b> 
+<b><a name="954">  954</a></b>     /* grab some data from system's PRNG before any other files. */
+<b><a name="955">  955</a></b>     bytes = <a href="../freebl/unix_rand.c.dep.html#RNG_FileUpdate">RNG_FileUpdate</a>("/dev/urandom", <a href="../freebl/secrng.h.dep.html#SYSTEM_RNG_SEED_COUNT">SYSTEM_RNG_SEED_COUNT</a>);
+<b><a name="956">  956</a></b> 
+<b><a name="957">  957</a></b>     /* If the user points us to a random file, pass it through the rng */
+<b><a name="958">  958</a></b>     randfile = getenv("NSRANDFILE");
+<b><a name="959">  959</a></b>     if ( ( randfile != NULL ) &amp;&amp; ( randfile[0] != '\0') ) {
+<b><a name="960">  960</a></b>         <a href="../freebl/mac_rand.c.dep.html#RNG_FileForRNG">RNG_FileForRNG</a><a href="../freebl/os2_rand.c.dep.html#RNG_FileForRNG"><sup>[1]</sup></a><a href="../freebl/unix_rand.c.dep.html#RNG_FileForRNG"><sup>[2]</sup></a><a href="../freebl/win_rand.c.dep.html#RNG_FileForRNG"><sup>[3]</sup></a>(randfile);
+<b><a name="961">  961</a></b>     }
+<b><a name="962">  962</a></b> 
+<b><a name="963">  963</a></b>     /* pass other files through */
+<b><a name="964">  964</a></b>     for (cp = files; *cp; cp++)
+<b><a name="965">  965</a></b>         <a href="../freebl/mac_rand.c.dep.html#RNG_FileForRNG">RNG_FileForRNG</a><a href="../freebl/os2_rand.c.dep.html#RNG_FileForRNG"><sup>[1]</sup></a><a href="../freebl/unix_rand.c.dep.html#RNG_FileForRNG"><sup>[2]</sup></a><a href="../freebl/win_rand.c.dep.html#RNG_FileForRNG"><sup>[3]</sup></a>(*cp);
+<b><a name="966">  966</a></b> 
+<b><a name="967">  967</a></b> /*
+<b><a name="968">  968</a></b>  * Bug 100447: On BSD/OS 4.2 and 4.3, we have problem calling safe_popen
+<b><a name="969">  969</a></b>  * in a pthreads environment.  Therefore, we call safe_popen last and on
+<b><a name="970">  970</a></b>  * BSD/OS we do not call safe_popen when we succeeded in getting data
+<b><a name="971">  971</a></b>  * from /dev/urandom.
+<b><a name="972">  972</a></b>  */
+<b><a name="973">  973</a></b> 
+<b><a name="974">  974</a></b> #ifdef BSDI
+<b><a name="975">  975</a></b>     if (bytes)
+<b><a name="976">  976</a></b>         return;
+<b><a name="977">  977</a></b> #endif
+<b><a name="978">  978</a></b> 
+<b><a name="979">  979</a></b> #ifdef SOLARIS
+<b><a name="980">  980</a></b> 
+<b><a name="981">  981</a></b> /*
+<b><a name="982">  982</a></b>  * On Solaris, NSS may be initialized automatically from libldap in
+<b><a name="983">  983</a></b>  * applications that are unaware of the use of NSS. safe_popen forks, and
+<b><a name="984">  984</a></b>  * sometimes creates issues with some applications' pthread_atfork handlers.
+<b><a name="985">  985</a></b>  * We always have /dev/urandom on Solaris 9 and above as an entropy source,
+<b><a name="986">  986</a></b>  * and for Solaris 8 we have the libkstat interface, so we don't need to
+<b><a name="987">  987</a></b>  * fork netstat.
+<b><a name="988">  988</a></b>  */
+<b><a name="989">  989</a></b> 
+<b><a name="990">  990</a></b> #undef <a href="#990">DO_NETSTAT</a>
+<b><a name="991">  991</a></b>     if (!bytes) {
+<b><a name="992">  992</a></b>         /* On Solaris 8, /dev/urandom isn't available, so we use libkstat. */
+<b><a name="993">  993</a></b>         PRUint32 kstat_bytes = 0;
+<b><a name="994">  994</a></b>         if (SECSuccess != <a href="../freebl/unix_rand.c.dep.html#RNG_kstat">RNG_kstat</a>(&amp;kstat_bytes)) {
+<b><a name="995">  995</a></b>             <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(0);
+<b><a name="996">  996</a></b>         }
+<b><a name="997">  997</a></b>         bytes += kstat_bytes;
+<b><a name="998">  998</a></b>         <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(bytes);
+<b><a name="999">  999</a></b>     }
+<b><a name="1000"> 1000</a></b> #endif
+<b><a name="1001"> 1001</a></b> 
+<b><a name="1002"> 1002</a></b> #ifdef DO_PS
+<b><a name="1003"> 1003</a></b>     fp = <a href="../freebl/unix_rand.c.dep.html#safe_popen">safe_popen</a>(ps_cmd);
+<b><a name="1004"> 1004</a></b>     if (fp != NULL) {
+<b><a name="1005"> 1005</a></b>         while ((bytes = fread(buf, 1, sizeof(buf), fp)) &gt; 0)
+<b><a name="1006"> 1006</a></b>             <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, bytes);
+<b><a name="1007"> 1007</a></b>         <a href="../freebl/unix_rand.c.dep.html#safe_pclose">safe_pclose</a>(fp);
+<b><a name="1008"> 1008</a></b>     }
+<b><a name="1009"> 1009</a></b> #endif
+<b><a name="1010"> 1010</a></b> 
+<b><a name="1011"> 1011</a></b> #ifdef <a href="../freebl/unix_rand.c.dep.html#DO_NETSTAT">DO_NETSTAT</a></a>
+<b><a name="1012"> 1012</a></b>     fp = <a href="../freebl/unix_rand.c.dep.html#safe_popen">safe_popen</a>(netstat_ni_cmd);
+<b><a name="1013"> 1013</a></b>     if (fp != NULL) {
+<b><a name="1014"> 1014</a></b>         while ((bytes = fread(buf, 1, sizeof(buf), fp)) &gt; 0)
+<b><a name="1015"> 1015</a></b>             <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, bytes);
+<b><a name="1016"> 1016</a></b>         <a href="../freebl/unix_rand.c.dep.html#safe_pclose">safe_pclose</a>(fp);
+<b><a name="1017"> 1017</a></b>     }
+<b><a name="1018"> 1018</a></b> #endif
+<b><a name="1019"> 1019</a></b> 
+<b><a name="1020"> 1020</a></b> }
+<b><a name="1021"> 1021</a></b> #else
+<b><a name="1022"> 1022</a></b> void <a href="../freebl/mac_rand.c.dep.html#RNG_SystemInfoForRNG">RNG_SystemInfoForRNG</a><a href="../freebl/os2_rand.c.dep.html#RNG_SystemInfoForRNG"><sup>[1]</sup></a><a href="../freebl/unix_rand.c.dep.html#RNG_SystemInfoForRNG"><sup>[2]</sup></a><a href="../freebl/win_rand.c.dep.html#RNG_SystemInfoForRNG"><sup>[3]</sup></a>(void)
+<b><a name="1023"> 1023</a></b> {
+<b><a name="1024"> 1024</a></b>     FILE *fp;
+<b><a name="1025"> 1025</a></b>     char buf[BUFSIZ];
+<b><a name="1026"> 1026</a></b>     size_t bytes;
+<b><a name="1027"> 1027</a></b>     int extra;
+<b><a name="1028"> 1028</a></b>     char **cp;
+<b><a name="1029"> 1029</a></b>     extern char **environ;
+<b><a name="1030"> 1030</a></b>     char *randfile;
+<b><a name="1031"> 1031</a></b>  
+<b><a name="1032"> 1032</a></b>     <a href="../freebl/unix_rand.c.dep.html#GiveSystemInfo">GiveSystemInfo</a></a></a></a></a></a></a></a></a></a></a></a></a>();
+<b><a name="1033"> 1033</a></b>  
+<b><a name="1034"> 1034</a></b>     bytes = <a href="../freebl/mac_rand.c.dep.html#RNG_GetNoise">RNG_GetNoise</a><a href="../freebl/os2_rand.c.dep.html#RNG_GetNoise"><sup>[1]</sup></a><a href="../freebl/unix_rand.c.dep.html#RNG_GetNoise"><sup>[2]</sup></a><a href="../freebl/win_rand.c.dep.html#RNG_GetNoise"><sup>[3]</sup></a>(buf, sizeof(buf));
+<b><a name="1035"> 1035</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, bytes);
+<b><a name="1036"> 1036</a></b>  
+<b><a name="1037"> 1037</a></b>     /*
+<b><a name="1038"> 1038</a></b>      * Pass the C environment and the addresses of the pointers to the
+<b><a name="1039"> 1039</a></b>      * hash function. This makes the random number function depend on the
+<b><a name="1040"> 1040</a></b>      * execution environment of the user and on the platform the program
+<b><a name="1041"> 1041</a></b>      * is running on.
+<b><a name="1042"> 1042</a></b>      */
+<b><a name="1043"> 1043</a></b>     cp = environ;
+<b><a name="1044"> 1044</a></b>     while (*cp) {
+<b><a name="1045"> 1045</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(*cp, strlen(*cp));
+<b><a name="1046"> 1046</a></b>         cp++;
+<b><a name="1047"> 1047</a></b>     }
+<b><a name="1048"> 1048</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(environ, (char*)cp - (char*)environ);
+<b><a name="1049"> 1049</a></b>  
+<b><a name="1050"> 1050</a></b>     /* Give in system information */
+<b><a name="1051"> 1051</a></b>     if (gethostname(buf, sizeof(buf)) &gt; 0) {
+<b><a name="1052"> 1052</a></b>         <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buf, strlen(buf));
+<b><a name="1053"> 1053</a></b>     }
+<b><a name="1054"> 1054</a></b>     <a href="../freebl/unix_rand.c.dep.html#GiveSystemInfo">GiveSystemInfo</a></a></a></a></a></a></a></a></a></a></a></a></a>();
+<b><a name="1055"> 1055</a></b>  
+<b><a name="1056"> 1056</a></b>     /* If the user points us to a random file, pass it through the rng */
+<b><a name="1057"> 1057</a></b>     randfile = getenv("NSRANDFILE");
+<b><a name="1058"> 1058</a></b>     if ( ( randfile != NULL ) &amp;&amp; ( randfile[0] != '\0') ) {
+<b><a name="1059"> 1059</a></b>         <a href="../freebl/mac_rand.c.dep.html#RNG_FileForRNG">RNG_FileForRNG</a><a href="../freebl/os2_rand.c.dep.html#RNG_FileForRNG"><sup>[1]</sup></a><a href="../freebl/unix_rand.c.dep.html#RNG_FileForRNG"><sup>[2]</sup></a><a href="../freebl/win_rand.c.dep.html#RNG_FileForRNG"><sup>[3]</sup></a>(randfile);
+<b><a name="1060"> 1060</a></b>     }
+<b><a name="1061"> 1061</a></b> 
+<b><a name="1062"> 1062</a></b>     /*
+<b><a name="1063"> 1063</a></b>     ** We need to generate at least 1024 bytes of seed data. Since we don't
+<b><a name="1064"> 1064</a></b>     ** do the file stuff for VMS, and because the environ list is so short
+<b><a name="1065"> 1065</a></b>     ** on VMS, we need to make sure we generate enough. So do another 1000
+<b><a name="1066"> 1066</a></b>     ** bytes to be sure.
+<b><a name="1067"> 1067</a></b>     */
+<b><a name="1068"> 1068</a></b>     extra = 1000;
+<b><a name="1069"> 1069</a></b>     while (extra &gt; 0) {
+<b><a name="1070"> 1070</a></b>         cp = environ;
+<b><a name="1071"> 1071</a></b>         while (*cp) {
+<b><a name="1072"> 1072</a></b>             int n = strlen(*cp);
+<b><a name="1073"> 1073</a></b>             <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(*cp, n);
+<b><a name="1074"> 1074</a></b>             extra -= n;
+<b><a name="1075"> 1075</a></b>             cp++;
+<b><a name="1076"> 1076</a></b>         }
+<b><a name="1077"> 1077</a></b>     }
+<b><a name="1078"> 1078</a></b> }
+<b><a name="1079"> 1079</a></b> #endif
+<b><a name="1080"> 1080</a></b> 
+<b><a name="1081"> 1081</a></b> #define <a href="#1081">TOTAL_FILE_LIMIT</a> 1000000        /* one million */
+<b><a name="1082"> 1082</a></b> 
+<b><a name="1083"> 1083</a></b> size_t <a href="#1083">RNG_FileUpdate</a>(const char *fileName, size_t limit)
+<b><a name="1084"> 1084</a></b> {
+<b><a name="1085"> 1085</a></b>     FILE *        file;
+<b><a name="1086"> 1086</a></b>     size_t        bytes;
+<b><a name="1087"> 1087</a></b>     size_t        fileBytes = 0;
+<b><a name="1088"> 1088</a></b>     struct stat   stat_buf;
+<b><a name="1089"> 1089</a></b>     unsigned char buffer[BUFSIZ];
+<b><a name="1090"> 1090</a></b>     static size_t <a href="../freebl/win_rand.c.dep.html#totalFileBytes">totalFileBytes</a> = 0;
+<b><a name="1091"> 1091</a></b>     
+<b><a name="1092"> 1092</a></b>     /* suppress valgrind warnings due to holes in struct stat */
+<b><a name="1093"> 1093</a></b>     memset(&amp;stat_buf, 0, sizeof(stat_buf));
+<b><a name="1094"> 1094</a></b> 
+<b><a name="1095"> 1095</a></b>     if (stat((char *)fileName, &amp;stat_buf) &lt; 0)
+<b><a name="1096"> 1096</a></b>         return fileBytes;
+<b><a name="1097"> 1097</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(&amp;stat_buf, sizeof(stat_buf));
+<b><a name="1098"> 1098</a></b>     
+<b><a name="1099"> 1099</a></b>     file = fopen((char *)fileName, "r");
+<b><a name="1100"> 1100</a></b>     if (file != NULL) {
+<b><a name="1101"> 1101</a></b>         while (limit &gt; fileBytes) {
+<b><a name="1102"> 1102</a></b>             bytes = PR_MIN(sizeof buffer, limit - fileBytes);
+<b><a name="1103"> 1103</a></b>             bytes = fread(buffer, 1, bytes, file);
+<b><a name="1104"> 1104</a></b>             if (bytes == 0) 
+<b><a name="1105"> 1105</a></b>                 break;
+<b><a name="1106"> 1106</a></b>             <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buffer, bytes);
+<b><a name="1107"> 1107</a></b>             fileBytes      += bytes;
+<b><a name="1108"> 1108</a></b>             <a href="../freebl/win_rand.c.dep.html#totalFileBytes">totalFileBytes</a> += bytes;
+<b><a name="1109"> 1109</a></b>             /* after TOTAL_FILE_LIMIT has been reached, only read in first
+<b><a name="1110"> 1110</a></b>             ** buffer of data from each subsequent file.
+<b><a name="1111"> 1111</a></b>             */
+<b><a name="1112"> 1112</a></b>             if (<a href="../freebl/win_rand.c.dep.html#totalFileBytes">totalFileBytes</a> &gt; <a href="../freebl/unix_rand.c.dep.html#TOTAL_FILE_LIMIT">TOTAL_FILE_LIMIT</a>) 
+<b><a name="1113"> 1113</a></b>                 break;
+<b><a name="1114"> 1114</a></b>         }
+<b><a name="1115"> 1115</a></b>         fclose(file);
+<b><a name="1116"> 1116</a></b>     }
+<b><a name="1117"> 1117</a></b>     /*
+<b><a name="1118"> 1118</a></b>      * Pass yet another snapshot of our highest resolution clock into
+<b><a name="1119"> 1119</a></b>      * the hash function.
+<b><a name="1120"> 1120</a></b>      */
+<b><a name="1121"> 1121</a></b>     bytes = <a href="../freebl/mac_rand.c.dep.html#RNG_GetNoise">RNG_GetNoise</a><a href="../freebl/os2_rand.c.dep.html#RNG_GetNoise"><sup>[1]</sup></a><a href="../freebl/unix_rand.c.dep.html#RNG_GetNoise"><sup>[2]</sup></a><a href="../freebl/win_rand.c.dep.html#RNG_GetNoise"><sup>[3]</sup></a>(buffer, sizeof(buffer));
+<b><a name="1122"> 1122</a></b>     <a href="../freebl/prng_fips1861.c.dep.html#RNG_RandomUpdate">RNG_RandomUpdate</a>(buffer, bytes);
+<b><a name="1123"> 1123</a></b>     return fileBytes;
+<b><a name="1124"> 1124</a></b> }
+<b><a name="1125"> 1125</a></b> 
+<b><a name="1126"> 1126</a></b> void <a href="#1126">RNG_FileForRNG</a>(const char *fileName)
+<b><a name="1127"> 1127</a></b> {
+<b><a name="1128"> 1128</a></b>     <a href="../freebl/unix_rand.c.dep.html#RNG_FileUpdate">RNG_FileUpdate</a>(fileName, <a href="../freebl/unix_rand.c.dep.html#TOTAL_FILE_LIMIT">TOTAL_FILE_LIMIT</a>);
+<b><a name="1129"> 1129</a></b> }
+<b><a name="1130"> 1130</a></b> 
+<b><a name="1131"> 1131</a></b> size_t <a href="#1131">RNG_SystemRNG</a>(void *dest, size_t maxLen)
+<b><a name="1132"> 1132</a></b> {
+<b><a name="1133"> 1133</a></b>     FILE *file;
+<b><a name="1134"> 1134</a></b>     size_t bytes;
+<b><a name="1135"> 1135</a></b>     size_t fileBytes = 0;
+<b><a name="1136"> 1136</a></b>     unsigned char *buffer = dest;
+<b><a name="1137"> 1137</a></b> 
+<b><a name="1138"> 1138</a></b>     file = fopen("/dev/urandom", "r");
+<b><a name="1139"> 1139</a></b>     if (file == NULL) {
+<b><a name="1140"> 1140</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(PR_NOT_IMPLEMENTED_ERROR);
+<b><a name="1141"> 1141</a></b>         return fileBytes;
+<b><a name="1142"> 1142</a></b>     }
+<b><a name="1143"> 1143</a></b>     while (maxLen &gt; fileBytes) {
+<b><a name="1144"> 1144</a></b>         bytes = maxLen - fileBytes;
+<b><a name="1145"> 1145</a></b>         bytes = fread(buffer, 1, bytes, file);
+<b><a name="1146"> 1146</a></b>         if (bytes == 0) 
+<b><a name="1147"> 1147</a></b>             break;
+<b><a name="1148"> 1148</a></b>         fileBytes += bytes;
+<b><a name="1149"> 1149</a></b>         buffer += bytes;
+<b><a name="1150"> 1150</a></b>     }
+<b><a name="1151"> 1151</a></b>     fclose(file);
+<b><a name="1152"> 1152</a></b>     if (fileBytes != maxLen) {
+<b><a name="1153"> 1153</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NEED_RANDOM);  /* system RNG failed */
+<b><a name="1154"> 1154</a></b>         fileBytes = 0;
+<b><a name="1155"> 1155</a></b>     }
+<b><a name="1156"> 1156</a></b>     return fileBytes;
+<b><a name="1157"> 1157</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

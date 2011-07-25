@@ -1,0 +1,69 @@
+<?php
+    // The $body_* variables are for compatibility with pre-existing css
+    $page_title = 'Press Archive | Mozilla Messaging';
+    $body_id    = 'press-archive';
+    $extra_headers = <<<EXTRA_HEADERS
+    <link rel="stylesheet" type="text/css" href="/style/about.css" media="screen" />
+
+EXTRA_HEADERS;
+    @include_once "{$config['file_root']}/{$lang}/includes/header.inc.php";
+
+?>
+
+<div id="main-feature">
+    <h2>Press Releases</h2>
+    <p>All the Latest News From Mozilla Messaging</p>
+</div>
+
+<ul id="side-menu">
+    <li class="first"><h3><a href="/<?=$lang?>/about/">About</a> / <a href="/<?=$lang?>/about/press/">Press Center</a></h3></li>
+    <li><span>All Press Releases</span></li>
+</ul>
+
+<?
+/** See README.txt for info on how to create/update news stories **/
+require_once 'latest.inc.php';
+?>
+
+<div id="main-content">
+
+<h3>Latest Press Releases</h3>
+
+<?
+if (!empty($latest_stories)) {
+    echo '<div id="news-stories" class="sectioned">';
+    foreach ($latest_stories as $story_id) {
+        include "{$story_id}.story.php";
+
+        echo '<div class="news-story">';
+        echo '<div class="news-date">'.date("F j, Y", strtotime($story_date)).'</div>';
+        echo '<h3><a href="'.url("/about/press/archive/{$story_id}").'">'.$story_title.'</a></h3>';
+        if (!empty($story_snippet))
+            echo '<p class="snippet"><em>'.$story_snippet.'</em></p>';
+        echo '</div>';
+    }
+    echo '</div>';
+}
+else
+    echo "<p>There aren’t any stories right now. Please check back later.</p>";
+?>
+
+</div><!-- end #main-content div -->
+
+<div id="sidebar">
+
+	<div class="sidebar-section" id="subscribe">
+		<p><a href="#">Subscribe to RSS feed</a></p>
+	</div>
+
+	<div class="sidebar-section" id="media-contact">
+		<h4>Media Contact</h4>
+		<p>For interview requests or any other media inquiries, please contact:</p>
+		<p>Rafael Ebron<br/>510-220-6800<br/><a href="mailto:press@mozillamessaging.com" class="email">press@mozillamessaging.com</a></p>
+	</div>
+
+</div><!-- end #sidebar div -->
+
+<?php
+    @include_once "{$config['file_root']}/{$lang}/includes/footer.inc.php";
+?>

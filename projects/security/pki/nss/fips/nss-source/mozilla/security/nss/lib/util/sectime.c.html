@@ -1,0 +1,278 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> #include "prlong.h"
+<b><a name="38">   38</a></b> #include "prtime.h"
+<b><a name="39">   39</a></b> #include "secder.h"
+<b><a name="40">   40</a></b> #include "cert.h"
+<b><a name="41">   41</a></b> #include "secitem.h"
+<b><a name="42">   42</a></b> #include "secerr.h"
+<b><a name="43">   43</a></b> 
+<b><a name="44">   44</a></b> const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#44">CERT_TimeChoiceTemplate</a>[] = {
+<b><a name="45">   45</a></b>   { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CHOICE">SEC_ASN1_CHOICE</a>, offsetof(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>, type), 0, sizeof(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>) },
+<b><a name="46">   46</a></b>   { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_UTC_TIME">SEC_ASN1_UTC_TIME</a>, 0, 0, siUTCTime },
+<b><a name="47">   47</a></b>   { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_GENERALIZED_TIME">SEC_ASN1_GENERALIZED_TIME</a>, 0, 0, siGeneralizedTime },
+<b><a name="48">   48</a></b>   { 0 }
+<b><a name="49">   49</a></b> };
+<b><a name="50">   50</a></b> 
+<b><a name="51">   51</a></b> <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CHOOSER_IMPLEMENT">SEC_ASN1_CHOOSER_IMPLEMENT</a>(<a href="../util/sectime.c.dep.html#CERT_TimeChoiceTemplate">CERT_TimeChoiceTemplate</a>)
+<b><a name="52">   52</a></b> 
+<b><a name="53">   53</a></b> const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#53">CERT_ValidityTemplate</a>[] = {
+<b><a name="54">   54</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SEQUENCE">SEC_ASN1_SEQUENCE</a>,
+<b><a name="55">   55</a></b>           0, NULL, sizeof(CERTValidity) },
+<b><a name="56">   56</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INLINE">SEC_ASN1_INLINE</a>,
+<b><a name="57">   57</a></b>           offsetof(CERTValidity,notBefore), <a href="../util/sectime.c.dep.html#CERT_TimeChoiceTemplate">CERT_TimeChoiceTemplate</a>, 0 },
+<b><a name="58">   58</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INLINE">SEC_ASN1_INLINE</a>,
+<b><a name="59">   59</a></b>           offsetof(CERTValidity,notAfter), <a href="../util/sectime.c.dep.html#CERT_TimeChoiceTemplate">CERT_TimeChoiceTemplate</a>, 0 },
+<b><a name="60">   60</a></b>     { 0 }
+<b><a name="61">   61</a></b> };
+<b><a name="62">   62</a></b> 
+<b><a name="63">   63</a></b> PRTime <a href="#63">January1st2050</a> = LL_INIT(0x0008f81e,0x1b098000);
+<b><a name="64">   64</a></b> 
+<b><a name="65">   65</a></b> static char *<a href="#65">DecodeUTCTime2FormattedAscii</a> (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *utcTimeDER, char *format);
+<b><a name="66">   66</a></b> static char *<a href="#66">DecodeGeneralizedTime2FormattedAscii</a> (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *generalizedTimeDER, char *format);
+<b><a name="67">   67</a></b> 
+<b><a name="68">   68</a></b> /* convert DER utc time to ascii time string */
+<b><a name="69">   69</a></b> char *
+<b><a name="70">   70</a></b> <a href="#70">DER_UTCTimeToAscii</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *utcTime)
+<b><a name="71">   71</a></b> {
+<b><a name="72">   72</a></b>     return (<a href="../util/sectime.c.dep.html#DecodeUTCTime2FormattedAscii">DecodeUTCTime2FormattedAscii</a> (utcTime, "%a %b %d %<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>:%M:%<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a> %Y"));
+<b><a name="73">   73</a></b> }
+<b><a name="74">   74</a></b> 
+<b><a name="75">   75</a></b> /* convert DER utc time to ascii time string, only include day, not time */
+<b><a name="76">   76</a></b> char *
+<b><a name="77">   77</a></b> <a href="#77">DER_UTCDayToAscii</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *utctime)
+<b><a name="78">   78</a></b> {
+<b><a name="79">   79</a></b>     return (<a href="../util/sectime.c.dep.html#DecodeUTCTime2FormattedAscii">DecodeUTCTime2FormattedAscii</a> (utctime, "%a %b %d, %Y"));
+<b><a name="80">   80</a></b> }
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b> /* convert DER generalized time to ascii time string, only include day,
+<b><a name="83">   83</a></b>    not time */
+<b><a name="84">   84</a></b> char *
+<b><a name="85">   85</a></b> <a href="#85">DER_GeneralizedDayToAscii</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *gentime)
+<b><a name="86">   86</a></b> {
+<b><a name="87">   87</a></b>     return (<a href="../util/sectime.c.dep.html#DecodeGeneralizedTime2FormattedAscii">DecodeGeneralizedTime2FormattedAscii</a> (gentime, "%a %b %d, %Y"));
+<b><a name="88">   88</a></b> }
+<b><a name="89">   89</a></b> 
+<b><a name="90">   90</a></b> /* convert DER generalized or UTC time to ascii time string, only include
+<b><a name="91">   91</a></b>    day, not time */
+<b><a name="92">   92</a></b> char *
+<b><a name="93">   93</a></b> <a href="#93">DER_TimeChoiceDayToAscii</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *timechoice)
+<b><a name="94">   94</a></b> {
+<b><a name="95">   95</a></b>     switch (timechoice-&gt;type) {
+<b><a name="96">   96</a></b> 
+<b><a name="97">   97</a></b>     case siUTCTime:
+<b><a name="98">   98</a></b>         return <a href="../util/sectime.c.dep.html#DER_UTCDayToAscii">DER_UTCDayToAscii</a>(timechoice);
+<b><a name="99">   99</a></b> 
+<b><a name="100">  100</a></b>     case siGeneralizedTime:
+<b><a name="101">  101</a></b>         return <a href="../util/sectime.c.dep.html#DER_GeneralizedDayToAscii">DER_GeneralizedDayToAscii</a>(timechoice);
+<b><a name="102">  102</a></b> 
+<b><a name="103">  103</a></b>     default:
+<b><a name="104">  104</a></b>         <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(0);
+<b><a name="105">  105</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="106">  106</a></b>         return NULL;
+<b><a name="107">  107</a></b>     }
+<b><a name="108">  108</a></b> }
+<b><a name="109">  109</a></b> 
+<b><a name="110">  110</a></b> 
+<b><a name="111">  111</a></b> 
+<b><a name="112">  112</a></b> CERTValidity *
+<b><a name="113">  113</a></b> <a href="#113">CERT_CreateValidity</a>(int64 notBefore, int64 notAfter)
+<b><a name="114">  114</a></b> {
+<b><a name="115">  115</a></b>     CERTValidity *v;
+<b><a name="116">  116</a></b>     int rv;
+<b><a name="117">  117</a></b>     PRArenaPool *arena;
+<b><a name="118">  118</a></b> 
+<b><a name="119">  119</a></b>     arena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../util/secdert.h.dep.html#DER_DEFAULT_CHUNKSIZE">DER_DEFAULT_CHUNKSIZE</a>);
+<b><a name="120">  120</a></b>     
+<b><a name="121">  121</a></b>     if ( !arena ) {
+<b><a name="122">  122</a></b>         return(0);
+<b><a name="123">  123</a></b>     }
+<b><a name="124">  124</a></b>     
+<b><a name="125">  125</a></b>     v = (CERTValidity*) <a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, sizeof(CERTValidity));
+<b><a name="126">  126</a></b>     if (v) {
+<b><a name="127">  127</a></b>         v-&gt;arena = arena;
+<b><a name="128">  128</a></b>         rv = <a href="../util/sectime.c.dep.html#DER_EncodeTimeChoice">DER_EncodeTimeChoice</a>(arena, &amp;v-&gt;notBefore, notBefore);
+<b><a name="129">  129</a></b>         if (rv) goto loser;
+<b><a name="130">  130</a></b>         rv = <a href="../util/sectime.c.dep.html#DER_EncodeTimeChoice">DER_EncodeTimeChoice</a>(arena, &amp;v-&gt;notAfter, notAfter);
+<b><a name="131">  131</a></b>         if (rv) goto loser;
+<b><a name="132">  132</a></b>     }
+<b><a name="133">  133</a></b>     return v;
+<b><a name="134">  134</a></b> 
+<b><a name="135">  135</a></b>   loser:
+<b><a name="136">  136</a></b>     <a href="../util/sectime.c.dep.html#CERT_DestroyValidity">CERT_DestroyValidity</a>(v);
+<b><a name="137">  137</a></b>     return 0;
+<b><a name="138">  138</a></b> }
+<b><a name="139">  139</a></b> 
+<b><a name="140">  140</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="141">  141</a></b> <a href="#141">CERT_CopyValidity</a>(PRArenaPool *arena, CERTValidity *to, CERTValidity *from)
+<b><a name="142">  142</a></b> {
+<b><a name="143">  143</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv;
+<b><a name="144">  144</a></b> 
+<b><a name="145">  145</a></b>     <a href="../util/sectime.c.dep.html#CERT_DestroyValidity">CERT_DestroyValidity</a>(to);
+<b><a name="146">  146</a></b>     to-&gt;arena = arena;
+<b><a name="147">  147</a></b>     
+<b><a name="148">  148</a></b>     rv = <a href="../util/secitem.c.dep.html#SECITEM_CopyItem">SECITEM_CopyItem</a>(arena, &amp;to-&gt;notBefore, &amp;from-&gt;notBefore);
+<b><a name="149">  149</a></b>     if (rv) return rv;
+<b><a name="150">  150</a></b>     rv = <a href="../util/secitem.c.dep.html#SECITEM_CopyItem">SECITEM_CopyItem</a>(arena, &amp;to-&gt;notAfter, &amp;from-&gt;notAfter);
+<b><a name="151">  151</a></b>     return rv;
+<b><a name="152">  152</a></b> }
+<b><a name="153">  153</a></b> 
+<b><a name="154">  154</a></b> void
+<b><a name="155">  155</a></b> <a href="#155">CERT_DestroyValidity</a>(CERTValidity *v)
+<b><a name="156">  156</a></b> {
+<b><a name="157">  157</a></b>     if (v &amp;&amp; v-&gt;arena) {
+<b><a name="158">  158</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(v-&gt;arena, PR_FALSE);
+<b><a name="159">  159</a></b>     }
+<b><a name="160">  160</a></b>     return;
+<b><a name="161">  161</a></b> }
+<b><a name="162">  162</a></b> 
+<b><a name="163">  163</a></b> char *
+<b><a name="164">  164</a></b> <a href="#164">CERT_UTCTime2FormattedAscii</a> (int64 utcTime, char *format)
+<b><a name="165">  165</a></b> {
+<b><a name="166">  166</a></b>     PRExplodedTime printableTime; 
+<b><a name="167">  167</a></b>     char *timeString;
+<b><a name="168">  168</a></b>    
+<b><a name="169">  169</a></b>     /* Converse time to local time and decompose it into components */
+<b><a name="170">  170</a></b>     PR_ExplodeTime(utcTime, PR_LocalTimeParameters, &amp;printableTime);
+<b><a name="171">  171</a></b>     
+<b><a name="172">  172</a></b>     timeString = (char *)<a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(100);
+<b><a name="173">  173</a></b> 
+<b><a name="174">  174</a></b>     if ( timeString ) {
+<b><a name="175">  175</a></b>         PR_FormatTime( timeString, 100, format, &amp;printableTime );
+<b><a name="176">  176</a></b>     }
+<b><a name="177">  177</a></b>     
+<b><a name="178">  178</a></b>     return (timeString);
+<b><a name="179">  179</a></b> }
+<b><a name="180">  180</a></b> 
+<b><a name="181">  181</a></b> char *<a href="#181">CERT_GenTime2FormattedAscii</a> (int64 genTime, char *format)
+<b><a name="182">  182</a></b> {
+<b><a name="183">  183</a></b>     PRExplodedTime printableTime; 
+<b><a name="184">  184</a></b>     char *timeString;
+<b><a name="185">  185</a></b>    
+<b><a name="186">  186</a></b>     /* Decompose time into components */
+<b><a name="187">  187</a></b>     PR_ExplodeTime(genTime, PR_GMTParameters, &amp;printableTime);
+<b><a name="188">  188</a></b>     
+<b><a name="189">  189</a></b>     timeString = (char *)<a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(100);
+<b><a name="190">  190</a></b> 
+<b><a name="191">  191</a></b>     if ( timeString ) {
+<b><a name="192">  192</a></b>         PR_FormatTime( timeString, 100, format, &amp;printableTime );
+<b><a name="193">  193</a></b>     }
+<b><a name="194">  194</a></b>     
+<b><a name="195">  195</a></b>     return (timeString);
+<b><a name="196">  196</a></b> }
+<b><a name="197">  197</a></b> 
+<b><a name="198">  198</a></b> 
+<b><a name="199">  199</a></b> /* convert DER utc time to ascii time string, The format of the time string
+<b><a name="200">  200</a></b>    depends on the input "format"
+<b><a name="201">  201</a></b>  */
+<b><a name="202">  202</a></b> static char *
+<b><a name="203">  203</a></b> <a href="#203">DecodeUTCTime2FormattedAscii</a> (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *utcTimeDER,  char *format)
+<b><a name="204">  204</a></b> {
+<b><a name="205">  205</a></b>     int64 utcTime;
+<b><a name="206">  206</a></b>     int rv;
+<b><a name="207">  207</a></b>    
+<b><a name="208">  208</a></b>     rv = <a href="../util/dertime.c.dep.html#DER_UTCTimeToTime">DER_UTCTimeToTime</a>(&amp;utcTime, utcTimeDER);
+<b><a name="209">  209</a></b>     if (rv) {
+<b><a name="210">  210</a></b>         return(NULL);
+<b><a name="211">  211</a></b>     }
+<b><a name="212">  212</a></b>     return (<a href="../util/sectime.c.dep.html#CERT_UTCTime2FormattedAscii">CERT_UTCTime2FormattedAscii</a> (utcTime, format));
+<b><a name="213">  213</a></b> }
+<b><a name="214">  214</a></b> 
+<b><a name="215">  215</a></b> /* convert DER utc time to ascii time string, The format of the time string
+<b><a name="216">  216</a></b>    depends on the input "format"
+<b><a name="217">  217</a></b>  */
+<b><a name="218">  218</a></b> static char *
+<b><a name="219">  219</a></b> <a href="#219">DecodeGeneralizedTime2FormattedAscii</a> (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *generalizedTimeDER,  char *format)
+<b><a name="220">  220</a></b> {
+<b><a name="221">  221</a></b>     PRTime generalizedTime;
+<b><a name="222">  222</a></b>     int rv;
+<b><a name="223">  223</a></b>    
+<b><a name="224">  224</a></b>     rv = <a href="../util/dertime.c.dep.html#DER_GeneralizedTimeToTime">DER_GeneralizedTimeToTime</a>(&amp;generalizedTime, generalizedTimeDER);
+<b><a name="225">  225</a></b>     if (rv) {
+<b><a name="226">  226</a></b>         return(NULL);
+<b><a name="227">  227</a></b>     }
+<b><a name="228">  228</a></b>     return (<a href="../util/secder.h.dep.html#CERT_GeneralizedTime2FormattedAscii">CERT_GeneralizedTime2FormattedAscii</a> (generalizedTime, format));
+<b><a name="229">  229</a></b> }
+<b><a name="230">  230</a></b> 
+<b><a name="231">  231</a></b> /* decode a SECItem containing either a SEC_ASN1_GENERALIZED_TIME 
+<b><a name="232">  232</a></b>    or a SEC_ASN1_UTC_TIME */
+<b><a name="233">  233</a></b> 
+<b><a name="234">  234</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#234">DER_DecodeTimeChoice</a>(PRTime* output, const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* input)
+<b><a name="235">  235</a></b> {
+<b><a name="236">  236</a></b>     switch (input-&gt;type) {
+<b><a name="237">  237</a></b>         case siGeneralizedTime:
+<b><a name="238">  238</a></b>             return <a href="../util/dertime.c.dep.html#DER_GeneralizedTimeToTime">DER_GeneralizedTimeToTime</a>(output, input);
+<b><a name="239">  239</a></b> 
+<b><a name="240">  240</a></b>         case siUTCTime:
+<b><a name="241">  241</a></b>             return <a href="../util/dertime.c.dep.html#DER_UTCTimeToTime">DER_UTCTimeToTime</a>(output, input);
+<b><a name="242">  242</a></b> 
+<b><a name="243">  243</a></b>         default:
+<b><a name="244">  244</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="245">  245</a></b>             <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(0);
+<b><a name="246">  246</a></b>             return SECFailure;
+<b><a name="247">  247</a></b>     }
+<b><a name="248">  248</a></b> }
+<b><a name="249">  249</a></b> 
+<b><a name="250">  250</a></b> /* encode a PRTime to an ASN.1 DER SECItem containing either a
+<b><a name="251">  251</a></b>    SEC_ASN1_GENERALIZED_TIME or a SEC_ASN1_UTC_TIME */
+<b><a name="252">  252</a></b> 
+<b><a name="253">  253</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#253">DER_EncodeTimeChoice</a>(PRArenaPool* arena, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* output, PRTime input)
+<b><a name="254">  254</a></b> {
+<b><a name="255">  255</a></b>     if (LL_CMP(input, &gt;, <a href="../util/sectime.c.dep.html#January1st2050">January1st2050</a>)) {
+<b><a name="256">  256</a></b>         return <a href="../util/dertime.c.dep.html#DER_TimeToGeneralizedTimeArena">DER_TimeToGeneralizedTimeArena</a>(arena, output, input);
+<b><a name="257">  257</a></b>     } else {
+<b><a name="258">  258</a></b>         return <a href="../util/dertime.c.dep.html#DER_TimeToUTCTimeArena">DER_TimeToUTCTimeArena</a>(arena, output, input);
+<b><a name="259">  259</a></b>     }
+<b><a name="260">  260</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

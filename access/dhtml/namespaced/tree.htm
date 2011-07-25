@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="http://www.w3.org/StyleSheets/TR/base"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:wairole="http://www.w3.org/2005/01/wai-rdf/GUIRoleTaxonomy#"
+      xmlns:aaa="http://www.w3.org/2005/07/aaa">
+<head>
+<meta http-equiv="content-type" content="text/xhtml; charset=utf-8" />
+<title>Tree</title>
+<style type="text/css">
+@namespace wairole  url("http://www.w3.org/2005/01/wai-rdf/GUIRoleTaxonomy#");
+@namespace aaa url("http://www.w3.org/2005/07/aaa");
+div[role="wairole:tree"] { overflow: auto; width: 20%; height: 25em; cursor: default; border: 1px solid gray; padding-left: .5em;}
+div[role="wairole:treeitem"]:before { font-size: .8em; font-family: monospace; content: '&nbsp;'; margin-right: .6em;}
+div[role="wairole:treeitem"][aaa|expanded='false']:before
+  { font-size: .8em; font-family: monospace; content: '+'; outline: 1px solid black; margin-left: .1em; margin-right: .5em;}
+div[role="wairole:treeitem"][aaa|expanded='true']:before
+   { font-size: .8em; font-family: monospace; content: '-'; outline: 1px solid black; margin-left: .1em; margin-right: .5em;}
+div[role="wairole:treeitem"][aaa|expanded='false'] + div[role="wairole:group"] { display : none; }
+div[role="wairole:group"]{ margin-left: 1.5em; }
+div[role="wairole:treeitem"]:focus { outline: 0px; background-color: #dddddd; color: black;}
+</style>
+<script>
+<![CDATA[
+function getRole(element)
+{
+  return element.getAttribute("role");
+};
+
+function isText(node)
+{
+  return node && node.nodeType == node.TEXT_NODE;
+};
+
+function isGroupClosed(groupItem)
+{
+  var treeItemForGroup = getRelativeTreeItem(groupItem, -1, false);
+  return treeItemForGroup.getAttributeNS("http://www.w3.org/2005/07/aaa",
+                                         "expanded") == 'false';
+};
+
+function getFirstTreeItem(tree)
+{
+  return getRelativeTreeItem(tree.firstChild, 1, false);
+};
+
+function getLastTreeItem(tree)
+{
+  var lastTreeItem = tree;
+  do {
+    lastTreeItem = lastTreeItem.lastChild;
+    if (isText(lastTreeItem)) {
+      lastTreeItem = lastTreeItem.previousSibling;
+    }
+  }
+  while (getRole(lastTreeItem) == "wairole:group");
+  return lastTreeItem;
+};
+
+function getRelativeTreeItem(treeItem, delta, wrap)
+{
+  // delta: -1 = prev, 1 = next
+  if (delta == 1) {  // Next
+    var newTreeItem = treeItem.nextSibling;
+    if (isText(newTreeItem)) {
+      newTreeItem = newTreeItem.nextSibling;
+    }
+    if (newTreeItem) {
+      var role = getRole(newTreeItem);
+      if (role == "wairole:group") {
+        if (isGroupClosed(newTreeItem)) {
+          return getRelativeTreeItem(newTreeItem, 1, wrap);
+        }
+        newTreeItem = newTreeItem.firstChild;
+        if (isText(newTreeItem)) {
+          newTreeItem = newTreeItem.nextSibling;
+        }
+        return newTreeItem;
+      }
+      return (role == "wairole:treeitem") ? newTreeItem : null;
+    }
+  }
+  else {    // Prev
+    var newTreeItem = treeItem.previousSibling;
+    if (isText(newTreeItem)) {
+      newTreeItem = newTreeItem.previousSibling;
+    }
+    if (newTreeItem) {
+      var role;
+      while ((role = getRole(newTreeItem)) == "wairole:group") {
+        if (isGroupClosed(newTreeItem)) {
+          return getRelativeTreeItem(newTreeItem, -1, wrap);
+        }
+        newTreeItem = newTreeItem.lastChild;
+        if (isText(newTreeItem)) {
+          newTreeItem = newTreeItem.previousSibling;
+        }
+      }
+      return (role == "wairole:treeitem") ? newTreeItem : null;
+    }
+  }
+  if (getRole(treeItem.parentNode) == "wairole:tree") {
+    if (!wrap) {
+      return null;
+    }
+    var tree = getTree(treeItem)
+    return (delta == 1)? getFirstTreeItem(tree) : getLastTreeItem(tree);
+  }
+  return getRelativeTreeItem(treeItem.parentNode, delta, wrap); // Recursive
+};
+
+function getTree(treeItem)
+{
+  var tree = treeItem;
+  try {
+    while (tree.getAttribute("role") != "wairole:tree") {
+      tree = tree.parentNode;
+    }
+  } catch(ex) {
+    return null; // No tree container for tree item
+  }
+  return tree;
+};
+
+var gNewFocus;
+function setFocus(newFocus)
+{
+  if (newFocus) {
+    gNewFocus = newFocus;
+    setTimeout("gNewFocus.focus();", 0);
+  }
+};
+
+function treeItemEvent(event)
+{
+  var treeItem = event.target;
+  var hasChildren = treeItem.hasAttributeNS("http://www.w3.org/2005/07/aaa", "expanded");
+  var isItemOpen = hasChildren &&
+     treeItem.getAttributeNS("http://www.w3.org/2005/07/aaa", "expanded") == 'true';
+  var focusDelta = 0;  // (-1 = up, 0 = no change, 1 = down)
+
+  var toggleitem = false;
+  if (event.type == "dblclick" && event.button == 0) {
+    toggleitem = hasChildren;
+    getTree(treeItem)._incrementalString = "";
+  }
+  else if (event.type == "keydown") {
+    if (event.altKey) {
+      return true;  // Browser should use this, the tree view doesn't need alt-modified keys
+    }
+    // XXX Implement multiple selection (ctrl+arrow, shift+arrow, ctrl+space)
+    if (event.keyCode == event.DOM_VK_HOME) {
+      try {
+        setFocus(getFirstTreeItem(getTree(treeItem)));
+      } catch(ex) { }
+      return false;
+    }
+    if (event.keyCode == event.DOM_VK_RETURN) {
+      toggleitem = hasChildren;
+    }
+    else if (event.keyCode == event.DOM_VK_DOWN) {
+      focusDelta = 1;
+    }
+    else if (event.keyCode == event.DOM_VK_UP) {
+      focusDelta = -1;
+    }
+    else if (event.keyCode == event.DOM_VK_LEFT) {
+      if (isItemOpen) {
+        toggleitem = true;
+      }
+      else {
+        var groupItem = treeItem.parentNode;
+        if (groupItem.getAttribute("role") == "wairole:group") {
+          setFocus(getRelativeTreeItem(groupItem, -1, false));
+        }
+      }
+    }
+    else if (event.keyCode == event.DOM_VK_RIGHT) {
+      if (isItemOpen) {
+        focusDelta = 1;
+      }
+      else {
+        toggleitem = hasChildren;
+      }
+    }
+    else if (event.keyCode == event.DOM_VK_END) {
+      try {
+        var newTreeItemFocus = getLastTreeItem(getTree(treeItem));
+        setFocus(newTreeItemFocus);
+      } catch(ex) { }
+      return false;   // Consume the event
+    }
+    else {
+      return true;  // We didn't need key, don't consume event
+    }
+  }
+  else if (event.type == "keypress") {
+    // Implement incremental find here, instead of keydown, because we
+    // need to capture printable characters in a keypress handler
+    var tree = getTree(treeItem);
+    var key;
+    if (event.charCode > ' ' && !event.altKey && !event.ctrlKey &&
+       !event.shiftKey && !event.metaKey) {
+      key = String.fromCharCode(event.charCode);
+    }
+    else {
+      tree._incrementalString = "";
+      return true;
+    }
+    key = key.toLowerCase();
+    if (event.timeStamp - tree._lastKeyTime > 1000)
+      tree._incrementalString = key;
+    else
+      tree._incrementalString += key;
+    tree._lastKeyTime = event.timeStamp;
+    var length = tree._incrementalString.length;
+    var incrementalString = tree._incrementalString;
+    var charIndex = 1;
+    while (charIndex < length && incrementalString[charIndex] == incrementalString[charIndex - 1])
+      charIndex++;
+    // If all letters in incremental string are same, just try to match the first one
+    if (charIndex == length) {
+      length = 1;
+      incrementalString = incrementalString.substring(0, length);
+    }
+    var origTreeItem = treeItem;
+    if (length == 1) {
+      treeItem = getRelativeTreeItem(treeItem, 1, true);
+    }
+    do {
+      var text = treeItem.firstChild.data;
+      if (treeItem.firstChild.data.substring(0, length).toLowerCase() == incrementalString) {
+        setFocus(treeItem);
+        return false;
+      }
+      treeItem = getRelativeTreeItem(treeItem, 1, true);
+    } while (treeItem != origTreeItem);
+    return false;
+  }
+  else if (event.type == "click") {
+    // XXX The twisties are :before content
+    // Can we use event.clientX to determine if we are on the twisty so we know when to toggle expansion?
+    // Can we compare that with window.getComputedStyle(event.target, "").getPropertyCSSValue("left");
+    getTree(treeItem)._incrementalString = '';
+  }
+  else {
+    return true; // continue propagating event;
+  }
+  if (toggleitem) {
+    treeItem.setAttributeNS("http://www.w3.org/2005/07/aaa", "expanded", isItemOpen? "false" : "true");
+    return false; // consume event
+  }
+  if (focusDelta) {
+    try {
+      setFocus(getRelativeTreeItem(treeItem, focusDelta, false));
+    } catch(ex) { }
+    return false;
+  }
+  return true;  // Browser can still use event
+};
+
+function treeItemFocus(event)
+{
+  // Cache last focused tree item on the tree
+  // The last focused item is always the only item in the tab order for this tree,
+  // so we need to set its tabindex to 0, and the others to -1
+  var treeItem = event.target;
+  var tree = getTree(treeItem);
+  if (typeof tree.lastFocus == "undefined") {
+    tree.lastFocus = getFirstTreeItem(tree);
+  }
+  tree.lastFocus.tabIndex = "-1";
+
+  tree.lastFocus = treeItem;
+  treeItem.tabIndex = "0";
+};
+]]>
+</script>
+</head>
+<body>
+<h1>Accessible DHTML Tree View</h1>
+<p>How to use: keyboard works as in normal tree view. Use arrow keys to move, including left/right to collapse/expand. Double clicking with mouse also toggles expansion. Type characters to find a tree item that begins with those characters. Repeat characters to cycle through all items that begin with that character.</p>
+<p>Still to do: Should add dotted-line 'pipes' that show connections between siblings and parent.
+   Perhaps add folder icons. Implement multiple selection. The <a href="class/tree">HTML version of the tree widget</a> works in IE and supports single-click on the twisties to toggle expanded/collapsed.</p>
+<!-- Initially selected item needs tabindex="0" -->
+<div role="wairole:tree" tabindex="-1"
+     onfocus="return treeItemFocus(event);"
+     onclick="return treeItemEvent(event);"
+     ondblclick="return treeItemEvent(event);"
+     onkeydown="return treeItemEvent(event);"
+     onkeypress="return treeItemEvent(event);">
+  <div tabindex="0" role="wairole:treeitem" aaa:expanded="true">Veggies</div>
+  <div role="wairole:group">
+     <div tabindex="-1" role="wairole:treeitem" aaa:expanded="true">Green</div>
+     <div role="wairole:group">
+       <div tabindex="-1" role="wairole:treeitem">Asparagus</div>
+       <div tabindex="-1" role="wairole:treeitem">Kale</div>
+       <div tabindex="-1" role="wairole:treeitem" aaa:expanded="true">Leafy</div>
+       <div role="wairole:group">
+         <div tabindex="-1" role="wairole:treeitem">Lettuce</div>
+         <div tabindex="-1" role="wairole:treeitem">Kale</div>
+         <div tabindex="-1" role="wairole:treeitem">Spinach</div>
+         <div tabindex="-1" role="wairole:treeitem">Chard</div>
+       </div>
+       <div tabindex="-1" role="wairole:treeitem">Green beans</div>
+     </div>
+     <div tabindex="-1" role="wairole:treeitem">Legumes</div>
+     <div tabindex="-1" role="wairole:treeitem" aaa:expanded="true">Yellow</div>
+     <div role="wairole:group">
+       <div tabindex="-1" role="wairole:treeitem">Bell peppers</div>
+       <div tabindex="-1" role="wairole:treeitem">Squash</div>
+     </div>
+  </div>
+  <div tabindex="-1" role="wairole:treeitem">Junk food</div>
+  <div tabindex="-1" role="wairole:treeitem" aaa:expanded="true">Fruit</div>
+  <div role="wairole:group">
+    <div tabindex="-1" role="wairole:treeitem" aaa:expanded="true">Typical</div>
+    <div role="wairole:group">
+      <div tabindex="-1" role="wairole:treeitem">Oranges</div>
+      <div tabindex="-1" role="wairole:treeitem">Apples</div>
+      <div tabindex="-1" role="wairole:treeitem">Bananas</div>
+      <div tabindex="-1" role="wairole:treeitem">Pineapple</div>
+      <div tabindex="-1" role="wairole:treeitem">Grapes</div>
+    </div>
+    <div tabindex="-1" role="wairole:treeitem" aaa:expanded="true">Exotic</div>
+    <div role="wairole:group">
+      <div tabindex="-1" role="wairole:treeitem">Mangos</div>
+      <div tabindex="-1" role="wairole:treeitem">Guava</div>
+      <div tabindex="-1" role="wairole:treeitem">Star fruit</div>
+      <div tabindex="-1" role="wairole:treeitem">Coconut</div>
+      <div tabindex="-1" role="wairole:treeitem">Bread fruit</div>
+      <div tabindex="-1" role="wairole:treeitem">Custard apples</div>
+      <div tabindex="-1" role="wairole:treeitem">Papaya</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

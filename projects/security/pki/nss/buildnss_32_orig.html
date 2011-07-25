@@ -1,0 +1,321 @@
+<HTML>
+<HEAD>
+<TITLE>Build Instructions for NSS 3.2</TITLE>
+</HEAD>
+
+<center>
+<h2>Build Instructions for NSS 3.2 Release</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Main technical contact: 
+Ian McGreer<BR>
+
+Manager: 
+Wan-Teh Chang</FONT></i>
+</center>
+
+<p>The instructions that follow describe 
+how to build the standalone NSS libraries (including a new implementation of RSA) without the BSAFE library. 
+These instructions have been tested on Unix and Windows. They will be updated as testing proceeds on other platforms.
+
+<p>For detailed information about the NSS 3.2 release, see <a href="release_notes_32.html">NSS 3.2 Release Notes</a>.
+
+<p>To build NSS with the RSA BSAFE Crypto-C library, first follow the instructions at 
+<A href="buildnss.html">Build Instructions for NSS Using RSA BSAFE Crypto-C</a>, 
+then continue with the instructions on this page.
+
+<p><b>Important:</b> Before you build NSS, you should be familiar with the Mozilla CVS system; 
+see <a href="http://www.mozilla.org/cvs.html">source code via CVS</a> for details.
+
+<p><b>Perl Version:</b>You must be using Perl 5.004 or greater for the instructions given here to work correctly.
+
+<p><b>NSPR Version:</b> NSS 3.2 is compatible with NSPR 4.0.1 or higher. We recommend using NSPR 4.1, 
+as shown in the build instructions below. However, it's possible to use other NSPR tags, such as 
+<tt>NSPRPUB_RELEASE_4_0_1</tt> or <tt>NSPRPUB_CLIENT_BRANCH</tt>.
+
+<p><a href="#unix">Unix Build Instructions</a><BR>
+<a href="#windows">Windows Build Instructions</a><BR>
+<a href="#tests">Basic Tests</a>
+
+<P><hr>
+<a NAME="unix"><h3>Unix Build Instructions</h3></a>
+
+<p>The following procedure performs a debug build using the GNU C compiler (<tt>gcc</tt>). See 
+the notes that follow on how to <a href="#optimized">generate an optimized build</a> or 
+<a href="#compiler">choose a native compiler</a>.
+<p>To build NSS and the necessary components from Mozilla on Unix/Linux 
+without pulling and configuring the entire Mozilla source tree, follow these steps:
+<p><b>Note:</b> Before building NSS 3.2, make sure that the <tt>MOZILLA_CLIENT</tt> environment variable is not defined.
+
+<ol>
+	<li><tt>setenv CVSROOT :pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot</tt><BR><BR>
+	<li><tt>cvs login</tt><BR>
+	At the password prompt, type <tt>anonymous</tt><BR><BR>
+	<li><tt>cvs co -r NSS_3_2_RTM mozilla/client.mk</tt><BR><BR>
+	<li><tt>cd mozilla</tt><BR><BR>
+	<li><tt>gmake -f client.mk pull_all BUILD_MODULES=dbm MOZ_CO_TAG=NSS_3_2_RTM NSPR_CO_TAG=NSPRPUB_RELEASE_4_1
+</tt><BR>
+	This step pulls NSPR and dbm (the modules that NSS requires).<BR><BR>
+
+	<li>For Linux only:<br><br>
+
+	<tt>./configure --without-gtk --without-libIDL --without-x --enable-modules=dbm --disable-elf-dynstr-gc</tt><BR><br>
+
+	For the following platforms, only the native compiler is supported, requiring the following modifications:
+<ul>
+
+	<li>Solaris:<BR><BR>
+<tt>env CC=cc CXX=CC ./configure --without-gtk --without-libIDL --without-x --enable-modules=dbm</tt><BR><BR>
+
+	<li>AIX:<BR><BR>
+
+	<tt>env CC=xlC_r CXX=xlC_r ./configure --without-gtk --without-libIDL --without-x --enable-modules=dbm</tt><BR><BR>
+
+	<li>HP-UX:<BR><BR>
+
+	<tt>env CC=cc CXX=aCC ./configure --without-gtk --without-libIDL --without-x --enable-modules=dbm</tt><BR><BR>
+
+	<li>OSF1:<BR><BR>
+
+	<tt>env CC=cc CXX=cxx ./configure --without-gtk --without-libIDL --without-x --enable-modules=dbm</tt> 
+</ul>
+	If you get an error after this step, try again with the additional option <tt>--disable-pedantic</tt>.<BR><BR>
+
+	<li><tt>gmake</tt><BR>
+	Builds NSPR and dbm.<BR><BR>
+
+	<li><tt>cd ..</tt><BR><BR>
+
+	<li><tt>cvs co -r NSS_3_2_RTM mozilla/security/coreconf mozilla/security/nss</tt><BR>
+	Pulls the NSS module with the CVS tag for the NSS 3.2 release.<BR><BR>
+
+	<li><tt>cd mozilla/security/coreconf</tt><BR><BR>
+	<li><tt>gmake</tt><BR>
+	Builds <tt>nsinstall</tt>, which is used by the NSS build system.<BR><BR>
+
+	<li><tt>cd ../nss</tt><BR><BR>
+	<li><tt>gmake moz_import</tt><BR>
+	Tells NSS where to find the NSPR and dbm header files and libraries.<BR><BR>
+
+	<li><tt>gmake</tt><BR>
+	Builds NSS.
+</ol>
+<p>
+
+<a NAME="optimized"><h4>Generating an Optimized Build</h4></a>
+
+The above procedure generates a debug build (the default). To perform an optimized
+build, modify the procedure as follows:
+
+<ul>
+	<li>In step 6, add these options to the configure script command line:<BR><BR>
+
+	<tt>--disable-debug --enable-optimize<BR><BR></tt>
+
+	<li>Before step 11, do this:<BR><BR>
+
+	<tt>setenv BUILD_OPT 1</tt>
+</ul>
+
+<h4><a NAME="compiler">Choosing a Compiler</a></h4>
+
+By default, mozilla's configure script uses the GNU C compiler (<tt>gcc</tt>) while NSS uses 
+the native C amd C++ compilers. NSS does not support GCC at all except for Linux.
+
+<p>If you would like to add GCC support for a particular platform, let us know. In this case 
+you need to run mozilla's configure script without the added environment variable, as follows:
+
+<ul><tt>./configure --without-gtk --without-libIDL --without-x --enable-modules=dbm</tt></ul>
+
+<p>Also, before Step 10 above you must specify GCC as the compiler again by setting the following environment variables:
+
+<ul><tt>setenv NS_USE_GCC 1<BR>
+setenv NO_MDUPDATE 1</tt>
+</ul>
+
+If you use the native compilers, you don't need to do anything with NSS, but you need to 
+tell Mozilla's configure script the names of the native compilers. Step 6 above shows some examples. 
+ 
+By setting the environment for the configure script with the command <tt>env</tt>, you override the 
+CC and CXX variables as follows:
+
+<UL><tt>env CC=cc CXX=CC ./configure  --without-gtk --without-libIDL --without-x --enable-modules=dbm</tt></ul>
+
+
+<P><hr>
+<a NAME="windows"><h3>Windows Build Instructions</h3></a>
+
+The Windows build procedure requires the following tools:
+
+<ul>
+
+	
+	<li>MASM (<tt>ml.exe</tt>).
+	<br>
+	Make sure you have you have Visual C++ Pro. If you have
+	the standard version, these instructions might not work.
+	<ol>
+	<li>If you're not sure you have Service Pack 5 already installed,
+	go to <a
+	href=http://msdn.microsoft.com/vstudio/sp/vs6sp5/full.asp?id=01>http://msdn.microsoft.com/vstudio/sp/vs6sp5/full.asp?id=01</a> and install it anyway.
+	<li>Then go to <a
+	href=http://msdn.microsoft.com/vstudio/downloads/ppack/download.asp>http://msdn.microsoft.com/vstudio/downloads/ppack/download.asp</a> and click on the link to download the VCPP for Service Pack 5.
+	</ol>
+	This will put ml.exe into the directory where all the your
+	orther command line compile executables live.	
+	<br>It the above information doesn't work for you, there is
+	more information about pc tools available at <a
+	href=http://www.easystreet.com/~jkirwan/pctools.html>http://www.easystreet.com/~jkirwan/pctools.html</a>
+</ul>
+
+
+To build NSS and the necessary components from Mozilla on Windows, make sure you have the tools listed above installed 
+in your system, and follow these steps:
+<p><b>Note:</b> Before building NSS 3.2, make sure that the <tt>MOZILLA_CLIENT</tt> environment variable is not defined.
+
+
+<ol>
+	<li>Set up the environment variables as described in the section "Set Up the Build Environment" of 
+<a href="http://www.mozilla.org/build/win32.html">Building Mozilla on Microsoft Windows 32-bit platforms</a>.<BR><BR>
+	<li>Set <tt>CVSROOT</tt>.<br>
+	<tt>set CVSROOT=:pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot</tt><br><br>
+
+	<li>Log into CVS.<br>
+	<tt>cvs login</tt><br>
+	At the password prompt, type <tt>anonymous</tt><br><br>
+
+	<li>Set the environment variables that control the kind of build:<BR>
+	<ul>
+		<li><tt>set OS_TARGET=WIN95</tt><BR><BR>
+		<li>NSS and the Mozilla dbm have different build options for indicating 
+whether you want to generate a debug or optimized build. Therefore, the outcome depends on the way you 
+combine several variables.<BR><BR>
+		In the following table, RTL stands for the C run-time library of MSVC, 
+"debug RTL" corresponds to the <tt>/MDd</tt> compiler option, and "release RTL" corresponds to the 
+<tt>/MD</tt> compiler option. To achieve the result shown in the left column, you must set the environment 
+variables as shown in both the other columns of the same row.<BR><BR> 
+
+
+<table BORDER >
+
+<tr>
+
+<td VALIGN=CENTER><b>Build type</b></td>
+
+<td VALIGN=CENTER><b>Mozillas dbm</b></td>
+
+<td VALIGN=CENTER><b>NSS</b></td>
+
+</tr>
+
+
+
+<tr>
+
+<td VALIGN=CENTER>Debug, debug RTL</td>
+
+<td VALIGN=CENTER><tt>set MOZ_DEBUG=1</tt></td>
+
+<td VALIGN=CENTER><tt>set USE_DEBUG_RTL=1</tt></td>
+
+</tr>
+
+  
+<tr>
+
+<td VALIGN=CENTER>Debug, release RTL</td>
+
+<td VALIGN=CENTER><tt>set MOZ_DEBUG=1<BR>
+set MOZ_NO_DEBUG_RTL=1</tt></td>
+
+<td VALIGN=CENTER>None</td>
+
+</tr>
+
+
+<tr>
+
+<td VALIGN=CENTER>Optimized (release RTL)</td>
+
+<td VALIGN=CENTER>None</td>
+
+<td VALIGN=CENTER><tt>set BUILD_OPT=1</tt></td>
+
+</tr>
+
+</table>
+<p>
+
+</ul>
+
+	<li>Pull the following files (<tt>mozilla/config</tt> contains shared makefiles, <tt>mozilla/nsprpub</tt> 
+is a module that dbm depends on, and <tt>mozilla/dbm</tt> is the dbm module itself):<br><br>
+	<tt>cvs co -r NSS_3_2_RTM mozilla/config <br>
+	cvs co -r NSPRPUB_RELEASE_4_1 mozilla/nsprpub <br>
+	cvs co -r NSS_3_2_RTM mozilla/dbm </tt><br><br>
+
+	<li>Build NSPR and then dbm:<br><br>
+	<tt>cd mozilla\nsprpub<br>
+	nmake /f makefile.win<br>
+	cd ..\dbm<br>
+	nmake /f makefile.win </tt><br><br>
+
+	<li>Pull the NSS module with the CVS tag for the NSS 3.2 release:<BR><BR>
+	<tt>cd ..\..<BR>
+	cvs co -r NSS_3_2_RTM mozilla/security/coreconf mozilla/security/nss</tt><BR><BR>
+
+
+	<li><tt>cd mozilla\security\nss</tt><BR>
+	Note: It's not necessary to build <tt>nsinstall</tt> on Windows.<BR><BR>
+
+	<li><tt>gmake moz_import</tt><BR>
+	Tells NSS where to find the NSPR and dbm header files and libraries.<BR><BR>
+
+	<li><tt>gmake</tt><BR>
+	Builds NSS.
+</ol>
+
+<p><hr>
+<a NAME="tests"><h3>Basic Tests</h3></a>
+
+Once you have successfully built NSS, follow these steps to test the core functionality of 
+the <a href="tools/certutil.html"><tt>certutil</tt></a> tool and the setup and use of a basic 
+SSL connection:
+
+<ol>
+
+	<li>Build NSS as described above and make sure that <tt>mozilla/dist/$(OBJDIR)/lib</tt> is in
+      your shared library search path, which is specified
+      by the <tt>LD_LIBRARY_PATH</tt> environment variable on most
+      Unix platforms, by <tt>SHLIB_PATH</tt> on HP-UX, by <tt>LIBPATH</tt>
+      on AIX, and by <tt>PATH</tt> on Windows.<br><br>
+
+	<li><tt>cd mozilla/security/nss/cmd/SSLsample</tt><BR><BR>
+	<li><tt>gmake</tt><BR><BR>
+	<li>To create an SSL server certificate, you will need to include the host and domain names of the
+host you want to run the server on. For example, if your machine name is <tt>myhost.domain.com</tt>, 
+you would set the two variables as follows:<BR><BR> 
+
+	<tt>setenv HOSTNAME myhost</tt> (on UNIX this is most likely set already)<BR> 
+	<tt>setenv MYDOMAIN domain.com</tt><BR><BR>
+
+	These variables must be set correctly for your SSL server to work.<BR><BR>
+
+	<li><tt>sh gencerts<BR>
+    	gencerts</tt> is a shell script that will generate a CA certificate, an SSL server certificate, 
+and an SSL client certificate.<BR><BR>
+
+	<li>You are now ready to run the sample SSL server.  This is a sample command line:<BR><BR>
+
+	<tt>server -n SampleSSLServerCert -p 8080 -d SampleCertDBs -w sample -c e -R</tt><BR><BR>
+
+	<li>You can now connect to the server with client processes.  This is a sample command line:<BR><BR>
+ 
+	<tt>client -n SampleSSLClientCert -p 8080 -d SampleCertDBs -w sample -c 2 myhost.domain.com</tt>
+
+</ol>
+
+For instructions on running more extensive NSS tests, see <a href="testnss.html">NSS Test Suite</a>.

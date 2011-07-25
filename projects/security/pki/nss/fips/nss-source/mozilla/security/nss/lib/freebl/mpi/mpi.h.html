@@ -1,0 +1,354 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /*
+<b><a name="2">    2</a></b>  *  mpi.h
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  *  Arbitrary precision integer arithmetic library
+<b><a name="5">    5</a></b>  *
+<b><a name="6">    6</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="7">    7</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="10">   10</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="11">   11</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="12">   12</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="15">   15</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="16">   16</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="17">   17</a></b>  * License.
+<b><a name="18">   18</a></b>  *
+<b><a name="19">   19</a></b>  * The Original Code is the MPI Arbitrary Precision Integer Arithmetic library.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * The Initial Developer of the Original Code is
+<b><a name="22">   22</a></b>  * Michael J. Fromberger.
+<b><a name="23">   23</a></b>  * Portions created by the Initial Developer are Copyright (C) 1998
+<b><a name="24">   24</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="25">   25</a></b>  *
+<b><a name="26">   26</a></b>  * Contributor(s):
+<b><a name="27">   27</a></b>  *   Netscape Communications Corporation
+<b><a name="28">   28</a></b>  *
+<b><a name="29">   29</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="30">   30</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="31">   31</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="32">   32</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="33">   33</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="34">   34</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="35">   35</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="36">   36</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="37">   37</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="38">   38</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="39">   39</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="40">   40</a></b>  *
+<b><a name="41">   41</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="42">   42</a></b> /* $Id$ */
+<b><a name="43">   43</a></b> 
+<b><a name="44">   44</a></b> #ifndef <a href="../../freebl/mpi/mpi.h.dep.html#_H_MPI_">_H_MPI_</a>
+<b><a name="45">   45</a></b> #define <a href="#45">_H_MPI_</a>
+<b><a name="46">   46</a></b> 
+<b><a name="47">   47</a></b> #include "mpi-config.h"
+<b><a name="48">   48</a></b> 
+<b><a name="49">   49</a></b> #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_DEBUG">MP_DEBUG</a>
+<b><a name="50">   50</a></b> #undef <a href="#50">MP_IOFUNC</a>
+<b><a name="51">   51</a></b> #define <a href="#51">MP_IOFUNC</a> 1
+<b><a name="52">   52</a></b> #endif
+<b><a name="53">   53</a></b> 
+<b><a name="54">   54</a></b> #if <a href="../../freebl/mpi/tests/mptest-7.c.dep.html#MP_IOFUNC">MP_IOFUNC</a><a href="../../freebl/mpi/tests/mptest-8.c.dep.html#MP_IOFUNC"><sup>[1]</sup></a><a href="../../freebl/mpi/mpi-config.h.dep.html#MP_IOFUNC"><sup>[2]</sup></a><a href="../../freebl/mpi/mpi.h.dep.html#MP_IOFUNC"><sup>[3]</sup></a></a>
+<b><a name="55">   55</a></b> #include &lt;stdio.h&gt;
+<b><a name="56">   56</a></b> #include &lt;ctype.h&gt;
+<b><a name="57">   57</a></b> #endif
+<b><a name="58">   58</a></b> 
+<b><a name="59">   59</a></b> #include &lt;limits.h&gt;
+<b><a name="60">   60</a></b> 
+<b><a name="61">   61</a></b> #if defined(BSDI)
+<b><a name="62">   62</a></b> #undef <a href="#62">ULLONG_MAX</a>
+<b><a name="63">   63</a></b> #endif
+<b><a name="64">   64</a></b> 
+<b><a name="65">   65</a></b> #if defined( macintosh )
+<b><a name="66">   66</a></b> #include &lt;Types.h&gt;
+<b><a name="67">   67</a></b> #elif defined( _WIN32_WCE)
+<b><a name="68">   68</a></b> /* #include &lt;sys/types.h&gt; What do we need here ?? */
+<b><a name="69">   69</a></b> #else
+<b><a name="70">   70</a></b> #include &lt;sys/types.h&gt;
+<b><a name="71">   71</a></b> #endif
+<b><a name="72">   72</a></b> 
+<b><a name="73">   73</a></b> #define  <a href="#73">MP_NEG</a>    1
+<b><a name="74">   74</a></b> #define  <a href="#74">MP_ZPOS</a>   0
+<b><a name="75">   75</a></b> 
+<b><a name="76">   76</a></b> #define  <a href="#76">MP_OKAY</a>          0 /* no error, all is well */
+<b><a name="77">   77</a></b> #define  <a href="#77">MP_YES</a>           0 /* yes (boolean result)  */
+<b><a name="78">   78</a></b> #define  <a href="#78">MP_NO</a>           -1 /* no (boolean result)   */
+<b><a name="79">   79</a></b> #define  <a href="#79">MP_MEM</a>          -2 /* out of memory         */
+<b><a name="80">   80</a></b> #define  <a href="#80">MP_RANGE</a>        -3 /* argument out of range */
+<b><a name="81">   81</a></b> #define  <a href="#81">MP_BADARG</a>       -4 /* invalid parameter     */
+<b><a name="82">   82</a></b> #define  <a href="#82">MP_UNDEF</a>        -5 /* answer is undefined   */
+<b><a name="83">   83</a></b> #define  <a href="#83">MP_LAST_CODE</a>    <a href="../../freebl/mpi/mpi.h.dep.html#MP_UNDEF">MP_UNDEF</a>
+<b><a name="84">   84</a></b> 
+<b><a name="85">   85</a></b> typedef unsigned int      <a href="#85">mp_sign</a>;
+<b><a name="86">   86</a></b> typedef unsigned int      <a href="#86">mp_size</a>;
+<b><a name="87">   87</a></b> typedef int               <a href="#87">mp_err</a>;
+<b><a name="88">   88</a></b> 
+<b><a name="89">   89</a></b> #define <a href="#89">MP_32BIT_MAX</a> 4294967295U
+<b><a name="90">   90</a></b> 
+<b><a name="91">   91</a></b> #if !defined(ULONG_MAX) 
+<b><a name="92">   92</a></b> #error "ULONG_MAX not defined"
+<b><a name="93">   93</a></b> #elif !defined(UINT_MAX)
+<b><a name="94">   94</a></b> #error "UINT_MAX not defined"
+<b><a name="95">   95</a></b> #elif !defined(USHRT_MAX)
+<b><a name="96">   96</a></b> #error "USHRT_MAX not defined"
+<b><a name="97">   97</a></b> #endif
+<b><a name="98">   98</a></b> 
+<b><a name="99">   99</a></b> #if defined(ULONG_LONG_MAX)                        /* GCC, HPUX */
+<b><a name="100">  100</a></b> #define <a href="#100">MP_ULONG_LONG_MAX</a> ULONG_LONG_MAX
+<b><a name="101">  101</a></b> #elif defined(<a href="../../freebl/mpi/mpi.h.dep.html#ULLONG_MAX">ULLONG_MAX</a>)                        /* Solaris */
+<b><a name="102">  102</a></b> #define <a href="#102">MP_ULONG_LONG_MAX</a> <a href="../../freebl/mpi/mpi.h.dep.html#ULLONG_MAX">ULLONG_MAX</a>
+<b><a name="103">  103</a></b> /* MP_ULONG_LONG_MAX was defined to be ULLONG_MAX */
+<b><a name="104">  104</a></b> #elif defined(ULONGLONG_MAX)                        /* IRIX, AIX */
+<b><a name="105">  105</a></b> #define <a href="#105">MP_ULONG_LONG_MAX</a> ULONGLONG_MAX
+<b><a name="106">  106</a></b> #endif
+<b><a name="107">  107</a></b> 
+<b><a name="108">  108</a></b> /* We only use unsigned long for mp_digit iff long is more than 32 bits. */
+<b><a name="109">  109</a></b> #if !defined(<a href="../../freebl/mpi/mpi.h.dep.html#MP_USE_UINT_DIGIT">MP_USE_UINT_DIGIT</a></a>) &amp;&amp; ULONG_MAX &gt; <a href="../../freebl/mpi/mpi.h.dep.html#MP_32BIT_MAX">MP_32BIT_MAX</a>
+<b><a name="110">  110</a></b> typedef unsigned long     <a href="#110">mp_digit</a>;
+<b><a name="111">  111</a></b> #define <a href="#111">MP_DIGIT_MAX</a>      ULONG_MAX
+<b><a name="112">  112</a></b> #define <a href="#112">MP_DIGIT_FMT</a>      "%016lX"   /* printf() format for 1 digit */
+<b><a name="113">  113</a></b> #define <a href="#113">MP_HALF_DIGIT_MAX</a> UINT_MAX
+<b><a name="114">  114</a></b> #undef  <a href="#114">MP_NO_MP_WORD</a>
+<b><a name="115">  115</a></b> #define <a href="#115">MP_NO_MP_WORD</a> 1
+<b><a name="116">  116</a></b> #undef  <a href="#116">MP_USE_LONG_DIGIT</a>
+<b><a name="117">  117</a></b> #define <a href="#117">MP_USE_LONG_DIGIT</a> 1
+<b><a name="118">  118</a></b> #undef  <a href="#118">MP_USE_LONG_LONG_DIGIT</a>
+<b><a name="119">  119</a></b> 
+<b><a name="120">  120</a></b> #elif !defined(<a href="../../freebl/mpi/mpi.h.dep.html#MP_USE_UINT_DIGIT">MP_USE_UINT_DIGIT</a></a>) &amp;&amp; defined(<a href="../../freebl/mpi/mpi.h.dep.html#MP_ULONG_LONG_MAX">MP_ULONG_LONG_MAX</a></a></a>) 
+<b><a name="121">  121</a></b> typedef unsigned long long <a href="#121">mp_digit</a>;
+<b><a name="122">  122</a></b> #define <a href="#122">MP_DIGIT_MAX</a>       <a href="../../freebl/mpi/mpi.h.dep.html#MP_ULONG_LONG_MAX">MP_ULONG_LONG_MAX</a></a></a>
+<b><a name="123">  123</a></b> #define <a href="#123">MP_DIGIT_FMT</a>      "%016llX"  /* printf() format for 1 digit */
+<b><a name="124">  124</a></b> #define <a href="#124">MP_HALF_DIGIT_MAX</a>  UINT_MAX
+<b><a name="125">  125</a></b> #undef  <a href="#125">MP_NO_MP_WORD</a>
+<b><a name="126">  126</a></b> #define <a href="#126">MP_NO_MP_WORD</a> 1
+<b><a name="127">  127</a></b> #undef  <a href="#127">MP_USE_LONG_LONG_DIGIT</a>
+<b><a name="128">  128</a></b> #define <a href="#128">MP_USE_LONG_LONG_DIGIT</a> 1
+<b><a name="129">  129</a></b> #undef  <a href="#129">MP_USE_LONG_DIGIT</a>
+<b><a name="130">  130</a></b> 
+<b><a name="131">  131</a></b> #else
+<b><a name="132">  132</a></b> typedef unsigned int      <a href="#132">mp_digit</a>;
+<b><a name="133">  133</a></b> #define <a href="#133">MP_DIGIT_MAX</a>      UINT_MAX
+<b><a name="134">  134</a></b> #define <a href="#134">MP_DIGIT_FMT</a>      "%08X"     /* printf() format for 1 digit */
+<b><a name="135">  135</a></b> #define <a href="#135">MP_HALF_DIGIT_MAX</a> USHRT_MAX
+<b><a name="136">  136</a></b> #undef  <a href="#136">MP_USE_UINT_DIGIT</a>
+<b><a name="137">  137</a></b> #define <a href="#137">MP_USE_UINT_DIGIT</a> 1
+<b><a name="138">  138</a></b> #undef  <a href="#138">MP_USE_LONG_LONG_DIGIT</a>
+<b><a name="139">  139</a></b> #undef  <a href="#139">MP_USE_LONG_DIGIT</a>
+<b><a name="140">  140</a></b> #endif
+<b><a name="141">  141</a></b> 
+<b><a name="142">  142</a></b> #if !defined(<a href="../../freebl/mpi/mpi.h.dep.html#MP_NO_MP_WORD">MP_NO_MP_WORD</a></a></a></a></a>) 
+<b><a name="143">  143</a></b> #if  defined(<a href="../../freebl/mpi/mpi.h.dep.html#MP_USE_UINT_DIGIT">MP_USE_UINT_DIGIT</a></a>) &amp;&amp; \
+<b><a name="144">  144</a></b>     (defined(<a href="../../freebl/mpi/mpi.h.dep.html#MP_ULONG_LONG_MAX">MP_ULONG_LONG_MAX</a></a></a>) || (ULONG_MAX &gt; UINT_MAX))
+<b><a name="145">  145</a></b> 
+<b><a name="146">  146</a></b> #if (ULONG_MAX &gt; UINT_MAX)
+<b><a name="147">  147</a></b> typedef unsigned long     <a href="#147">mp_word</a>;
+<b><a name="148">  148</a></b> typedef          long     <a href="#148">mp_sword</a>;
+<b><a name="149">  149</a></b> #define <a href="#149">MP_WORD_MAX</a>       ULONG_MAX
+<b><a name="150">  150</a></b> 
+<b><a name="151">  151</a></b> #else
+<b><a name="152">  152</a></b> typedef unsigned long long <a href="#152">mp_word</a>;
+<b><a name="153">  153</a></b> typedef          long long <a href="#153">mp_sword</a>;
+<b><a name="154">  154</a></b> #define <a href="#154">MP_WORD_MAX</a>       <a href="../../freebl/mpi/mpi.h.dep.html#MP_ULONG_LONG_MAX">MP_ULONG_LONG_MAX</a></a></a>
+<b><a name="155">  155</a></b> #endif
+<b><a name="156">  156</a></b> 
+<b><a name="157">  157</a></b> #else 
+<b><a name="158">  158</a></b> #define <a href="#158">MP_NO_MP_WORD</a> 1
+<b><a name="159">  159</a></b> #endif
+<b><a name="160">  160</a></b> #endif /* !defined(MP_NO_MP_WORD) */
+<b><a name="161">  161</a></b> 
+<b><a name="162">  162</a></b> #if !defined(<a href="../../freebl/mpi/mpi.h.dep.html#MP_WORD_MAX">MP_WORD_MAX</a></a></a>) &amp;&amp; defined(MP_DEFINE_SMALL_WORD)
+<b><a name="163">  163</a></b> typedef unsigned int      <a href="#163">mp_word</a>;
+<b><a name="164">  164</a></b> typedef          int      <a href="#164">mp_sword</a>;
+<b><a name="165">  165</a></b> #define <a href="#165">MP_WORD_MAX</a>       UINT_MAX
+<b><a name="166">  166</a></b> #endif
+<b><a name="167">  167</a></b> 
+<b><a name="168">  168</a></b> #define <a href="#168">MP_DIGIT_BIT</a>      (CHAR_BIT*sizeof(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>))
+<b><a name="169">  169</a></b> #define <a href="#169">MP_WORD_BIT</a>       (CHAR_BIT*sizeof(<a href="../../freebl/mpi/mpi.h.dep.html#mp_word">mp_word</a></a></a>))
+<b><a name="170">  170</a></b> #define <a href="#170">MP_RADIX</a>          (1+(<a href="../../freebl/mpi/mpi.h.dep.html#mp_word">mp_word</a></a></a>)<a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a>)
+<b><a name="171">  171</a></b> 
+<b><a name="172">  172</a></b> #define <a href="#172">MP_HALF_DIGIT_BIT</a> (<a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_BIT">MP_DIGIT_BIT</a>/2)
+<b><a name="173">  173</a></b> #define <a href="#173">MP_HALF_RADIX</a>     (1+(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>)<a href="../../freebl/mpi/mpi.h.dep.html#MP_HALF_DIGIT_MAX">MP_HALF_DIGIT_MAX</a></a></a>)
+<b><a name="174">  174</a></b> /* MP_HALF_RADIX really ought to be called MP_SQRT_RADIX, but it's named 
+<b><a name="175">  175</a></b> ** MP_HALF_RADIX because it's the radix for MP_HALF_DIGITs, and it's 
+<b><a name="176">  176</a></b> ** consistent with the other _HALF_ names.
+<b><a name="177">  177</a></b> */
+<b><a name="178">  178</a></b> 
+<b><a name="179">  179</a></b> 
+<b><a name="180">  180</a></b> /* Macros for accessing the mp_int internals           */
+<b><a name="181">  181</a></b> #define  <a href="#181">MP_SIGN</a>(MP)     ((MP)-&gt;sign)
+<b><a name="182">  182</a></b> #define  <a href="#182">MP_USED</a>(MP)     ((MP)-&gt;used)
+<b><a name="183">  183</a></b> #define  <a href="#183">MP_ALLOC</a>(MP)    ((MP)-&gt;alloc)
+<b><a name="184">  184</a></b> #define  <a href="#184">MP_DIGITS</a>(MP)   ((MP)-&gt;dp)
+<b><a name="185">  185</a></b> #define  <a href="#185">MP_DIGIT</a>(MP,N)  (MP)-&gt;dp[(N)]
+<b><a name="186">  186</a></b> 
+<b><a name="187">  187</a></b> /* This defines the maximum I/O base (minimum is 2)   */
+<b><a name="188">  188</a></b> #define <a href="#188">MP_MAX_RADIX</a>         64
+<b><a name="189">  189</a></b> 
+<b><a name="190">  190</a></b> typedef struct {
+<b><a name="191">  191</a></b>   <a href="../../freebl/mpi/mpi.h.dep.html#mp_sign">mp_sign</a>       sign;    /* sign of this quantity      */
+<b><a name="192">  192</a></b>   <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a>       alloc;   /* how many digits allocated  */
+<b><a name="193">  193</a></b>   <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a>       used;    /* how many digits used       */
+<b><a name="194">  194</a></b>   <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>     *dp;      /* the digits themselves      */
+<b><a name="195">  195</a></b> } <a href="#195">mp_int</a>;
+<b><a name="196">  196</a></b> 
+<b><a name="197">  197</a></b> /* Default precision       */
+<b><a name="198">  198</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> <a href="#198">mp_get_prec</a>(void);
+<b><a name="199">  199</a></b> void    <a href="#199">mp_set_prec</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> prec);
+<b><a name="200">  200</a></b> 
+<b><a name="201">  201</a></b> /* Memory management       */
+<b><a name="202">  202</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#202">mp_init</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp);
+<b><a name="203">  203</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#203">mp_init_size</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> prec);
+<b><a name="204">  204</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#204">mp_init_copy</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *from);
+<b><a name="205">  205</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#205">mp_copy</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *from, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *to);
+<b><a name="206">  206</a></b> void   <a href="#206">mp_exch</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/mpi/mpi-test.c.dep.html#mp1">mp1</a>, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/mpi/mpi-test.c.dep.html#mp2">mp2</a>);
+<b><a name="207">  207</a></b> void   <a href="#207">mp_clear</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp);
+<b><a name="208">  208</a></b> void   <a href="#208">mp_zero</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp);
+<b><a name="209">  209</a></b> void   <a href="#209">mp_set</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d);
+<b><a name="210">  210</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#210">mp_set_int</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, long z);
+<b><a name="211">  211</a></b> #define <a href="#211">mp_set_long</a>(mp,z) <a href="../../freebl/mpi/mpi.c.dep.html#mp_set_int">mp_set_int</a>(mp,z)
+<b><a name="212">  212</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#212">mp_set_ulong</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, unsigned long z);
+<b><a name="213">  213</a></b> 
+<b><a name="214">  214</a></b> /* Single digit arithmetic */
+<b><a name="215">  215</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#215">mp_add_d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b);
+<b><a name="216">  216</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#216">mp_sub_d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b);
+<b><a name="217">  217</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#217">mp_mul_d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b);
+<b><a name="218">  218</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#218">mp_mul_2</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="219">  219</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#219">mp_div_d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *q, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *r);
+<b><a name="220">  220</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#220">mp_div_2</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="221">  221</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#221">mp_expt_d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="222">  222</a></b> 
+<b><a name="223">  223</a></b> /* Sign manipulations      */
+<b><a name="224">  224</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#224">mp_abs</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b);
+<b><a name="225">  225</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#225">mp_neg</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b);
+<b><a name="226">  226</a></b> 
+<b><a name="227">  227</a></b> /* Full arithmetic         */
+<b><a name="228">  228</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#228">mp_add</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="229">  229</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#229">mp_sub</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="230">  230</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#230">mp_mul</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="231">  231</a></b> #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_SQUARE">MP_SQUARE</a><a href="../../freebl/mpi/mulsqr.c.dep.html#MP_SQUARE"><sup>[1]</sup></a>
+<b><a name="232">  232</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#232">mp_sqr</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b);
+<b><a name="233">  233</a></b> #else
+<b><a name="234">  234</a></b> #define <a href="#234">mp_sqr</a>(a, b) <a href="../../freebl/mpi/mpi.c.dep.html#mp_mul">mp_mul</a>(a, a, b)
+<b><a name="235">  235</a></b> #endif
+<b><a name="236">  236</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#236">mp_div</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *q, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r);
+<b><a name="237">  237</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#237">mp_div_2d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *q, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r);
+<b><a name="238">  238</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#238">mp_expt</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="239">  239</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#239">mp_2expt</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> k);
+<b><a name="240">  240</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#240">mp_sqrt</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b);
+<b><a name="241">  241</a></b> 
+<b><a name="242">  242</a></b> /* Modular arithmetic      */
+<b><a name="243">  243</a></b> #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_MODARITH">MP_MODARITH</a>
+<b><a name="244">  244</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#244">mp_mod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="245">  245</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#245">mp_mod_d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *c);
+<b><a name="246">  246</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#246">mp_addmod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="247">  247</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#247">mp_submod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="248">  248</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#248">mp_mulmod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="249">  249</a></b> #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_SQUARE">MP_SQUARE</a><a href="../../freebl/mpi/mulsqr.c.dep.html#MP_SQUARE"><sup>[1]</sup></a>
+<b><a name="250">  250</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#250">mp_sqrmod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="251">  251</a></b> #else
+<b><a name="252">  252</a></b> #define <a href="#252">mp_sqrmod</a>(a, m, c) <a href="../../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(a, a, m, c)
+<b><a name="253">  253</a></b> #endif
+<b><a name="254">  254</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#254">mp_exptmod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="255">  255</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#255">mp_exptmod_d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="256">  256</a></b> #endif /* MP_MODARITH */
+<b><a name="257">  257</a></b> 
+<b><a name="258">  258</a></b> /* Comparisons             */
+<b><a name="259">  259</a></b> int    <a href="#259">mp_cmp_z</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a);
+<b><a name="260">  260</a></b> int    <a href="#260">mp_cmp_d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d);
+<b><a name="261">  261</a></b> int    <a href="#261">mp_cmp</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b);
+<b><a name="262">  262</a></b> int    <a href="#262">mp_cmp_mag</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b);
+<b><a name="263">  263</a></b> int    mp_c<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, long z);
+<b><a name="264">  264</a></b> int    <a href="#264">mp_isodd</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a);
+<b><a name="265">  265</a></b> int    <a href="#265">mp_iseven</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a);
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b> /* Number theoretic        */
+<b><a name="268">  268</a></b> #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_NUMTH">MP_NUMTH</a>
+<b><a name="269">  269</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#269">mp_gcd</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="270">  270</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#270">mp_lcm</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="271">  271</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#271">mp_xgcd</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *g, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *x, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *y);
+<b><a name="272">  272</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#272">mp_invmod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="273">  273</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#273">mp_invmod_xgcd</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="274">  274</a></b> #endif /* end MP_NUMTH */
+<b><a name="275">  275</a></b> 
+<b><a name="276">  276</a></b> /* Input and output        */
+<b><a name="277">  277</a></b> #if <a href="../../freebl/mpi/tests/mptest-7.c.dep.html#MP_IOFUNC">MP_IOFUNC</a><a href="../../freebl/mpi/tests/mptest-8.c.dep.html#MP_IOFUNC"><sup>[1]</sup></a><a href="../../freebl/mpi/mpi-config.h.dep.html#MP_IOFUNC"><sup>[2]</sup></a><a href="../../freebl/mpi/mpi.h.dep.html#MP_IOFUNC"><sup>[3]</sup></a></a>
+<b><a name="278">  278</a></b> void   <a href="#278">mp_print</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, FILE *ofp);
+<b><a name="279">  279</a></b> #endif /* end MP_IOFUNC */
+<b><a name="280">  280</a></b> 
+<b><a name="281">  281</a></b> /* Base conversion         */
+<b><a name="282">  282</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#282">mp_read_raw</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, char *str, int len);
+<b><a name="283">  283</a></b> int    <a href="#283">mp_raw_size</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp);
+<b><a name="284">  284</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#284">mp_toraw</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, char *str);
+<b><a name="285">  285</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#285">mp_read_radix</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, const char *str, int radix);
+<b><a name="286">  286</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#286">mp_read_variable_radix</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const char * str, int default_radix);
+<b><a name="287">  287</a></b> int    <a href="#287">mp_radix_size</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, int radix);
+<b><a name="288">  288</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#288">mp_toradix</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, char *str, int radix);
+<b><a name="289">  289</a></b> int    <a href="#289">mp_tovalue</a>(char ch, int r);
+<b><a name="290">  290</a></b> 
+<b><a name="291">  291</a></b> #define <a href="#291">mp_tobinary</a>(M, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>)  <a href="../../freebl/mpi/mpi.c.dep.html#mp_toradix">mp_toradix</a>((M), (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>), 2)
+<b><a name="292">  292</a></b> #define <a href="#292">mp_tooctal</a>(M, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>)   <a href="../../freebl/mpi/mpi.c.dep.html#mp_toradix">mp_toradix</a>((M), (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>), 8)
+<b><a name="293">  293</a></b> #define <a href="#293">mp_todecimal</a>(M, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>) <a href="../../freebl/mpi/mpi.c.dep.html#mp_toradix">mp_toradix</a>((M), (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>), 10)
+<b><a name="294">  294</a></b> #define <a href="#294">mp_tohex</a>(M, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>)     <a href="../../freebl/mpi/mpi.c.dep.html#mp_toradix">mp_toradix</a>((M), (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>), 16)
+<b><a name="295">  295</a></b> 
+<b><a name="296">  296</a></b> /* Error strings           */
+<b><a name="297">  297</a></b> const  char  *<a href="#297">mp_strerror</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> ec);
+<b><a name="298">  298</a></b> 
+<b><a name="299">  299</a></b> /* Octet string conversion functions */
+<b><a name="300">  300</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#300">mp_read_unsigned_octets</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, const unsigned char *str, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> len);
+<b><a name="301">  301</a></b> int    <a href="#301">mp_unsigned_octet_size</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp);
+<b><a name="302">  302</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#302">mp_to_unsigned_octets</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, unsigned char *str, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> maxlen);
+<b><a name="303">  303</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#303">mp_to_signed_octets</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, unsigned char *str, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> maxlen);
+<b><a name="304">  304</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#304">mp_to_fixlen_octets</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, unsigned char *str, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> len);
+<b><a name="305">  305</a></b> 
+<b><a name="306">  306</a></b> /* Miscellaneous */
+<b><a name="307">  307</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> <a href="#307">mp_trailing_zeros</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp);
+<b><a name="308">  308</a></b> 
+<b><a name="309">  309</a></b> #define <a href="#309">MP_CHECKOK</a>(x)  if (<a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a> &gt; (<a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = (x))) goto CLEANUP
+<b><a name="310">  310</a></b> #define <a href="#310">MP_CHECKERR</a>(x) if (<a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a> &gt; (<a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = (x))) goto CLEANUP
+<b><a name="311">  311</a></b> 
+<b><a name="312">  312</a></b> #if defined(MP_API_COMPATIBLE)
+<b><a name="313">  313</a></b> #define <a href="#313">NEG</a>             <a href="../../freebl/mpi/mpi.h.dep.html#MP_NEG">MP_NEG</a>
+<b><a name="314">  314</a></b> #define <a href="#314">ZPOS</a>            <a href="../../freebl/mpi/mpi.h.dep.html#MP_ZPOS">MP_ZPOS</a>
+<b><a name="315">  315</a></b> #define <a href="#315">DIGIT_MAX</a>       <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a>
+<b><a name="316">  316</a></b> #define <a href="#316">DIGIT_BIT</a>       <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_BIT">MP_DIGIT_BIT</a>
+<b><a name="317">  317</a></b> #define <a href="#317">DIGIT_FMT</a>       <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_FMT">MP_DIGIT_FMT</a></a></a>
+<b><a name="318">  318</a></b> #define <a href="#318">RADIX</a>           <a href="../../freebl/mpi/mpi.h.dep.html#MP_RADIX">MP_RADIX</a>
+<b><a name="319">  319</a></b> #define <a href="#319">MAX_RADIX</a>       <a href="../../freebl/mpi/mpi.h.dep.html#MP_MAX_RADIX">MP_MAX_RADIX</a>
+<b><a name="320">  320</a></b> #define <a href="#320">SIGN</a>(MP)        <a href="../../freebl/mpi/mpi.h.dep.html#MP_SIGN">MP_SIGN</a>(MP)
+<b><a name="321">  321</a></b> #define <a href="#321">USED</a>(MP)        <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(MP)
+<b><a name="322">  322</a></b> #define <a href="#322">ALLOC</a>(MP)       <a href="../../freebl/mpi/mpi.h.dep.html#MP_ALLOC">MP_ALLOC</a>(MP)
+<b><a name="323">  323</a></b> #define <a href="#323">DIGITS</a>(MP)      <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(MP)
+<b><a name="324">  324</a></b> #define <a href="#324">DIGIT</a>(MP,N)     <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(MP,N)
+<b><a name="325">  325</a></b> 
+<b><a name="326">  326</a></b> #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_ARGCHK">MP_ARGCHK</a></a> == 1
+<b><a name="327">  327</a></b> #define  <a href="#327">ARGCHK</a>(X,Y)  {if(!(X)){return (Y);}}
+<b><a name="328">  328</a></b> #elif <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_ARGCHK">MP_ARGCHK</a></a> == 2
+<b><a name="329">  329</a></b> #include &lt;assert.h&gt;
+<b><a name="330">  330</a></b> #define  <a href="#330">ARGCHK</a>(X,Y)  assert(X)
+<b><a name="331">  331</a></b> #else
+<b><a name="332">  332</a></b> #define  <a href="#332">ARGCHK</a>(X,Y)  /*  */
+<b><a name="333">  333</a></b> #endif
+<b><a name="334">  334</a></b> #endif /* defined MP_API_COMPATIBLE */
+<b><a name="335">  335</a></b> 
+<b><a name="336">  336</a></b> #endif /* end _H_MPI_ */
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

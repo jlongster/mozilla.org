@@ -1,0 +1,99 @@
+<?php
+
+$html_title = 'Common PKCS #11 Implementation Problems';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>Common PKCS #11 Implementation Problems</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Technical contact: 
+<A HREF="mailto:relyea@netscape.com?subject=PKCS #11 Netscape PK11 Test Suite Feedback">Bob Relyea</A><BR>
+
+Yell at the manager: 
+<A HREF="mailto:lord@netscape.com?subject=PKCS #11 Netscape PK11 Test Suite Feedback">Bob Lord</A></FONT></i>
+</center>
+
+
+<p>General pointers for getting PKCS #11 drivers
+working with Netscape software can be found in
+<a href="http://docs.iplanet.com/docs/manuals/security/pkcs/index.htm">
+Implementing PKCS #11 for the Netscape Security Library</a> and
+the <a target="_top"
+href="http://docs.iplanet.com//support/faqs/pkcs_11.html">PKCS #11 FAQ</a>. 
+
+<p>Netscape requires that PKCS #11 implementations comply with version 2.01 or
+later of the specification.
+
+<p>The following problems have been encountered by PKCS #11 implementors
+getting their code to work with Netscape software:
+<ul>
+<li>The most common problems have involved the key usage attributes
+(CKA_ENCRYPT, CKA_SIGN, etc.).  In general, PKCS #11 implementation vendors
+have treated these attributes more strictly than the Netscape library.
+Specific problems are:
+<ul>
+<li>When unwrapping a private key, none of the operation attributes
+(<code>CKA_ENCRYPT</code>, <code>CKA_DECRYPT</code>, <code>CKA_UNWRAP</code>,
+etc.) is specified, but the library
+later tries to use the key for these operations.
+
+<li>When a symmetric key is generated, only the CKA_ENCRYPT operation is
+enabled.  The key may nevertheless subsequently be used for decryption.
+
+</ul>
+
+<li>The mutex locks supplied by Netscape and passed into
+<code>C_Initialize</code>
+are not re-entrant.  That is, if <code>CK_LOCKMUTEX</code> is called on a
+mutex that is already locked by the caller, the behavior is undefined (and
+will probably cause a crash). This behaviour is defined in section 8.7 of
+the spec.
+
+<li>There is a bug in the Netscape security library whereby the
+<code>CKA_KEY_TYPE</code>
+attribute is not always specified when unwrapping or generating a key.
+
+<li>The Netscape library attempts to set the <code>CKA_LABEL</code> and
+<code>CKA_SUBJECT</code>
+attributes on private keys after they have been generated, even though
+the spec does not require that these attributes be modifiable.
+
+<li>The function list returned by C_GetFunctionList must not contain any
+NULL entries.  If a function is not supported, a stub function must be
+supplied which returns <code>CKR_FUNCTION_NOT_SUPPORTED</code>. This behavior
+is dictated by the 2.01 spec.
+
+<li>In order to support key wrapping and unwrapping, the token must support
+padded mechanisms, such as CKM_DES3_CBC_PAD.
+
+<li>If a token is running in FIPS-compliant mode, it may fail some tests
+that try to copy a key to the token using C_CreateObject.
+
+<li>PKCS #11 section 7.1 specifies that structs are to be packed to occupy
+as little space as possible, meaning they should be packed with 1-byte
+alignment.  If the module implementation is compiled with some other
+alignment (such as 4-byte), it will not correctly interpret structures
+passed from Netscape software.  If the module implementation accesses memory
+beyond the proper bounds of the struct, memory faults or other
+unpredictable behavior will result.
+
+</ul>
+
+
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

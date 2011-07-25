@@ -1,0 +1,34 @@
+<?php
+
+/**
+ * Detect a user's language settings and redirect them to the appropriate 
+ * membership page hosted by BSD. This allows us to have multiple forms 
+ * hosted by BSD, but one mozilla.org URL that we can distribute for the
+ * membership program.
+ */
+require_once "{$config['file_root']}/includes/localeDetection.class.php";
+
+// we never want this page cached. 
+header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
+
+
+// we're mimicking BSD's locale detection here. BSD ignores de-AT, de-LI,
+// de-LU, de-CH and serves them en-US locales, so we will too.
+$locales_map = array(
+    'en-US' => 'https://donate.mozilla.org/page/contribute/protect-the-web',
+    'de-DE' => 'https://donate.mozilla.org/page/contribute/protect-the-web-de'
+);
+
+$chooser = new ChooseLocale(array_keys($locales_map));
+$locale = $chooser->getCompatibleLocale();
+
+// getCompatibleLocale() returns en-US by default if no compatible locale
+// is found, so we don't need to check if array key exists.
+$url = $locales_map[$locale];
+
+header("Location: $url");
+?>

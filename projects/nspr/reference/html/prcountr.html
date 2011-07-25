@@ -1,0 +1,1350 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;27 Instrumentation Counters';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:06:09">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="prlog.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prshm.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="25926"> </A><A NAME=""> </A><h2>
+Chapter&#32;27 
+&nbsp;
+
+
+
+<A NAME="25927"> </A><A NAME="Instrumentation Counters"> </A>Instrumentation Counters
+</h2>
+</center>
+<A NAME="25937"> </A>The chapter describes the NSPR instrumentation counter API. NSPR counters can 
+be dynamically defined, incremented, decremented, set, and deleted under 
+application program control. They are intended for instrumentation, not for 
+operational data. If you need a counter for operational data, use native integral 
+types. 
+
+<P>
+
+<A NAME="26865"> </A><A HREF="prcountr.html#26155"  >Using Instrumentation Counters</A><br>
+<A HREF="prcountr.html#26145"  >Instrumentation Counter Type</A><br>
+<A HREF="prcountr.html#26161"  >Instrumentation Counter Functions and Macros</A>
+
+<P>
+
+
+
+<A NAME="26155"> </A>
+<A NAME="Using Instrumentation Counters"> </A>
+<h2>
+Using Instrumentation Counters
+</h2>
+
+
+<A NAME="26108"> </A>NSPR instrumentation counters are 32-bit unsigned integers. On overflow, a 
+counter will wrap. No exception is recognized or reported. 
+
+<P>
+
+<A NAME="26109"> </A>A counter can be dynamically created using a two-level naming convention. A 
+handle is returned when the counter is created. The counter can subsequently be 
+addressed by its handle. An API is provided to get an existing counter's handle 
+given the names with  which it was originally created. Similarly, a counter's name 
+can be retrieved given its handle. 
+
+<P>
+
+<A NAME="26117"> </A>The counter naming convention is a two-level hierarchy. The QName is the higher 
+level of the hierarchy; RName is the lower level. RNames can be thought of as 
+existing within a QName. The same RName can exist within multiple QNames. 
+QNames are unique. The NSPR counter is not a near-zero overhead feature. 
+Application designers should be aware of serialization issues when using the 
+Counter API. Creating a counter locks a large asset, potentially causing a stall. This 
+suggest that applications should create counters at component initialization, for 
+example, and not create and destroy them willy-nilly. 
+
+<P>
+
+<A NAME="26120"> </A>Incrementing and adding to counters uses atomic operations. The performance of 
+these operations will vary from platform to platform. On platforms where atomic 
+operations are not supported, the overhead may be substantial. 
+
+<P>
+
+<A NAME="26125"> </A>When you traverse the counter database with the FindNext functions, the 
+instantaneous values of any given counter is that at the moment of extraction. The 
+state of the entire counter database may not be viewed as atomic. 
+
+<P>
+
+<A NAME="26132"> </A>The counter interface may be disabled (No-Op'd) at compile time. When DEBUG is 
+defined at compile time, the counter feature is compiled into NSPR and 
+applications invoking it. When <CODE>DEBUG</CODE> is not defined, the counter macros compile to 
+nothing. To force the counter feature to be compiled into an optimized build, 
+define <CODE>FORCE_NSPR_COUNTERS</CODE> at compile time for both NSPR and the application 
+intending to use it. 
+
+<P>
+
+<A NAME="26133"> </A>Application designers should use the macro form of the counter methods to 
+minimize performance impact in optimized builds. The macros normally compile 
+to nothing on optimized builds. 
+
+<P>
+
+<A NAME="26141"> </A>Application designers should be aware of the effects of debug and optimized build 
+differences when using results of the counter macros in expressions. 
+
+<P>
+
+<A NAME="26142"> </A>NSPR counters are thread-safe and SMP safe. 
+
+<P>
+
+
+
+<A NAME="26145"> </A>
+<A NAME="Instrumentation Counter Type"> </A>
+<h2>
+Instrumentation Counter Type
+</h2>
+
+
+<A NAME="26146"> </A><A NAME="PRCounterHandle "> </A><h4>
+PRCounterHandle 
+</h4>
+
+<A NAME="26156"> </A>A handle to an NSPR counter.
+
+<P>
+
+<PRE>
+<A NAME="26157"></A>typedef void *  PRCounterHandle;
+</PRE>
+<P>
+<A NAME="25938"> </A>This type is an opaque object used to communicate between the application using 
+the counter facility and the counter facility itself. Do not attempt to manipulate a 
+<CODE>PRCounterHandle</CODE> object directly.
+
+<P>
+
+
+
+<A NAME="26161"> </A>
+<A NAME="Instrumentation Counter Functions and Macros  "> </A>
+<h2>
+Instrumentation Counter Functions and Macros  
+</h2>
+
+
+<A NAME="26162"> </A>
+
+<P>
+
+<A NAME="26163"> </A><A HREF="prcountr.html#26178"  ><CODE>PR_DEFINE_COUNTER</CODE></A> <br>
+<A HREF="prcountr.html#26216"  ><CODE>PR_INIT_COUNTER_HANDLE</CODE></A><br>
+<A HREF="prcountr.html#26298"  ><CODE>PR_CreateCounter</CODE></A><br>
+<A HREF="prcountr.html#26373"  ><CODE>PR_DestroyCounter</CODE></A> <br>
+<A HREF="prcountr.html#25977"  ><CODE>PR_GetCounterHandleFromName</CODE></A> <br>
+<A HREF="prcountr.html#26438"  ><CODE>PR_GetCounterNameFromHandle</CODE></A> <br>
+<A HREF="prcountr.html#26001"  ><CODE>PR_IncrementCounter</CODE></A> <br>
+<A HREF="prcountr.html#26010"  ><CODE>PR_DecrementCounter</CODE></A> <br>
+<A HREF="prcountr.html#27235"  ><CODE>PR_AddToCounter</CODE></A> <br>
+<A HREF="prcountr.html#26030"  ><CODE>PR_SubtractFromCounter</CODE></A> <br>
+<A HREF="prcountr.html#26039"  ><CODE>PR_GetCounter</CODE></A> <br>
+<A HREF="prcountr.html#26050"  ><CODE>PR_SetCounter</CODE></A> <br>
+<A HREF="prcountr.html#26060"  ><CODE>PR_FindNextCounterQname</CODE></A> <br>
+<A HREF="prcountr.html#26071"  ><CODE>PR_FindNextCounterRname</CODE></A> 
+
+<P>
+
+<A NAME="26178"> </A><A NAME="PR_DEFINE_COUNTER"> </A><h4>
+PR_DEFINE_COUNTER
+</h4>
+
+<A NAME="26179"> </A>Defines a <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="26180"> </A><A NAME="Syntax "> </A><h5>
+Syntax 
+</h5>
+
+
+<PRE>
+<A NAME="26181"></A>#include &lt;prcountr.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="26186"></A>#define PR_DEFINE_COUNTER(name) PRCounterHandle name
+</PRE>
+<P>
+<BR>
+<A NAME="26235"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="26236"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="26245"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="26239"></A>name
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="26244"> </A>The name to be assigned to the <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26187"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="26213"> </A>N/A 
+
+<P>
+
+<BR>
+<A NAME="26214"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="26215"> </A><CODE>PR_DEFINE_COUNTER</CODE> is provided as a macro so that the <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A> is not 
+created in optimized builds.
+
+<P>
+
+<A NAME="26216"> </A><A NAME="PR_INIT_COUNTER_HANDLE"> </A><h4>
+PR_INIT_COUNTER_HANDLE
+</h4>
+
+<A NAME="26220"> </A>Sets the value of a counter handle.
+
+<P>
+
+<BR>
+<A NAME="26221"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25953"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="26226"></A>#define PR_INIT_COUNTER_HANDLE(handle,value)\<br>&nbsp;&nbsp;&nbsp;(handle) = (PRCounterHandle)(value)
+</PRE>
+<P>
+<BR>
+<A NAME="26249"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="26250"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="26259"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="26253"> </A><CODE>handle
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="26258"> </A>The counter handle to be assigned a value.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="26269"> </A><CODE>value
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="26271"> </A>A value to assign to the counter handle. <CODE>NULL</CODE> works. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26225"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="26294"> </A>N/A
+
+<P>
+
+<A NAME="26298"> </A><A NAME="PR_CreateCounter"> </A><h4>
+PR_CreateCounter
+</h4>
+
+<A NAME="26377"> </A>Creates a counter object and returns a handle to that object. 
+
+<P>
+
+<BR>
+<A NAME="26301"> </A><A NAME="Syntax "> </A><h5>
+Syntax 
+</h5>
+
+
+<PRE>
+<A NAME="25956"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25958"></A>#define PR_CREATE_COUNTER(handle,qName,rName,description)\
+</PRE>
+<P>
+<PRE>
+<A NAME="25959"></A>&nbsp;&nbsp;&nbsp;(handle) = PR_CreateCounter((qName),(rName),(description))
+</PRE>
+<P>
+<PRE>
+<A NAME="27034"></A>PR_EXTERN(PRCounterHandle)<br>&nbsp;&nbsp;&nbsp;PR_CreateCounter(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const char *qName,(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const char *rName,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const char *description<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="26309"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="26310"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="26320"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="26313"> </A><CODE>qName
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="26315"> </A>The QName to be assigned to the counter. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="26317"> </A><CODE>rName
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="26319"> </A>The RName to be assigned to the counter.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="26356"> </A><CODE>description
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="26358"> </A>Descriptive data about the counter.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26307"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="26372"> </A>A <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A> or <CODE>NULL</CODE>. 
+
+<P>
+
+<A NAME="26373"> </A><A NAME="PR_DestroyCounter"> </A><h4>
+PR_DestroyCounter
+</h4>
+
+<PRE>
+<A NAME="26384"></A>Destroy a counter object. 
+</PRE>
+<P>
+<BR>
+<A NAME="26385"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25968"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25970"></A>#define PR_DESTROY_COUNTER(handle) PR_DestroyCounter((handle))
+</PRE>
+<P>
+<PRE>
+<A NAME="25972"></A>PR_EXTERN(void)<br>&nbsp;&nbsp;&nbsp;PR_DestroyCounter(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRCounterHandle handle<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="26393"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="26394"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="26404"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="26397"> </A><CODE>handle
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="26399"> </A>The <CODE>PRCounterHandle</CODE> of the counter to be deleted.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26390"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="26422"> </A>This function removes a counter and unregisters its handle from the counter 
+database. 
+
+<P>
+
+<A NAME="25977"> </A><A NAME="PR_GetCounterHandleFromName"> </A><h4>
+PR_GetCounterHandleFromName
+</h4>
+
+<A NAME="26427"> </A>Retrieves a counter's handle based on a specified QName and RName. 
+
+<P>
+
+<BR>
+<A NAME="26430"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="26431"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25979"></A>#define PR_GET_COUNTER_HANDLE_FROM_NAME(handle,qName,rName)\<br>&nbsp;&nbsp;&nbsp;(handle) = PR_GetCounterHandleFromName((qName),(rName))
+</PRE>
+<P>
+<PRE>
+<A NAME="25982"></A>PR_EXTERN(PRCounterHandle)<br>&nbsp;&nbsp;&nbsp;PR_GetCounterHandleFromName( <br>&nbsp;&nbsp;&nbsp;const char *qName, <br>&nbsp;&nbsp;&nbsp;const char *rName <br>);
+</PRE>
+<P>
+<BR>
+<A NAME="27048"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="27049"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="27063"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27052"> </A><CODE>qName
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27054"> </A>The QName of the desired counter. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27056"> </A><CODE>rName
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27058"> </A>The RName of the desired counter.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26477"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="26478"> </A>A <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A> or <CODE>NULL</CODE> 
+
+<P>
+
+<BR>
+<A NAME="26480"> </A><A NAME="Description "> </A><h5>
+Description 
+</h5>
+
+
+<A NAME="26479"> </A>This function retrieves a counter's handle from the counter database, given the 
+name the counter was originally created with.
+
+<P>
+
+<A NAME="26438"> </A><A NAME="PR_GetCounterNameFromHandle "> </A><h4>
+PR_GetCounterNameFromHandle 
+</h4>
+
+<A NAME="26439"> </A>Retreives a counter's name, given its handle 
+
+<P>
+
+<BR>
+<A NAME="26485"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25988"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25990"></A>#define PR_GET_COUNTER_NAME_FROM_HANDLE(handle,qName,rName,description)\<br>&nbsp;&nbsp;&nbsp;PR_GetCounterNameFromHandle((handle),(qName),(rName),(description))
+</PRE>
+<P>
+<PRE>
+<A NAME="27088"></A>PR_EXTERN(void)<br>&nbsp;&nbsp;&nbsp;PR_GetCounterNameFromHandle( <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRCounterHandle handle, <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const char **qName,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const char **rName, <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const char **description <br>);
+</PRE>
+<P>
+<BR>
+<A NAME="27094"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="27095"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="27109"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27098"> </A><CODE>qName
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27100"> </A>Where to store a pointer to the counter's QName.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27102"> </A><CODE>rName
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27104"> </A>Where to store a pointer to the counter's RName.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27106"> </A><CODE>description
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27108"> </A>Where to store a pointer to the counter's description.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26553"> </A><A NAME="Returns "> </A><h5>
+Returns 
+</h5>
+
+
+<A NAME="26554"> </A>Nothing
+
+<P>
+
+<BR>
+<A NAME="26555"> </A><A NAME="Description "> </A><h5>
+Description 
+</h5>
+
+
+<A NAME="27138"> </A>This function retrieves a counter's QName, RName, and description from the 
+counter database, given the counter's handle.
+
+<P>
+
+<A NAME="26001"> </A><A NAME="PR_IncrementCounter "> </A><h4>
+PR_IncrementCounter 
+</h4>
+
+<A NAME="26557"> </A>Adds one (1) to the referenced counter. 
+
+<P>
+
+<BR>
+<A NAME="26560"> </A><A NAME="Syntax "> </A><h5>
+Syntax 
+</h5>
+
+
+<PRE>
+<A NAME="26561"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="26564"></A>#define PR_INCREMENT_COUNTER(handle) PR_IncrementCounter(handle)
+</PRE>
+<P>
+<PRE>
+<A NAME="26005"></A>PR_EXTERN(void) <br>&nbsp;&nbsp;&nbsp;PR_IncrementCounter( <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRCounterHandle handle<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="27152"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="27153"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="27159"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27156"> </A><CODE>handle
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27158"> </A>The <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A> of the counter to be incremented.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26615"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="26617"> </A>Nothing.
+
+<P>
+
+<A NAME="26010"> </A><A NAME="PR_DecrementCounter"> </A><h4>
+PR_DecrementCounter
+</h4>
+
+<A NAME="27242"> </A>Subtracts one (1) from the referenced counter. 
+
+<P>
+
+<BR>
+<A NAME="26595"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="26596"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="26012"></A>#define PR_DECREMENT_COUNTER(handle) PR_DecrementCounter(handle)
+</PRE>
+<P>
+<PRE>
+<A NAME="26014"></A>PR_EXTERN(void) <br>&nbsp;&nbsp;&nbsp;PR_DecrementCounter(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRCounterHandle handle<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="27172"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="27173"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="27182"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27176"> </A><CODE>handle
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27181"> </A>The <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A> of the counter to be decremented.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26618"> </A><A NAME="Returns "> </A><h5>
+Returns 
+</h5>
+
+
+<A NAME="27191"> </A>Nothing.
+
+<P>
+
+<A NAME="27235"> </A><A NAME="PR_AddToCounter"> </A><h4>
+PR_AddToCounter
+</h4>
+
+<A NAME="27236"> </A>Adds a specified value to the referenced counter.
+
+<P>
+
+<BR>
+<A NAME="27237"> </A><A NAME="Syntax "> </A><h5>
+Syntax 
+</h5>
+
+
+<PRE>
+<A NAME="26019"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="26021"></A>#define PR_ADD_TO_COUNTER(handle,value)\<br>&nbsp;&nbsp;&nbsp;PR_AddToCounter((handle),(value))
+</PRE>
+<P>
+<PRE>
+<A NAME="26024"></A>PR_EXTERN(void)<br>&nbsp;&nbsp;&nbsp;PR_AddToCounter(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRCounterHandle handle,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUint32 value<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="27195"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="27196"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="27206"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27199"> </A><CODE>handle
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27201"> </A>The <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A> of the counter to which to add the specified value.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27203"> </A><CODE>value
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27205"> </A>The quantity to be added to the counter. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26666"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="26667"> </A>Nothing.
+
+<P>
+
+<A NAME="26030"> </A><A NAME="PR_SubtractFromCounter"> </A><h4>
+PR_SubtractFromCounter
+</h4>
+
+<A NAME="26675"> </A>Subtracts a specified value from the referenced counter.
+
+<P>
+
+<BR>
+<A NAME="26676"> </A><A NAME="Syntax "> </A><h5>
+Syntax 
+</h5>
+
+
+<PRE>
+<A NAME="26677"></A>#include &lt;prcountr.h&gt;  
+</PRE>
+<P>
+<PRE>
+<A NAME="26678"></A>#define PR_SUBTRACT_FROM_COUNTER(handle,value)\<br>&nbsp;&nbsp;&nbsp;PR_SubtractFromCounter((handle),(value))
+</PRE>
+<P>
+<PRE>
+<A NAME="26033"></A>PR_EXTERN(void) <br>&nbsp;&nbsp;&nbsp;PR_SubtractFromCounter( <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRCounterHandle handle,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUint32 value<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="27262"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="27263"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="27276"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27266"> </A><CODE>handle
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27271"> </A>The <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A> of the counter from which to subtract the specified 
+value.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27273"> </A><CODE>value
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27275"> </A>The quantity to be subtracted from the counter. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26712"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="26713"> </A>Nothing.
+
+<P>
+
+<A NAME="26039"> </A><A NAME="PR_GetCounter "> </A><h4>
+PR_GetCounter 
+</h4>
+
+<A NAME="26722"> </A>Retrieves the value of a counter.
+
+<P>
+
+<BR>
+<A NAME="27293"> </A><A NAME="Syntax "> </A><h5>
+Syntax 
+</h5>
+
+
+<PRE>
+<A NAME="27294"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="26042"></A>#define PR_GET_COUNTER(counter,handle)\<br>&nbsp;&nbsp;&nbsp;(counter) = PR_GetCounter((handle))
+</PRE>
+<P>
+<PRE>
+<A NAME="26045"></A>PR_EXTERN(PRUint32)<br>&nbsp;&nbsp;&nbsp;PR_GetCounter(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRCounterHandle handle<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="27296"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="27297"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="27310"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27300"> </A><CODE>handle
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27305"> </A>The <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A> of the counter to be retrieved.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26749"> </A><A NAME="Returns "> </A><h5>
+Returns 
+</h5>
+
+
+<A NAME="26750"> </A>The value of the counter referenced by <CODE>handle</CODE>.
+
+<P>
+
+<A NAME="26050"> </A><A NAME="PR_SetCounter "> </A><h4>
+PR_SetCounter 
+</h4>
+
+<A NAME="27325"> </A>Sets the value of a counter.
+
+<P>
+
+<BR>
+<A NAME="26753"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="26754"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="26052"></A>#define PR_SET_COUNTER(handle,value) PR_SetCounter((handle),(value))
+</PRE>
+<P>
+<PRE>
+<A NAME="26054"></A>PR_EXTERN(void) <br>&nbsp;&nbsp;&nbsp;PR_SetCounter(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRCounterHandle handle,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUint32 value <br>);
+</PRE>
+<P>
+<BR>
+<A NAME="27329"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="27330"> </A>The function has these parameters:<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27333"> </A><CODE>handle
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27338"> </A>The <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A> of the counter whose value is to be set.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27340"> </A><CODE>value
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27342"> </A>The value to which to set the counter. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+
+<P>
+
+<BR>
+<A NAME="27377"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="27378"> </A>Nothing.
+
+<P>
+
+<A NAME="26060"> </A><A NAME="PR_FindNextCounterQname "> </A><h4>
+PR_FindNextCounterQname 
+</h4>
+
+<A NAME="26791"> </A>Retrieves the next QName counter handle in the counter database.
+
+<P>
+
+<BR>
+<A NAME="26792"> </A><A NAME="Syntax "> </A><h5>
+Syntax 
+</h5>
+
+
+<PRE>
+<A NAME="26793"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="26062"></A>#define PR_FIND_NEXT_COUNTER_QNAME(next,handle)\<br>&nbsp;&nbsp;&nbsp;(next) = PR_FindNextCounterQname((handle))
+</PRE>
+<P>
+<PRE>
+<A NAME="26065"></A>PR_EXTERN(PRCounterHandle) <br>&nbsp;&nbsp;&nbsp;PR_FindNextCounterQname( <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRCounterHandle handle<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="27355"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="27356"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="27365"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27359"> </A><CODE>handle
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27364"> </A>A <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A> of the counter before the counter whose QName is to 
+be retrieved, or <CODE>NULL</CODE> if you want to get the QName of the first counter.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26816"> </A><A NAME="Returns "> </A><h5>
+Returns 
+</h5>
+
+
+<A NAME="27374"> </A><CODE>A </CODE><A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A><CODE> or </CODE><CODE>NULL</CODE><CODE>.
+</CODE>
+<P>
+
+<BR>
+<A NAME="26817"> </A><A NAME="Description "> </A><h5>
+Description 
+</h5>
+
+
+<A NAME="26818"> </A>This function retrieves the first or next Qname the counter database, depending on 
+the value of <CODE>handle</CODE>. When handle is <CODE>NULL</CODE>, the function attempts to retrieve the first 
+QName handle in the database. When <CODE>handle</CODE> is a previously retrieved QName 
+handle, the function attempts to retrieve the next QName handle. 
+
+<P>
+
+<A NAME="26070"> </A>A <A HREF="prcountr.html#26146"  ><CODE>PRCounterHandle</CODE></A> returned from this function may only be used in another 
+<CODE>PR_FindNextCounterQname</CODE> function call; other operations may cause 
+unpredictable results. 
+
+<P>
+
+<A NAME="26071"> </A><A NAME="PR_FindNextCounterRname"> </A><h4>
+PR_FindNextCounterRname
+</h4>
+
+<A NAME="27413"> </A>Retrieves the next RName counter handle in the counter database.
+
+<P>
+
+<BR>
+<A NAME="26822"> </A><A NAME="Syntax "> </A><h5>
+Syntax 
+</h5>
+
+
+<PRE>
+<A NAME="26823"></A>#include &lt;prcountr.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="26073"></A>#define PR_FIND_NEXT_COUNTER_RNAME(next,rhandle,qhandle)\<br>&nbsp;&nbsp;&nbsp;(next) = PR_FindNextCounterRname((rhandle),(qhandle))
+</PRE>
+<P>
+<PRE>
+<A NAME="26076"></A>PR_EXTERN(PRCounterHandle) <br>&nbsp;&nbsp;&nbsp;PR_FindNextCounterRname( <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRCounterHandle rhandle,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRCounterHandle qhandle<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="27421"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="27422"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="27431"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27425"> </A><CODE>rhandle
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27430"> </A>A previously retrieved <CODE>RName</CODE> handle..
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="27435"> </A><CODE>qhandle
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="27450"> </A>A previously retrieved <CODE>QName</CODE> handle, or <CODE>NULL</CODE>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="26855"> </A><A NAME="Returns "> </A><h5>
+Returns 
+</h5>
+
+
+<PRE>
+<A NAME="26856"></A>A PRCounterHandle or NULL. 
+</PRE>
+<P>
+<BR>
+<A NAME="26857"> </A><A NAME="Description "> </A><h5>
+Description 
+</h5>
+
+
+<A NAME="26858"> </A>This function retrieves the first or next RName handle from the counter database, 
+depending on the value of <CODE>handle</CODE>. When handle is <CODE>NULL</CODE>, the function attempts to 
+retrieve the first RName handle in the database. When <CODE>handle</CODE> is a previously 
+retrieved RName handle, the function attempts to retrieve the next RName handle. 
+
+<P>
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="prlog.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prshm.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,345 @@
+<?php
+
+$html_title = 'Configurable Security Policies (CAPS)';
+$page_title = 'Configurable Security Policies';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta http-equiv="Content-Language" content="en" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<meta name="DC.title" content="Configurable Security Policies (CAPS)" />
+<meta name="DC.date.created" content="2001-12-06T16:37:03+11:00" scheme="W3CDTF" />
+<meta name="DC.date.modified" content="2006-04-08T09:54:03+11:00" scheme="W3CDTF" />
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<div class="author"><a href="mailto:jruderman@hmc.edu">Jesse Ruderman</a></div>
+
+<h3><a name="whatare">What are Configurable Security Policies?</a></h3>
+
+<p>Mozilla's configurable security policies allow users to set up security policies
+for the browser, and also have different security policies for different
+Internet sites. The ideas for configurable security policies
+come from a number of sources. Bell Labs researchers
+Vinod Anupam and Alain Mayer have written papers and contributed code to
+Mozilla. The infamous <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=858">bug
+858</a> serves as a wish list for this sort of functionality. The code for this is
+called <a href="http://lxr.mozilla.org/seamonkey/source/caps/">CAPS</a> (capabilities).
+Finally, IE's zones employ some of this idea.</p>
+
+<p>This document is aimed at programmers familiar with JavaScript.</p>
+
+<p style="color: red;">N.B. As of Mozilla 0.9.9, a "policynames" line is required
+in order to create zone policies. See below for details.</p>
+
+
+<h3><a name="global">Setting Global Policies</a></h3>
+<p>Suppose you're annoyed by pop-up advertisements and want to prevent all
+web pages from opening new browser windows.  You can do this by adding the 
+following line to your Mozilla 
+<a href="/catalog/end-user/customizing/briefprefs.html#modifying">user preferences 
+file (user.js)</a>:</p>
+
+<pre class="code">
+   user_pref("capability.policy.default.Window.open", "noAccess");
+</pre>
+
+<p>Setting <code>Window.open</code> to <code>noAccess</code> means that web pages can 
+not access the <code>open</code> property of any object of type <code>Window</code>.
+If a web site tries to open a new window using <code>window.open()</code> 
+(or <code>open()</code>), the attempt will fail. The security manager will throw a
+JavaScript exception, preventing the function from being called. Unless the 
+web page catches the exception, the script will stop and an error message
+will appear on the JavaScript console (Tasks-&gt;Tools-&gt;JavaScript Console).</p>
+
+
+<h3><a name="zones">Zone Policies</a></h3>
+
+<p>The <code>default</code> policy is special; it applies to all sites.  
+You can also set policies that apply to specific sites or groups of sites,
+overriding the default. For example, if you wanted to restrict www.evil.org
+and www.annoying.com from creating dialog windows,
+you could use the following code:</p>
+
+<pre class="code">
+   user_pref("capability.policy.policynames", "strict");
+   user_pref("capability.policy.strict.sites", "http://www.evil.org http://www.annoying.com");
+   user_pref("capability.policy.strict.Window.alert", "noAccess");
+   user_pref("capability.policy.strict.Window.confirm", "noAccess");
+   user_pref("capability.policy.strict.Window.prompt", "noAccess");
+</pre>
+
+<p>The first line defines the name of the policy or policies you want to create,
+in this case <code>"strict"</code>. If you define more than one policy, list them all
+on the same line, like so:</p>
+
+<pre class="code">
+   user_pref("capability.policy.policynames", "strict, shoppingsites, ");
+</pre>
+
+<p>The preference "<code>capability.policy.strict.sites</code>" defines the web
+sites to which the <code>strict</code> policy is applied. The value of that
+preference is a list of sites (protocol and hostname only), separated by
+spaces. The final three lines define the strict policy. For these sites,
+the example above will disallow access to <code>window.alert()</code>, 
+<code>window.confirm()</code> and <code>window.prompt()</code>.</p>
+
+<p>Note that since we haven't defined whether sites under the <code>strict</code> policy
+can open new windows with <code>window.open()</code>, the default policy still applies.</p>
+
+<p>Suppose we've also discovered that in blocking access to <code>window.open()</code>,
+we've prevented a script on www.usefulsite.net from working. We can allow this
+page to bypass the window.open restriction by setting the <code>Window.open</code> policy
+back to its default value, <code>sameOrigin</code>:</p>
+
+<pre class="code">
+   user_pref("capability.policy.policynames", "trustable");
+   user_pref("capability.policy.trustable.sites", "http://www.usefulsite.net");
+   user_pref("capability.policy.trustable.Window.open", "sameOrigin");
+</pre>
+
+<p>The name of the policy can be anything you want; we used <code>strict</code> and
+<code>trustable</code> in this example, but you could name it <code>blacklist</code> or
+<code>mypolicy</code> or anything else.</p>
+
+<h3><a name="levels">Security Levels</a></h3>
+
+<p>There are three special security levels:</p>
+
+<ul>
+  <li><code>noAccess</code>: web sites can never access this property or call this function.</li>
+  <li><code>sameOrigin</code> (default): web sites can access this property, but only for 
+pages on the same site.  See <a href="same-origin.html">this document</a> for an 
+explanation of how Mozilla determines whether two pages have the same origin.</li>
+  <li><code>allAccess</code>: a web site can access this property within the same site and 
+on any other site.</li>
+</ul>
+
+<p>If the security level is not one of the three above, it is treated as a 
+<a href="terms.html#priv">privilege</a> name, and a script can access it 
+only if the script is <a href="signed-scripts.html">signed</a> and the user 
+grants the privilege to the script through a dialog.</p>
+
+
+<h3><a name="getset">Get and Set</a></h3>
+
+<p>You can specify a policy that applies only to reading a property, or only
+to changing its value, by adding <code>.get</code> or <code>.set</code> after the property name.  
+This allows you to specify one policy for reading a property and another for 
+changing its value.  See <a href="#examples">below</a> for some examples that block pages
+from setting values but not from reading them.</p>
+
+<p>Setting <code>Class.property.get</code> and <code>Class.property.set</code> to the same level is
+equivalent to setting <code>Class.property</code> to that level. Don't use <code>get</code> or
+<code>set</code> after the name of a function (such as <code>open</code> or <code>write</code>);
+the concept of "get" and "set" applies only to properties which are <em>not</em> functions
+(such as <code>bgColor</code> or <code>location</code>).</p>
+
+
+<h3><a name="objectnames">Figuring out Object Names</a></h3>
+
+<p>Figuring out the correct object name to use is sometimes tricky. For example,
+suppose you want to prevent a web page from submitting a form for you, but you don't
+know the class name for a form element. The easiest way is to find out is to write
+a script that converts the object into a string. If you go to a page with a form
+and type <code>javascript:alert(document.forms[0])</code> into the location bar, you'll
+see that <code>document.forms[0]</code> is an <code>[xpconnect wrapped HTMLFormElement]</code>.
+<code>HTMLFormElement</code> is the name of the class, so you can set 
+<code>HTMLFormElement.submit</code> to <code>noAccess</code> to prevent web pages from 
+submitting forms using <code>form.submit</code>.</p>
+
+<p>Some elements, such as <code>HTMLAnchorElement</code>, have special toString functions
+that prevent you from finding their class name easily. If you type
+<code>javascript:alert(document.links[0])</code> in the location bar,
+you will see the URL of the first link instead of its class name.
+The way to get around this problem is to use the default
+<code>toString</code> function on the object document.links[0], like so:
+<code>javascript:alert(window.toString.apply(document.links[0]))</code>.</p>
+
+<h3><a name="caveat">Caveat: Some Properties Have Multiple Access Paths</a></h3>
+
+<p>When blocking access to properties, it is important to note that there is more than
+one way to access some properties, such as attributes of HTML elements. For example,
+suppose a user wants to prevent scripts from <code>www.evil.org</code> from accessing the
+<code>href</code> attribute of HTML anchor tags <code>(&lt;A HREF="..."&gt;)</code>. The following
+prefs are not sufficient:</p>
+
+<pre class="code">
+   user_pref("capability.policy.policynames", "nohrefs");
+   user_pref("capability.policy.nohrefs.sites", "http://www.evil.org");
+   user_pref("capability.policy.nohrefs.HTMLAnchorElement.href", "noAccess");
+</pre>
+
+<p>While these prefs will prevent a script on <code>www.evil.org</code> from accessing
+<code>document.links[1].href</code>, the script can access the very same information
+using the DOM 2 syntax <code>document.links[1].attributes.getNamedItem("href")</code> or
+<code>document.links[1].getAttribute("href")</code>. The following prefs will completely
+block access to the href attribute:</p>
+
+<pre class="code">
+   user_pref("capability.policy.policynames", "nohrefs");
+   user_pref("capability.policy.nohrefs.sites", "http://www.evil.org");
+   user_pref("capability.policy.nohrefs.HTMLAnchorElement.href", "noAccess");
+   user_pref("capability.policy.nohrefs.HTMLAnchorElement.attributes", "noAccess");
+   user_pref("capability.policy.nohrefs.HTMLAnchorElement.getAttribute", noAccess");
+   user_pref("capability.policy.nohrefs.HTMLAnchorElement.getAttributeNS", "noAccess");
+</pre>
+
+<p>As a general rule, to block access to an attribute, you must also block the
+<code>attributes</code> property and the <code>getAttribute</code> and <code>getAttributeNS</code>
+methods.</p>
+
+<h3><a name="syntax">The Complete Preferences Syntax</a></h3>
+
+<p>Here's a more formal statement of the syntax for JavaScript security policies:</p>
+
+<ul>
+<li>A policy consists of a <em>policynames line</em>, a <em>sites line</em>,
+    and one or more <em>policy lines</em>.
+    The <em>sites line</em> must be omitted for the <code>default</code> policy, but it must
+    be present for all others.</li>
+
+<li>The <em>policynames line</em> specifies the names of all the policies you want to define.
+    There should be only one policynames line, no matter how many policies you define. It
+    has this format:<br />
+    <code>user_pref("capability.policy.policynames", "&lt;list of policy names&gt;");</code>
+    where &lt;list of policy names&gt; is a list of the policy names you want to define,
+    separated by commas and/or spaces.</li>
+
+<li>The <em>sites line</em> has this format:<br />
+    <code>user_pref("capability.policy.&lt;policy name&gt;.sites","&lt;URL list&gt;");</code>
+    <ul>
+       <li>&lt;policy name&gt; is any combination of letters and numbers, starting with a letter.</li>
+       <li>"&lt;URL list&gt; is a list of URLs separated by spaces. Each URL in the list can
+       either be of the form <code>protocol:</code>, which will apply the policy to all URLs
+       with the given protocol (such as http:), or <code>protocol://host</code> which will apply to
+       a particular host (for example, http://www.annoyingsite.myisp.com). Don't include the path
+       portion of the URL (the / after the host name or anything after it).</li>
+    </ul>
+</li>
+
+<li>A <em>policy line</em> has this format:<br />
+    <code>user_pref("capability.policy.&lt;policy name&gt;.&lt;class name&gt;.&lt;property name&gt;","allAccess | noAccess | sameOrigin | &lt;capability name&gt;");</code>
+    <ul>
+       <li>&lt;policy name&gt; must be the same as the policy name on the sites line.</li>
+       <li>The pref values (<code>allAccess</code>, etc.) are described above.</li>
+    </ul>
+</li>
+</ul>
+
+<h3><a name="jspolicies">Disabling All Javascript for a Site</a></h3>
+
+<p> The special property <code>javascript.enabled</code> can be used to disable JavaScript execution,
+either globally, using the <code>default</code> policy, or for a group of sites, using a site policy.
+For this special policy, the value of the preference must be <code>"noAccess"</code> or
+<code>"allAccess"</code>. No other values will work. The following example disables all JavaScript
+execution at site1.com and site2.com:</p>
+
+<pre class="code">
+   user_pref("capability.policy.policynames", "nojs");
+   user_pref("capability.policy.nojs.sites", "http://site1.com http://site2.com");
+   user_pref("capability.policy.nojs.javascript.enabled", "noAccess");
+</pre>
+
+<p>This example disables JavaScript execution at all sites except goodsite.com:</p>
+
+<pre class="code">
+   user_pref("capability.policy.policynames", "jsok");
+   user_pref("capability.policy.default.javascript.enabled", "noAccess");
+   user_pref("capability.policy.jsok.sites", "http://goodsite.com");
+   user_pref("capability.policy.jsok.javascript.enabled", "allAccess");
+</pre>
+
+<p>Note that only values of <code>"allAccess"</code> or <code>"noAccess"</code> will work for the
+<code>javascript.enabled</code> policy prefs. Don't use <code>"sameOrigin"</code> or any other
+string in this case. Also note that this preference:</p>
+
+<pre class="code">   user_pref("javascript.enabled", false);</pre>
+
+<p>overrides <em>all</em> <code>capability.policy</code> prefs, including
+<code>capability.policy.default.javascript.enabled</code>, for all sites.</p>
+
+<h3><a name="examples">Additional Examples</a></h3>
+
+<h4><a name="noresize">Prevent web pages from resizing browser windows</a></h4>
+
+<pre class="code">
+   user_pref("capability.policy.default.Window.innerWidth.set", "noAccess");
+   user_pref("capability.policy.default.Window.innerHeight.set", "noAccess");
+   user_pref("capability.policy.default.Window.outerWidth.set", "noAccess");
+   user_pref("capability.policy.default.Window.outerHeight.set", "noAccess");
+   user_pref("capability.policy.default.Window.sizeToContent", "noAccess");
+   user_pref("capability.policy.default.Window.resizeTo", "noAccess");
+   user_pref("capability.policy.default.Window.resizeBy", "noAccess");
+</pre>
+
+<h4><a name="nomove">Prevent web pages from moving browser windows</a></h4>
+
+<pre class="code">
+   user_pref("capability.policy.default.Window.screenX.set", "noAccess");
+   user_pref("capability.policy.default.Window.screenY.set", "noAccess");
+   user_pref("capability.policy.default.Window.moveTo", "noAccess");
+   user_pref("capability.policy.default.Window.moveBy", "noAccess");
+</pre>
+
+<h4><a name="screen_settings">Prevent web pages from finding the your 
+screen resolution and color settings</a></h4>
+
+<p>(Note: these lines don't block all of the ways a web page might find
+your screen reslution; they only block the most common ones. They
+don't prevent a web page from finding out how big its window is.)</p>
+
+<!-- 
+(The other way to get your screen reslolution: try to create a
+10000x10000 window, or resize your window to 10000x10000.  Mozilla 
+will make it as big as your screen instead, and then the web page 
+can use numerous methods to determine the size of the window.) 
+-->
+
+<pre class="code">
+   user_pref("capability.policy.default.Screen.top", "noAccess");
+   user_pref("capability.policy.default.Screen.left", "noAccess");
+   user_pref("capability.policy.default.Screen.width", "noAccess");
+   user_pref("capability.policy.default.Screen.height", "noAccess");
+   user_pref("capability.policy.default.Screen.pixelDepth", "noAccess");
+   user_pref("capability.policy.default.Screen.colorDepth", "noAccess");
+   user_pref("capability.policy.default.Screen.availWidth", "noAccess");
+   user_pref("capability.policy.default.Screen.availHeight", "noAccess");
+   user_pref("capability.policy.default.Screen.availLeft", "noAccess");
+   user_pref("capability.policy.default.Screen.availTop", "noAccess");
+</pre>
+
+<h4><a name="status_text">Prevent web pages from changing the text 
+in the status bar</a></h4>
+
+<p>Some web pages create "blind links" by changing the status bar
+text when you hover over the link, preventing the link address
+from being show in the status bar. This line will turn most blind
+links into normal links.</p>
+
+<!-- 
+(The other way to make a blind link: wait for the user to click on the 
+link, and then quickly change the link address so the user ends up
+going to a different address than the one that was shown in the
+status bar.) 
+-->
+
+<pre class="code">
+   user_pref("capability.policy.default.Window.status", "noAccess");
+</pre>
+
+<h3><a name="ui">User Interface</a></h3>
+
+<p>We still have no user interface for configuring security policies.  In the future, we hope to have a panel in preferences that allows the user to set policies without having to manually edit user.js or know JavaScript.  This may be the hardest part of the feature to implement.  See <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=38966">bug 38966</a>.</p>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

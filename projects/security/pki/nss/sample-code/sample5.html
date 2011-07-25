@@ -1,0 +1,205 @@
+<?php
+
+$html_title = 'sample5';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+  <br>
+ <tt> /* Example code to illustrate PKI crypto ops (encrypt with public key,<br>
+  &nbsp;* decrypt with private key)<br>
+  &nbsp;*<br>
+  &nbsp;* No NSS db needed. The Public Key &amp; Private Key to use are<br>
+  &nbsp;* sourced from a base64-encoded DER SubjectPublicKeyInfo structure,<br>
+  &nbsp;* and a base64-encoded DER PrivateKeyInfo structure.<br>
+  &nbsp;*<br>
+  &nbsp;* There is no attempt to link the public &amp; private key together<br>
+  &nbsp;*<br>
+  &nbsp;* This example does not do any padding. It simply encrypts/decrypts
+ a block <br>
+  &nbsp;* of length equal to modulus length of the public/private key.<br>
+  &nbsp;*/<br>
+ <br>
+ <br>
+  #include "nss.h"<br>
+  #include "pk11pub.h"<br>
+ <br>
+  #define BASE64_ENCODED_SUBJECTPUBLICKEYINFO "MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAL3F6TIc3JEYsugo+a2fPU3W+Epv/FeIX21DC86WYnpFtW4srFtz2oNUzyLUzDHZdb+k//8dcT3IAOzUUi3R2eMCAwEAAQ=="<br>
+ <br>
+  #define BASE64_ENCODED_PRIVATEKEYINFO "MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAvcXpMhzckRiy6Cj5rZ89Tdb4Sm/8V4hfbUMLzpZiekW1biysW3Pag1TPItTMMdl1v6T//x1xPcgA7NRSLdHZ4wIDAQABAkEAjh8+4qncwcmGivnM6ytbpQT+k/jEOeXG2bQhjojvnXN3FazGCEFXvpuIBcJVfaIJS9YBCMOzzrAtO0+k2hWnOQIhAOC4NVbo8FQhZS4yXM1M86kMl47FA9ui//OUfbhlAdw1AiEA2DBmIXnsboKB+OHver69p0gNeWlvcJc9bjDVfdLVsLcCIQCPtV3vGYJv2vdwxqZQaHC+YB4gIGAqOqBCbmjD3lyFLQIgA+VTYdUNoqwtZWvE4gRf7IzK2V5CCNhg3gR5RGwxN58CIGCcafoRrUKsM66ISg0ITI04G9V/w+wMx91wjEEB+QBz"<br>
+ <br>
+ <br>
+  int main(int argc, char **argv)<br>
+  {<br>
+  &nbsp; SECStatus&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+rv;<br>
+  &nbsp; CERTCertificate&nbsp;&nbsp; *cert = NULL;<br>
+  &nbsp; SECKEYPublicKey&nbsp;&nbsp; *pubkey = NULL;<br>
+  &nbsp; CERTSubjectPublicKeyInfo *spki = NULL;<br>
+  &nbsp; SECKEYPrivateKey&nbsp; *pvtkey = NULL;<br>
+  &nbsp; int&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ modulus_len, i, outlen;<br>
+  &nbsp; char&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ *buf1 = NULL;<br>
+  &nbsp; char&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ *buf2 = NULL;<br>
+  &nbsp; char&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ *pubkstr = BASE64_ENCODED_SUBJECTPUBLICKEYINFO;<br>
+  &nbsp; char&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ *pvtkstr = BASE64_ENCODED_PRIVATEKEYINFO;<br>
+  &nbsp; SECItem&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ der;<br>
+  &nbsp; SECItem&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ nickname;<br>
+  &nbsp; PK11SlotInfo&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; *slot = NULL;<br>
+  &nbsp; <br>
+  &nbsp; /* Initialize NSS <br>
+  &nbsp;&nbsp; * You need to explicitly authenticate to the internal token
+ if you use<br>
+  &nbsp;&nbsp; * NSS_Init insteadf of NSS_NoDB_Init<br>
+  &nbsp;&nbsp; * Invoke this after getting the internal token handle<br>
+  &nbsp;&nbsp; *&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PK11_Authenticate(slot, PR_FALSE,
+ NULL);<br>
+  &nbsp;&nbsp; */<br>
+  &nbsp; rv = NSS_NoDB_Init(".");<br>
+  &nbsp; if (rv != SECSuccess)<br>
+  &nbsp; {<br>
+  &nbsp;&nbsp;&nbsp; fprintf(stderr, "NSS initialization failed (err %d)\n",<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_GetError());<br>
+  &nbsp;&nbsp;&nbsp; goto cleanup;<br>
+  &nbsp; }<br>
+ <br>
+  &nbsp; /* get internal slot */<br>
+  &nbsp; slot = PK11_GetInternalKeySlot();<br>
+  &nbsp; if (slot == NULL)<br>
+  &nbsp; {<br>
+  &nbsp;&nbsp;&nbsp; fprintf(stderr, "Couldn't find slot (err %d)\n", PR_GetError());<br>
+  &nbsp;&nbsp;&nbsp; goto cleanup;<br>
+  &nbsp; }<br>
+  &nbsp; <br>
+  &nbsp; rv = ATOB_ConvertAsciiToItem(&amp;der, pubkstr);<br>
+  &nbsp; if (rv!= SECSuccess)<br>
+  &nbsp; {<br>
+  &nbsp;&nbsp;&nbsp; fprintf(stderr, "ATOB_ConvertAsciiToItem failed %d\n",
+ PR_GetError());<br>
+  &nbsp;&nbsp;&nbsp; goto cleanup;<br>
+  &nbsp; }<br>
+  &nbsp; spki = SECKEY_DecodeDERSubjectPublicKeyInfo(&amp;der);<br>
+  &nbsp; SECITEM_FreeItem(&amp;der, PR_FALSE);<br>
+  &nbsp; pubkey = SECKEY_ExtractPublicKey(spki);<br>
+ <br>
+  &nbsp; if (pubkey == NULL)<br>
+  &nbsp; {<br>
+  &nbsp;&nbsp;&nbsp; fprintf(stderr, "Couldn't extract public key (err %d)\n",
+ PR_GetError());<br>
+  &nbsp;&nbsp;&nbsp; goto cleanup;<br>
+  &nbsp; }<br>
+ <br>
+  &nbsp; modulus_len = SECKEY_PublicKeyStrength(pubkey);<br>
+  &nbsp; fprintf(stderr, "Public Key Modulus %d bytes\n", modulus_len);<br>
+  &nbsp; buf1 = (char *)malloc(modulus_len);<br>
+  &nbsp; buf2 = (char *)malloc(modulus_len);<br>
+ <br>
+  &nbsp; /* initialize buf1 */<br>
+  &nbsp; for (i=0;i&lt;modulus_len;i++)<br>
+  &nbsp; {<br>
+  &nbsp;&nbsp;&nbsp; buf1[i]= (i %26) + 'A';<br>
+  &nbsp; }<br>
+  &nbsp; buf1[modulus_len-1] = '\0';<br>
+  &nbsp; fprintf(stderr, "Buffer being encrypted = \n%s\n", buf1);<br>
+ <br>
+  &nbsp; /* encrypt buf1, result will be in buf2 */<br>
+  &nbsp; rv = PK11_PubEncryptRaw(pubkey, buf2, buf1, modulus_len, NULL);<br>
+  &nbsp; if (rv != SECSuccess)<br>
+  &nbsp; {<br>
+  &nbsp;&nbsp;&nbsp; fprintf(stderr, "Encrypt with Public Key failed (err 
+%d)\n",<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_GetError());<br>
+  &nbsp;&nbsp;&nbsp; goto cleanup;<br>
+  &nbsp; }<br>
+  &nbsp; <br>
+  &nbsp; nickname.type = siBuffer;<br>
+  &nbsp; nickname.data = "pvtkeynickname";<br>
+  &nbsp; nickname.len = strlen("pvtkeynickname");<br>
+  &nbsp; rv = ATOB_ConvertAsciiToItem(&amp;der, pvtkstr);<br>
+  &nbsp; if (rv!= SECSuccess)<br>
+  &nbsp; {<br>
+  &nbsp;&nbsp;&nbsp; fprintf(stderr, "ATOB_ConvertAsciiToItem failed %d\n",
+ PR_GetError());<br>
+  &nbsp;&nbsp;&nbsp; goto cleanup;<br>
+  &nbsp; }<br>
+ <br>
+  &nbsp; /* KU_ALL includes a lot of different key usages, KU_DATA_ENCIPHERMENT<br>
+  &nbsp;&nbsp; * is enough for just RSA encryption.<br>
+  &nbsp;&nbsp; * publicValue arg (4th) can be NULL for RSA key - I think
+it  is even<br>
+  &nbsp;&nbsp; * ignored<br>
+  &nbsp;&nbsp; */<br>
+  &nbsp; PK11_ImportDERPrivateKeyInfoAndReturnKey(slot, &amp;der, NULL,<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ NULL, PR_FALSE, PR_TRUE, <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ KU_ALL, &amp;pvtkey, NULL);<br>
+  &nbsp; SECITEM_FreeItem(&amp;der, PR_FALSE);<br>
+  &nbsp;&nbsp;&nbsp; &nbsp;<br>
+  &nbsp; if (pvtkey == NULL)<br>
+  &nbsp; {<br>
+  &nbsp;&nbsp;&nbsp; fprintf(stderr, "Couldn't extract private key (err %d)\n",
+ PR_GetError());<br>
+  &nbsp;&nbsp;&nbsp; goto cleanup;<br>
+  &nbsp; }<br>
+ <br>
+  &nbsp; /* clear buf1 */<br>
+  &nbsp; for (i=0;i&lt;modulus_len;i++)<br>
+  &nbsp; {<br>
+  &nbsp;&nbsp;&nbsp; buf1[i]= '\0';<br>
+  &nbsp; }<br>
+ <br>
+  &nbsp; /* decrypt buf2, result will be in buf1 */<br>
+  &nbsp; rv = PK11_PubDecryptRaw(pvtkey, buf1, &amp;outlen, modulus_len,
+buf2,  <br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ modulus_len);<br>
+  &nbsp; if (rv != SECSuccess)<br>
+  &nbsp; {<br>
+  &nbsp;&nbsp;&nbsp; fprintf(stderr, "Decrypt with Private Key failed (err
+ %d)\n",<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_GetError());<br>
+  &nbsp;&nbsp;&nbsp; goto cleanup;<br>
+  &nbsp; }<br>
+  &nbsp; <br>
+  &nbsp; fprintf(stderr, "Result of decryption, outlen = %d\n", outlen);<br>
+  &nbsp; fprintf(stderr, "Result of decryption, buf = \n%s\n", buf1);<br>
+ <br>
+  cleanup:<br>
+  &nbsp; if (cert)<br>
+  &nbsp;&nbsp;&nbsp; CERT_DestroyCertificate(cert);<br>
+  &nbsp; if (pubkey)<br>
+  &nbsp;&nbsp;&nbsp; SECKEY_DestroyPublicKey(pubkey);<br>
+  &nbsp; if (pvtkey)<br>
+  &nbsp;&nbsp;&nbsp; SECKEY_DestroyPrivateKey(pvtkey);<br>
+  &nbsp; if (spki)<br>
+  &nbsp;&nbsp;&nbsp; SECKEY_DestroySubjectPublicKeyInfo(spki);<br>
+  &nbsp; if (slot)<br>
+  &nbsp;&nbsp;&nbsp; PK11_FreeSlot(slot);<br>
+  &nbsp; if (buf1)<br>
+  &nbsp;&nbsp;&nbsp; free(buf1);<br>
+  &nbsp; if (buf2)<br>
+  &nbsp;&nbsp;&nbsp; free(buf2);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ &nbsp;<br>
+  &nbsp; exit(1);<br>
+  }<br>
+ <br>
+ <br>
+ </tt>                  <br>
+ 
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

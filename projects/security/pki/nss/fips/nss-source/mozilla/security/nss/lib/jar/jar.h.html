@@ -1,0 +1,499 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> #ifndef <a href="../jar/jar.h.dep.html#__JAR_h_">__JAR_h_</a>
+<b><a name="38">   38</a></b> #define <a href="#38">__JAR_h_</a>
+<b><a name="39">   39</a></b> 
+<b><a name="40">   40</a></b> /*
+<b><a name="41">   41</a></b>  *  In general, any functions that return pointers
+<b><a name="42">   42</a></b>  *  have memory owned by the caller.
+<b><a name="43">   43</a></b>  *
+<b><a name="44">   44</a></b>  */
+<b><a name="45">   45</a></b> 
+<b><a name="46">   46</a></b> /* security includes */
+<b><a name="47">   47</a></b> #include "cert.h"
+<b><a name="48">   48</a></b> #include "hasht.h"
+<b><a name="49">   49</a></b> 
+<b><a name="50">   50</a></b> /* nspr 2.0 includes */
+<b><a name="51">   51</a></b> #include "prio.h"
+<b><a name="52">   52</a></b> 
+<b><a name="53">   53</a></b> #ifndef <a href="../jar/jar.h.dep.html#ZHUGEP">ZHUGEP</a></a>
+<b><a name="54">   54</a></b> #ifdef <a href="../util/secport.h.dep.html#XP_WIN16">XP_WIN16</a>
+<b><a name="55">   55</a></b> #define <a href="#55">ZHUGEP</a> __huge
+<b><a name="56">   56</a></b> #else
+<b><a name="57">   57</a></b> #define <a href="#57">ZHUGEP</a>
+<b><a name="58">   58</a></b> #endif
+<b><a name="59">   59</a></b> #endif
+<b><a name="60">   60</a></b> 
+<b><a name="61">   61</a></b> #include &lt;stdio.h&gt;
+<b><a name="62">   62</a></b> 
+<b><a name="63">   63</a></b> /* various types */
+<b><a name="64">   64</a></b> 
+<b><a name="65">   65</a></b> typedef enum
+<b><a name="66">   66</a></b>   {
+<b><a name="67">   67</a></b>   jarTypeMF = 2,
+<b><a name="68">   68</a></b>   jarTypeSF = 3,
+<b><a name="69">   69</a></b>   jarTypeMeta = 6,
+<b><a name="70">   70</a></b>   jarTypePhy = 7,
+<b><a name="71">   71</a></b>   jarTypeSign = 10,
+<b><a name="72">   72</a></b>   jarTypeSect = 11,
+<b><a name="73">   73</a></b>   jarTypeOwner = 13
+<b><a name="74">   74</a></b>   }
+<b><a name="75">   75</a></b> <a href="#75">jarType</a>;
+<b><a name="76">   76</a></b> 
+<b><a name="77">   77</a></b> /* void data in ZZList's contain JAR_Item type */
+<b><a name="78">   78</a></b> 
+<b><a name="79">   79</a></b> typedef struct <a href="#79">JAR_Item_</a>
+<b><a name="80">   80</a></b>   {
+<b><a name="81">   81</a></b>   char *<a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#pathname">pathname</a>;        /* relative. inside zip file */
+<b><a name="82">   82</a></b>   <a href="../jar/jar.h.dep.html#jarType">jarType</a> <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>;          /* various <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>s */
+<b><a name="83">   83</a></b>   <a href="../mozilla/dbm/include/ncompat.h.dep.html#<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#size">size</a></a></a></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#size"><sup>[4]</sup></a></a></a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#size"><sup>[8]</sup></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#size"><sup>[9]</sup></a>_t"><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#size">size</a></a></a></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#size"><sup>[4]</sup></a></a></a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#size"><sup>[8]</sup></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#size"><sup>[9]</sup></a>_t</a> <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#size">size</a></a></a></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#size"><sup>[4]</sup></a></a></a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#size"><sup>[8]</sup></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#size"><sup>[9]</sup></a>;           /* <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#size">size</a></a></a></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#size"><sup>[4]</sup></a></a></a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#size"><sup>[8]</sup></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#size"><sup>[9]</sup></a> of data below */
+<b><a name="84">   84</a></b>   void *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;            /* totally opaque */
+<b><a name="85">   85</a></b>   }
+<b><a name="86">   86</a></b> <a href="#86">JAR_Item</a>;
+<b><a name="87">   87</a></b> 
+<b><a name="88">   88</a></b> 
+<b><a name="89">   89</a></b> /* hashes */
+<b><a name="90">   90</a></b> 
+<b><a name="91">   91</a></b> typedef enum
+<b><a name="92">   92</a></b>   {
+<b><a name="93">   93</a></b>   jarHashNone = 0,
+<b><a name="94">   94</a></b>   jarHashBad = 1,
+<b><a name="95">   95</a></b>   jarHashPresent = 2
+<b><a name="96">   96</a></b>   }
+<b><a name="97">   97</a></b> <a href="#97">jarHash</a>;
+<b><a name="98">   98</a></b> 
+<b><a name="99">   99</a></b> typedef struct <a href="#99">JAR_Digest_</a>
+<b><a name="100">  100</a></b>   {
+<b><a name="101">  101</a></b>   <a href="../jar/jar.h.dep.html#jarHash">jarHash</a> md5_status;
+<b><a name="102">  102</a></b>   unsigned char <a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a> [<a href="../cryptohi/hasht.h.dep.html#MD5_LENGTH">MD5_LENGTH</a><a href="../freebl/blapit.h.dep.html#MD5_LENGTH"><sup>[1]</sup></a>];
+<b><a name="103">  103</a></b>   <a href="../jar/jar.h.dep.html#jarHash">jarHash</a> sha1_status;
+<b><a name="104">  104</a></b>   unsigned char <a href="../util/secoid.c.dep.html#sha1">sha1</a> [<a href="../cryptohi/hasht.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a><a href="../freebl/blapit.h.dep.html#SHA1_LENGTH"><sup>[1]</sup></a>];
+<b><a name="105">  105</a></b>   }
+<b><a name="106">  106</a></b> <a href="#106">JAR_Digest</a>;
+<b><a name="107">  107</a></b> 
+<b><a name="108">  108</a></b> 
+<b><a name="109">  109</a></b> /* physical archive formats */
+<b><a name="110">  110</a></b> 
+<b><a name="111">  111</a></b> typedef enum
+<b><a name="112">  112</a></b>   {
+<b><a name="113">  113</a></b>   jarArchGuess = 0,
+<b><a name="114">  114</a></b>   jarArchNone = 1,
+<b><a name="115">  115</a></b>   jarArchZip = 2,
+<b><a name="116">  116</a></b>   jarArchTar = 3
+<b><a name="117">  117</a></b>   }
+<b><a name="118">  118</a></b> <a href="#118">jarArch</a>;
+<b><a name="119">  119</a></b> 
+<b><a name="120">  120</a></b> 
+<b><a name="121">  121</a></b> #include "jar-ds.h"
+<b><a name="122">  122</a></b> 
+<b><a name="123">  123</a></b> /* jar object */
+<b><a name="124">  124</a></b> 
+<b><a name="125">  125</a></b> typedef struct <a href="#125">JAR_</a>
+<b><a name="126">  126</a></b>   {
+<b><a name="127">  127</a></b>   <a href="../jar/jar.h.dep.html#jarArch">jarArch</a> <a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#format">format</a>;       /* physical archive <a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#format">format</a> */ 
+<b><a name="128">  128</a></b>   char *url;            /* Where it came from */
+<b><a name="129">  129</a></b>   char *<a href="../mozilla/nsprpub/pr/tests/stat.c.dep.html#filename">filename</a></a>;       /* Disk location */
+<b><a name="130">  130</a></b>   FILE *fp;             /* For multiple extractions */    /* JAR_FILE */
+<b><a name="131">  131</a></b> 
+<b><a name="132">  132</a></b>   /* various linked lists */
+<b><a name="133">  133</a></b> 
+<b><a name="134">  134</a></b>   <a href="../jar/jar-ds.h.dep.html#ZZList">ZZList</a> *manifest;     /* Digests of MF sections */
+<b><a name="135">  135</a></b>   <a href="../jar/jar-ds.h.dep.html#ZZList">ZZList</a> *hashes;       /* Digests of actual signed files */
+<b><a name="136">  136</a></b>   <a href="../jar/jar-ds.h.dep.html#ZZList">ZZList</a> *phy;          /* Physical layout of JAR file */
+<b><a name="137">  137</a></b>   <a href="../jar/jar-ds.h.dep.html#ZZList">ZZList</a> *metainfo;     /* Global metainfo */
+<b><a name="138">  138</a></b> 
+<b><a name="139">  139</a></b>   <a href="../jar/jar.h.dep.html#JAR_Digest">JAR_Digest</a> *globalmeta;  /* digest of .MF global portion */
+<b><a name="140">  140</a></b> 
+<b><a name="141">  141</a></b>   /* Below will change to a linked list to support multiple sigs */
+<b><a name="142">  142</a></b> 
+<b><a name="143">  143</a></b>   int <a href="../util/secoid.c.dep.html#pkcs7">pkcs7</a>;            /* Enforced opaqueness */
+<b><a name="144">  144</a></b>   int valid;            /* PKCS7 signature validated */
+<b><a name="145">  145</a></b> 
+<b><a name="146">  146</a></b>   <a href="../jar/jar-ds.h.dep.html#ZZList">ZZList</a> *signers;      /* the above, per signer */
+<b><a name="147">  147</a></b> 
+<b><a name="148">  148</a></b>   /* Window context, very necessary for PKCS11 now */
+<b><a name="149">  149</a></b> 
+<b><a name="150">  150</a></b>   void *mw;             /* MWContext window context */
+<b><a name="151">  151</a></b> 
+<b><a name="152">  152</a></b>   /* Signal callback function */
+<b><a name="153">  153</a></b> 
+<b><a name="154">  154</a></b>   int (*signal) (int <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a>, struct <a href="../jar/jar.h.dep.html#JAR_">JAR_</a> *jar, 
+<b><a name="155">  155</a></b>      const char *<a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#metafile">metafile</a><a href="../mozilla/security/nss/cmd/signtool/sign.c.dep.html#metafile"><sup>[1]</sup></a>, char *<a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#pathname">pathname</a>, char *errorstring);
+<b><a name="156">  156</a></b>   }
+<b><a name="157">  157</a></b> <a href="#157">JAR</a>;
+<b><a name="158">  158</a></b> 
+<b><a name="159">  159</a></b> 
+<b><a name="160">  160</a></b> /*
+<b><a name="161">  161</a></b>  *  Iterator
+<b><a name="162">  162</a></b>  *
+<b><a name="163">  163</a></b>  *  Context for iterative operations. Certain operations
+<b><a name="164">  164</a></b>  *  require iterating multiple linked lists because of
+<b><a name="165">  165</a></b>  *  multiple signers. "nextsign" is used for this purpose.
+<b><a name="166">  166</a></b>  *
+<b><a name="167">  167</a></b>  */
+<b><a name="168">  168</a></b> 
+<b><a name="169">  169</a></b> typedef struct <a href="#169">JAR_Context_</a>
+<b><a name="170">  170</a></b>   {
+<b><a name="171">  171</a></b>   <a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar;             /* Jar we are searching */
+<b><a name="172">  172</a></b>   char *pattern;        /* Regular expression */
+<b><a name="173">  173</a></b>   <a href="../jar/jar.h.dep.html#jarType">jarType</a> finding;      /* Type of item to find */
+<b><a name="174">  174</a></b>   <a href="../jar/jar-ds.h.dep.html#ZZLink">ZZLink</a> *<a href="../mozilla/nsprpub/pr/src/misc/prtrace.c.dep.html#next">next</a>;         /* Next item in find */
+<b><a name="175">  175</a></b>   <a href="../jar/jar-ds.h.dep.html#ZZLink">ZZLink</a> *nextsign;     /* Next signer, sometimes */
+<b><a name="176">  176</a></b>   }
+<b><a name="177">  177</a></b> <a href="#177">JAR_Context</a>;
+<b><a name="178">  178</a></b> 
+<b><a name="179">  179</a></b> typedef struct <a href="#179">JAR_Signer_</a>
+<b><a name="180">  180</a></b>   {
+<b><a name="181">  181</a></b>   int <a href="../util/secoid.c.dep.html#pkcs7">pkcs7</a>;            /* Enforced opaqueness */
+<b><a name="182">  182</a></b>   int valid;            /* PKCS7 signature validated */
+<b><a name="183">  183</a></b>   char *owner;          /* name of .RSA file */
+<b><a name="184">  184</a></b>   <a href="../jar/jar.h.dep.html#JAR_Digest">JAR_Digest</a> *digest;   /* of .SF file */
+<b><a name="185">  185</a></b>   <a href="../jar/jar-ds.h.dep.html#ZZList">ZZList</a> *sf;           /* Linked list of .SF file contents */
+<b><a name="186">  186</a></b>   <a href="../jar/jar-ds.h.dep.html#ZZList">ZZList</a> *certs;        /* Signing information */
+<b><a name="187">  187</a></b>   }
+<b><a name="188">  188</a></b> <a href="#188">JAR_Signer</a>;
+<b><a name="189">  189</a></b> 
+<b><a name="190">  190</a></b> 
+<b><a name="191">  191</a></b> /* Meta informaton, or "policy", from the manifest file.
+<b><a name="192">  192</a></b>    Right now just one tuple per JAR_Item. */
+<b><a name="193">  193</a></b> 
+<b><a name="194">  194</a></b> typedef struct <a href="#194">JAR_Metainfo_</a>
+<b><a name="195">  195</a></b>   {
+<b><a name="196">  196</a></b>   char *<a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#header">header</a></a></a>;
+<b><a name="197">  197</a></b>   char *info;
+<b><a name="198">  198</a></b>   }
+<b><a name="199">  199</a></b> <a href="#199">JAR_Metainfo</a>;
+<b><a name="200">  200</a></b> 
+<b><a name="201">  201</a></b> /* This should not be global */
+<b><a name="202">  202</a></b> 
+<b><a name="203">  203</a></b> typedef struct <a href="#203">JAR_Physical_</a>
+<b><a name="204">  204</a></b>   {
+<b><a name="205">  205</a></b>   unsigned char compression;
+<b><a name="206">  206</a></b>   unsigned long <a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#offset">offset</a>;
+<b><a name="207">  207</a></b>   unsigned long <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>;
+<b><a name="208">  208</a></b>   unsigned long uncompressed_length;
+<b><a name="209">  209</a></b> #if defined(<a href="../util/secport.h.dep.html#XP_UNIX">XP_UNIX</a>) || defined(<a href="../util/secport.h.dep.html#XP_BEOS">XP_BEOS</a>)
+<b><a name="210">  210</a></b>   <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#uint16">uint16</a> <a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#mode">mode</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#mode"><sup>[1]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/minigzip.c.dep.html#mode"><sup>[4]</sup></a>;
+<b><a name="211">  211</a></b> #endif
+<b><a name="212">  212</a></b>   }
+<b><a name="213">  213</a></b> <a href="#213">JAR_Physical</a>;
+<b><a name="214">  214</a></b> 
+<b><a name="215">  215</a></b> typedef struct <a href="#215">JAR_Cert_</a>
+<b><a name="216">  216</a></b>   {
+<b><a name="217">  217</a></b>   <a href="../mozilla/dbm/include/ncompat.h.dep.html#size_t">size_t</a> <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>;
+<b><a name="218">  218</a></b>   void *<a href="../mozilla/nsprpub/pr/src/cplus/tests/tpd.cpp.dep.html#key">key</a><a href="../mozilla/nsprpub/pr/tests/tpd.c.dep.html#key"><sup>[1]</sup></a>;
+<b><a name="219">  219</a></b>   <a href="../<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>db/<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>t.h.dep.html#CERTCertificate">CERTCertificate</a> *<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>;
+<b><a name="220">  220</a></b>   }
+<b><a name="221">  221</a></b> <a href="#221">JAR_Cert</a>;
+<b><a name="222">  222</a></b> 
+<b><a name="223">  223</a></b> 
+<b><a name="224">  224</a></b> /* certificate stuff */
+<b><a name="225">  225</a></b> 
+<b><a name="226">  226</a></b> typedef enum
+<b><a name="227">  227</a></b>   {
+<b><a name="228">  228</a></b>   jarCertCompany = 1,
+<b><a name="229">  229</a></b>   jarCertCA = 2,
+<b><a name="230">  230</a></b>   jarCertSerial = 3,
+<b><a name="231">  231</a></b>   jarCertExpires = 4,
+<b><a name="232">  232</a></b>   jarCertNickname = 5,
+<b><a name="233">  233</a></b>   jarCertFinger = 6,
+<b><a name="234">  234</a></b>   jarCertJavaHack = 100
+<b><a name="235">  235</a></b>   }
+<b><a name="236">  236</a></b> <a href="#236">jarCert</a>;
+<b><a name="237">  237</a></b> 
+<b><a name="238">  238</a></b> /* callback types */
+<b><a name="239">  239</a></b> 
+<b><a name="240">  240</a></b> #define <a href="#240">JAR_CB_SIGNAL</a>        1
+<b><a name="241">  241</a></b> 
+<b><a name="242">  242</a></b> 
+<b><a name="243">  243</a></b> /* 
+<b><a name="244">  244</a></b>  *  This is the base for the JAR error codes. It will
+<b><a name="245">  245</a></b>  *  change when these are incorporated into allxpstr.c,
+<b><a name="246">  246</a></b>  *  but right now they won't let me put them there.
+<b><a name="247">  247</a></b>  *
+<b><a name="248">  248</a></b>  */
+<b><a name="249">  249</a></b> 
+<b><a name="250">  250</a></b> #ifndef <a href="../jar/jar.h.dep.html#SEC_ERR_BASE">SEC_ERR_BASE</a>
+<b><a name="251">  251</a></b> #define <a href="#251">SEC_ERR_BASE</a>                (-0x2000)
+<b><a name="252">  252</a></b> #endif
+<b><a name="253">  253</a></b>  
+<b><a name="254">  254</a></b> #define <a href="#254">JAR_BASE</a>                <a href="../jar/jar.h.dep.html#SEC_ERR_BASE">SEC_ERR_BASE</a> + 300
+<b><a name="255">  255</a></b> 
+<b><a name="256">  256</a></b> /* Jar specific error definitions */
+<b><a name="257">  257</a></b> 
+<b><a name="258">  258</a></b> #define <a href="#258">JAR_ERR_GENERAL</a>         (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 1)
+<b><a name="259">  259</a></b> #define <a href="#259">JAR_ERR_FNF</a>                (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 2)
+<b><a name="260">  260</a></b> #define <a href="#260">JAR_ERR_CORRUPT</a>                (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 3)
+<b><a name="261">  261</a></b> #define <a href="#261">JAR_ERR_MEMORY</a>                (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 4)
+<b><a name="262">  262</a></b> #define <a href="#262">JAR_ERR_DISK</a>                (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 5)
+<b><a name="263">  263</a></b> #define <a href="#263">JAR_ERR_ORDER</a>           (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 6)
+<b><a name="264">  264</a></b> #define <a href="#264">JAR_ERR_SIG</a>                (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 7)
+<b><a name="265">  265</a></b> #define <a href="#265">JAR_ERR_METADATA</a>        (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 8)
+<b><a name="266">  266</a></b> #define <a href="#266">JAR_ERR_ENTRY</a>                (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 9)
+<b><a name="267">  267</a></b> #define <a href="#267">JAR_ERR_HASH</a>                (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 10)
+<b><a name="268">  268</a></b> #define <a href="#268">JAR_ERR_PK7</a>                (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 11)
+<b><a name="269">  269</a></b> #define <a href="#269">JAR_ERR_PNF</a>                (<a href="../jar/jar.h.dep.html#JAR_BASE">JAR_BASE</a> + 12)
+<b><a name="270">  270</a></b> 
+<b><a name="271">  271</a></b> 
+<b><a name="272">  272</a></b> /*
+<b><a name="273">  273</a></b>  *  Birth and death 
+<b><a name="274">  274</a></b>  *
+<b><a name="275">  275</a></b>  */
+<b><a name="276">  276</a></b> 
+<b><a name="277">  277</a></b> extern <a href="../jar/jar.h.dep.html#JAR">JAR</a> *<a href="#277"><a href="../jar/jar.h.dep.html#JAR">JAR</a>_new</a> (void);
+<b><a name="278">  278</a></b> 
+<b><a name="279">  279</a></b> extern void <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_CALLBACK">PR_CALLBACK</a></a></a></a></a></a></a> <a href="#279"><a href="../jar/jar.h.dep.html#JAR">JAR</a>_destroy</a> (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar);
+<b><a name="280">  280</a></b> 
+<b><a name="281">  281</a></b> extern char *<a href="#281">JAR_get_error</a> (int <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a>);
+<b><a name="282">  282</a></b> 
+<b><a name="283">  283</a></b> extern int <a href="#283"><a href="../jar/jar.h.dep.html#JAR">JAR</a>_set_callback</a> (int <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>, <a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, 
+<b><a name="284">  284</a></b>   int (*fn) (int <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a>, <a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, 
+<b><a name="285">  285</a></b>   const char *<a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#metafile">metafile</a><a href="../mozilla/security/nss/cmd/signtool/sign.c.dep.html#metafile"><sup>[1]</sup></a>, char *<a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#pathname">pathname</a>, char *errortext));
+<b><a name="286">  286</a></b> 
+<b><a name="287">  287</a></b> extern void <a href="#287">JAR_init_callbacks</a>
+<b><a name="288">  288</a></b>   ( char *(*string_cb)(int), void *(*find_cx)(void), void *(*init_cx)(void) );
+<b><a name="289">  289</a></b> 
+<b><a name="290">  290</a></b> /*
+<b><a name="291">  291</a></b>  *  JAR_set_context
+<b><a name="292">  292</a></b>  *
+<b><a name="293">  293</a></b>  *  PKCS11 may require a password to be entered by the user
+<b><a name="294">  294</a></b>  *  before any crypto routines may be called. This will require
+<b><a name="295">  295</a></b>  *  a window context if used from inside Mozilla.
+<b><a name="296">  296</a></b>  *
+<b><a name="297">  297</a></b>  *  Call this routine with your context before calling 
+<b><a name="298">  298</a></b>  *  verifying or signing. If you have no context, call with NULL
+<b><a name="299">  299</a></b>  *  and one will be chosen for you.
+<b><a name="300">  300</a></b>  *
+<b><a name="301">  301</a></b>  */
+<b><a name="302">  302</a></b> 
+<b><a name="303">  303</a></b> int <a href="../jar/jar.h.dep.html#JAR">JAR</a>_set_context (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, void /*MWContext*/ *mw);
+<b><a name="304">  304</a></b> 
+<b><a name="305">  305</a></b> /*
+<b><a name="306">  306</a></b>  *  Iterative operations
+<b><a name="307">  307</a></b>  *
+<b><a name="308">  308</a></b>  *  JAR_find sets up for repeated calls with JAR_find_next.
+<b><a name="309">  309</a></b>  *  I never liked findfirst and findnext, this is nicer.
+<b><a name="310">  310</a></b>  *
+<b><a name="311">  311</a></b>  *  Pattern contains a relative pathname to match inside the
+<b><a name="312">  312</a></b>  *  archive. It is currently assumed to be "*".
+<b><a name="313">  313</a></b>  *
+<b><a name="314">  314</a></b>  *  To use:
+<b><a name="315">  315</a></b>  *
+<b><a name="316">  316</a></b>  *     JAR_Item *item;
+<b><a name="317">  317</a></b>  *     JAR_find (jar, "*.class", jarTypeMF);
+<b><a name="318">  318</a></b>  *     while (JAR_find_next (jar, &amp;item) &gt;= 0) 
+<b><a name="319">  319</a></b>  *       { do stuff }
+<b><a name="320">  320</a></b>  *
+<b><a name="321">  321</a></b>  */
+<b><a name="322">  322</a></b> 
+<b><a name="323">  323</a></b> 
+<b><a name="324">  324</a></b> /* Replacement functions with an external context */
+<b><a name="325">  325</a></b> 
+<b><a name="326">  326</a></b> extern <a href="../jar/jar.h.dep.html#<a href="../jar/jar.h.dep.html#JAR">JAR</a>_Context"><a href="../jar/jar.h.dep.html#JAR">JAR</a>_Context</a> *<a href="../jar/jar.h.dep.html#JAR">JAR</a>_find (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, char *pattern, <a href="../jar/jar.h.dep.html#jarType">jarType</a> <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>);
+<b><a name="327">  327</a></b> 
+<b><a name="328">  328</a></b> extern int <a href="#328">JAR_find_next</a> (<a href="../jar/jar.h.dep.html#JAR_Context">JAR_Context</a> *ctx, <a href="../jar/jar.h.dep.html#JAR_Item">JAR_Item</a> **it);
+<b><a name="329">  329</a></b> 
+<b><a name="330">  330</a></b> extern void <a href="#330">JAR_find_end</a> (<a href="../jar/jar.h.dep.html#JAR_Context">JAR_Context</a> *ctx);
+<b><a name="331">  331</a></b> 
+<b><a name="332">  332</a></b> 
+<b><a name="333">  333</a></b> /*
+<b><a name="334">  334</a></b>  *  Function to parse manifest file:
+<b><a name="335">  335</a></b>  *
+<b><a name="336">  336</a></b>  *  Many signatures may be attached to a single filename located
+<b><a name="337">  337</a></b>  *  inside the zip file. We only support one.
+<b><a name="338">  338</a></b>  *
+<b><a name="339">  339</a></b>  *  Several manifests may be included in the zip file. 
+<b><a name="340">  340</a></b>  *
+<b><a name="341">  341</a></b>  *  You must pass the MANIFEST.MF file before any .SF files.
+<b><a name="342">  342</a></b>  *
+<b><a name="343">  343</a></b>  *  Right now this returns a big ole list, privately in the jar structure.
+<b><a name="344">  344</a></b>  *  If you need to traverse it, use JAR_find if possible.
+<b><a name="345">  345</a></b>  *
+<b><a name="346">  346</a></b>  *  The path is needed to determine what type of binary signature is
+<b><a name="347">  347</a></b>  *  being passed, though it is technically not needed for manifest files.
+<b><a name="348">  348</a></b>  *
+<b><a name="349">  349</a></b>  *  When parsing an ASCII file, null terminate the ASCII raw_manifest
+<b><a name="350">  350</a></b>  *  prior to sending it, and indicate a length of 0. For binary digital
+<b><a name="351">  351</a></b>  *  signatures only, indicate the true length of the signature.
+<b><a name="352">  352</a></b>  *  (This is legacy behavior.)
+<b><a name="353">  353</a></b>  *
+<b><a name="354">  354</a></b>  *  You may free the manifest after parsing it.
+<b><a name="355">  355</a></b>  *
+<b><a name="356">  356</a></b>  */
+<b><a name="357">  357</a></b> 
+<b><a name="358">  358</a></b> extern int <a href="#358">JAR_parse_manifest</a> 
+<b><a name="359">  359</a></b>     (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, char <a href="../jar/jar.h.dep.html#ZHUGEP">ZHUGEP</a></a> *raw_manifest, 
+<b><a name="360">  360</a></b>        long <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>, const char *<a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#path">path</a></a>, const char *url);
+<b><a name="361">  361</a></b> 
+<b><a name="362">  362</a></b> /*
+<b><a name="363">  363</a></b>  *  Verify data (nonstreaming). The signature is actually
+<b><a name="364">  364</a></b>  *  checked by JAR_parse_manifest or JAR_pass_archive.
+<b><a name="365">  365</a></b>  *
+<b><a name="366">  366</a></b>  */
+<b><a name="367">  367</a></b> 
+<b><a name="368">  368</a></b> extern <a href="../jar/jar.h.dep.html#JAR_Digest">JAR_Digest</a> * <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_CALLBACK">PR_CALLBACK</a></a></a></a></a></a></a> <a href="#368">JAR_calculate_digest</a> 
+<b><a name="369">  369</a></b>     (void <a href="../jar/jar.h.dep.html#ZHUGEP">ZHUGEP</a></a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, long <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>);
+<b><a name="370">  370</a></b> 
+<b><a name="371">  371</a></b> extern int <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_CALLBACK">PR_CALLBACK</a></a></a></a></a></a></a> <a href="#371">JAR_verify_digest</a>
+<b><a name="372">  372</a></b>     (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, const char *name, <a href="../jar/jar.h.dep.html#<a href="../jar/jar.h.dep.html#JAR">JAR</a>_Digest"><a href="../jar/jar.h.dep.html#JAR">JAR</a>_Digest</a> *dig);
+<b><a name="373">  373</a></b> 
+<b><a name="374">  374</a></b> extern int <a href="#374">JAR_digest_file</a> (char *<a href="../mozilla/nsprpub/pr/tests/stat.c.dep.html#filename">filename</a></a>, <a href="../jar/jar.h.dep.html#JAR_Digest">JAR_Digest</a> *dig);
+<b><a name="375">  375</a></b> 
+<b><a name="376">  376</a></b> /*
+<b><a name="377">  377</a></b>  *  Get attribute from certificate:
+<b><a name="378">  378</a></b>  *
+<b><a name="379">  379</a></b>  *  Returns any special signed attribute associated with this cert
+<b><a name="380">  380</a></b>  *  or signature (passed in "data"). Attributes jarCert*. Most of the time
+<b><a name="381">  381</a></b>  *  this will return a zero terminated string.
+<b><a name="382">  382</a></b>  *
+<b><a name="383">  383</a></b>  */
+<b><a name="384">  384</a></b> 
+<b><a name="385">  385</a></b> extern int <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_CALLBACK">PR_CALLBACK</a></a></a></a></a></a></a> <a href="#385">JAR_cert_attribute</a>
+<b><a name="386">  386</a></b>     (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, <a href="../jar/jar.h.dep.html#jarCert">jarCert</a> attrib, long <a href="../mozilla/nsprpub/pr/src/cplus/tests/tpd.cpp.dep.html#key">key</a><a href="../mozilla/nsprpub/pr/tests/tpd.c.dep.html#key"><sup>[1]</sup></a>len, void *<a href="../mozilla/nsprpub/pr/src/cplus/tests/tpd.cpp.dep.html#key">key</a><a href="../mozilla/nsprpub/pr/tests/tpd.c.dep.html#key"><sup>[1]</sup></a>, 
+<b><a name="387">  387</a></b>        void **result, unsigned long *<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>);
+<b><a name="388">  388</a></b> 
+<b><a name="389">  389</a></b> /*
+<b><a name="390">  390</a></b>  *  Meta information
+<b><a name="391">  391</a></b>  *
+<b><a name="392">  392</a></b>  *  Currently, since this call does not support passing of an owner
+<b><a name="393">  393</a></b>  *  (certificate, or physical name of the .sf file), it is restricted to
+<b><a name="394">  394</a></b>  *  returning information located in the manifest.mf file. 
+<b><a name="395">  395</a></b>  *
+<b><a name="396">  396</a></b>  *  Meta information is a name/value pair inside the archive file. Here,
+<b><a name="397">  397</a></b>  *  the name is passed in *header and value returned in **info.
+<b><a name="398">  398</a></b>  *
+<b><a name="399">  399</a></b>  *  Pass a NULL as the name to retrieve metainfo from the global section.
+<b><a name="400">  400</a></b>  *
+<b><a name="401">  401</a></b>  *  Data is returned in **info, of size *length. The return value
+<b><a name="402">  402</a></b>  *  will indicate if no data was found.
+<b><a name="403">  403</a></b>  *
+<b><a name="404">  404</a></b>  */
+<b><a name="405">  405</a></b> 
+<b><a name="406">  406</a></b> extern int <a href="#406">JAR_get_metainfo</a>
+<b><a name="407">  407</a></b>     (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, char *name, char *<a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#header">header</a></a></a>, void **info, unsigned long *<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>);
+<b><a name="408">  408</a></b> 
+<b><a name="409">  409</a></b> extern char *<a href="../jar/jar.h.dep.html#JAR">JAR</a>_get_filename (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar);
+<b><a name="410">  410</a></b> 
+<b><a name="411">  411</a></b> extern char *<a href="../jar/jar.h.dep.html#JAR">JAR</a>_get_url (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar);
+<b><a name="412">  412</a></b> 
+<b><a name="413">  413</a></b> /*
+<b><a name="414">  414</a></b>  *  Return an HTML mockup of a certificate or signature.
+<b><a name="415">  415</a></b>  *
+<b><a name="416">  416</a></b>  *  Returns a zero terminated ascii string
+<b><a name="417">  417</a></b>  *  in raw HTML format.
+<b><a name="418">  418</a></b>  *
+<b><a name="419">  419</a></b>  */
+<b><a name="420">  420</a></b> 
+<b><a name="421">  421</a></b> extern char *<a href="#421">JAR_cert_html</a>
+<b><a name="422">  422</a></b>     (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, int style, long <a href="../mozilla/nsprpub/pr/src/cplus/tests/tpd.cpp.dep.html#key">key</a><a href="../mozilla/nsprpub/pr/tests/tpd.c.dep.html#key"><sup>[1]</sup></a>len, void *<a href="../mozilla/nsprpub/pr/src/cplus/tests/tpd.cpp.dep.html#key">key</a><a href="../mozilla/nsprpub/pr/tests/tpd.c.dep.html#key"><sup>[1]</sup></a>, int *result);
+<b><a name="423">  423</a></b> 
+<b><a name="424">  424</a></b> /* save the certificate with this fingerprint in persistent
+<b><a name="425">  425</a></b>    storage, somewhere, for retrieval in a future session when there 
+<b><a name="426">  426</a></b>    is no corresponding JAR structure. */
+<b><a name="427">  427</a></b> 
+<b><a name="428">  428</a></b> extern int <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_CALLBACK">PR_CALLBACK</a></a></a></a></a></a></a> <a href="#428">JAR_stash_cert</a>
+<b><a name="429">  429</a></b>         (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, long <a href="../mozilla/nsprpub/pr/src/cplus/tests/tpd.cpp.dep.html#key">key</a><a href="../mozilla/nsprpub/pr/tests/tpd.c.dep.html#key"><sup>[1]</sup></a>len, void *<a href="../mozilla/nsprpub/pr/src/cplus/tests/tpd.cpp.dep.html#key">key</a><a href="../mozilla/nsprpub/pr/tests/tpd.c.dep.html#key"><sup>[1]</sup></a>);
+<b><a name="430">  430</a></b> 
+<b><a name="431">  431</a></b> /* retrieve a certificate presumably stashed with the above
+<b><a name="432">  432</a></b>    function, but may be any certificate. Type is &amp;CERTCertificate */
+<b><a name="433">  433</a></b> 
+<b><a name="434">  434</a></b> void *<a href="#434">JAR_fetch_cert</a> (long <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>, void *<a href="../mozilla/nsprpub/pr/src/cplus/tests/tpd.cpp.dep.html#key">key</a><a href="../mozilla/nsprpub/pr/tests/tpd.c.dep.html#key"><sup>[1]</sup></a>);
+<b><a name="435">  435</a></b> 
+<b><a name="436">  436</a></b> /*
+<b><a name="437">  437</a></b>  *  New functions to handle archives alone
+<b><a name="438">  438</a></b>  *    (call JAR_new beforehand)
+<b><a name="439">  439</a></b>  *
+<b><a name="440">  440</a></b>  *  JAR_pass_archive acts much like parse_manifest. Certificates
+<b><a name="441">  441</a></b>  *  are returned in the JAR structure but as opaque data. When calling 
+<b><a name="442">  442</a></b>  *  JAR_verified_extract you still need to decide which of these 
+<b><a name="443">  443</a></b>  *  certificates to honor. 
+<b><a name="444">  444</a></b>  *
+<b><a name="445">  445</a></b>  *  Code to examine a JAR structure is in jarbert.c. You can obtain both 
+<b><a name="446">  446</a></b>  *  a list of filenames and certificates from traversing the linked list.
+<b><a name="447">  447</a></b>  *
+<b><a name="448">  448</a></b>  */
+<b><a name="449">  449</a></b> 
+<b><a name="450">  450</a></b> extern int <a href="#450">JAR_pass_archive</a>
+<b><a name="451">  451</a></b>     (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, <a href="../jar/jar.h.dep.html#jarArch">jarArch</a> <a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#format">format</a>, char *<a href="../mozilla/nsprpub/pr/tests/stat.c.dep.html#filename">filename</a></a>, const char *url);
+<b><a name="452">  452</a></b> 
+<b><a name="453">  453</a></b> /*
+<b><a name="454">  454</a></b>  * Same thing, but don't check signatures
+<b><a name="455">  455</a></b>  */
+<b><a name="456">  456</a></b> extern int <a href="#456">JAR_pass_archive_unverified</a>
+<b><a name="457">  457</a></b>     (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, <a href="../jar/jar.h.dep.html#jarArch">jarArch</a> <a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#format">format</a>, char *<a href="../mozilla/nsprpub/pr/tests/stat.c.dep.html#filename">filename</a></a>, const char *url);
+<b><a name="458">  458</a></b> 
+<b><a name="459">  459</a></b> /*
+<b><a name="460">  460</a></b>  *  Extracts a relative pathname from the archive and places it
+<b><a name="461">  461</a></b>  *  in the filename specified. 
+<b><a name="462">  462</a></b>  * 
+<b><a name="463">  463</a></b>  *  Call JAR_set_nailed if you want to keep the file descriptors
+<b><a name="464">  464</a></b>  *  open between multiple calls to JAR_verify_extract.
+<b><a name="465">  465</a></b>  *
+<b><a name="466">  466</a></b>  */
+<b><a name="467">  467</a></b> 
+<b><a name="468">  468</a></b> extern int <a href="#468">JAR_verified_extract</a>
+<b><a name="469">  469</a></b>     (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, char *<a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#path">path</a></a>, char *out<a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#path">path</a></a>);
+<b><a name="470">  470</a></b> 
+<b><a name="471">  471</a></b> /*
+<b><a name="472">  472</a></b>  *  JAR_extract does no crypto checking. This can be used if you
+<b><a name="473">  473</a></b>  *  need to extract a manifest file or signature, etc.
+<b><a name="474">  474</a></b>  *
+<b><a name="475">  475</a></b>  */
+<b><a name="476">  476</a></b> 
+<b><a name="477">  477</a></b> extern int <a href="#477">JAR_extract</a>
+<b><a name="478">  478</a></b>     (<a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar, char *<a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#path">path</a></a>, char *out<a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#path">path</a></a>);
+<b><a name="479">  479</a></b> 
+<b><a name="480">  480</a></b> 
+<b><a name="481">  481</a></b> #endif /* __JAR_h_ */ 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,358 @@
+<?php
+
+$html_title = 'PSM 2.0 Plan';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>
+PSM 2.0 Plan<br>
+(Codename: PIP)</h2></center>
+
+<center><i><font size=-1>Newsgroup: <a href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a></font></i>
+<br><i><font size=-1>Technical contacts: 
+<a href="mailto:javi@netscape.com,thayes@netscape.com?subject=PSM 2.0 Plan">
+Javier Delgadillo and Terry Hayes</a></font></i>
+<br><i><font size=-1>Engineering manager: <a href="mailto:lord@netscape.com?subject=PSM 2.0 Plan">Bob Lord
+</a></font></i></center>
+<p>
+<hr size="1" width="100%">
+
+<h3>Contents</h3>
+<p><a href="#intro">Introduction</a><BR>
+<a href="#goals">Goals</a><BR>
+<a href="#Feature_List">PSM 2.0 Prioritized Feature List</a><BR>
+<a href="#psm_ui">New User Interface</a><BR>
+<a href="#plats">Platforms and Dependencies</a><BR>
+<a href="#docs">Documentation Plan</a><BR>
+<a href="#schedule">Schedule</a>
+
+
+<hr size="1" width="100%">
+<a name="intro"><h3>
+Introduction</h3></a>
+Early last year, we contributed PSM to the open source community along with <a href="index.html">
+Network Security Services (NSS)</a>. All the code 
+that we could publish was released on mozilla.org. Initially, builds of PSM intended for use with 
+Mozilla, Netscape 6, and Communicator still relied on proprietary
+code licensed from RSA Security, Inc., by Netscape. Soon after the RSA patent expired last fall, 
+we reimplemented the RSA algorithm from scratch. We were then able to build NSS, and therefore PSM, 
+completely from open source code.
+
+<p>PSM 1.4 ships with Netscape 6 and is also available for use with Communicator 4.7 and later versions. It 
+runs as a separate process, displaying its UI in HTML windows when necessary. 
+(For background information on the origins of this architecture, 
+see <a href="history.html">A Brief History 
+of Personal Security Manager</a>.) 
+
+<p>The main goal of PSM 2.0 (Codename: PSM in Process, or PIP) is to run in-process as a fully integrated 
+Mozilla component. Other goals are listed below. Although S/MIME is not a feature of PSM 2.0, we will be laying 
+the groundwork for S/MIME features in later releases.
+
+<p>For a technical view of where we're going with 
+different flavors of PSM and how the the PSM 2.0 XPCOM shared libraries will be organized, see
+<a href="roadmap.html">PSM 2.0 Roadmap: A Technical View</a>.
+
+<p>For a detailed breakdown of tasks and dependencies related to PSM 2.0, see 
+<a href="piptasks.html">PSM 2.0 Task List</a>.
+
+ 
+
+<hr size="1" width="100%">
+<a name ="goals"><h3>Goals</h3></a>
+<p>PSM 2.0 has the following goals:
+
+<ol> 
+	<li><b>Complete integration with Mozilla</b>. PSM 1.x has provided a 
+number of important benefits over the past two years as Communicator has matured and Netscape 6.0 
+was developed and released. However, we now want to integrate PSM with Mozilla, so that PSM 2.0 
+will look just like other Mozilla components. It will use XPCOM, XUL, and language locales. It will
+be an in-process component. It will use autoconf, regardless 
+of support for autoconf in NSS. Any other projects that use the Mozilla code base 
+will be able to pick up the new implementation and have SSL work.
+
+
+	<li><b>Real modularity</b>. Some customers will not want to use PSM 
+for their applications. Version 2.0 will have a clean 
+separation from the rest of the Mozilla code base. In other words, 
+if you don't have PIP, you won't see any PIP preferences, the Certificate Manger, the lock icon, 
+and so on in the Mozilla client. When you install the PIP XPI file, the preferences and the rest of 
+the UI will show up.
+
+	<li><b>Support for embedded systems</b>. Embedding teams can use 
+just the crypto components without relying on our XUL infrastructure. 
+Such customers include set-top box developers. All features 
+must be accessible via APIs, not just our UI.</li>
+
+	<li><b>Think ahead about S/MIME</b>. The work we do for PSM 2.0 will lay the groundwork 
+for S/MIME features to be introduced in later releases. Although we're not doing any S/MIME work for 
+PIP at this time, we want to make sure that the UI and APIs don't have to change when we start to 
+imlement S/MIME features.
+</ol> 
+
+<p><a name="Feature_List"></a></p> <hr size="1"> 
+<h3>PSM 2.0 Prioritized Feature List</h3> 
+
+<ol> 
+	<li>Retain all existing <b>PSM 1.4 functionality</b> including (but not 
+limited to) these features:</li> 
+	<ul> 
+		<li>Servers can determine what version of PSM a client is using by using 
+a browser-side JavaScript call (as in PSM 1.x).</li> 
+		<li>Single-click/CRMF certificate issuance 
+(with UI) </li> 
+		<li>The Registration Authority has the option of suppressing the back-up dialog during certificate 
+issuance</li> 
+		<li>Interruption or discontinuation of the certificate issuance process does not 
+corrupt the certificate/key database</li> 
+		<li>User-prompted renewal of certificates</li> 
+		<li>PSM can be installed by loading and running the appropriate XPI file.</li> 
+		<li>OCSP support.</li> 
+		<li>Dual key generation support</li> 
+		<li>Client-auth logout capability via the <tt>crypto.logout</tt> call from JavaScript</li> 
+		<li>Encryption key escrow</li> 
+		<li>Existing SDR functionality (used to support the Password Manager).</li> 
+		<li>PKCS#11 support</li> 
+		<li>PKCS#12 support<br> </li> 
+	</ul> 
+	<li>Correct <b>NLS</b> support. When you switch locales, PSM inherits those changes.</li> 
+	<li>The <b>lock icon</b> will work correctly. 
+	<li>PSM will have a <b>new UI</b> written in XUL: </li> 
+	<ul> 
+		<li>Preferences will migrate to Edit/Preferences</li> 
+		<li>Status info for S/MIME and SSL goes to View/Page Info</li> 
+		<li>Certificate management becomes its own XUL window (see the demo here)</li> 
+		<li>We will introduce a new Smart Card Manager window.</li> 
+	</ul> 
+	<li>Preserve <b>IDL interfaces</b> that necko depends on</li> 
+	<li>Full <b>START_TLS </b>support. PSM will not need to handle unencrypted 
+network traffic. Protocols that support START_TLS will work as expected. When a protocol 
+handler encounters a START_TLS request from the server, it will be able to invoke PSM. </li> 
+	<li>The <b>builds</b> system will use autoconf (even if NSS does not). PSM will be 
+part of the standard Mozilla build process for Mac, Win32, and Linux. It will be possible 
+to build a Mozilla browser <i>without 
+            PSM.</i> </li> 
+	<li>PSM 2.0 will <b>perform</b> well enough for the following purposes:</li> 
+	<ul> 
+		<li>SSL performance will be better than C4.7 (without PSM)</li> 
+		<li>SSL performance will be better than N6.0.</li> 
+		<li>PSM will be able to encrypt/decrypt fast enough to allow someone 
+else to add disk encryption of prefs, history, bookmarks, locally stored 
+mail files. Other possible targets of disk encryption include skins, news 
+cache, and web cache. Goal: encrypt/decrypt 1MB/second.</li> 
+	</ul> 
+	<li>Full HTTPS <b>proxy</b> support (as in Commnicator 4.7x)</li> 
+	<li>PSM 2.0 will be at least 10% <b>smaller</b> than PSM 1.4 on win32 and Linux. </li> 
+<li><b>S/MIME ready</b>.&nbsp; The UI and APIs (where applicable) will be S/MIME ready. 
+That is, S/MIME functionality should be a super-set of PIP. The S/MIME developers will not need 
+to change PIP when adding their own features. </li> 
+	<li>No <b>nicknames</b>. The user will not be able to name or rename certificates. 
+From the user's point of view, there is no longer any such thing as a "certificate nickname". 
+Instead, the new UI should show enough information about a certificate that nicknames are 
+not necessary. </li>
+	<li><b>Display of CA</b>. When you click on the lock icon, Mozilla will open the Page 
+Info window. The CA should be displayed in the chrome during SSL connections.</li> 
+	<li><b>SSL version 2</b> is off by default</li> 
+	<li><b>Auto-cert select</b> is on by default</li> 
+	<li><b>TLS is </b>on by default</li> 
+	<li><b>Password quality</b> meter will teach users to select good passwords. 
+		</li> 
+	<li>Use <b>NSS 3.2</b> libraries in their static form (we won't be able to use the shared  
+libraries).</li> 
+	<li>PSM can be linked with or without NSS's S/MIME library.</li> 
+	<li><b>Basic-auth logins over SSL</b> should show a lock in the Name/Password dialog box to 
+tell the user that his/her password will not be sent over the  Internet in the clear.</li> 
+</ol> 
+
+
+<hr size="1" width="100%">
+
+<a name="psm_ui"><h3>New User Interface</h3></a>
+           
+PSM 2.0 will have an all-new UI written in XUL rather than in HTML:
+
+<ul>
+		<li><a href="http://people.netscape.com/lord/psm/readmefirst.html">PSM 2.0 UI</a> describes ongoing work on 
+the PSM 2.0 UI, including links to current XUL mockups that you can install and play with.
+
+	<li><a href="pip_ui_elements.html">Text for PSM UI Elements</a> lists all PSM 2.0 UI elements, the text they contain, and 
+other details related to context-sensitive help.
+
+	<li><a href="piptasks.html">PSM 2.0 Task List</a> provides a detailed breakdown of tasks and dependencies, including 
+UI elements.
+
+</ul>
+
+
+<h4>Lock Icon Behavior</h4>
+       
+<b>[to come]</b>
+       
+
+
+<p><a name="pageinfo"></a>
+<h4>Page Info Requirements</h4>
+       
+<p>The Page Info page should display the following information:</p>
+       
+<p>SSL</p>
+       
+<ol>
+               
+  <li>EE CN (e.g. "Amazon, Inc.") and signer's CN (e.g. "VeriSign, Inc.")</li>
+               
+  <li>Encryption protocol (e.g. SSLv2, SSLv3, TLS 3.1)</li>
+               
+  <li>SSL cipher and key length  (e.g. "RC4, 128-bits", or "3DES, 168-bits")</li>
+               
+  <li>Size of the public key (e.g. "1024-bits")</li>
+               
+  <li>Key exchange algorithm (e.g. "RSA key exchange")</li>
+               
+  <li>A button that opens the Certificate Manager to reveal all the detail 
+you could ever want to know about that server certificate.</li>
+               
+  <li>Which certificate, if any, the user presented to that server.</li>
+       
+</ol>
+       
+       
+<p>S/MIME</p>
+       
+<ol>
+               
+  <li>EE CN (e.g. "Bob Lord")</li>
+               
+  <li>Encryption protocol (e.g. S/MIME v3)</li>
+               
+  <li>SSL cipher and key length  (e.g. "RC2, 40-bits", or "3DES, 168-bits")</li>
+               
+  <li>Size of the public key (e.g. "1024-bits")</li>
+               
+  <li>Key exchange algorithm (e.g. "RSA key exchange")</li>
+               
+  <li>A button that opens the Certificate Manager to reveal all the detail 
+you could ever want to know about the sender's certificate.</li>
+       
+</ol>
+
+<hr size="1" width="100%">
+
+<a name="plats"><h3>
+Platforms and Dependencies</h3></a>
+
+<p>This release requires the use of <b>NSS 3.2</b> and <b>NSPR 4.1.</b></p>
+
+<p>PSM 2.0 will be built with the daily Mozilla builds. It will be tested and certified 
+on the following operating systems: <BR>
+<ul>
+	<li>Windows NT 4.0 SP6
+	<li>Windows 2000
+	<li>Windows 95
+	<li>Windows 98
+	<li>Windows ME
+	<li>Red Hat Linux 6.1, kernel 2.2, glibc 2.1
+	<li>Macintosh System 8.6
+	<li>Macintosh System 9
+	<li>Macintosh System X
+</ul>
+
+
+<p>The PSM team does not currently have the resources to test and certify PSM on any other platforms. 
+If you successfully run PSM on other platforms, or if you are interested 
+in taking responsibility for testing and maintaining PSM on a particular platform 
+that's not listed above, post a message to 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A>.
+
+
+
+
+<hr size="1">    
+<a name="docs"><h3>Documentation Plan</h3></a>
+
+<p>PSM 2.0 help will be available as appropriate content entries accessible from the 
+Help menu in the new Mozilla help viewer. Many entries will also be accessible from help buttons within 
+the PSM 2.0 UI ("context-sensitive help"), which will open up the same help viewer to the appropriate subsection 
+under the top-level heading "Privacy and Security."
+
+<p>For a preliminary outline and other details, see <a href="help_20.html">Documentation Plan for PSM 2.0</a>.
+
+<hr size="1">    
+<a name="schedule"><h3>
+Schedule</h3></a>
+       
+
+<table cellpadding="2" cellspacing="2" border="1" width="100%"> <tr ALIGN=CENTER> <td ALIGN=CENTER><b>Milestone</b></td>  <td><b>Date</b></td>  <td><b>Features</b></td>  <td><b>Comments</b></td> </tr>  
+
+
+
+<tr> <td ALIGN=CENTER>M1</td>  <td ALIGN=CENTER>3/2/2001</td>  <td>
+<ul><li>SSL server-auth.
+<li>SSL proxy.
+<li>Cert MIME types.
+<li>SDR (i.e. wallet).
+<li>Allow developers to build and run PSM 2.0.</ul></td>  <td>Completed.</td> </tr>  
+
+
+<tr> <td ALIGN=CENTER>M1.5</td>  <td ALIGN=CENTER>3/15/2001</td>  <td>Profile switching.
+</td>  <td>To help embedding clients. Completed.</td> </tr>  
+
+
+
+
+<tr> <td ALIGN=CENTER>M2</td>  <td ALIGN=CENTER>4/6/2001</td>  <td>
+<ul><li>Security preferences and UI (SSL ver, Cipher suites, OCSP etc.).
+<li>Certificate Manager.
+<li>SSL client auth.
+<li>PKCS7 interfaces for signed JS.
+<li>Lock icon fully functional.</ul></td>  <td>PSM 2.0 should be considered for use with mozilla at this point. Completed.</td> </tr>  
+
+
+<tr> <td ALIGN=CENTER>M3</td>  <td ALIGN=CENTER>4/27/2001</td>  
+
+<td>
+<ul><li>Fully functional Certificate Manager (mcgreer).
+<li>KEYGEN (ddrinan).
+<li>Certificate Viewer (javi).
+<li>Clicking lock icon opens Page Info + Page Info (thayes).
+<li>Preliminary help engineering--one or two buttons work. </ul>
+</td>  
+<td></td> </tr>  
+
+
+<tr> <td ALIGN=CENTER>M4</td>  <td ALIGN=CENTER>5/11/2001</td>  
+<td>
+<ul>
+<li>Move Security prefs into "Privacy and Security" (thayes).
+<li>cipher suit prefs (ddrinan).
+<li>OCSP (ddrinan).
+<li>CRMF/CMMF (javi).
+<li>Version string in JS (javi). 
+<li>Security Device Manager (mcgreer).
+<li>Each engineer hooks up help buttons for UI that he's working on.
+</td>  
+<td></td> </tr>  
+
+
+<tr> <td ALIGN=CENTER>M5</td>  <td ALIGN=CENTER>5/23/2001</td>  
+<td>
+<ul><li>CRLs: add, delete, view  (ddrinan).
+<li>Reset prefs (javi).</ul>
+</td>  
+<td>
+
+</td> </tr>  
+
+</table>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

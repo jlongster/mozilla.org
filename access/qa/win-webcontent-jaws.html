@@ -1,0 +1,1863 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html lang="en">
+
+<head>
+
+  <meta name="generator" content=
+  "HTML Tidy for Windows (vers 18 June 2008), see http://tidy.sourceforge.net/">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta http-equiv="Content-Language" content="en">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta http-equiv="Content-Script-Type" content="text/javascript">
+
+  <title>Testing web content with JAWS screen reader</title>
+
+  <link rel="up" href="testcases.html" title=
+  "Mozilla Accessibility QA testcases">
+  <link rel="first" href="win-ui-kbnav-focus.html" title=
+  "Windows UI keyboard navigation and focus">
+  <link rel="previous" href="win-webcontent-kbnav.html" title=
+  "Keyboard Navigation and Visual Focus of Web Content">
+  <link rel="next" href="jaws-checklist.html" title=
+  "JAWS webcontent checklist">
+  <link rel="last" href="jaws-checklist.html" title=
+  "JAWS webcontent checklist">
+
+  <style type="text/css">
+  a.c1, span.c2, p.c12, kbd {font-weight: bold;}
+
+  h3.c23, h4, h5, p.c8
+  {
+  background-color: rgb(221, 238, 255); /* light blue */
+  color: black;
+  }
+
+  form.c22 {width: 80%; margin-left: 10%;}
+  textarea.c21, label.c20 {background-color: rgb(255, 255, 170);}
+  table {border: 2px solid; width: 90%;}
+
+  form.c18
+  {
+  background-color: rgb(255, 255, 170);
+  color: black;
+  margin-left: 5%;
+  width: 90%;
+  }
+
+  fieldset {max-width: 20em;}
+  input.c14 {margin-left: 10%; margin-bottom: 10px;}
+  form.c13 {background-color: rgb(255, 255, 170); width: 80%; margin-left: 10%;}
+  span.c10 {font-weight: bold; background-color: rgb(204, 238, 255);}
+  ol.c9 {list-style-type: lower-alpha;}
+
+  blockquote, q, span.c4
+  {
+  background-color: rgb(238, 238, 238); /* light gray */
+  color: black;
+  }
+
+  div.c3, div.c5
+  {
+  background-color: rgb(221, 255, 187); /* light green */
+  color: black;
+  margin-left: 5%;
+  width: 90%;
+  }
+  </style>
+
+  <script type="text/javascript">
+  // code for accessible alternative to onChange event
+  function goJSLink()
+  {
+  linkPage = document.quickMenu.link2.options[document.quickMenu.link2.selectedIndex].value;
+  if (linkPage == "")
+  {
+  return;
+  }
+  else
+  {
+  self.location = linkPage;
+  };
+  }
+  </script>
+
+  <script type="text/javascript">
+  // Begin clock code
+  var timerID = null;
+  var timerRunning = false;
+
+  function stopclock()
+  {
+  if(timerRunning)
+  {
+  clearTimeout(timerID);
+  };
+  timerRunning = false;
+  }
+
+  function showtime()
+  {
+  var now = new Date();
+  var hours = now.getHours();
+  var minutes = now.getMinutes();
+  var seconds = now.getSeconds()
+  var timeValue = "" + ((hours >12) ? hours - 12 : hours)
+  if (timeValue == "0")
+  {
+  timeValue = 12;
+  };
+  timeValue += ((minutes < 10) ? ":0" : ":") + minutes;
+  timeValue += ((seconds < 10) ? ":0" : ":") + seconds;
+  timeValue += (hours >= 12) ? " P.M." : " A.M.";
+  document.getElementById("face").value = timeValue;
+  timerID = setTimeout("showtime()", 1000);
+  timerRunning = true;
+  }
+
+  function startclock()
+  {
+  stopclock();
+  showtime();
+  }
+  // End clock code
+  </script>
+
+</head>
+
+<body onload="startclock();">
+
+  <p class="crumbs"><em>You are here:</em> <a rel="up" href=
+  "testcases.html">Mozilla Accessibility QA testcases</a> &gt;
+  <strong>Testing web content with JAWS screen reader</strong></p>
+
+  <h1>Accessibility QA Test Case: web content with JAWS screen reader in
+  Firefox</h1>
+
+  <p>Firefox Web Content on Microsoft Windows: Navigation of Web content
+  using Freedom Scientific JAWS.</p>
+
+  <h2 id="tab-o-contents">Description</h2>
+
+  <p>This test case describes the approach and methods used to test
+  keyboard navigation and keyboard functions in a web page displayed in the
+  Windows version of Firefox, using the JAWS screen reader. Be sure to
+  follow the <a href="#Test_Case_Setup">test case setup instructions</a>
+  before proceeding with this test case.</p>
+
+  <p>The following types of functions will be tested. You can select the
+  provided link for each to go directly to the section.</p>
+
+  <ul class="toc">
+    <li><a href="#basic-nav">Basic text navigation</a>: Arrow keys, Page Up
+    and Down keys, Home, End, and several other JAWS navigation keys.</li>
+
+    <li><a href="#links">Links, images, and image maps</a>: Verify JAWS can
+    access link and image information.</li>
+
+    <li><a href="#java-scripts">JavaScripts</a>: Test simple JavaScript
+    functions</li>
+
+    <li><a href="#html-forms">HTML Form fields and controls</a>: Navigate
+    form entry fields and controls with the keyboard.</li>
+
+    <li><a href="#html-frames">HTML Frames</a>: Navigate frames with the
+    keyboard.</li>
+
+    <li><a href="#table-nav">Tables</a>: Navigate table cells</li>
+
+    <li><a href="#dhtml">DHTML controls</a>: Navigate DHTML elements with
+    the keyboard.</li>
+
+    <li><a href="#other-we-functions">Additional JAWS functions</a>: Verify
+    that other JAWS functions are compatible with Firefox.</li>
+
+    <li><a href="#caret-browsing">Firefox Caret Browsing mode</a>: Verify
+    that JAWS works in caret browsing mode</li>
+  </ul>
+
+  <p>This test case is based on the <a class="ex-ref" href=
+  "http://www-03.ibm.com/able/guidelines/web/accessweb.html">IBM Web
+  accessibility checklist</a>, checkpoints 1, 2, 3, 5, 7, 9, and 10.</p>
+
+  <h3>Scope of test</h3>
+
+  <p>The goal is to test is to verify that the Firefox Web browser and the
+  JAWS screen reader work together. The focus of this test is Web content
+  that is displayed in the Web browser. This Web page file contains a
+  number of common Web page elements. JAWS should read appropriate
+  information for all elements in this page, as described in this test
+  case.</p>
+
+  <p>This test might uncover Firefox bugs or JAWS bugs. Firefox bugs should
+  be reported to the Mozilla.org bug tracking system. JAWS bugs should be
+  reported to Freedom Scientific.</p>
+
+  <p>It is impossible include every combination of web page elements here,
+  but the techniques described here can be used when testing other Web
+  pages. This test case does not include applets, plug-ins, or multimedia
+  content. Testers are encouraged to find live Web sites containing those
+  elements, and test them using JAWS also.</p>
+
+  <p class="note">The techniques discussed in in this test case are
+  specifically for JAWS and Firefox running on the Microsoft Windows
+  operating system. Learning to use a screen reader such as JAWS takes time
+  and practice. This test case attempts to help a novice use many JAWS
+  features relating to Web page navigation. Read the JAWS Help pages and
+  online manual for more information on how to use JAWS.</p>
+
+  <h3>Tools required</h3>
+
+  <p>This test case requires the use of the JAWS screen reader. Information
+  about JAWS can be found on the <a class="ex-ref" href=
+  "http://www.freedomscientific.com/">Freedom Scientific Web site</a>.</p>
+
+  <h3 id="Test_Case_Setup">Test Case Setup</h3>
+
+  <p>All of these files must be available for this test case. You may save
+  them all in a file folder on your PC, or, if you have a Web server, they
+  may all be stored in a single directory on the Web server.</p>
+
+  <ol>
+    <li>win-webcontent-jaws.html (This is the file you are reading right
+    now.)</li>
+
+    <li>groovy-longdesc.html</li>
+
+    <li>groovyimg.jpg</li>
+
+    <li>imgmap2.jpg</li>
+  </ol>
+
+  <h3 class="c1">Test Case Instructions</h3>
+
+  <ol>
+    <li>Start JAWS.</li>
+
+    <li>Open this file with Firefox.
+
+      <ul>
+        <li>Use any method you prefer to open this file. For example, with
+        Firefox started, you can start the "Open file" dialog by pressing
+        <kbd>Ctrl + O</kbd>, or by selecting "Open file" from the File menu
+        bar pulldown.</li>
+      </ul>
+    </li>
+
+    <li>With JAWS running, scroll down through this file within the Firefox
+    browser and follow the instructions written in each section.
+    <span class="important">Do not use the mouse during the execution of
+    this test case.</span></li>
+
+    <li>In the instructions, keystroke sequences are listed in bold type.
+    For example: <kbd>H</kbd> means to press the "H" key on the keyboard,
+    or <kbd>Ctrl + H</kbd> means to press and hold the <kbd>Ctrl</kbd> key,
+    then press and release the <kbd>H</kbd> key, then release the
+    <kbd>Ctrl</kbd> key.</li>
+  </ol>
+
+  <div class="c3">
+    <h5>JAWS Virtual PC Cursor mode</h5>
+
+    <p><a class="c1" name="browse-mode" id="browse-mode">Note about JAWS
+    Virtual PC Cursor Mode</a>:</p>
+
+    <p>Because Web pages are essentially "read-only", JAWS uses its Virtual
+    PC Cursor mode when reading Web pages. This mode allows you to navigate
+    the page in a way similar to navigating a word processor document,
+    using the Arrow keys to move forward and backward, up and down.</p>
+
+    <p>If you are not familiar with JAWS cursor modes, see the JAWS online
+    documentation for more information.</p>
+
+    <p>Tip: You can press <kbd>Insert + Z</kbd> to toggle virtual cursor
+    mode on and off. If you have somehow turned virtual cursor mode off,
+    press <kbd>Insert + Z</kbd> to turn it back on.</p>
+
+    <p><span class="c2">Please note</span>:</p>
+
+    <ul>
+      <li>Even though you are in "read-only" mode, you may still need to
+      interact with parts of a web page, in text entry fields within a
+      form, for example. In that case, you will enter "Forms" mode by
+      pressing the Enter key, temporarily allowing keyboard input. See the
+      section on testing forms in this test case for more information.</li>
+    </ul>
+
+    <p>End of "Note about JAWS Virtual PC Cursor mode"</p>
+  </div>
+
+  <div class="c3">
+    <h5>JAWS Configuration Manager HTML Options</h5>
+
+    <p><a class="c1" name="verbosity-note" id="verbosity-note">Note about
+    JAWS Configuration Manager HTML options</a>:</p>
+
+    <p>JAWS provides a number of options that govern how much or how little
+    information JAWS will speak in certain situations. To view the HTML
+    options in the Configuration Manager:</p>
+
+    <ul>
+      <li>Open Configuration Manager by selecting it from the Utilities
+      menu in the JAWS application window. (Or, press <kbd>Insert +
+      F2</kbd>, then select Configuration Manager from the Run JAWS Manager
+      dialog.)</li>
+
+      <li>Press <kbd>Ctrl + Shift + D</kbd> to open the default
+      configuration file.</li>
+
+      <li>Select <span class="c2">Set Options</span> and then <span class=
+      "c2">HMTL Options</span> to view the HTML options dialog.</li>
+
+      <li>(Tip: to change options temporarily, for the current session
+      only, you can use the Adjust JAWS Verbosity dialog by pressing
+      <kbd>Insert + V</kbd> instead of using the Configuration Manager,
+      above.)</li>
+    </ul>
+
+    <p>These are the options to be used when running this test case. All of
+    these options are default settings, so you should not need to set them
+    manually. Even so, you should verify that these options are set before
+    running this test.</p>
+
+    <ul>
+      <li>Text Page
+
+        <ul>
+          <li>Select "Indicate Block Quotations". (Selected by
+          default)</li>
+        </ul>
+      </li>
+
+      <li>Graphics Page
+
+        <ul>
+          <li>Graphics verbosity: Select "Tagged graphics". (Selected by
+          default)</li>
+
+          <li>Graphics options: Select "Use Alt Attribute". (Selected by
+          default)</li>
+        </ul>
+      </li>
+
+      <li>Links Page
+
+        <ul>
+          <li>Select "Say Link Type". (Selected by default)</li>
+
+          <li>Select "Identify Same Page Links". (Selected by default)</li>
+
+          <li>Text Link Options: Select "Use Screen Text". (Selected by
+          default)</li>
+
+          <li>Image Map Link Verbosity: Select "All Image Map Links".
+          (Selected by default)</li>
+
+          <li>Graphical Link Verbosity: Select "All Graphical Links".
+          (Selected by default)</li>
+        </ul>
+      </li>
+
+      <li>Lists and Tables Page
+
+        <ul>
+          <li>Select "Indicate Lists". (Selected by default)</li>
+        </ul>
+      </li>
+
+      <li>Headings and Frames Page
+
+        <ul>
+          <li>Headings Verbosity: Select "Headings with Level". (Selected
+          by default)</li>
+
+          <li>Select "Announce Frame Start and End". (Selected by
+          default)</li>
+        </ul>
+      </li>
+
+      <li>Misc Page
+
+        <ul>
+          <li>Select "Speak Access Keys within Web Pages". (Selected by
+          default)</li>
+
+          <li>Form Field Prompts Options: Select "use labels". (Selected by
+          default)</li>
+        </ul>
+      </li>
+    </ul>
+
+    <p class="note">You can select additional verbosity options to increase
+    the amount of information spoken by JAWS, if you wish.</p>
+
+    <p>End of "Note about JAWS Configuration Manager HTML options"</p>
+  </div>
+
+  <h4><a name="basic-nav" accesskey="p" id="basic-nav">Basic Text
+  Navigation</a></h4>
+
+  <p>JAWS provides a number of keystrokes to navigate Web pages. This
+  section describes many of those keystrokes, to be tested with Firefox.
+  Perform all of these keystrokes to verify that they work with the Firefox
+  browser.</p>
+
+  <h5><a name="text-nav-techniques" id="text-nav-techniques">JAWS Web page
+  text navigation keystrokes</a></h5>
+
+  <p>Verify that each of the following JAWS navigation functions works with
+  as described while reading this test case.</p>
+  <hr>
+
+  <ul>
+    <li>
+      <span class="c4">General navigation keys</span>
+
+      <p>Perform each of the following keystrokes and verify that JAWS
+      performs the indicated action. These keystrokes can be tested from
+      anywhere within this test case.</p>
+
+      <ul>
+        <li><kbd>Left Arrow</kbd> and <kbd>Right Arrow</kbd> - move left or
+        right one character</li>
+
+        <li><kbd>Ctrl + Left</kbd> and <kbd>Ctrl + Right Arrow</kbd> - move
+        left or right one word</li>
+
+        <li><kbd>Up Arrow</kbd> and <kbd>Down Arrow</kbd> - move up or down
+        one line</li>
+
+        <li><kbd>Insert + Up Arrow</kbd> - read current line</li>
+
+        <li><kbd>Insert + Down Arrow</kbd> - Say all: read from current
+        position to end of page</li>
+
+        <li><kbd>Alt + Left Arrow</kbd> - Back a page</li>
+
+        <li><kbd>Backspace</kbd> - Back a page (same as Alt+LeftArrow)</li>
+
+        <li><kbd>Alt + Right Arrow</kbd> - Forward a page</li>
+
+        <li><kbd>Alt + D</kbd> - Move to address bar (location or URL text
+        field at top of browser window)</li>
+
+        <li><kbd>Insert + A</kbd> - Read address bar (without changing JAWS
+        cursor)</li>
+
+        <li><kbd>Insert + A</kbd> twice quickly - Move JAWS Cursor to
+        address bar (same as Alt+D???)</li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+
+  <ul>
+    <li>
+      <span class="c4">Heading navigation</span>
+
+      <div class="c5">
+        <p>Verbosity settings for headers (press <kbd>Ins + V</kbd> to
+        view):</p>Element: Headings
+
+        <ul>
+          <li>use default settings: (select "Indicate Heading Level")</li>
+        </ul>
+      </div>
+
+      <p>Perform the following keystrokes and verify that JAWS performs the
+      indicated action.</p>
+
+      <p>(Note that this file contains heading levels 3, 4, and 5. The main
+      section headings, including the title, are &lt;h3&gt; headers, and
+      some sections contain &lt;h4&gt; and &lt;h5&gt; headers. As a test
+      aid, sighted users can visually recognize headers in this file by the
+      light blue background stretching across the window from left to
+      right. If you are unsure if JAWS is finding all legitimate header
+      tags, view the page source for the page to determine where html
+      header tags are truly being used.)</p>
+
+      <ul>
+        <li><kbd>Insert + F6</kbd> - Display list of headings on page</li>
+
+        <li><kbd>H</kbd> - Next heading</li>
+
+        <li><kbd>Shift + H</kbd> - Previous heading</li>
+
+        <li><kbd>Alt + Insert + Home</kbd> - First heading</li>
+
+        <li><kbd>Alt + Insert + End</kbd> - Last heading</li>
+
+        <li><kbd>#</kbd> (1 through 6) - Next heading of level #, where #
+        is from 1 to 6. (This file contains level 3, 4, and 5
+        headers.)</li>
+
+        <li><kbd>Shift + #</kbd> (1 through 6) - Previous heading of level
+        #, where # is from 1 to 6.</li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+
+  <ul>
+    <li>
+      <span class="c4">Paragraph navigation</span>
+
+      <p>Perform the following keystrokes and verify that JAWS performs the
+      indicated action.</p>
+
+      <p>There are many paragraphs in this test case file (using the html
+      &lt;p&gt; tags). To ensure that JAWS is navigating to true html
+      paragraphs, you can view the page source to see where the paragraph
+      tags are used.</p>
+
+      <ul>
+        <li><kbd>P</kbd> - Next paragraph</li>
+
+        <li><kbd>Shift + P</kbd> - Previous paragraph</li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+
+  <ul>
+    <li>
+      <span class="c4">List navigation</span>
+
+      <div class="c5">
+        <p>Verbosity settings for lists (press <kbd>Ins + V</kbd> to
+        view):</p>Element: Lists
+
+        <ul>
+          <li>Use default settings (select "Insert Beginning / End
+          Message", "Indicate Bullets", "Read to End (Bullets))</li>
+        </ul>
+      </div>
+
+      <p>Perform the following keystrokes and verify that JAWS performs the
+      indicated action. There are many lists found in this file, including
+      this list of instructions.</p>
+
+      <ul>
+        <li><kbd>Ctrl + Insert + L</kbd> - Display list of all ordered,
+        unordered, and definition lists</li>
+
+        <li><kbd>L</kbd> - Next list</li>
+
+        <li><kbd>Shift + L</kbd> - Previous list</li>
+
+        <li><kbd>I</kbd> - Next list item</li>
+
+        <li><kbd>Shift + I</kbd> - Previous list item</li>
+
+        <li><kbd>F8</kbd> - Select list (when pointing to beginning of
+        list)</li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+
+  <ul>
+    <li>
+      <span class="c4">Quote/Blockquote navigation</span> - using &lt;q&gt;
+      or &lt;blockquote&gt; html tags.
+
+      <div class="c5">
+        <p>Verbosity settings for quotes / blockquotes (press <kbd>Ins +
+        V</kbd> to view):</p>Element: Quotes / Block Quotes
+
+        <ul>
+          <li>Recommended settings: select "Insert Beginning / End
+          Message"</li>
+        </ul>
+      </div>
+
+      <p>Perform the following keystrokes and verify that JAWS performs the
+      indicated action. There are some quote and blockquote examples
+      provided below for use in testing these keystrokes.</p>
+
+      <ul>
+        <li><kbd>Q</kbd> - Next quote or blockquote</li>
+
+        <li><kbd>Shift + Q</kbd> - Previous quote or blockquote</li>
+      </ul>
+
+      <p>Quote and Blockquote examples for use in this test:</p><q>This
+      sentence is surrounded by the &lt;q&gt; quote html tag.</q>
+
+      <blockquote>
+        <p>And this set of sentences is surrounded by the
+        &lt;blockquote&gt; tags, and is therefore set apart from the
+        surrounding text. You should be able to use the above quote-related
+        keystrokes to navigate these two quoted test sections.</p>
+      </blockquote>
+    </li>
+  </ul>
+
+  <hr>
+
+  <ul>
+    <li>
+      <span class="c4">Access Keys</span>
+
+      <p>An Access key is an attribute that can be associated with various
+      HTML tags. The access key is a single keyboard character. When an
+      access key is defined, Firefox allows you to press <kbd>Alt + Shift +
+      specified character</kbd> to jump directly to the spot on the web
+      page where the access key was defined.</p>
+
+      <p>The following lines contain several access keys. Press the
+      indicated key combinations to jump to the indicated element. Verify
+      the following things:</p>
+
+      <ol>
+        <li>Verify that the screen reader jumps to the indicated
+        destination, and speaks the proper information for the target
+        element.</li>
+
+        <li>Verify that, after jumping to the target, the screen reader
+        proceeds from that point when continuing navigation. For example,
+        if you press <kbd>Alt + Shift + B</kbd> to jump to the first
+        button, then press the Down Arrow key, the screen reader should
+        speak the line directly following the button, and not retain its
+        original focus from before the execution of the access key.</li>
+
+        <li>Verify that when reading the elements that contain access keys,
+        JAWS announces that an access key is available, and also speaks the
+        alt+shift+letter combination of the access key.</li>
+      </ol>
+
+      <p>The following access key combinations are provided below:</p>
+
+      <ul>
+        <li><kbd>Alt + Shift + A</kbd> - access key attached to an ANCHOR
+        tag (defining a text link).</li>
+
+        <li><kbd>Alt + Shift + B</kbd> - access key attached to a BUTTON
+        tag.</li>
+
+        <li><kbd>Alt + Shift + C</kbd> - access key attached to an INPUT
+        tag.</li>
+
+        <li><kbd>Alt + Shift + L</kbd> - access key attached to a LABEL
+        tag.</li>
+
+        <li><kbd>Alt + Shift + T</kbd> - access key attached to a TEXTAREA
+        tag.</li>
+      </ul>
+
+      <p class="c8">Accesskey in an anchor tag: <a accesskey="a" href=
+      "#basic-nav">Press Alt+Shift+A to jump to the basic text navigation
+      section.</a> Note: When attached to a text link anchor tag, Firefox
+      activates the link when selecting the access key, rather than just
+      moving focus to the link text itself.</p>
+
+      <p>Accesskey on button tag. Press <kbd>Alt + Shift + B</kbd> to jump
+      to the following button.<br>
+      <button accesskey="b">accesskey b</button></p>
+
+      <form action="">
+        <p>Accesskey on an input tag. Press <kbd>Alt + Shift + C</kbd> to
+        jump to the following input button.</p>
+
+        <p><input name="akbutton" value="Accesskey on input tag."
+        accesskey="c" type="button"></p>
+
+        <p><label for="aklabel">Accesskey on label tag. Press <kbd>Alt +
+        Shift + L</kbd> to jump to this text field:</label> <input name=
+        "aklabel" id="aklabel" accesskey="l" type="text"></p>
+
+        <p><label for="aktextarea">Accesskey in textarea. Press <kbd>Alt +
+        Shift + T</kbd> to get here.</label></p>
+
+        <p>
+        <textarea id="aktextarea" rows="3" cols="30" accesskey="t">
+</textarea></p>
+      </form>
+    </li>
+  </ul>
+  <hr>
+
+  <ul>
+    <li>
+      <span class="c4">Miscellaneous navigation</span>
+
+      <p>Perform the following keystrokes and verify that JAWS performs the
+      indicated action. You may need to view the page source to ensure that
+      JAWS is navigating to the proper sections of the page.</p>
+
+      <ul>
+        <li><kbd>S</kbd> - Move to next same element (same as the current
+        element)</li>
+
+        <li><kbd>Shift + S</kbd> - Previous same element</li>
+
+        <li><kbd>D</kbd> - Move to next different element (different from
+        current element)</li>
+
+        <li><kbd>Shift + D</kbd> - Previous different element</li>
+
+        <li><kbd>Shift + Period</kbd> (.) - Move to next element</li>
+
+        <li><kbd>Shift + Comma</kbd> (,) - Previous element</li>
+
+        <li><kbd>J</kbd> - Jump to line (then press line number, and
+        <kbd>Enter</kbd> to complete the jump)</li>
+
+        <li><kbd>Shift + J</kbd> - Previous line (return to pre-jump
+        location on page)</li>
+
+        <li><kbd>Z</kbd> - Move to next Division</li>
+
+        <li><kbd>Shift + Z</kbd> - Previous Division</li>
+
+        <li><kbd>Ctrl + Insert + Z</kbd> - Display list of Divisions</li>
+
+        <li><kbd>Shift + D</kbd> - Previous different line</li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+
+  <p>End of Basic Text Navigation test section.</p>
+
+  <h4><a name="links" accesskey="q" id="links">Testing Link, Image, and
+  Image Map Navigation</a></h4>
+
+  <div class="c5">
+    <p>Verbosity settings for links and images (press <kbd>Ins + V</kbd> to
+    view):</p>
+
+    <ul>
+      <li>Element: Links
+
+        <ul>
+          <li>Use default settings (select "Indicate Link Before",
+          "Identify Visited Links", "Read to End")</li>
+        </ul>
+      </li>
+    </ul>
+
+    <ul>
+      <li>Element: Objects
+
+        <ul>
+          <li>Recommended settings: select "Include Type", "Expose
+          Alternative Text"</li>
+        </ul>
+      </li>
+    </ul>
+
+    <ul>
+      <li>Element: LongDesc
+
+        <ul>
+          <li>Recommended settings: select "Indicate LongDesc"</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <p>JAWS provides keystrokes to navigate from one link to another in the
+  Web page. Perform the following keystrokes and verify that JAWS performs
+  the indicated action.</p>
+
+  <p>Following the list of keystrokes to be tested, below, you will find
+  some sample link elements to be used in this test, including a text link,
+  an image link, and an image map containing several links. (There are many
+  other links in this file that can be tested using the JAWS link
+  navigation keys also.)</p>
+
+  <h5><a name="link-nav-techniques" id="link-nav-techniques">JAWS Web page
+  link and graphic navigation keystrokes</a></h5>
+
+  <ul>
+    <li><kbd>Insert + F7</kbd> - Display list of Links on page</li>
+
+    <li>
+      <kbd>Tab</kbd> - move to next link or control.
+
+      <ul>
+        <li>(Note that the <kbd>Tab</kbd> key will move to not only links,
+        but also other controls, like text entry fields and buttons. This
+        section is concerned only with moving between links.)</li>
+      </ul>
+    </li>
+
+    <li><kbd>Shift + Tab</kbd> - move to previous link or control</li>
+
+    <li><kbd>V</kbd> - Next visited link</li>
+
+    <li><kbd>Shift + V</kbd> - Previous visited link</li>
+
+    <li><kbd>U</kbd> - Next unvisited link</li>
+
+    <li><kbd>Shift + U</kbd> - Previous unvisited link</li>
+
+    <li><kbd>Enter</kbd> - Activate Link at current cursor position (if on
+    a link) Verify that the JAWS focus moves to the target of the
+    link.</li>
+
+    <li><kbd>Enter</kbd> - Enter is also used by JAWS to activate link to
+    "long description" file associated with a graphic image. (Does JAWS
+    provide a way to view the longdesc if there is a link (href) associated
+    with the image?)</li>
+
+    <li><kbd>Ctrl + Enter</kbd> - Open link in new tab (Firefox tabbed
+    browsing)</li>
+
+    <li><kbd>Shift + Enter</kbd> - Open link in new window</li>
+
+    <li><kbd>N</kbd> - Move to next non-link text</li>
+
+    <li><kbd>Shift + N</kbd> - Previous non-link text</li>
+
+    <li><kbd>A</kbd> - Move to next Anchor</li>
+
+    <li><kbd>Shift + A</kbd> - Previous Anchor</li>
+
+    <li><kbd>Ctrl + Insert + A</kbd> - Display list of Anchors on page</li>
+
+    <li><kbd>G</kbd> - Move to next graphic</li>
+
+    <li><kbd>Shift + G</kbd> - Previous graphic</li>
+
+    <li><kbd>Ctrl + Insert + G</kbd> - Display list of graphics on
+    page</li>
+  </ul>
+
+  <h5>Link elements for use in Link testing</h5>
+
+  <p>Verify that all of the JAWS keystrokes listed above work properly with
+  all of the following links.</p>
+
+  <ol>
+    <li>Select this text link to <a href="#links">jump to the "Link, Image,
+    and Image Map Navigation" section header</a>.</li>
+
+    <li>The graphic image below is an image link that links to the Link
+    Navigation section header. It also has alternative text (alt) defined.
+
+      <ul>
+        <li>Verify that JAWS speaks the alternative text for the image,
+        which is: "Groovy Image Link Button"</li>
+
+        <li>Verify that JAWS indicates that a link is associated with the
+        image.</li>
+
+        <li>With focus on the image button, verify that JAWS provides a
+        method of activating the link. You should be able to press
+        <strong>Enter</strong> to activate the link.</li>
+      </ul><a href="#links"><img alt="Groovy Image Link Button" src=
+      "groovyimg.jpg" height="66" width="69"></a>
+    </li>
+
+    <li>This is an image map that links to various sections of this file.
+    Each area of the image has alternative text which is the same as the
+    text on the image.
+
+      <ul>
+        <li>Verify that you can navigate to each of the buttons on the
+        image map.</li>
+
+        <li>Verify that JAWS reads the Alternative text for each button
+        (which is the same as the button text).</li>
+
+        <li>Verify that you can activate the links for the buttons by
+        pressing the <kbd>Enter</kbd> key.</li>
+      </ul><img alt=
+      "image map containing links to various sections of this document."
+      src="imgmap2.jpg" usemap="#ImgNav_Map2" height="39" width="618">
+    </li>
+
+    <li>The graphic image below has a long description (longdesc) attribute
+    defined.
+
+      <ul>
+        <li>Verify that JAWS speaks the alternative text for the image,
+        which is: "Groovy Image Link Button with long description"</li>
+
+        <li>Verify that JAWS indicates that a long description is available
+        for the image. JAWS should prompt you to press
+        <strong>Enter</strong> to open the long description.</li>
+
+        <li>With focus on the image button, press <strong>Enter</strong> to
+        open the long description page. Verify that the long description
+        page is displayed and is announced by JAWS.</li>
+
+        <li>Return to this page when finished reading the long description
+        page.</li>
+      </ul><img alt="Groovy Image Link Button with long description" src=
+      "groovyimg.jpg" longdesc="groovy_longdesc.html" height="66" width=
+      "69">
+    </li>
+  </ol><!-- IMAGE MAP DEFINITION for image map file imgmap1.jpg, above -->
+
+  <p><map name="ImgNav_Map2" id="ImgNav_Map2">
+    <area coords="14,7,71,27" shape="rect" href="#basic-nav" alt="Text"
+    title="Basic Text Navigation test techniques">
+    <area coords="106,7,158,27" shape="rect" href="#links" alt="Links"
+    title="Link navigation test techniques">
+    <area coords="187,7,247,27" shape="rect" href="#java-scripts" alt=
+    "JavaScripts" title="JavaScript navigation test techniques">
+    <area coords="273,7,336,27" shape="rect" href="#html-forms" alt="Forms"
+    title="HTML Forms navigation test techniques">
+    <area coords="360,7,424,27" shape="rect" href="#html-frames" alt=
+    "Frames" title="HTML Frames navigation test techniques">
+    <area coords="441,7,518,27" shape="rect" href="#table-nav" alt="Tables"
+    title="HTML Table navigation test techniques">
+    <area coords="532,7,603,27" shape="rect" href="#other-we-functions"
+    alt="Misc" title="Additional JAWS feature test techniques">
+  </map></p>
+
+  <p>End of link navigation test section.</p>
+
+  <h4><a name="java-scripts" accesskey="r" id="java-scripts">Testing Simple
+  JavaScripts</a></h4>
+
+  <div class="c5">
+    <p>Verbosity settings for JavaScripts (press <kbd>Ins + V</kbd> to
+    view). Note, there are no specific options for JavaScripts, but the
+    Object settings may affect the way Window-Eyes reads certain
+    elements.</p>
+
+    <ul>
+      <li>Element: Objects
+
+        <ul>
+          <li>Recommended settings: select "Include Type"</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <p>This section contains some simple JavaScripts.. Please feel free to
+  find other more complex JavaScript examples on other Web pages on the
+  net, and test the ability to use those JavaScripts in Firefox using
+  JAWS.</p>
+
+  <h5>Javascript: Onkeypress alert</h5>
+
+  <p>The JavaScript in this section is activated by placing keyboard focus
+  on the sentence that says "Activate this JavaScript to cause onKeyPress
+  alert", and pressing the <kbd>Enter</kbd> key. When activated, the
+  JavaScript will display an alert pop-up message.</p>
+
+  <p>The goal of this section is to verify the following things:</p>
+
+  <ul>
+    <li>Verify that JAWS identifies the JavaScript as such, letting the
+    user know that they can interact with the script.</li>
+
+    <li>Verify that JAWS will allow the user to activate the script.</li>
+
+    <li>Verify that JAWS will read the resulting alert pop-up to let the
+    user know what has happened.</li>
+
+    <li>Verify that JAWS honors the "tabindex" property and adds the
+    Javascript text to its tab ring.</li>
+  </ul>
+
+  <ol>
+    <li>Navigate to the script, below, using these methods. (Go through
+    these steps twice, once for each method of navigation!):
+
+      <ol class="c9">
+        <li>Use normal JAWS <a href="#text-nav-techniques">text navigation
+        techniques</a> to read this section.
+
+          <ul>
+            <li>Verify that JAWS makes it clear that a JavaScript has been
+            encountered when it reaches the script text.</li>
+          </ul>
+        </li>
+
+        <li>Press the <kbd>Tab</kbd> or <kbd>Shift + Tab</kbd> key to move
+        focus to the script text.
+
+          <ul>
+            <li>Verify that JAWS includes the script in its tab ring. (The
+            JavaScript text is surrounded by an anchor tag with the
+            "tabindex" attribute, which instructs the Web browser to add it
+            to the tab ring.)</li>
+          </ul>
+        </li>
+      </ol>
+    </li>
+
+    <li>With keyboard focus on the script
+
+      <ul>
+        <li>Press <kbd>Enter</kbd> to activate the onkeypress event.
+
+          <ul>
+            <li>Verify that an alert box is displayed, with the words "You
+            pressed enter".</li>
+
+            <li>Verify that JAWS reads the text that is displayed in the
+            pop-up.</li>
+
+            <li>Select "OK" to clear the alert box.</li>
+
+            <li>(If you click the mouse on the sentence, you will activate
+            the "onclick" event, and a different message will
+            display.)</li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ol>
+
+  <p>Here is the script: &gt; <span class="c10" onclick=
+  "alert('You clicked the mouse. Onclick was activated');" onkeypress=
+  "if (event.keyCode == 13) { alert('You pressed Enter. Onkeypress was activated.'); }">
+  <a tabindex="0" name="keypress-example" id="keypress-example">Focus here
+  and press Enter to activate this JavaScript to cause onKeyPress
+  alert.</a></span> &lt;</p>
+
+  <hr>
+
+  <h5>Javascript: Jump to selected destination</h5>
+
+  <p>In this example, the pulldown list contains links to various sections
+  of this file. The Go button activates the Javascript to jump to the
+  selected destination.</p>
+
+  <ol>
+    <li>Navigate to the script, below, using both of these methods. (Go
+    through these steps twice, once for each method of navigation!):
+
+      <ol class="c9">
+        <li>Use normal JAWS <a href=
+        "win_webcontent_jaws.html#text-nav-techniques">text navigation
+        techniques</a> to read this section.
+
+          <ul>
+            <li>When the pulldown list is read, verify that JAWS makes it
+            clear that it is a pulldown list.</li>
+
+            <li>When the Go button is read, verify that JAWS says the words
+            "Go" and "Button" to make it clear that it is a button, and
+            that the button text says "Go".</li>
+          </ul>
+        </li>
+
+        <li>Press the <kbd>Arrow keys</kbd> or <kbd>Tab</kbd> or <kbd>Shift
+        + Tab</kbd> key to move focus to the pulldown list.
+
+          <ul>
+            <li>Verify that JAWS includes the pulldown list in its tab
+            ring.</li>
+
+            <li>Verify that JAWS includes the Go button in its tab
+            ring.</li>
+          </ul>
+        </li>
+      </ol>
+    </li>
+
+    <li>With keyboard focus on the pulldown list:
+
+      <ul>
+        <li>Press <kbd>Down Arrow</kbd> to navigate through the list items
+        in the pulldown list.
+
+          <ul>
+            <li>Verify that JAWS reads the list items as you arrow down
+            through them.</li>
+          </ul>
+        </li>
+
+        <li>Press <kbd>Enter</kbd> to select an item from the list.</li>
+      </ul>
+    </li>
+
+    <li>Press <kbd>Tab</kbd> to move focus to the Go button.
+
+      <ul>
+        <li>Press <kbd>Enter</kbd> to execute the Go function.</li>
+
+        <li>Verify that JAWS move focus to the selected section, and starts
+        reading from that point.</li>
+      </ul>
+    </li>
+  </ol><!-- Set up the menu: user clicks go, run link2() -->
+
+  <form name="quickMenu" action="" method="post" class="c13" id=
+  "quickMenu">
+    <p class="c12">Quickmenu Form</p>
+
+    <p><label for="select-page">Select a Destination, then press Go
+    button.</label> <select id="select-page" name="link2">
+      <option value="">
+        Select A Destination
+      </option>
+
+      <option value="#tab-o-contents">
+        Return to Table of Contents
+      </option>
+
+      <option value="#basic-nav">
+        Jump to Basic Text Navigation test
+      </option>
+
+      <option value="#links">
+        Jump to Link &amp; Image test
+      </option>
+
+      <option value="#java-scripts">
+        Jump to JavaScript test
+      </option>
+
+      <option value="#html-forms">
+        Jump to HTML Forms test
+      </option>
+
+      <option value="#html-frames">
+        Jump to HTML Frames test
+      </option>
+
+      <option value="#table-nav">
+        Jump to Table Navigation test
+      </option>
+
+      <option value="#dhtml">
+        Jump to DHTML test
+      </option>
+
+      <option value="#other-we-functions">
+        Jump to Other JAWS Function test
+      </option>
+
+      <option value="#caret-browsing">
+        Jump to Caret Browsing test
+      </option>
+    </select> <input name="Go" value="Go" onclick="goJSLink();" type=
+    "button"></p>
+  </form>
+  <hr>
+
+  <h5>Javascript: Popup current time</h5>
+
+  <p>The following button will cause a popup window to display the time. It
+  interacts with a continuously running JavaScript that starts when this
+  page is first loaded.</p>
+
+  <ol>
+    <li>Make sure you are in Browse mode (press <kbd>Ctrl + Shift + A</kbd>
+    to set).</li>
+
+    <li>Use the normal JAWS navigation keys to move to the button below
+    (use <kbd>Arrow keys</kbd>)
+
+      <ul>
+        <li>Verify that JAWS tells you that it is a button, and the button
+        text says "Display the current time".</li>
+      </ul>
+    </li>
+
+    <li>Press <kbd>Enter</kbd> to activate the button.
+
+      <ul>
+        <li>Verify that a pop-up message is displayed, with the current
+        time, and that JAWS reads all of the text in the pop-up
+        dialog.</li>
+      </ul>
+    </li>
+
+    <li>Press <kbd>Enter</kbd> again to select the "OK" button to close the
+    pop-up.
+
+      <ul>
+        <li>Verify that JAWS returns focus to the same spot as before the
+        pop-up was generated.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <p><input name="face" id="face" size="13" value="" type="hidden">
+  <input name="button" value="Display the current time" onclick=
+  "alert('The current time is ' + document.getElementById('face').value);"
+  class="c14" type="button"></p>
+  <hr>
+
+  <p>End of JavaScript test section</p>
+
+  <h4><a name="html-forms" accesskey="s" id="html-forms">Testing HTML Form
+  fields and controls</a></h4>
+
+  <div class="c5">
+    <p>Verbosity settings for Forms (press <kbd>Ins + V</kbd> to view).</p>
+
+    <ul>
+      <li>Element: Forms
+
+        <ul>
+          <li>Recommended settings: select "Insert Beginning / End Message
+          (Forms)", "Insert Beginning / End Message (Fieldsets)"</li>
+        </ul>
+      </li>
+    </ul>
+
+    <ul>
+      <li>Element: Objects
+
+        <ul>
+          <li>Recommended settings: select "Include Type"</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <p>JAWS provides keystrokes to navigate between form elements. Use the
+  following instructions to verify the JAWS form navigation features are
+  compatible with Firefox.</p>
+
+  <h5><a name="form-nav-techniques" id="form-nav-techniques">JAWS Web page
+  form navigation keystrokes</a></h5>
+
+  <p>Use the following form navigation keystrokes to navigate the forms on
+  this page. There are three forms in this file: one in the JavaScript
+  section, one in this section (directly after this list, below), and the
+  third form is in the section titled "Testing Additional JAWS features".
+  When testing the JAWS keys that navigate within a single form, use the
+  form in the section below titled "Sample form for HTML form testing".</p>
+
+  <p>Remember the following tips about <a href="#browse-mode">JAWS Virtual
+  PC Cursor mode</a>:</p>
+
+  <ul>
+    <li>To use the form navigation keys listed below, Virtual PC Cursor
+    mode must be ON.</li>
+
+    <li>To allow keyboard input into the form, you must enter Forms mode.
+    (As described in the keystroke list below, you can press
+    <kbd>Enter</kbd> to enter Forms mode.</li>
+  </ul>
+
+  <p>Perform all of the keystrokes listed below to navigate between
+  controls within a form.</p>
+
+  <ul>
+    <li>Use these keystrokes to move from one form to another: (Does JAWS
+    have a way of doing this?)
+
+      <ul>
+        <li><kbd>F</kbd> - Next form</li>
+
+        <li><kbd>Shift + F</kbd> - Previous form</li>
+      </ul>
+    </li>
+
+    <li>Use the following keystrokes to navigate between controls and
+    fields in a form.
+
+      <ul>
+        <li><kbd>F</kbd> - Next form field</li>
+
+        <li><kbd>Shift + F</kbd> - Previous form field</li>
+
+        <li><kbd>Insert + Ctrl + Home</kbd> - Move to first form field</li>
+
+        <li><kbd>Insert + Ctrl + F</kbd> - Move to last form field</li>
+
+        <li><kbd>B</kbd> - Move to next button</li>
+
+        <li><kbd>Shift + B</kbd> - Previous button</li>
+
+        <li><kbd>Ctrl + Insert + B</kbd> - Display list of buttons</li>
+
+        <li><kbd>C</kbd> - Next combo box</li>
+
+        <li><kbd>Shift + C</kbd> - Previous combo box</li>
+
+        <li><kbd>Ctrl + Insert + C</kbd> - Display list of combo boxes</li>
+
+        <li><kbd>E</kbd> - Move to next edit box</li>
+
+        <li><kbd>Shift + E</kbd> - Previous edit box</li>
+
+        <li><kbd>Ctrl + Insert + E</kbd> - Display list of edit boxes</li>
+
+        <li><kbd>R</kbd> - Move to next radio button</li>
+
+        <li><kbd>Shift + R</kbd> - Previous radio button</li>
+
+        <li><kbd>Ctrl + Insert + R</kbd> - Display list of radio
+        buttons</li>
+
+        <li><kbd>X</kbd> - Move to next check box</li>
+
+        <li><kbd>Shift + X</kbd> - Previous check box</li>
+
+        <li><kbd>Ctrl + Insert + X</kbd> - Display list of check boxes</li>
+
+        <li><kbd>Enter</kbd> - Enter Forms mode to allow keyboard
+        input</li>
+
+        <li><kbd>Numpad Plus</kbd> (on full size keyboard) - Exit forms
+        mode<br>
+        <kbd>CapsLock + Semicolon</kbd> (on Laptop) - Exit forms mode</li>
+
+        <li><kbd>Insert + F5</kbd> - Display list of form fields</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h5>Sample Form for use in HTLM Form testing</h5>
+
+  <p>The following form contains a variety of HTML form options.
+  Instructions are included for navigating the form fields and
+  controls.</p>
+
+  <ol>
+    <li>Use the basic JAWS navigation keys (<kbd>Arrow keys</kbd>) to
+    listen to the table.
+
+      <ul>
+        <li>Verify that JAWS indicates that a form has been encountered,
+        and the controls (buttons, radio buttons, checkboxes, text input
+        fields) are announced as they are encountered.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <form action="http://somesite.com/prog/adduser" method="post" class=
+  "c18">
+    <p><a class="c1" name="pre-test-form" id="pre-test-form">Beginning of
+    Form. Use this form for Forms testing!</a></p>
+
+    <p>This form contains a number of typical HTML form input elements.
+    Verify that the JAWS forms keystrokes listed above work properly.</p>
+
+    <fieldset>
+      <legend>User Information</legend> <label for="email">email:</label>
+      <input name="email" id="email" value="Enter email address" type=
+      "text"><br>
+      <label for="full-name"><a name="form-name" id=
+      "form-name">Name:</a></label> <input name="full-name" id="full-name"
+      size="30" type="text">
+    </fieldset>
+
+    <fieldset>
+      <legend>Favorite dessert</legend> <input name="favdes" id="dess-cake"
+      value="Cake" type="radio"> <label for="dess-cake">Cake</label><br>
+      <input name="favdes" id="dess-pie" value="Pie" type="radio">
+      <label for="dess-pie">Pie</label><br>
+      <input name="favdes" id="dess-icecrm" value="IceCream" checked=
+      "checked" type="radio"> <label for="dess-icecrm">Ice
+      Cream</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Favorite flavor</legend> <input name="flav" id="ice-choc"
+      value="Chocolate" type="checkbox"> <label for=
+      "ice-choc">Chocolate</label><br>
+      <input name="flav" id="ice-van" value="Vanilla" checked="checked"
+      type="checkbox"> <label for="ice-van">Vanilla</label>
+    </fieldset>
+
+    <p><label for="hid-fld">There is a hidden field here:</label>
+    <input name="SecretServerStuff" id="hid-fld" value=
+    "Important information the Server application wants to keep track of."
+    type="hidden"> You should not be able to see it or tab to it. The
+    hidden field contains a sentence that starts with the words "Important
+    information...". Verify that JAWS does NOT read that sentence. (You can
+    view the source for this file to view the entire hidden field
+    value.)</p>
+
+    <p><label for="fileinput">Specify file name:</label> <input name=
+    "datafile" id="fileinput" size="40" type="file"></p>
+
+    <p>(Note that this form is not operational. If you select the "Send"
+    button, below, the form will attempt to contact a non-existent Web
+    server, and you will get a "server not found" error.</p>
+
+    <p><input value="Send" type="submit"> <input type="reset"></p>
+
+    <p class="c12">End of Form</p>
+  </form>
+
+  <p>End of Form test section.</p>
+
+  <h4><a name="html-frames" accesskey="u" id="html-frames">Testing HTML
+  Frames</a></h4>
+
+  <p>The following keys are provided by JAWS for frame navigation.</p>
+
+  <ul>
+    <li><kbd>M</kbd> - Next frame</li>
+
+    <li><kbd>Shift + M</kbd> - Previous frame</li>
+
+    <li><kbd>Insert + F9</kbd> - Display list of frames</li>
+  </ul>
+
+  <p>Rather than implementing frames inside of this file, this test will be
+  done on a file containing example frames on the w3schools Web site. You
+  are encouraged to find other examples of Web pages using Frames on the
+  internet to test with JAWS also.</p>
+
+  <ol>
+    <li>Link to the <span class="c2"><a href=
+    "http://www.w3schools.com/html/tryit.asp?filename=tryhtml_frame_cols">Frames
+    example at w3schools web site</a></span>.</li>
+
+    <li>Use the above keystrokes to navigate the frames on that sample
+    page.
+
+      <ul>
+        <li>Verify that you can navigate the text in each frame using JAWS
+        text navigation techniques.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <p>End of Frames test section.</p>
+
+  <h4><a name="table-nav" accesskey="w" id="table-nav">Testing Table
+  Navigation</a></h4>
+
+  <div class="c5">
+    <p>Verbosity settings for Tables (press <kbd>Ins + V</kbd> to
+    view):</p>Element: Tables
+
+    <ul>
+      <li>Recommended settings: select "Insert Beginning / End Message",
+      "Include Table Summary", "Include Table Size", "Indicate Row
+      Grouping", "Indicate Merged Cells", "Header Attrib Override",
+      "Default Header to Column and Row", "Read to End".</li>
+    </ul>
+  </div>
+
+  <p>Here is a list of JAWS keystrokes provided for table navigation.
+  Verify the function of these keystrokes using the sample tables
+  below.</p>
+
+  <ul>
+    <li>Table navigation
+
+      <ul>
+        <li><kbd>T</kbd> - Next table</li>
+
+        <li><kbd>Shift + T</kbd> - Previous table</li>
+
+        <li><kbd>Ctrl + Alt + Right Arrow</kbd> - Move to and read next
+        cell</li>
+
+        <li><kbd>Ctrl + Alt + Left Arrow</kbd> - Move to and read prior
+        cell</li>
+
+        <li><kbd>Ctrl + Alt + Up Arrow</kbd> - Move to and read cell
+        above</li>
+
+        <li><kbd>Ctrl + Alt + Down Arrow</kbd> - Move to and read cell
+        below</li>
+
+        <li><kbd>Ctrl + Alt + Home</kbd> - Move to and read first cell</li>
+
+        <li><kbd>Ctrl + Alt + End</kbd> - Move to and read last cell</li>
+
+        <li><kbd>Ctrl + Alt + Numpad 5</kbd> (on full size keyboard) - Read
+        current cell<br>
+        <kbd>????</kbd> (what is this on a laptop?) - Read current
+        cell</li>
+
+        <li><kbd>Windows Key + Down Arrow</kbd> - Read next row</li>
+
+        <li><kbd>Windows Key + Up Arrow</kbd> - Read prior row</li>
+
+        <li><kbd>Windows Key + Comma</kbd> (,) - Read current row</li>
+
+        <li><kbd>Insert + Shift + Home</kbd> - Read from beginning of row
+        to current cell</li>
+
+        <li><kbd>Insert + Shift + Page Up</kbd> - Read from current cell to
+        end of row</li>
+
+        <li><kbd>Windows Key + Period</kbd> (.) - Read current column</li>
+
+        <li><kbd>Insert + Shift + End</kbd> - Read from top of column to
+        current cell</li>
+
+        <li><kbd>Insert + Shift + Page Down</kbd> - Read from current cell
+        to bottom of column</li>
+
+        <li><kbd>Windows Key + J</kbd> - Jump to table cell
+        (must also enter cell number)</li>
+
+        <li><kbd>Shift + Windows Key + J</kbd> - Return to previous
+        cell</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h5>General Instructions for testing tables</h5>
+
+  <p>Use the keystrokes listed above to navigate the following tables.</p>
+
+  <ol>
+    <li>Verify that all keystrokes work as described.</li>
+
+    <li>Verify that the table headers are announced as you change rows or
+    columns.</li>
+
+    <li>Verify that the table summary is announced when the table is
+    encountered by JAWS.</li>
+  </ol>
+
+  <h5>Table 1: Simple table using column and row headers</h5>
+
+  <p>In this table, each cell in the first row is a column header, and the
+  first cell of each row is a row header. The table uses the "scope="
+  attribute to instruct the screen reader that the row and column headers
+  are available. The table summary attribute is as follows: "This table
+  contains 3 columns, first a country name, then the name of the capital
+  city, then the name of the largest city."</p>
+
+  <table summary=
+  "This table contains 3 columns, first a country name, then the name of the capital city, then the name of the largest city."
+  cellpadding="2" cellspacing="2">
+    <caption>
+      Capital city and Largest city of select countries
+    </caption>
+
+    <tbody>
+      <tr>
+        <th scope="col">Country</th>
+
+        <th scope="col">Capital</th>
+
+        <th scope="col">Largest City</th>
+      </tr>
+
+      <tr>
+        <th scope="row">Australia</th>
+
+        <td>Canberra</td>
+
+        <td>Sydney</td>
+      </tr>
+
+      <tr>
+        <th scope="row">Brazil</th>
+
+        <td>Brasilia</td>
+
+        <td>São Paulo</td>
+      </tr>
+
+      <tr>
+        <th scope="row">India</th>
+
+        <td>New Delhi</td>
+
+        <td>Mumbai</td>
+      </tr>
+
+      <tr>
+        <th scope="row">Morocco</th>
+
+        <td>Rabat</td>
+
+        <td>Casablanca</td>
+      </tr>
+
+      <tr>
+        <th scope="row">United States of America</th>
+
+        <td>Washington, D.C.</td>
+
+        <td>New York City</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h5>Table 2: Complex table with multiple column headers</h5>
+
+  <p>In this table, each data column is associated with one row header and
+  two column headers. The table uses the "headings=" attribute to instruct
+  the screen reader that multiple column headers are available for each
+  data cell. The table summary attribute is as follows: "This complex table
+  contains 4 columns, first a name, then home phone number, cell phone
+  number, and fax number."</p>
+
+  <table summary=
+  "This complex table contains 4 columns, first a name, then home phone number, cell phone number, and fax number."
+  cellpadding="2" cellspacing="2">
+    <caption>
+      Home, Cell, and Fax phone numbers
+    </caption>
+
+    <tbody>
+      <tr>
+        <th id="name" colspan="1" rowspan="2">Name</th>
+
+        <th id="phone" colspan="3" rowspan="1">Phone number</th>
+      </tr>
+
+      <tr>
+        <th id="home">Home</th>
+
+        <th id="cell">Cell</th>
+
+        <th id="fax">Fax</th>
+      </tr>
+
+      <tr>
+        <th headers="name" id="jack">Jack</th>
+
+        <td headers="jack home phone">123-456-7890</td>
+
+        <td headers="jack cell phone">123-134-1567</td>
+
+        <td headers="jack fax phone">123-234-2456</td>
+      </tr>
+
+      <tr>
+        <th headers="name" id="jill">Jill</th>
+
+        <td headers="jill home phone">321-654-0987</td>
+
+        <td headers="jill cell phone">321-431-7651</td>
+
+        <td headers="jill fax phone">321-432-6542</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>End of Table test section.</p>
+
+  <h4><a name="dhtml" accesskey="x" id="dhtml">Testing DHTML
+  controls</a></h4>
+
+  <p>The Mozilla.org Web site contains a number of examples of accessible
+  DHTML elements. Rather than reproduce them here, follow the links
+  provided below to load those example pages.</p>
+
+  <p>Detailed instructions for testing these controls with JAWS have not
+  yet been written. For now, just verify the following things while viewing
+  the DHTML pages with JAWS running:</p>
+
+  <ol>
+    <li>Verify that you can use the JAWS text and link navigation
+    techniques to read and access all of the fields and controls on the
+    DHTML example pages.</li>
+
+    <li>Verify you can activate all of the controls that allow user
+    interaction with JAWS running..</li>
+  </ol>
+
+  <h5>Links to DHTML example pages</h5>
+
+  <ul>
+    <li><a href="http://www.mozilla.org/access/dhtml/checkbox">DHTML
+    Checkbox and element removed from tab ring</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/slider">DHTML
+    Slider</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/progressbar">DHTML
+    Progress bar</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/alert">DHTML
+    Alerts</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/spreadsheet">DHTML
+    Spreadsheet with menu bar</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/tabpanel">DHTML Tab
+    panel</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/tree">DHTML Tree
+    view</a></li>
+  </ul>
+
+  <p>End of DHTML test section.</p>
+
+  <h4><a name="other-we-functions" accesskey="y" id=
+  "other-we-functions">Testing Additional JAWS Features</a></h4>
+
+  <p>There are many other keyboard functions provided by JAWS. Here is a
+  list of keys that should be tested. View the JAWS documentation to see
+  more information about "Using the Internet with JAWS".</p>
+
+  <ul>
+    <li>Miscellaneous navigation
+
+      <ul>
+        <li><kbd>Shift + Insert + F1</kbd> - Display element information
+        (for element with current focus)</li>
+
+        <li><kbd>Ctrl + Shift + Insert + F1</kbd> - Display
+        detailed element information (compare with IE output)</li>
+
+        <li><kbd>F5</kbd> - Reload web page</li>
+
+        <li><kbd>Ins + Esc</kbd> - Refresh JAWS virtual mode</li>
+
+        <li><kbd>F3</kbd> - JAWS Find next</li>
+
+        <li><kbd>Shift + F3</kbd> - JAWS Find previous</li>
+
+        <li><kbd>Ctrl + K</kbd> - Temporary place marker</li>
+
+        <li><kbd>Ctrl + Shift + K</kbd> - List, Goto, or Modify place
+        markers</li>
+
+        <li><kbd>K</kbd> - Move to next place marker</li>
+
+        <li><kbd>Shift + K</kbd> - Move to previous place marker</li>
+
+        <li><kbd>Insert + Ctrl + Enter</kbd> - Activate mouse-over</li>
+      </ul>
+    </li>
+
+    <li>Copy/Paste keystrokes (a text entry field is provided below
+
+      <ul>
+        <li><kbd>Ctrl + A</kbd> - Select entire page</li>
+
+        <li><kbd>Shift + Left Arrow</kbd> - Select character to left of
+        pointer</li>
+
+        <li><kbd>Shift + Right Arrow</kbd> - Select character to right of
+        pointer</li>
+
+        <li><kbd>Ctrl + Shift + Left Arrow</kbd> - Select word to left of
+        pointer</li>
+
+        <li><kbd>Ctrl + Shift + Right Arrow</kbd> - Select word to right of
+        pointer</li>
+
+        <li><kbd>Shift + Up Arrow</kbd> - Select line from current line
+        position to same place on previous line</li>
+
+        <li><kbd>Shift + Down Arrow</kbd> - Select line from current line
+        position to same place on next line</li>
+
+        <li><kbd>F8</kbd> - Select entire element (such as a table or a
+        list)</li>
+
+        <li><kbd>Ctrl + C</kbd> - Copy selected text to system
+        clipboard</li>
+
+        <li><kbd>Ctrl + V</kbd> - Paste text from clipboard to current
+        insertion point.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <p>You may use the following text input area to test the paste function,
+  after copying text into the system clipboard. Remember that you must
+  enter Forms mode before you can enter text into the field! (Press
+  <kbd>Enter</kbd> to enter Forms mode.)</p>
+
+  <form action="" method="post" name="pre-clip-form" class="c22" id=
+  "pre-clip-form">
+    <p>Clipboard test form:</p>
+
+    <p><label for="paste-test" class="c20">You can paste text into this
+    input field for copy/paste test:</label></p>
+
+    <p>
+    <textarea id="paste-test" rows="3" cols="30" class="c21">
+</textarea></p>
+  </form>
+
+  <p>End of Additional JAWS feature test section.</p>
+
+  <h4><a name="caret-browsing" accesskey="z" id="caret-browsing">Testing
+  Firefox Caret Browsing mode</a></h4>
+
+  <p>Firefox provides a feature called Caret Browsing, where a user can
+  navigate a Web page in a way similar to navigating a document in a word
+  processor. Visually, you see an insertion caret (cursor) on the page, and
+  you can use the <kbd>Arrow keys</kbd> to move up, down, left, and right,
+  one line or character at a time.</p>
+
+  <p class="note">Caret Browsing mode is not really needed when using a
+  screen reader such as JAWS, since the screen reader provides similar
+  functions. However, because a user can potentially enter caret browsing
+  mode even when a screen reader is in use, some testing of that scenario
+  should be done. Failures in this area will not result in VPAT issues.</p>
+
+  <p>Follow these instructions to verify the basic functions of Caret
+  Browsing.</p>
+
+  <ol>
+    <li>Press <kbd>F7</kbd> to start Caret Browsing mode. Select the "Yes"
+    button in the resulting popup (if it displays) to complete the switch
+    to Caret Browsing mode.</li>
+
+    <li>Use JAWS <a href="#text-nav-techniques">text navigation
+    techniques</a> to read the page while in caret browsing mode. For
+    example:
+
+      <ul>
+        <li>General navigation keys, such as the <kbd>up/down arrow</kbd>
+        and <kbd>page</kbd> keys.</li>
+
+        <li>Heading navigation, such as <kbd>H</kbd> and <kbd>Shift +
+        H</kbd>.</li>
+
+        <li>Paragraph navigation, such as <kbd>P</kbd> and <kbd>Shift +
+        P</kbd>.</li>
+
+        <li>List navigation, such as <kbd>L</kbd> and <kbd>Shift +
+        L</kbd>.</li>
+
+        <li>Quote/Blockquote navigation, such as <kbd>Q</kbd> and
+        <kbd>Shift + Q</kbd>.</li>
+      </ul>
+    </li>
+
+    <li>Verify <a href="#links">Links, images, and image maps</a> can be
+    properly navigated with JAWS while in caret browsing mode. For example:
+
+      <ul>
+        <li>Link navigation, such as <kbd>Tab</kbd> and <kbd>Shift +
+        Tab</kbd> to move between links and other controls.</li>
+
+        <li>Image information: verify JAWS reads alternative text for
+        images.</li>
+      </ul>
+    </li>
+
+    <li>Verify you can run <a href="#java-scripts">JavaScripts</a> with
+    JAWS running while in caret browsing mode.</li>
+
+    <li>Verify <a href="#html-forms">HTML Form fields and controls</a> can
+    be properly navigated with JAWS while in caret browsing mode.</li>
+
+    <li>Verify <a href="#html-frames">HTML Frames</a> can be properly
+    navigated with JAWS while in caret browsing mode.</li>
+
+    <li>Verify <a href="#table-nav">Tables</a> can be properly navigated
+    with JAWS while in caret browsing mode.</li>
+
+    <li>Verify <a href="#other-we-functions">Additional JAWS functions</a>
+    work properly while in caret browsing mode. For example:
+
+      <ul>
+        <li>Verify <kbd>Shift + Insert + F1</kbd> - Display element
+        information (for element with current focus)</li>
+
+        <li>Verify <kbd>Ctrl + Shift + Insert + F1</kbd> - Display detailed
+        element information (compare with IE output)</li>
+
+        <li>Verify <kbd>F3</kbd> - JAWS Find next</li>
+
+        <li>Verify <kbd>Shift + F3</kbd> - JAWS Find previous</li>
+
+        <li>Verify that you can mark text and copy/paste using the system
+        clipboard.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <p>End of Caret Browsing test section.</p>
+
+  <h3 class="c23">End of Test Case</h3>
+
+</body>
+</html>

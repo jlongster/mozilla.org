@@ -1,0 +1,43 @@
+#!/usr/bin/perl -w
+
+my $line = $ARGV[0] || usage();
+$line =~ /^([^<]+?)\s*</;
+my $name = $1;
+my $comma_name;
+
+# Work out correct form of names - comma-ed and uncomma-ed.
+if ($name =~ m/^(.*),(.*)$/) {
+    my $straight_name = "$2 $1";
+    $comma_name = $name;
+    $line =~ s/$comma_name/$straight_name/;
+}
+else {
+    $name =~ m/^(.*) ([^ ]+)$/;
+    $comma_name = "$2,$1";
+}
+
+# Check for duplicate
+open(my $NAMES, '<:encoding(utf8)', "names.txt") || die "Can't open names.txt";
+my %names;
+while (<$NAMES>) {
+    chomp;
+    $names{$_} = 1;
+}
+
+if ($names{$comma_name}) {
+    print $name . " is a duplicate\n";
+    exit;
+}
+
+# Add name, regenerate list, replace in index.html and commit
+system("echo $comma_name >> names.txt");
+system("./gen-credits-list names.txt > output.txt");
+system("./replace-between index.html '<!--BEGIN_LIST-->' '<!--END_LIST-->' output.txt");
+
+system("svn ci index.html names.txt -m '$line'");
+
+exit;
+
+sub usage {
+  print "Usage: commit <full line incl. name, email and citation>\n";
+}

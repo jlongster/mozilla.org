@@ -1,0 +1,1320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="http://www.w3.org/StyleSheets/TR/base"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:x2="http://www.w3.org/TR/xhtml2"
+ xmlns:wairole="http://www.w3.org/2005/01/wai-rdf/GUIRoleTaxonomy#"
+xmlns:waistate="http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#">
+<!--
+xmlns:wairole="http://www.w3.org/WAI/PF/GUIRoleTaxonomy#"
+xmlns:waistate="http://www.w3.org/wai/pf/GUIStateTaxonomy#">
+
+-->
+<head>
+<title>Accessible DHTML</title>
+<script type="text/javascript">
+//<![CDATA[
+var TOP_SUFFIX = "top";  // the top menu item has an id that is menuID + TOP_SUFFIX
+var DROP_SUFFIX = "Items"; // the drop menu div has an id that is the menuID + DROP_SUFFIX
+var KEY_UP = 38;
+var KEY_DOWN = 40;
+var KEY_LEFT = 37;
+var KEY_RIGHT = 39;
+var KEY_ESCAPE = 27;
+var KEY_M=77;
+var KEY=F10 = 121;
+var KEY_SPACE = 32;
+var KEY_TAB = 9;
+
+Menubar = function(menubarId) {
+	this.activeIdx = -1;	// index of the active menu
+	this.dropOpen = false;	// indicates if menu is open (items are visible)
+	this.itemIdx = -1;	// indicates the index of the active item in an open menu
+	this.id = menubarId;
+	this.menus = new Array(); // array of menu Ids
+	this.menuItems = new Array(); // array of menu items - indexed by menu id
+
+
+}
+
+/* getters and setters for MenuState object
+*/
+
+Menubar.prototype.setActiveMenuIndex = function(index) {
+	 this.activeIdx = index;
+}
+Menubar.prototype.getActiveMenuIndex = function() {
+	return this.activeIdx;
+}
+Menubar.prototype.setActiveOpen = function(isOpen) {
+	this.dropOpen = isOpen;
+}
+Menubar.prototype.isActiveOpen= function() {
+	return this.dropOpen;
+}
+Menubar.prototype.setActiveItemIndex = function(index) {
+	this.itemIdx = index;
+}
+Menubar.prototype.getActiveItemIndex = function() {
+	return this.itemIdx;
+}
+Menubar.prototype.updateAllIndex= function(active, drop, item) {
+	this.activeIdx = active;
+	this.dropOpen = drop;
+	this.itemIdx = item;
+}
+Menubar.prototype.getId = function() {
+	return this.id;
+}
+Menubar.prototype.getMenus = function() {
+	return this.menus; // return array of menu item ids
+}
+Menubar.prototype.getMenuItems = function(menuId) {
+	return this.menuItems[menuId];
+}
+/* 	Function to add a menu to the menu bar
+ **	Must be called in menu order!!
+ **	menuId - id of this menu item
+ ** items - array of ids for the menu items in this menu
+ ** returns number of menu items (lenght of menu array)
+ */
+Menubar.prototype.addMenu = function(menuId,items) {
+	this.menus[this.menus.length] = menuId;
+	this.menuItems[menuId] = items;
+}
+
+
+Menubar.prototype.doMenu = function(event) {
+	//alert(event.ctrlKey + " : " + event.shiftKey + " : " + event.keyCode);
+	if (event.ctrlKey && event.altKey && event.keyCode == KEY_M) {
+	//var theMenu = document.getElementById(this.getId());
+		// set focus to first menu (as long as menus are defined)
+		if (this.menus.length > 0) {
+			this.setActiveMenuIndex(0);
+			gFocusItem = document.getElementById((this.menus[0] + TOP_SUFFIX));
+			setTimeout("doFocus();",0);
+		}
+	}
+}
+
+
+
+Menubar.prototype.doNavigation = function(event) {
+	var bEventContinue = true;  // browser can still use event
+	var key = event.keyCode;
+	if ((key >=KEY_LEFT && key <= KEY_DOWN) || key == KEY_ESCAPE) {
+		var idx = this.getActiveMenuIndex();
+		if (idx < 0) {
+			idx = 0;
+		}
+		var menus = this.getMenus();
+		var menuLen = menus.length;
+		var activeMenuId = menus[idx];
+		//var activeMenu = document.getElementById(activeMenuId);
+		var curDrop = document.getElementById(activeMenuId + DROP_SUFFIX);
+
+
+		if (key == KEY_LEFT || key == KEY_RIGHT) {
+
+			var nextIdx = idx;
+			if (key == KEY_LEFT) { // left
+				nextIdx = (idx + (menuLen-1)) % menuLen;
+
+			}
+			else { // right
+				nextIdx = ((idx + 1) % menuLen);
+			}
+			// if drop menu is displayed, close it and open the next one
+			var bShowNext = this.isActiveOpen();
+			if (bShowNext) {
+				// current drop is open, close it
+				if (curDrop) {
+					curDrop.style.display = "none"; // only one menudrop child per menu
+					this.setActiveItemIndex(0);
+				}
+
+			}
+			this.setActiveMenuIndex(nextIdx);
+			var nextMenuId = menus[nextIdx];
+			gFocusItem=document.getElementById(nextMenuId + TOP_SUFFIX);
+			if (bShowNext == true) {
+				var drop = document.getElementById(nextMenuId + DROP_SUFFIX);
+				if (drop) {
+					drop.style.display="block";
+					var menuItems = this.getMenuItems(nextMenuId);
+					gFocusItem=document.getElementById(menuItems[0]);
+				}
+			}
+
+			setTimeout("doFocus();",0);
+
+		}
+
+		if (key == KEY_UP || key == KEY_DOWN ) {
+			var itemIdx = this.getActiveItemIndex();
+			var bOpen = this.isActiveOpen();
+			if (curDrop) {
+				var menuItems = this.getMenuItems(activeMenuId);
+				var itemLen = menuItems.length;
+				var nextItemIdx;
+				if (!bOpen) { // open and set to the first item
+					this.showMenu(event, activeMenuId, false);
+					itemIdx = -1;
+				}
+				if (itemIdx == -1) {
+					nextItemIdx = 0;
+				}
+				else if (key == KEY_DOWN ){
+					nextItemIdx = (itemIdx +1) % itemLen;
+				}
+				else { //UP
+					nextItemIdx = (itemIdx + (itemLen-1)) % itemLen;
+				}
+
+				this.setActiveItemIndex(nextItemIdx);
+				gFocusItem=document.getElementById(menuItems[nextItemIdx]);
+				setTimeout("doFocus();",0);
+			} // end of id curDrop
+		} // end of id up/down
+	// need to prevent propagation of arrow keys
+	/*	try {
+			ev.preventDefault();
+		}
+		catch (err) {
+			try {
+				ev.returnValue=false;
+			}
+			catch (errNext) {
+				;
+			}
+	}*/
+	bEventContinue = false;
+
+	if (key == KEY_ESCAPE ) {
+		// hide the menus
+		var isOpen = this.isActiveOpen();
+		var activeIndex = this.getActiveMenuIndex();
+		if (isOpen && activeIndex != -1) {
+			// find the index of the active menu and close
+			this.hideMenu(event);
+		}
+		else if (!bOpen && curDrop) {
+			// one of the top level menus is active but drop down is not open
+			gBlurItem = curDrop;
+			setTimeout("doBlur()",0);
+
+		}
+
+		this.updateAllIndex(-1,false,-1);
+		bEventContinue = false;
+	} // end of if KEY_ESCAPE
+	} // end of if arrow or escape  key
+	return bEventContinue;
+}
+
+Menubar.prototype.showMenu = function(event, menuId, isKey) {
+
+	if ((isKey && event.keyCode == 13) || !isKey) {
+		// get the drop menu
+		var menu = document.getElementById((menuId + DROP_SUFFIX));
+		var displayState = "block";
+		var curIndex = this.findMenuIndex(menuId);
+		// see if any menu is open
+		var isOpen = this.isActiveOpen();
+		if (isOpen) {
+			// find the index of this menu item and see if it is different than the active one
+			var activeIndex = this.getActiveMenuIndex();
+
+			if (curIndex != activeIndex && activeIndex != -1 ) {
+				// close the currently open drop menu
+				this.hideMenu(event);
+				// show this one
+				displayState = "block";
+
+			}
+			else { // this is the current menu - hide it
+				displayState = "none";
+			}
+		} // end of if menu open
+		// else is not open - default value of displayState is block -so menu will be shown
+		// set the activeOpen value
+		this.setActiveOpen(displayState == "block" ? true : false);
+		this.setActiveMenuIndex(curIndex);
+		// style="display:none" must be set on the drop elements to use the element.style.display syntax
+		// otherwise need to write cross browser routine to read the effective style (see DHTML book pg 878)
+		menu.style.display = displayState;
+
+
+	}
+}
+
+
+
+Menubar.prototype.hideMenu = function(event) {
+	var isKey = false;
+		if (event.keyCode) {
+			isKey = true;
+	}
+	if ((isKey && event.keyCode == 13) || (isKey && event.keyCode == KEY_ESCAPE ) || !isKey) {
+		var isOpen = this.isActiveOpen();
+		var activeIndex = this.getActiveMenuIndex();
+		if (isOpen) {
+			var menu = document.getElementById((this.getMenus()[activeIndex] + DROP_SUFFIX));
+			// style="display:none" must be set on the drop elements to use the element.style.display syntax
+			// otherwise need to write cross browser routine to read the effective style (see DHTML book pg 878)
+			menu.style.display="none";
+			this.updateAllIndex(-1,false,-1);
+			//event.cancelBubble = true; // this is not in the DOM but is supported by IE and Mozilla - could use stopPropagation();
+			gBlurItem = menu;
+			setTimeout("doBlur();",0);
+
+		}
+
+
+	}
+
+}
+
+Menubar.prototype.findMenuIndex = function(menuId) {
+	var menus = this.getMenus();
+	var menuLen = menus.length;
+	var idx = -1;
+	for (var i=0; i < menuLen; i++ ) {
+		if (menus[i] == menuId) {
+			idx = i;
+			break;
+		}
+	}
+	return idx;
+}
+Menubar.prototype.clearMenu = function() {
+}
+
+Menubar.prototype.doAlert = function (event, theElem, alertStr) {
+// only called when is enter key or mouse click
+	var isKey = false;
+		if (event.keyCode) {
+			isKey = true;
+	}
+	if (theElem.getAttributeNS("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#", "disabled") !="true") {
+			this.hideMenu(event);
+			alert(alertStr);
+
+
+	}
+	// always stop propagation of enter key or click
+	if (event.stopPropagation) {
+					event.stopPropagation();
+				}
+				else {
+					try {
+						event.cancelBubble=true;
+					} catch (e) {
+						;
+					}
+			}
+
+
+
+	return false; // do not propagate
+}
+
+
+function doAction(event, theElem) {
+
+	var isKey = false;
+	if (event.keyCode) {
+		isKey = true;
+	}
+	var bDoAction = false;
+	if ((isKey && event.keyCode == 13) || !isKey) {
+		if (theElem.getAttributeNS("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#", "disabled") =="true") {
+			bDoAction = false;
+		}
+		else {
+			bDoAction = true;
+		}
+	}
+
+
+	return bDoAction;
+}
+
+
+
+
+var topMenu = new Menubar("menuBar");
+topMenu.addMenu("one", new Array("1.1","1.2"));
+topMenu.addMenu("two", new Array("2.1", "2.2","2.3","2.4","2.5"));
+topMenu.addMenu("three", new Array("3.1", "3.2","3.3","3.4"));
+topMenu.addMenu("four", new Array("4.1", "4.2","4.3","4.4","4.5"));
+topMenu.addMenu("five", new Array("5.1", "5.2","5.3"));
+
+
+
+// global vars for storing selection and focus information; indexed by the id of the parent table element
+var gCurrentRow = new Array();
+var gCurrentCol = new Array();
+var gCurrentSelected = new Array();
+var gCurrentCell = new Array();
+var gSelectedCells = new Array();
+var gSelecting = new Array();
+var gTabCount = new Array();
+
+gCurrentRow ["table2"] = -1;   // 0 based row number
+gCurrentCol["table2"] = 0;	// 0 based column number
+gCurrentSelected ["table2"]=null;  // currently selected row object
+gCurrentCell["table2"] =null; // currently selected cell object
+gSelectedCells["table2"] = new Array();  // array of currently selected cell objects
+gSelecting["table2"] = false;  // boolean indicating if currently  in multi-select mode ( quicker than checking for entries in gCurrentSelectedCells
+gTabCount["table2"] = 0;  // need to know if tabbing into or out of control
+
+
+// global to store the item to be focused
+gFocusItem =null;
+// global to pass the item needing focus to doBlur() via a setTimeout()
+var gBlurItem= null;
+
+function doFocus() {
+	try {
+		if (gFocusItem != null) {
+			gFocusItem.focus();
+			gFocusItem=null;
+		}
+	} catch (error) {
+		alert("DEBUG: error in doFocus()");
+	}
+}
+function doBlur() {
+	try {
+		if (gBlurItem != null) {
+			gBlurItem.blur();
+			gBlurItem=null;
+		}
+	} catch (error) {
+		alert("DEBUG: error in doBlur()");
+	}
+}
+
+
+function setStyle(theObj, styleName, styleValue, priority) {
+	var bSuccess = false;
+
+	try {
+		if (theObj.style && theObj.style.setProperty) {
+			theObj.style.setProperty(styleName, styleValue,priority);
+			bSuccess = true;
+		}
+	} catch (ex) {
+		alert('exception caught setting style: ' + ex.message); // cannot do anything try the next method
+	}
+	if (!bSuccess) {
+		try {
+			theObj.style[styleName] = styleValue;
+			bSuccess = true;
+		} catch (exNext) {
+			alert('exception caught setting direct style: ' + exNext.message); // cannot do anything
+		}
+	}
+	return bSuccess;
+} // end of setStyle
+
+function findParentElem(evt, parentName) {
+	var srcElem = null;
+try {
+	if (evt.srcElement) {
+		srcElem = evt.srcElement;
+	}
+	else {
+		srcElem = evt.currentTarget;
+	}
+
+	if (srcElem != null ) {
+		// find the source table for the keyup event
+		var tagName = srcElem.tagName;
+		if (tagName != parentName) {
+			// search parent heirarchy
+			var parNode = srcElem.parentNode;
+			while (parNode != null) {
+				if (parNode.type == document.ELEMENT_TYPE) {
+					if (parNode.tagName == parentName) {
+						srcElem = parNode;
+						break;
+					}
+				}
+				parNode = parNode.parentNode;
+			}
+		}
+
+	}
+}
+catch (anyError) {
+	; //srcElem = null;
+}
+	return srcElem;
+}
+
+
+
+function doTableKeys(e) {
+	var evt = (e != null) ? e : ((event) ? event : null);  // Mozilla will include e parameter
+	var bDefaultHandler = true;
+	try {
+	var testCell = document.getElementById("testCell"); // could cache this test object for better performance
+	if (!testCell.focus) {
+	// test cell is the id of a table cell element with a  tabindex="-1".  See if we can set focus to it, if
+	// not, just return, we can not support arrow keys
+		//alert('no arrow key support');
+		return bDefaultHandler;
+	}
+
+	var srcElem = findParentElem(evt,"table");
+	//srcElem=document.getElementById(srcElem.getAttribute("id"));
+	var activeTableId = srcElem.getAttribute("id");
+	var rows = srcElem.rows;
+	var key = evt.keyCode;
+	var bCtrlKey = evt.ctrlKey;
+	var  currentRow = gCurrentRow[activeTableId];
+	var currentCol = gCurrentCol[activeTableId];
+	var nextCell = null;
+
+	if ((key >= KEY_LEFT && key <= KEY_DOWN) && !evt.altKey) {
+		var nextRow = null;
+		var nextRowNum = 0;
+		var nextCol = null;
+		var nextColNum = 0;
+
+
+		if (gSelecting[activeTableId] == true && bCtrlKey == false) {
+			clearSelected(activeTableId);
+		}
+
+
+		// process arrows
+		if (key == KEY_DOWN ) { // down
+
+			nextRowNum = currentRow + 1;
+			if (rows.length > nextRowNum) {
+			var prevCell = null;
+				if (currentRow != -1) {
+					var prevRow = rows[currentRow];
+					prevCell = prevRow.cells[currentCol];
+				}
+				nextRow = rows[nextRowNum];
+				gCurrentRow[activeTableId]=nextRowNum;
+				nextCell = nextRow.cells[currentCol];
+				gCurrentCell[activeTableId] = nextCell;
+				processMovement(prevCell, nextCell, bCtrlKey, activeTableId);
+
+				gFocusItem = nextCell;
+				setTimeout("doFocus()", 0);
+
+			}
+		} // end of down
+		if (key == KEY_UP) { // up
+			nextRowNum = currentRow -1;
+			if (nextRowNum >=0 ) {
+				var prevCell = null;
+				if (currentRow != -1) {
+					var prevRow = rows[currentRow];
+					prevCell = prevRow.cells[currentCol];
+				}
+				nextRow = rows[nextRowNum];
+				gCurrentRow[activeTableId]=nextRowNum;
+				nextCell = nextRow.cells[currentCol];
+				gCurrentCell[activeTableId] = nextCell;
+				processMovement(prevCell, nextCell, bCtrlKey, activeTableId);
+				gFocusItem = nextCell;
+				setTimeout("doFocus()", 0);
+
+			}
+
+		} // end of up
+		if (key == KEY_LEFT ) { // left
+			nextColNum = currentCol -1;
+			var prevCell = null;
+			if (nextColNum >= 0 && currentRow >= 0) {
+				nextRow = rows[currentRow];
+				if (nextRow != null) {
+					prevCell = nextRow.cells[currentCol];
+				}
+				nextCell = nextRow.cells[nextColNum];
+				gCurrentCol[activeTableId] = nextColNum;
+				gCurerntCell  = nextCell;
+				processMovement(prevCell, nextCell, bCtrlKey, activeTableId);
+
+				gFocusItem = nextCell;
+				setTimeout("doFocus()", 0);
+
+			}
+
+		} // end of if left
+		if (key == KEY_RIGHT ) { // right
+			nextColNum = currentCol + 1;
+			var prevCell = null;
+			if (currentRow >=0 ) {
+				nextRow = rows[currentRow];
+				if (nextRow != null && nextColNum < nextRow.cells.length) {
+					prevCell = nextRow.cells[currentCol];
+					nextCell = nextRow.cells[nextColNum];
+					gCurrentCol[activeTableId] = nextColNum;
+					gCurrentCell  = nextCell;
+					processMovement(prevCell, nextCell, bCtrlKey, activeTableId);
+
+					gFocusItem = nextCell;
+					setTimeout("doFocus()", 0);
+				}
+			}
+
+
+		} // end of if right
+		bDefaultHandler = false;
+
+	if (nextCell != null) {
+		gCurrentCell[activeTableId]= nextCell;
+	}
+	} // end of if arrows
+	else if (key == KEY_SPACE && bCtrlKey) {
+		var currentCell = gCurrentCell[activeTableId];
+
+		var bSelected = toggleSelection(activeTableId,currentCell);
+		if (bSelected == "true") {
+			currentCell.className = "cellFocusSelect";
+		}
+		else {
+			currentCell.className = "cellFocus";
+		}
+
+	}
+	else if (key == KEY_ESCAPE) {
+		// pressing escape when editing a cell will end editng - this is not really what we want since
+		// it does not allow the escape to clear the input cell field first - I tried that in ignoreArrows() but
+		// could not get focus back to the cell after the escape.
+		if (gCurrentCell[activeTableId] != null) {
+			endEdit(gCurrentCell[activeTableId], false);
+			gFocusItem = gCurrentCell[activeTableId];
+		setTimeout("doFocus()",0);
+		bDefaultHandler = false;
+		}
+	}
+	else if (key == KEY_TAB && !evt.shiftKey ) {
+		// table is losing focus set the style of the current cell to cellBlur
+		gCurrentCell[activeTableId].className = "cellBlur";
+
+
+	}
+
+	} // end of try
+	catch (errorInfo) {
+		alert(errorInfo);
+	}
+	return bDefaultHandler;
+}
+function processMovement(prevCell, nextCell, bCtrlKey, activeTableId) {
+	if (bCtrlKey == true) {
+					// leave prev cell in same state
+					// set style of prevCell to appropriate state
+					// set style of current cell to cellFocus
+					if (prevCell != null) {
+							var prevStyle = "";
+							if (prevCell.getAttributeNS("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#", "selected") == "true" ) {
+								prevStyle = "cellSelect";
+							}
+							prevCell.className = prevStyle;
+					}
+					nextCell.className = "cellFocus";
+					gSelecting[activeTableId] = true;
+				}
+				else {
+					//bCtrlKey == false
+					// clear select on previous cell
+					// set style of previous cell to empty
+					// select current cell
+					// set style of current cell to cellFocusSelect
+					if (prevCell != null) {
+						removeSelection(activeTableId, prevCell);
+						prevCell.className = "";
+					}
+						addSelection(activeTableId, nextCell);
+						nextCell.className="cellFocusSelect";
+					}
+}
+
+function addSelection(activeTableId, currentCell) {
+		var selectedList = gSelectedCells[activeTableId];
+		var isSelected = currentCell.getAttributeNS("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#", "selected");
+		if (isSelected != "true") {
+			// set selected and add to selection list
+			currentCell.setAttributeNS("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#", "selected", "true");
+			selectedList[selectedList.length] = currentCell;
+			gSelectedCells[activeTableId] = selectedList;
+		}
+}
+
+function removeSelection(activeTableId, currentCell) {
+	var selectedList = gSelectedCells[activeTableId];
+		var isSelected = currentCell.getAttributeNS("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#", "selected");
+		if (isSelected == "true" ) {
+			currentCell.removeAttributeNS("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#", "selected");
+			// remove from list of selected cells
+			var idx = -1;
+			for (var j=0; j < selectedList.length; j++) {
+				if (selectedList[j] == currentCell) {
+					idx = j;
+					break;
+				}
+			}
+			if (idx <= 0) {
+				// remove the cell from the selected List
+				gSelectedCells[activeTableId] = selectedList.splice(idx,1,"");
+			}
+		}
+}
+function toggleSelection(activeTableId, currentCell) {
+// toggle selection of the cell
+	var selectedState = "";
+	var selectedList = gSelectedCells[activeTableId];
+	var isSelected = currentCell.getAttributeNS("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#", "selected");
+		if (isSelected == "true" ) {
+			removeSelection(activeTableId, currentCell);
+
+		}
+		else {
+			addSelection(activeTableId,currentCell);
+			selectedState = "true"
+		}
+		return selectedState; // return current selection state of cell
+} // end of toggleSelection
+
+function clearSelected(activeTableId) {
+	// clear the selected cells
+		gSelecting[activeTableId] = false;
+		var selectedCells = gSelectedCells[activeTableId];
+		for (var k=0; k < selectedCells.length; k++) {
+			selectedCells[k].className = "";
+			selectedCells[k].removeAttributeNS("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#", "selected");
+		}
+		gSelectedCells[activeTableId] = new Array();  // just create new, empty array
+} // end of clearSelected()
+
+function doClick(e,rowNum, colNum) {
+	/* put the doClick() in each TD element and pass the row and column number because it was the easiest way to figure out what
+	row and column was clicked in both IE and Mozilla. 	Mozilla gives the element with the handler as the currentTarget rather than the
+	actual element.  For example, with onclick on the TABLE, Mozilla gives the event.currentTarget as the TABLE when click on a cell.
+	IE gives the event.srcElement as the TD that was clicked on.
+	Also, could probably determine row and column programmatically if necessary rather than passing rowNum and colNum. Or, pass the element itself!
+	*/
+
+	var evt = (e != null) ? e : ((event) ? event : null);  // Mozilla will include e parameter
+	var srcElem = findParentElem(evt,"table");
+	var activeTableId = srcElem.getAttribute("id");
+	var prevCell = gCurrentCell[activeTableId];
+	var rows = document.getElementById(activeTableId).rows;
+	var thisRow = rows[rowNum];
+	var thisCell = thisRow.cells[colNum];
+	// update the global variables for the clicked on cell
+	gCurrentCell[activeTableId] = thisCell;
+	gCurrentRow[activeTableId] = rowNum;
+	gCurrentCol[activeTableId] = colNum;
+	var bCtrlKey = evt.ctrlKey;
+	var bSameCell = (thisCell == prevCell);
+
+	if (gSelecting[activeTableId] == true && bCtrlKey == false) {
+		clearSelected(activeTableId);
+	}
+
+	if (bCtrlKey == false && !bSameCell) {
+		// remove selection from prev cell
+		// add this cell to selection
+		// set state of prev cell to empty
+		// set state of this cell to focusSelect
+		if (prevCell != null) {
+			removeSelection(activeTableId, prevCell);
+			prevCell.className = "";
+		}
+		addSelection(activeTableId, thisCell);
+		thisCell.className="cellFocusSelect";
+	}
+	else if (bCtrlKey == true && !bSameCell) {
+		// leave prev cell in same selection state
+		// update style of prev cell based on state
+		// add this cell to selection
+		// set this cell style to focusselect
+		if (prevCell != null) {
+			var prevStyle = "";
+			if (prevCell.getAttributeNS("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#", "selected") == "true" ) {
+				prevStyle = "cellSelect";
+			}
+				prevCell.className = prevStyle;
+		}
+		addSelection(activeTableId, thisCell);
+		thisCell.className="cellFocusSelect";
+		gSelecting[activeTableId] = true;
+	}
+	else if (bCtrlKey == true && bSameCell) {
+		var bSelected = toggleSelection(activeTableId,thisCell);
+			if (bSelected == "true") {
+				thisCell.className = "cellFocusSelect";
+			}
+			else {
+				thisCell.className = "cellFocus";
+			}
+	}
+	gFocusItem = thisCell;
+	setTimeout("doFocus();", 0);
+
+} // end of doClick
+
+
+function doEvent(evtTarget, evtName, theEvent) {
+	if (evtTarget.fireEvent) {
+		// is IE, need "on" in front of event name
+		evtName = "on" + evtName;
+		evtTarget.fireEvent(evtName, theEvent);
+	}
+	else {
+		evtTarget.dispatchEvent(theEvent);
+	}
+	return;
+}
+
+
+function doLink(linkId) {
+	var theLink = document.getElementById(linkId);
+	var bTryAgain = false;
+	try {
+		theLink.click();  // for IE
+	} catch (clickError) {
+		bTryAgain = true;
+	}
+	if (bTryAgain) {
+		try {
+			var mClick = document.createEvent("MouseEvents");
+			mClick.initEvent("click",true, true);
+			theLink.dispatchEvent(mClick);
+		} catch (e) {
+			alert(e.message); //+ "DEBUG: can't fire event to link element");
+		}
+	}
+
+	return false;
+}
+
+function doEdit(parentCell) {
+	if (parentCell.getAttributeNS("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#", "disabled") =="true") {
+		return;
+	}
+	if (parentCell.editMode != "true") {
+		var inputField = document.createElement("input");
+		setStyle(inputField, "border", "0", "");
+		var parentStyle = getComputedStyle(parentCell, "");
+		var parentWidth = parentStyle.getPropertyValue("width");
+		var dataNode = null;
+		var editData = "";
+		if (parentCell.hasChildNodes() ) {
+			// TODO find parentCells text node - for now just assuming it is first child
+			 dataNode = parentCell.firstChild;
+			 parentCell.removeChild(dataNode);
+			 editData = dataNode.data;
+		}
+		parentCell.saveData = editData;
+		parentCell.appendChild(inputField);
+		inputField.setAttribute("value",editData);
+		setStyle(inputField,"width",parentWidth,"");
+		inputField.addEventListener("blur",checkEdit, true);  // TODO make cross browser
+		inputField.addEventListener("keydown", ignoreArrows,true);  // process arrow key input so it does not  get up to parent table onkeydown
+
+
+		parentCell.editMode = "true";
+		// set focus to the input field
+		gFocusItem=inputField;
+		setTimeout("doFocus()", 0);
+	} // end of if edit
+	else   {
+		endEdit(parentCell,true);
+
+		gFocusItem = parentCell;
+		setTimeout("doFocus()",0);
+
+	} // end of else end edit
+
+
+} // end of doEdit()
+
+function endEdit(parentCell, bSave) {
+// cell is in edit mode - store data and leave edit mode
+	// find the input field
+	if (parentCell.hasChildNodes() && parentCell.editMode == "true") {
+		var inputNode = parentCell.firstChild;  // TODO should never be null but wrap in a try/catch
+		var childNodeName = inputNode.nodeName
+		childNodeName.toLowerCase();
+		while (childNodeName != "input" && inputNode != null) {
+				inputNode = inputNode.nextSibling;
+				childNodeName = inputNode.nodeName.toLowerCase();
+		}
+		if (inputNode != null) {
+			var storeData = parentCell.saveData;
+			if (bSave == true) {
+				storeData = inputNode.value;
+			}
+			// remove event listenters
+			inputNode.removeEventListener("blur",checkEdit,true);
+			inputNode.removeEventListener("keydown", ignoreArrows, true);
+			parentCell.removeChild(inputNode);
+			var newDataNode = document.createTextNode(storeData);
+			parentCell.appendChild(newDataNode);
+			parentCell.editMode="false";
+		}
+	}
+} // end of endEdit
+
+function checkEdit(event) {
+try {
+	var srcElem = findParentElem(event,"table");
+	var currentCell = gCurrentCell[srcElem.id];
+	var parentCell = findParentElem(event,"td");
+	if (parentCell == currentCell) {
+		if (parentCell && parentCell.editMode == "true") {
+			endEdit(parentCell,true);
+		}
+
+		gFocusItem = srcElem;
+		setTimeout("doFocus();", 0);
+	}
+} catch (e) {
+	alert("DEBUG - error in checkEdit: " + e.message);
+}
+}
+
+function ignoreArrows(event) {
+	var eventTarget = event.target;
+	var key = event.keyCode;
+	bEventContinue = true;  // let input field handle the key
+	if (key >=KEY_LEFT && key <= KEY_DOWN) {
+		if (event.stopPropagation) {
+						event.stopPropagation();
+				}
+				else {
+						event.cancelBubble = true;
+				}
+	}
+	/* This does not work - I can not get focus back into the cell after the escape!!!
+	else if (key == KEY_ESCAPE) {
+		// first let escape be used to clear the cell, if cell is empty end editing
+		if (eventTarget.value == "") {
+			if (event.stopPropagation) {
+				event.stopPropagation();
+			}
+			else {
+				event.cancelBubble = true;
+			}
+			var srcElem = findParentElem(event,"table");
+				var currentCell = gCurrentCell[srcElem.id];
+				var parentCell = findParentElem(event,"td");
+				if (parentCell == currentCell) {
+					if (parentCell && parentCell.editMode == "true") {
+						endEdit(parentCell,false);
+					}
+
+				}
+				// focus the table - that will focus the currentCell
+				gFocusItem = srcElem;
+				setTimeout("doFocus();", 0);
+
+		}
+
+	} */
+
+
+} // end of ignoreArrows
+function setCell(tableId) {
+
+	var currentCell = gCurrentCell[tableId];
+	if (currentCell == null) {
+		// no cell selected, set it to first cell
+		var grid = document.getElementById(tableId);
+		var rows = grid.rows;
+		var firstRow = rows[0];
+		currentCell = firstRow.cells[0];
+		gCurrentRow[tableId] = 0;
+		gCurrentCol[tableId] = 0;
+		gCurrentCell[tableId] = currentCell;
+
+
+
+	}
+	currentCell.className="cellFocusSelect";
+	gFocusItem = currentCell;
+	setTimeout("doFocus()", 0);
+
+}
+
+// would like to change the style of the cell when focus leaves the table completely but not sure how to implement since table gets onblur when each cell loses focus
+function blurCell(event, tableId) {
+		var currentCell = gCurrentCell[tableId];
+		if (currentCell != null) {
+			currentCell.className="cellBlur";
+		}
+
+	// else do nothing
+}
+
+//]]>
+</script>
+<style type="text/css">
+@namespace waistate url("http://www.w3.org/2005/01/wai-rdf/GUIStateTaxonomy#");
+/*@namespace waistate url("http://www.w3.org/wai/pf/GUIStateTaxonomy#");*/
+.menu {
+	float:left;
+	width:5em;
+	padding:1px 3px;
+	background-color:#CCCCCC;
+	color:black;
+
+}
+.menudrop {
+	display:none;
+	background-color:#F5F5F5;
+	width:150%;
+	border: solid #999999 1px;
+
+
+}
+.content {
+	margin-top:2em;
+	position:absolute;
+	clear:both;
+
+}
+.topMenu {
+	border:solid #CCCCCC 1px;
+}
+
+.topMenu:focus {
+	background-color:#999999;
+	border:dashed #999999 1px;
+	color:white;
+}
+.topMenu:hover {
+	background-color:#999999;
+	border:dashed #999999 1px;
+	color:white;
+}
+.menuitem:focus {
+	color:white;
+	background-color:#999999;
+	border:dashed #999999 1px;
+
+}
+.menuitem {
+	border:solid #F5F5F5 1px;  /*color must be the same as background color (which is inherited from .menudrop) */
+}
+.menuitem:hover {
+	background-color:#999999;
+	border:dashed #999999 1px;
+	color:white;
+
+}
+.menuitem[waistate|disabled="true"] {
+	color:#666666;
+}
+.rowSelected {
+	background-color:#66CCCC;
+
+}
+td[waistate|readonly="true"] {
+	color:#666666;
+}
+.cellFocusSelect {
+	border:2px dashed #999999;
+	background-color:#C0C0C0;
+
+}
+.cellFocus {
+	border:2px dashed #999999;
+}
+
+.cellSelect {
+	border:2px dotted #999999;
+	background-color:#DCDCDC;
+}
+.cellBlur {
+	border:1px dotted #999999;
+	background-color:#F5F5F5;
+}
+table, th, td {
+
+	border:2px groove #C0C0C0;
+
+}
+
+.action {
+	color:#0000FF;
+	text-decoration:underline;
+}
+a:visited {
+	color:#000066;
+}
+
+.leftCellHi {
+	border-left:2px dotted #00FF00;
+	border-top:2px dotted #00FF00;
+	border-bottom:2px dotted #00FF00;
+}
+.middleCellHi {
+	border-top:2px dotted #00FF00;
+	border-bottom:2px dotted #00FF00;
+}
+
+.rightCellHi {
+	border-right:2px dotted #00FF00;
+	border-top:2px dotted #00FF00;
+	border-bottom:2px dotted #00FF00;
+}
+
+
+
+</style>
+</head>
+<body onkeydown="topMenu.doMenu(event);">
+<h1>Accessible Widgets </h1>
+<br />
+
+<div style="position:absolute;z-index:2;">
+<div id="menuBar" x2:role="wairole:menubar" onkeydown="return topMenu.doNavigation(event);" tabindex="-1">
+	<div class="menu" id="one"  onclick="topMenu.showMenu(event, this.id, false);" onkeydown="topMenu.showMenu(event, this.id, true);" onmouseover="topMenu.showMenu(event,this.id,false);" onmouseout="topMenu.hideMenu(event);">
+		<div  tabindex="-1" x2:role="wairole:menuitem" id="onetop" class="topMenu">One</div>
+		<div class="menudrop" x2:role="wairole:menu"  id="oneItems" >
+			<div  id="1.1" tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item1');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item1');}">Item 1</div>
+			<div  id="1.2" tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item 2');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item1.2');}">Item 2 </div>
+		</div>
+	</div>
+	<div class="menu"  id="two" onclick="topMenu.showMenu(event, this.id,false);" onkeydown="topMenu.showMenu(event, this.id, true);" onmouseover="topMenu.showMenu(event,this.id,false);" onmouseout="topMenu.hideMenu(event);">
+	<div tabindex="-1" x2:role="wairole:menuitem" id="twotop" class="topMenu">Two</div>
+			<div class="menudrop" x2:role="wairole:menu"  id="twoItems" style="display:none;">
+				<div id = "2.1" tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item1');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 2.1');}">Item 2:1 </div>
+				<div id = "2.2"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item2');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item2.2');}">Item 2:2 </div>
+				<div id = "2.3"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item3');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item2.3');}">Item 2:3 </div>
+				<div id = "2.4"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" waistate:disabled="true"  onclick="return topMenu.doAlert(event,this,'do Item4');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 2.4');}">Item 2:4 </div>
+				<div id = "2.5"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" oonclick="return topMenu.doAlert(event,this,'do Item5');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item2.5');}">Item 2:5 </div>
+			</div>
+	</div>
+	<div class="menu"   id="three" onclick="topMenu.showMenu(event, this.id,false);" onkeydown="topMenu.showMenu(event, this.id, true);" onmouseover="topMenu.showMenu(event,this.id,false);" onmouseout="topMenu.hideMenu(event);">
+	<div tabindex="-1" x2:role="wairole:menuitem" id="threetop" class="topMenu">Three</div>
+				<div class="menudrop" x2:role="wairole:menu"  id="threeItems" style="display:none;">
+					<div id = "3.1" tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item1');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 3.1');}">Item 3:1 </div>
+					<div id = "3.2"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item2');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 3.2');}">Item 3:2 </div>
+					<div id = "3.3"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item3');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 3.3');}">Item 3:3 </div>
+					<div id = "3.4"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item4');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 3.4');}">Item 3:4 </div>
+				</div>
+	</div>
+	<div class="menu"  id="four" onclick="topMenu.showMenu(event, this.id,false);" onkeydown="topMenu.showMenu(event, this.id, true);" onmouseover="topMenu.showMenu(event,this.id,false);" onmouseout="topMenu.hideMenu(event);">
+	<div tabindex="-1" x2:role="wairole:menuitem" id="fourtop" class="topMenu">Four</div>
+				<div class="menudrop" x2:role="wairole:menu"  id="fourItems" style="display:none;">
+					<div id = "4.1" tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item1');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 4.1');}">Item 4:1 </div>
+					<div id = "4.2"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item2');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 4.2');}">Item 4:2 </div>
+					<div id = "4.3"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item3');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 4.3');}">Item 4:3 </div>
+					<div id = "4.4"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item4');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 4.4');}">Item 4:4 </div>
+					<div id = "4.5"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item5');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 4.5');}">Item 4:5 </div>
+				</div>
+	</div>
+	<div class="menu" id="five" onclick="topMenu.showMenu(event, this.id,false);" onkeydown="topMenu.showMenu(event, this.id, true);" onmouseover="topMenu.showMenu(event,this.id,false);" onmouseout="topMenu.hideMenu(event);">
+	<div tabindex="-1" x2:role="wairole:menuitem" id="fivetop" class="topMenu">Five</div>
+				<div class="menudrop" x2:role="wairole:menu"  id="fiveItems" style="display:none;">
+					<div id = "5.1" tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item1');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 5.1');}">Item 5:1 </div>
+					<div id = "5.2"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item2');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 5.2');}">Item 5:2 </div>
+					<div id = "5.3"  tabindex="-1" x2:role="wairole:menuitem"  class="menuitem" onclick="return topMenu.doAlert(event,this,'do Item3');" onkeydown="if (event.keyCode == 13) {topMenu.doAlert(event,this,'do Item 5.3');}">Item 5:3 </div>
+
+				</div>
+	</div>
+</div>
+</div>
+
+<div class="content">
+<p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Integer cursus, nulla ac imperdiet blandit, lectus tellus condimentum felis, sit amet sagittis mi lorem eget massa. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestib.</p>
+<form action="test">
+
+<div style="height:20em; overflow:auto;">
+<table tabindex="0" border="2" cellspacing="0" id="table2" x2:role="wairole:spreadsheet" onkeydown=" return doTableKeys(event);"  onfocus="setCell(this.id);"  >
+<thead>
+<tr >
+	<th tabindex="-1"  x2:role="wairole:columnheader"  style="width:6em" onclick="doClick(event,0,0);"   onkeydown="if (event.keyCode==13) {return doLink('aEntry');}" ><span class="action" title="Sort by Entry #"  onclick="alert('sort column on click');" tabindex="-1"  id="aEntry">Entry #</span></th>
+	<th tabindex="-1"  x2:role="wairole:columnheader"   onclick="doClick(event,0,1);"   onkeydown="if (event.keyCode==13) {return doLink('aDate');}" style="width:10em"><span class="action"  title="Sort by Date"  onclick="alert('sort column on click');" tabindex="-1" id="aDate"  >Date</span></th>
+	<th tabindex="-1"  x2:role="wairole:columnheader"  onclick="doClick(event,0,2);"   onkeydown="if (event.keyCode==13) {return doLink('aExpense');}"  style="width:20em" ><span class="action" title="Sort by Expense Name"  onclick="alert('sort column on click');" tabindex="-1" id="aExpense">Expense</span></th>
+	<th tabindex="-1"  x2:role="wairole:columnheader"  onclick="doClick(event,0,3);"   onkeydown="if (event.keyCode==13) {return doLink('aAmount');}"  style="width:8em" ><span class="action" title="Sort by Amount" onclick="alert('sort column on click');"  tabindex="-1" id="aAmount">Amount</span></th>
+	<th tabindex="-1"  x2:role="wairole:columnheader"  onclick="doClick(event,0,4);"   onkeydown="if (event.keyCode==13) {return doLink('aMerchant');}"  style="width:15em" ><span class="action" title="Sort by Merchant" onclick="alert('sort column on click');" tabindex="-1" id="aMerchant">Merchant</span></th>
+	<th tabindex="-1"  x2:role="wairole:columnheader"  style="width:8em" >Type</th>
+
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"   waistate:readonly="true" onclick="doClick(event,1,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >1</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,1,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >03/15/05</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,1,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >Conference Fee</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,1,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >$449.00</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,1,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >CSUN Center on Disability</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,1,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >credit</td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"   waistate:readonly="true" onclick="doClick(event,2,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >2</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,2,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >03/15/05</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,2,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >lodging</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,2,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >$119.00</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,2,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >LAX Hilton</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,2,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >credit</td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"   waistate:readonly="true" onclick="doClick(event,3,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >3</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,3,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >03/15/05</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,3,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >dinner</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,3,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >$24.00</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,3,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >Chili&#39;s</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,3,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >cash</td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"   waistate:readonly="true" onclick="doClick(event,4,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >4</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,4,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >03/16/05</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,4,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >lodging</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,4,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >$119.00</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,4,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >LAX Hilton</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,4,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >credit</td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"    waistate:readonly="true" onclick="doClick(event,5,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >5</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,5,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >03/16/05</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,5,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >breakfast</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,5,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >$6.50</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,5,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >Starbucks</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,5,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >cash</td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"    waistate:readonly="true" onclick="doClick(event,6,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >6</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,6,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >03/16/05</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,6,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >lunch</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,6,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >$9.35</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,6,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >Super Sub Stop</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,6,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >cash</td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"    waistate:readonly="true" onclick="doClick(event,7,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >7</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,7,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >03/16/05</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,7,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >dinner</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,7,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >$40.00</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,7,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >Davio&#39;s</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,7,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >credit</td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"   waistate:readonly="true" onclick="doClick(event,8,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >8</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,8,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >&nbsp;</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,8,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >&nbsp;</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,8,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >&nbsp;</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,8,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >&nbsp;</td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,8,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  >&nbsp;</td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"   waistate:readonly="true" onclick="doClick(event,9,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >9</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,9,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" ></td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,9,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,9,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,9,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,9,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"   waistate:readonly="true" onclick="doClick(event,10,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >10</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,10,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" ></td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,10,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,10,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,10,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,10,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"    waistate:readonly="true" onclick="doClick(event,11,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >11</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,11,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" ></td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,11,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,11,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,11,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,11,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"   waistate:readonly="true" onclick="doClick(event,12,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >12</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,12,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" ></td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,12,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,12,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,12,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,12,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"    waistate:readonly="true" onclick="doClick(event,13,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >13</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,13,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" ></td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,13,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,13,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,13,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,13,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"   waistate:readonly="true" onclick="doClick(event,14,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >14</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,14,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" ></td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,14,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,14,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,14,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,14,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"  waistate:readonly="true" onclick="doClick(event,15,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >15</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,15,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" ></td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,15,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,15,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,15,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,15,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"    waistate:readonly="true" onclick="doClick(event,16,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >16</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,16,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" ></td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,16,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,16,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,16,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,16,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"    waistate:readonly="true" onclick="doClick(event,17,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >17</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,17,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" ></td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,17,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,17,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,17,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,17,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+</tr>
+<tr>
+	<td tabindex="-1"  x2:role="wairole:rowheader"  waistate:readonly="true" onclick="doClick(event,18,0);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" >18</td>
+	<td tabindex="-1"  x2:role="wairole:gridcell"   id="testCell" onclick="doClick(event,18,1);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}" ></td>
+	<td tabindex="-1"  x2:role="wairole:gridcell" onclick="doClick(event,18,2);"  ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,18,3);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,18,4);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+	<td tabindex="-1"   x2:role="wairole:gridcell"  onclick="doClick(event,18,5);" ondblclick="doEdit(this);" onkeydown="if (event.keyCode == 13) { doEdit(this);return false;}"  ></td>
+</tr>
+</tbody>
+</table>
+</div>
+</form>
+<h2 tabindex="0" >Menu</h2>
+<p>This menu should work similar to a windows application menu. It will work with the keyboard arrow and enter keys as well
+as with the mouse. </p>
+<h2>Keyboard Usage</h2>
+<ul><li>Press ctrl-altt-m to set focus to the menu. </li>
+<li>Use left and right arrow to traverse through the top level menus</li>
+<li>Press enter to open and close a menu.</li>
+<li>Press up or down arrow to open a menu and move through the list of menu items</li>
+<li>With the cursor on a menu item, press enter to invoke it (currently is just displays an alert)</li>
+<li>Press escape to close the menu and set focus back to page</li>
+</ul>
+<h2>Mouse Usage</h2>
+<ul><li>Mouse over a menu to open it</li>
+<li>Click on a menu to open/close it</li>
+<li>Click on an open menu item to invoke it.</li>
+</ul>
+<h2>Spreadsheet</h2>
+<p>When arrow to an editable field, press enter to edit the field.  Press enter again to end editing mode.  When in edit mode the arrow keys will only work within the field (this is the way
+Excel works).</p>
+</div>
+</body>
+</html>

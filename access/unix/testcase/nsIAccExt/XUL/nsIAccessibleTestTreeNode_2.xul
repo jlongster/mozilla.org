@@ -1,0 +1,223 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<!-- Descrpt: Test nsIAccessible Interface method(removeSelection) for XUL tree Node
+   - Author: jessie.li@sun.com
+   - Copyright (C) 2002 Sun Microsystems Corp.  All Rights Reserved.
+   -->
+  
+  
+<window
+     id="test-window"
+     title="test"
+     orient="horizontal"
+     xmlns:html="http://www.w3.org/1999/xhtml"
+     xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+    
+ <script src="accessibility.js"/>
+    
+ <html:script>
+  <![CDATA[
+  
+function getDomNodeSelection()
+{
+ try{
+  netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+  netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+
+  var node = document.getElementsByTagName("tree").item(0);
+  return node;
+   }
+ catch(e){
+  alert("Exception: " + e);
+ }
+}
+
+function executeTestCase()
+{
+  var domNode = getDomNodeSelection();
+
+  if(domNode == null)
+  {
+    res = res + "Could not get the DOM Node";
+    submitToCookie();
+  }
+  else
+  { //else1
+    accNode = getAccessibleSelectionNode(domNode);
+   
+    if(accNode == "Exception")
+    {
+      res = res + "The Node you selected is not an Accessible Node";
+      submitToCookie();
+    }
+    else
+    { //else2
+     try{
+      netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+      netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+      
+      accNode.removeSelection(0);
+      accNode.removeSelection(2);
+      setTimeout("constructResults();", 2000);
+     }
+     catch(e){
+      alert("Exception**: " + e);
+     }
+    }//else2
+  } //else1
+}
+
+function constructResults()
+{
+ try{
+   netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+   netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+
+   var isSelected_1 = accNode.isChildSelected(0);
+   var isSelected_2 = accNode.isChildSelected(1);
+   var isSelected_3 = accNode.isChildSelected(2);
+   var count = getSelectionCount(accNode);
+   
+   var expectedCount      ="1";
+   var expectedSelect_1     = false;
+   var expectedSelect_2     = true;
+   var expectedSelect_3     = false;
+      
+   var row0 = new Array("Property/Method", "Expected Values", "Actual Values", "Result");
+   var row1 = new Array("Count->", expectedCount, count);
+   var row2 = new Array("item0IsSelected->", expectedSelect_1, isSelected_1);
+   var row3 = new Array("item1IsSelected->", expectedSelect_2, isSelected_2);
+   var row4 = new Array("item2IsSelected->", expectedSelect_3, isSelected_3);
+   
+
+   if (count == expectedCount)           row1[3] = "PASS"; else row1[3] = "FAIL";
+   if (isSelected_1 == expectedSelect_1)           row2[3] = "PASS"; else row2[3] = "FAIL";
+   if (isSelected_2 == expectedSelect_2)           row3[3] = "PASS"; else row3[3] = "FAIL";
+   if (isSelected_3 == expectedSelect_3)           row4[3] = "PASS"; else row4[3] = "FAIL";
+
+
+   res += "<table border cols=4 width='70%'>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+     res += "<td><b>" + row0[col] + "</b></td>";
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row1[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row1[col] + "</td>";
+    else
+     res += "<td>" + row1[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "<tr>";
+  for(col=0; col<4; col++)
+   {
+    if(row2[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row2[col] + "</td>";
+    else
+     res += "<td>" + row2[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row3[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row3[col] + "</td>";
+    else
+     res += "<td>" + row3[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row4[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row4[col] + "</td>";
+    else
+     res += "<td>" + row4[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "</table>";
+
+   displayResults(res);
+ }
+ catch(e){
+  alert("Exception**: " + e);
+ }
+}
+ 
+  ]]>
+  </html:script>
+    
+<vbox> 
+<description>
+    Testing XUL tree for Accessibility
+</description>
+<spacer flex="1"/>
+<description>
+    Press "Ctrl" and click the first 3 items,
+</description>
+<description>
+    which is from "Navigator" to "Languages".
+</description>
+<description>
+    Then click the button to test.
+</description>
+ <button label="Start to Test" oncommand="executeTestCase();">
+</button>
+</vbox>
+
+<tree>
+<treecols>
+<treecol id="category" label="Category" primary="true" width="200"/>
+</treecols>
+<treechildren>
+<treeitem container="true" open="true" seltype="multiple">
+<treerow>
+<treecell label="Navigator"/>
+</treerow>
+<treechildren>
+<treeitem>
+<treerow>
+<treecell label="History"/>
+</treerow>
+</treeitem>
+<treeitem>
+<treerow>
+<treecell label="Languages"/>
+</treerow>
+</treeitem>
+<treeitem>
+<treerow>
+<treecell label="Helper Applications"/>
+</treerow>
+</treeitem>
+<treeitem>
+<treerow>
+<treecell label="Smart Browsing"/>
+</treerow>
+</treeitem>
+<treeitem>
+<treerow>
+<treecell label="Internet Search"/>
+</treerow>
+</treeitem>
+</treechildren>
+
+</treeitem>
+</treechildren>
+</tree>
+
+<iframe id="iframe" class="iframe" type="content"
+            flex="1" context="outputContext"/>
+<html:script>
+  <![CDATA[
+    res = "<b><u> Results for XUL Tree Node:</u></b><br><br>";
+
+  ]]>
+  </html:script>
+  
+  
+    
+</window>
+

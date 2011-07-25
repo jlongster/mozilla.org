@@ -1,0 +1,336 @@
+<?php
+
+$html_title = 'Guide to Using S/MIME';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>Guide to Using S/MIME</h2>
+
+<i><FONT SIZE="-1">
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Technical contacts: 
+<a href="mailto:javi@netscape.com,thayes@netscape.com?subject=SMIME Feedback">
+Javier Delgadillo and Terry Hayes</a></font></i><BR>
+
+<i><FONT SIZE="-1">Manager: 
+<A HREF="mailto:ssaux@netscape.com?subject=SMIME Feedback">Stephane Saux</A></FONT></i>
+</center>
+
+
+<h2><hr>Contents</h2>           
+
+<p><a href="#intro">Introduction</a><br>
+<a href="#getting_started">Getting Started</a><br>
+<a href="#sign&encrypt">Signing and Encrypting Email Messages</a><br>
+<a href="#get_recip_certs">Obtaining Encryption Certificates for Email Recipients</a><br>
+<a href="#what_to_test">What To Test</a><br>
+<a href="#appendixA">Appendix A: Viewing Certificates</a><br>
+<a href="#troubleshooting">Appendix B: Troubleshooting</a><br>
+
+
+
+<h2><a name="intro"><hr>Introduction</h2>
+   
+<p>Nightly Mozilla builds now include basic S/MIME functionality. See <a href="http://www.mozilla.org/mailnews/specs/security/">Encryption and Signing UI Specifications</a> for information on our UI plans. This document describes how to use and test S/MIME in the current Mozilla builds.
+
+<pBefore testing S/MIME, you should have a basic understanding of public-key crytopgrahy. For an overview, see XXX.
+
+<p>It is currently possible to perform the following actions in Mozilla builds:
+       
+  <ul>
+      <li>Configure S/MIME on a per-email account basis.</li>
+      <li>Receive and read S/MIME messages, albeit with a temporary
+ and minimal UI.</li>
+      <li>Send S/MIME messages with minimal UI controls.<br>
+      </li>
+       
+  </ul>
+
+As we start implementing the full S/MIME UI, we would like to solicit help from the MOzilla community in ongoing testing of S/MIME features. The rest of this document describes how to 
+<ul>
+	<li>Set up your browser to use S/MIME.
+	<li>Sign and encrypt email.
+	<li>Test current functionality
+	<li>Use certificate-related UI.
+	<li>Troubleshoot.
+</ul>
+
+                  
+<h2><a name="getting_started"><hr>Getting Started</h2>
+
+<p>Netscape has set up a public Test Certificate Authority (CA) specifically for the purpose of testing S/MIME in Mozilla nightly builds. This CA issues test certificates that expire after ten days. This section describes how to obtain dual-key test certificates from the CA and configure Mail & Newsgroups so you can send signed and encrypted email messages.
+
+<h3>Download the CA Certificate and Configure S/MIME</h4>
+
+<p>To set up the browser for testing S/MIME and obtain the appropriate certificates from Netscape's test CA, follow these steps:
+                 
+<ol><li>Download a nightly build from <a href="http://ftp.mozilla.org/pub/mozilla/nightly">
+http://ftp.mozilla.org/pub/mozilla/nightly</a> that is later than 1/11/2001. S/MIME functionality should
+be considered alpha until further notice.
+
+<li>Create a new profile and use the Mail &amp; News Account Manager to create
+the Mail account you will use to test the feature.  This is not strictly
+necessary (you could use an existing profile), but it will help us 
+in reproducing any problem you may run into. In addition, since testing S/MIME involves
+importing certificates, using a separate profile will protect your existing profile should  
+any certificate database corruption problems occur.
+
+	<li>Click this link to install the Netscape Test CA root certificate in your new
+profile: <a href="http://testca.netscape.com/getCAChain?op=download&amp;mimeType=application/x-x509-ca-cert">
+Download the Netscape Test CA Root Certificate now</a>. You will see this dialog box:
+
+
+        <p><img src="smime_land_files/downloadCACert.gif" alt="download ca cert dialog" width="491" height="360">
+
+<p>Select the first two checkboxes, at a minimum. Doing so indicates that you trust this CA certificate to
+identify web sites and email users. You can then can visit the SSL server for the
+Netscape Test CA without triggering a warning. More importantly, selecting these trust settings also 
+ensures that you can vaildate signed emails from other people whose certificates were issued by the
+Netscape Test CA.</li>
+
+      <li>Go to the <a href="https://testca.netscape.com/">Netscape Test Certificate Authority</a>
+ site and follow the instructions to obtain personal dual-key certificates.</li>
+    
+    </ol>
+
+<p>The Netscape Test Certificate Authority will issue you dual-key certificates. 
+This means that you get two certificates: one used by other people to encrypt emails they send to you, and the other used by you to sign emails and to identify yourself to servers that require client authentication.
+
+<p>Note that it's possible to obtain a single certificate that supports signing and encryption. For example, free trial email certificates from <a href="www.verisign.com">Verisign</a> support both signing and encryption. However, thorough testing of S/MIME requires testing dual-key certificates.
+
+<p>If you have problems obtaining a certificate from the Netscape Test Certificate
+Authority, send an email to <a href="testca-admin@netscape.com">testca-admin@netscape.com</a>
+
+<p><b>Back up your certificates.</b> You should also back up your test certificates. To do so, open the Certifiate Manager, select both your new certificates, and click Backup. This is very important. If something happens to your certificate database or you have any other problems, you will lose access to encrypted emails unless you can restore the backup copy of your certificates.
+
+
+
+<h3>Examine Your Certificates and Test Client Authentication</h3>
+
+<p>Once you've obtained your test certificates, you should take a look at them using the Certificate Manager. Follow these steps:
+<ol>
+	<li>Open the Edit menu and choose Preferences.
+	<li>Under the Privacy & Security category, choose Certificates. (If no subcategories are visible, double-click the category to expand the list.)
+	<li>In the Manage Certificates section, click Manage Certificates.
+</ol>
+
+<p>For more information on many aspects of using certificates, open the Help menu, choose Help and Support Center, and double-click Using Certificates in the left frame. Current builds do not yet include S/MIME help, but you can find information on general certificate management.
+
+<p>Under the Your Certificates tab in the Certificate Manager, the 'Verified' column for your certificate must have the value "true" or you won't be able to use it. If the value for either of your dual-key certificates is not "true," see the 
+<a href="#troubleshooting">Troubleshooting</a> section of this document.
+
+<p>To test your signing certificate for client authentication, click this link and log into the test server:  <a href="https://testca.netscape.com:443/login.html" TARGET="_blank">
+client authentication test server</a>. 
+
+<p>Normally the process of client authentication is transparent to the user. To see certificate request dialog, you must follow these steps before authenticating:
+
+<ol><li>Open the Edit menu and choose Preferences.
+<li>Under the Privacy & Security category, click Certificates. (If no subcategories are visible, double-click the category to expand the list.)
+<li>Under Client Certificate Selection, click Ask Every Time.
+</ol>
+
+<p>If you have previously authenticated to the test server during the same session, you will need to exit the browser, relaunch it, and visit the page (linked above) again.
+
+
+<h3>Configure a Mail Account for S/MIME</h3>
+
+<p>To send signed or encrypted emails, you must first configuring your one of your mail accounts for S/MIME. Follow these steps:
+                               
+<ol>
+	<li>Open the Tasks menu and choose Mail & Newsgroups. (If you haven't alreaedy set up your mail account for the test profile, you will beasked to to so before you can proceed.)
+	<li>Open the Edit menu and choose Mail &amp; Newsgroups Account Settings.</li>
+	<li>In the left panel, identify the account you want to configure and click Security under the name of that account.
+       <p>The Security panel contains two sections: Digital Signing and Encryption: 
+       <p><img src="smime_land_files/accountSettingSecuri.gif" alt="Mail Newsgroups Account Settings Security Tab.">
+
+       <ul>
+		<li>The Digital Signing section  allows you to select the certificate you want to use for signing email messages. The certificate you select is attached to every message you sign (including all encrypted messages), allowing the recipient to verify your digital signature. The signature is created using the private key for this certificate, which remains on your hard disk.</li>
+           <li>The Encryption section allows you to select the certificate you want to use for encrypting email messages. This certificate is attached to every signed and/or encrypted message you send,  so that all recipients can subsequently use it to encrypt emails they send to you. Decryptiopn is performed with the private key for this certificate, which remains on your hard disk.</li><br>
+	</ul>
+                                             
+	<li>In the Digital Signing section, click Select.
+	<p>This dialog box appears:
+      <p><img src="smime_land_files/CertPicker.gif" alt="Certificate Picker"></li>
+      <li>Select the signing certificate you want to use for testing, then click OK.</li>
+	<li>In the Digital Signing section, select the checkbox labeled "Digitally sign messages".
+	<li>In the Encryption section, click Select. You can then use a similar dialog box to select the certificate you want to use for encryption. (Note that the certificate selected for signing can be the same as the one used for encryption if the certificate supports both signing and encryption.) For now, leave the radio button labeled "Never" selected. You will still be able to encrypt messages on an individual basis.
+	<li>Click OK.
+      </ol>
+
+<p>You must select both a signing certificate and an encryption certificate before you can start sending signed messages. When you sign a message, both your encryption and signing certificates are attached to theit, so that recipients can can both verify your digital signature and, if they wish, send you encrypted email.</li>
+
+<p>You are now ready to send signed and encrypted messages.<br>
+
+                               
+<h2><a name="sign&encrypt"><hr>Signing and Encrypting Email Messages</h2>
+                               
+To digitally sign an email message, follow these steps:                                      
+      <ol>
+             <li>Click the Compose button (or reply to, or forward, an existing message).
+		 <p>A new Compose window opens.</li>
+		 <p><img src="smime_land_files/securityOptions.gif" alt="compose window">
+             <li>Open the Options menu, then the Security submenu.
+		 <p>If you followed the directions in this document exactly, you'll notice that Digitally Sign is already checked, because of the Mail & Newsgroup Account option you selected earlier.
+		 <p>If you want to digitally sign the message only, without encrypting it, you don't need to do anything with this menu (assuming that the Digitally Sign item is already selected). If you want to encrypt the message as well as signing it, select Always Encrypt. (In current builds, Always Encrypt applies to this Compose window only.)</li>
+             <li>Address and compose your test message, then click Send.</li>
+      </ol>                                       
+
+<p>When you receive a message, the right side of the heading area (in current builds) indicates whether the message is signed or signed and encrypted. (Encrypted messages are always signed.) 
+
+<p>If you have configured S/MIME as described above, you can digitally sign any emailmessage. To encrypt a message, however, you must already have an encryption certificate for each of the recipients. The next section describes how to obtain recipients' certificates.
+
+
+<h2><a name="get_recip_certs"><hr>Obtaining Encryption Certificates for Email Recipients</h2>
+                                             
+<p>The current S/MIME  implementation provides two ways to obtain the encryption certificate that you need before you can send encrypted email to a given recipient.<br>
+                                                           
+        <ul>
+               <li>Have the recipient send you a signed or encrypted email. This can be done from Netscape Communicator or from a current Mozilla build. Most of the Mozilla community will use this method to obtain certificates from recipients.</li>
+            <li>Some organizations provide an LDAP directory from which you
+ can obtain a user's certificate by clicking a link.<br>
+            </li>
+                                                                        
+        </ul>
+To determine whether you have someone's certificate, open the Certificate Manager as described above and click the Other People's tab.
+
+                                                          
+<h2><a name="what_to_test"></a><hr>What To Test</h2>
+                                                                        
+<p>Some suggestions for testing:                              
+            <ol>
+                   <li>Test the non-s/mime Mail &amp; Newsgroup functionality 
+  for  potential regressions that are attributable to the new feature. Please 
+  remember  to validate that any regression does not also appear on the corresponding 
+   trunk build.</li><BR>
+                                                                        
+                            
+              <ul>
+                     <li>Reading regular messages works.</li>
+                     <li>Sending regular messages works.</li>
+                     <li>Performance for opening messenger, a compose window, 
+  reply,  forward.</li>
+                     <li>Impact on folders containing both s/mime and regular 
+  messages  (sort by, compact, select, file, etc...</li>
+                     <li>search of folders.
+                     </li>
+                                                                        
+                            
+              </ul><br>
+                   <li>Test S/MIME features:<br>
+       <p>For each reading/sending test you run, please consider the following
+ cases:<br>
+                                                                        
+                                          
+                <ul>
+                       <li>Emails that you send yourself.</li>
+                       <li>Emails sent by others to you.</li>
+                       <li>Emails sent to multiple recipients.</li>
+                       <li>Emails that have attachments.</li>
+                       <li>Emails that were replies and forwards.</li>
+                       <li>Combinations of the above.</li>
+                       <li>Send and read from different mail clients.</li>
+                                                                        
+                                          
+                </ul>
+                  <br>
+  <li>S/MIME functionality testing:<br>
+                   </li><BR>
+                                                                        
+             
+ <ul>
+                     <li>Send a signed email.  Recipients can read it
+ and the signature is valid if they have followed the above setup.</li>
+                     <li>Send an encrypted email.</li>
+                     <li>Send a signed and encrypted email.</li>
+                     <li>Read a signed email.</li>
+                     <li>Read an encrypted email.</li>
+                     <li>Read a signed and encrypted email.</li>
+                     <li>Receiving and reading a signed email loads the sender's
+ certificate, allowing you to encrypt the reply to the sender.</li>
+                     <li>Receiving and reading an encrypted email allows
+you to click Reply All and send encrypted mail to all recipients after selecting the Always Encrypt option.<br>
+                     </li>                                                            
+                              
+</ul>
+                                                                        
+             
+            </ol>
+                                                                        
+  
+            <h2><a name="appendixA"></a><hr>
+ Appendix A: Viewing Certificates.</h2>
+                                                                        
+<p>To open the Certificate Manager and perform basic management tasks, follow these steps:<br>
+                                                                         
+             
+              <ol>
+                    <li>Open the Edit menu, choose Preferences, double-click Privacy &amp; Security, click Certificates,  then click Manage Certificates</li><BR>
+	<ul>
+                    <li>The <i>Your Certificates</i> tab should show your own 
+S/MIME certificates. The <i>Verified</i> column should read "true"
+for your certificates. Go to the <a href="#troubleshooting">troubleshooting</a> section if it doesn't.</li>
+                    <li>The <i>Other People's</i> tab shows you the certificates 
+from other people (which are imported autoamtically when they send you a signed email).The <i>Verified</i> column should read "true"
+for these certificates too.</li>
+                    <li>The <i>Authorities</i> tab allows you to
+view CA certificates and edit their trust settings.<br>
+                    </li>
+	</ul><BR>
+
+                    <li>Double-click a certificate's name to view it.</li>
+                    <p>The <i>Details</i> tab of the Certificate Viewer 
+shows the certificate hierarchy for the certificate chain. This is 
+useful when you're attempting to locate a root CA certificate so you can edit 
+its trust attributes.</li>
+
+	<p><img src="smime_land_files/ssauxVerisignCertVie.gif" alt="Stephane Saux Verisign Certificate" width="479" height="496">
+                    <li>To edit a CA certificate's trust attributes, click the Authorities tab, select 
+the certificate, and click Edit. For S/MIME testing, 
+the root CA for the certs you use for S/MIME should be trusted for email certificates, at a minimum.</li>
+
+</ol>                                                                         
+<p>For more information on many aspects of using certificates, click Help in any dialog box or open the Help menu, choose Help and Support Center, and double-click Using Certificates in the left frame. Current builds do not yet include S/MIME help, but you can find information on general certificate management.
+
+             
+<h2><hr><a name="troubleshooting"></a>
+Appendix B: Troubleshooting.</h2>
+                                                                         
+             
+<p>If you have problems reading or sending signed/encrypted messages, it's probably because the certficates used for the S/MIME operation that is failing are not "Verified,", which means that they do not chain to a trusted root. Due to some PSM bugs, importing a certificate may cause the root CA certificate to loose its trust settings (<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=101616">101616</a>, <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=100386">100386</a>) These are not S/MIME bugs, and they're being worked on, but you'll need 
+to work around them until they are fixed.
+
+<p>If your Free trial Verisign Cert does not verify, the <a href="#appendixA">Certificate Manager</a>Window may look like this:<br>
+                   <p>
+                   <img src="smime_land_files/ssauxVerisignCertManagerNotVerified.gif" alt="My Verisign Cert, not Verifiied" width="508" height="234">
+                
+<p>If this is the case, click the Authorities Tab and locate the root CA cert for Verisign personal email certificates:
+
+<p><img src="smime_land_files/verisignClass1CertMa.gif" alt="Verisign Root CA" width="564" height="340">
+                   
+<p>When you select the root certificate and click Edit, you will see something like this:
+
+<p><img src="smime_land_files/editCATrust.gif" alt="not trusted" width="285" height="233">
+                  
+
+<p>Since none of the trust options are selected, your browser doesn't trust this certificate. This is due to a PSM bug. This CA certificate is normally built-in and trusted by the browser. To fix the problerm, select all three checkboxes, like this, then click OK:
+
+<p><img src="smime_land_files/editCATrustTrusted.gif" alt="trusted" width="285" height="233">
+                   
+<p>If you go back to the Your Certificates tab, youll now see something like this:<br>
+                   <br>
+                   <img src="smime_land_files/ssauxVerisignCertMan.gif" alt="Verisign Cert, Verified." width="564" height="240">
+                   
+<p>Once you have done this, your certificate is trusted, and you can sign your emails. Other people's Verisign certificates will also be trusted, and you'll be 
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

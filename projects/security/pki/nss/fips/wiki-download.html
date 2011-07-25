@@ -1,0 +1,125 @@
+<?php
+
+$html_title = 'Downloading wiki.mozilla.org Web Pages for Offline Browsing';
+$page_title = 'Downloading wiki.mozilla.org Web Pages for Offline Browsing';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_style = '
+<style type="text/css">
+pre {background-color: #D3D3D3; /* lightgrey */ color: black;}
+</style>
+
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+In our 2005-2006 <a href="http://wiki.mozilla.org/FIPS_Validation">FIPS
+validation</a>, we prepared the documentation using wiki.mozilla.org.
+Our <a href="http://wiki.mozilla.org/NSSCryptoModuleSpec">documentation</a>
+consists of a collection of web pages that don't form a directory
+hierarchy, so we can't describe their locations with a simple sentence
+like "the documentation is under this directory." Furthermore, unlike
+www.mozilla.org where we can check out master copies of the web pages
+from CVS, the only way to get copies of the web pages on wiki.mozilla.org
+is to download them. This presents a challenge because we have to submit
+a copy of our documentation on a CD-ROM to the testing lab.<br>
+<br>
+Fortunately, I found that there are many tools called offline browsers
+that can download web pages
+for local browsing, and they are inexpensive (&lt; $50) or free. I
+tested
+an open source one called <a href="http://www.httrack.com/">HTTrack</a>.
+After I spent
+a few hours experimenting with its options, I got it to
+work. Here are the instructions.<br>
+<h2>Instructions</h2>
+<ol>
+  <li>Download HTTrack from <a href="http://www.httrack.com/">http://www.httrack.com/</a>.</li>
+  <li>Install HTTrack</li>
+  <li>Start up HTTrack.</li>
+  <li>Click the Next button to start a new project.</li>
+  <li>Name the project NSSCryptoModuleSpec and click Next</li>
+  <li>Add the URL: <span style="font-family: monospace;">http://wiki.mozilla.org/NSSCryptoModuleSpec</span>.</li>
+  <li>Under "Preferences and mirror options", Click on "Set options..."</li>
+  <li>Select the Scan Rules tab.</li>
+  <li>Copy and paste the following rules under the default rule:
+    <pre>
++wiki.mozilla.org/*
+-http://wiki.mozilla.org/index.php?title=Special:Userlogin*
+-http://wiki.mozilla.org/Main_Page
+-http://wiki.mozilla.org/MozillaWiki:*
+-http://wiki.mozilla.org/Special:*
+-http://wiki.mozilla.org/Help:Contents
+-http://wiki.mozilla.org/index.php?title=*&action=history
+-http://wiki.mozilla.org/index.php?title=*&action=edit*
+-http://wiki.mozilla.org/index.php?title=*&action=watch
+-http://wiki.mozilla.org/NSS
+-www.mozilla.org/*
++http://www.mozilla.org/css/*
++http://www.mozilla.org/images/*
++http://www.mozilla.org/projects/security/pki/nss/fips/nss-source/*
++http://www.mozilla.org/projects/security/pki/nss/fips/audit-design.html
++http://www.mozilla.org/projects/security/pki/nss/fips/secpolicy.pdf
++http://www.mozilla.org/projects/security/pki/nss/overview.html
++http://www.mozilla.org/projects/security/pki/nss/intro.html
++http://www.mozilla.org/projects/security/pki/nss/nss-guidelines.html
++http://www.mozilla.org/projects/security/pki/nss/devel/pk11wrap.pdf
++http://www.mozilla.org/projects/security/pki/nss/pcertdb.html
++http://www.mozilla.org/projects/security/pki/nss/*.gif
+-developer.mozilla.org/*
++http://developer.mozilla.org/en/skins/*
++http://developer.mozilla.org/favicon.ico
++http://developer.mozilla.org/css/*
++http://developer.mozilla.org/en/index.php?title=-&amp;action=raw&amp;smaxage=0&amp;gen=js
++http://developer.mozilla.org/en/index.php?title=MediaWiki:Cavendish.css&action=raw&ctype=text/css&smaxage=18000
++http://developer.mozilla.org/en/index.php?title=-&action=raw&gen=css&maxage=18000
++http://developer.mozilla.org/en/FC_*
++http://developer.mozilla.org/en/NSS_reference*
++http://developer.mozilla.org/en/PKCS11_Module_Specs
+    </pre>
+  </li>
+  <li>Select the Flow Control tab.</li>
+  <li>Set "TimeOut(s)" to the maximum 1200 s and "Retries" to the maximum 3, and click OK.</li>
+  <li>Click Next, and then click Finish.</li>
+</ol>
+<h2>Notes on the Scan Rules</h2>
+'-' means "excludes".
+<br>
+'+' means "includes".
+<br>
+<br>
+The rules seem to be interpreted sequentially, so their
+ordering matters.
+<br>
+<br>
+The "excludes" rules are necessary to prevent the tool
+from wandering off and downloading irrelevant web pages from
+wiki.mozilla.org. I have to
+exclude all the links in the top and left panels of each web page. If
+those links ever change, we will need to update the "excludes" rules.<br>
+<br>
+For www.mozilla.org, I only want a few files:
+<br>
+<ul>
+  <li>fips/nss-source</li>
+  <li>a few "design specification" documents I referenced.
+  </li>
+</ul>
+So I first exclude the whole www.mozilla.org site, and then
+I include the files I want from www.mozilla.org.<br>
+<h2>Testing the Local Files</h2>
+When you browse the local files, it is best to try browsing in offline
+mode (in the browser's File menu, select the "Work offline" menu item).
+You should also clear your browser's cache. Then test a few files from
+wiki.mozilla.org and a few files from www.mozilla.org. Make sure they
+all look right and aren't missing any embedded images.
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

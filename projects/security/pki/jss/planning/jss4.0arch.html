@@ -1,0 +1,252 @@
+<?php
+
+$html_title = 'JSS 4.0 Architecture Proposal';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>JSS 4.0 Architecture Proposal</h2>
+<h3>10 August 2001</h3>
+<FONT SIZE="-1">
+
+<i>
+Author: 
+Jamie Nicolson<BR>
+</FONT></i>
+</center>
+
+<p>I propose we make some big architectural changes to JSS. I think it will
+be much more valuable to developers if it is a complete Java security package.
+This means doing things the Java way as much as possible.
+
+<p>The changes are not interdependent. It is possible to undertake some of
+them while delaying others that are less technically feasible.
+
+<h2>Goals</h2>
+<ul>
+These design goals influenced the proposed architecture.
+
+<p><li><b>JSS can be used without NSS or any other native code</b><br>
+JSS has useful features beyond those implemented in NSS. External programmers
+have used the ASN.1 parser and the PKCS #7 and PKCS #12 types.
+<p>Programmers generally don't want to learn a new way of doing things. If JSS
+is only available as a JNI package, and they need to do some work in pure-Java,
+they will have to use a different package for the pure-Java work. Rather than
+learn two different packages, they are more likely to just use the other package
+for all their projects. But if JSS can be used without the JNI code, they
+can use it for all their projects, and it could become their crypto package of
+choice.
+<p><li><b>JCA compliance</b><br>
+Java developers strongly want to use the standard JCA API
+for crypto operations.
+<p><li><b>Validate certs according to the latest standards</b><br>
+This means validating certs according to RFC2459 and it's successor
+(<tt>draft-ietf-pkix-new-part1-??.txt</tt>), and support for OCSP.
+<p><li><b>Maintain FIPS compliance</b><br>
+Ideally, the NSS PKCS #11 token would be the only thing FIPS-validated.
+<p><li><b>Maintain access to crypto hardware</b><br>
+Everyone agrees that hardware is an essential feature.
+
+<p><li><b>Flexible, open cert stores</b><br>
+People should be able to plug-in multiple sources of certificates.
+I don't like the way our security databases are currently proprietary. I think
+they should be opened up, so that anyone can access and modify them, the
+same way you can edit Apache's config file with any text editor.
+This means allowing others to read/write the certificate database, and also
+allowing alternative forms for certificate databases, such as XML files.
+
+<p>This is not specific to Java. It would also be useful for Stan.
+
+<p><li><b>No globals</b><br>
+Data structures should not be global. This makes it possible to have
+multiple independent crypto domains in a process (as in Stan). There 
+may still need to be mechanisms for sharing common resources like files and
+tokens.
+
+<p><li><b>Make all the layers above and including PKCS #11 available</b><br>
+Abstractions should be built a layer at a time, but all the layers should
+be accessible to clients. This gives them more freedom to do new things without
+having to respin JSS. The more sophisticated the client, the deeper they will
+want to go.
+
+<p>I want to make the PKCS #11 layer available to callers because some very
+sophisticated callers might want to have access. For example, crypto hackers
+who know what they're doing
+might want to access PKCS #11 from Java. Or, something might come up where
+our abstractions don't allow a client to do what he needs to do with a token.
+We will need to work on cooperative access to PKCS #11 tokens within a process.
+</ul>
+
+<hr>
+
+<h2>Architecture</h2>
+<ul>
+
+<img src="jss4.0arch.jpg">
+
+<p>I've tried to chunk the architecture into modules as much as possible.
+All these APIs will be available to developers; they don't have to go through
+the top level. Most will probably want to, but crazy hackers may want to fiddle
+with low-level stuff. We should let them, because it will make JSS more
+popular.
+
+<p><li><b>TrustDomain</b><br>
+I like the NSS concept of TrustDomains. I think the name is confusing; I'd
+rather it were called a CryptoContext, and the individual operation contexts
+were called something else. But to prevent confusion it's probably best
+to standardize on the name.
+
+<p>All information that would otherwise be global is stored in a TrustDomain.
+Applications can have unlimited TrustDomains, and they are all independent
+of each other.
+
+<p><li><b>JCA Compliance</b><br>
+JSS is already nearly JCA compliant. The crypto APIs in JSS look just
+like the crypto APIs in JCA. I just need to make these classes exactly
+implement the JCA spec.
+
+<p>JCA currently doesn't have a way to distinguish which token will be used.
+Most operations can just use the token that houses the key. Some operations
+don't take a key argument: key generation, hashing, random number generation.
+For each of these operations, the user will set a default token, and that
+token will be used.
+
+<p><li><b>Cert Validation</b><br>
+This is a major new feature, and it's one of the things that Stan will bring
+to NSS. The goal is to perform RFC2459-compliant cert path building and
+validation. There is work on a
+<a href="http://www.jcp.org/jsr/detail/55.jsp">Java standard</a> for this.
+The standard is in the "public review" phase, but there's no schedule for
+completion. The general layout of the API looks reasonable, but there may
+be some problematic details.
+
+<p>We will ship a default PKIXCertValidator, but clients can use whatever
+implementation they want to validate certificates. Our cert stores and
+sources will be available to them if they choose to write their own
+validator.
+
+<p><li><b>CertSource</b><br>
+In order to build cert chains, the validator will access a collection
+of CertSources. A CertSource is a searchable, read-only collection of
+certificates. One implementation would be an LDAP directory. Another
+implementation is a CertStore.
+
+<p>To search, you create a selector object, which you populate will the
+fields of the certificate you want to search on. Then you pass this
+selector object to the CertSource. The CertSource returns matching
+certificates.
+
+<p><li><b>CertStore</b><br>
+A CertStore is a read-write collection of certificates. The obvious
+implementations are PKCS #11 tokens. I would also like a direct interface
+to cert7.db so that we can handle migration if NSS moves away from that format.
+Another implementation might be an XML file. Multiple cert stores can be
+plugged into the certificate validator.
+
+CertStore implements CertSource, so all certificate stores can also be used
+as searchable sources of certificates.
+
+<p><li><b>Signable Trust</b><br>
+User's should be able to sign their trust information. One way to do this
+is generate a keypair. The private key is stored in the encrypted key database.
+It is used to sign the trust information. Currently, trust can be hacked by
+modifying the user's cert7.db, which is not password-protected. If the trust
+information were signed, they would have to hack the password-protected key
+database.
+
+<p>Another idea is for each user to have his own self-signed root certificate.
+To trust a CA, the user would cross-certify that CA with his own certificate.
+So, for example, if I wanted to trust Verisign, I would have the following
+certs:
+
+<pre>
+My Self-Signed Personal CA
+Issuer: Jamie Nicolson Trust Authority
+Subject: Jamie Nicolson Trust Authority
+</pre>
+
+then, to trust Verisign, I would issue this certificate:
+
+<pre>
+My Cross-Certification of Verisign
+Issuer: Jamie Nicolson Trust Authority
+Subject: Verisign Class I blah blah blah...
+</pre>
+
+<p>The advantage of this scheme is it simplifies cert validation
+logic, since there is only one trusted root certificate. All the other
+root certs are treated the same as other certs. We can use various trust
+limiters (name constraints, policies, etc.) to fine-tune the amount of 
+trust we place in other CAs.
+
+<p>The downside is how you revoke trust. Do we now have to maintain
+our own CRL?
+
+<p><li><b>PKCS #11 Token</b><br>
+A PKCS #11 token Java class. It reveals all the functionality
+of PKCS #11 tokens. There is still room for some abstraction: instead of
+passing around handles, we would pass around objects that would store
+the handles internally.
+
+<p>We need to develop a way for NSS and JSS to "play nice" with each other
+while sharing tokens.
+
+<ul>
+<p><li><b>Session handling</b><br>
+In the JCA model, cryptographic operations are associated with a context.
+A context is an object with methods like <tt>init()</tt>, <tt>update()</tt>,
+and <tt>final()</tt>. I think it would be simplest if each context had
+its own PKCS #11 session. This is a problem for tokens that support very few
+concurrent sessions. <i>(Are there tokens like this?)</i>
+
+<p>Also, a user is only logged into a token as long as at least one session
+is around to remember the login state. On tokens that only support one
+session, this single session must be reused for all operations. The PKCS #11
+wrapper layer in NSS keeps one session around at all times to keep the
+user logged in.
+
+<p>Since each JSS operation would have its own session, it won't 
+conflict with NSS. JSS and NSS both need to have access to the
+mutex of non-thread-safe tokens.
+
+<p><li><b>Key Juggling</b><br>
+The API will allow users to move keys between tokens explicitly, and return
+an error if one of the tokens doesn't allow it. I think moving keys
+automatically without the user's knowledge is confusing. The application
+can always do this itself, and if they frequently do it the same way,
+we can add that algorithm as a convenience function later.
+
+</ul>
+
+</ul>
+<hr>
+
+<h2>Phases</h2>
+<ol>
+All this work doesn't have to be at once. We can phase in the changes. Here's
+a breakdown:
+<p><li><b>Full JCA compliance</b><br>
+<ul>
+<li>Make the crypto classes implement the JCA engine interfaces so that
+JSS can be used as a JCA provider for all the operations it supports.
+<p><li>Implement a JSSE (SSL) provider by implementing an NSPR wrapper
+around a Java socket.
+</ul>
+<p><li><b>Certificate Handling</b><br>
+Implement the CertificateValidator, CertStore, and CertSource classes.
+<p><li><b>PKCS #11-level API in Java</b><br>
+Reflect PKCS #11 directly into Java, and change our JCA provider to
+call this instead of native routines.
+</ol>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

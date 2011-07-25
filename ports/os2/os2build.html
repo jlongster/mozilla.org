@@ -1,0 +1,118 @@
+<TITLE>Warpzilla Build Instructions Part Two - Build The Lizard (10/07/2002)</TITLE>
+<H1>Important: The GCC build is not working at this time.</H1>
+<H2>Warpzilla Build Instructions Part Two - Build The Lizard (10/07/2002)</H2>
+<H3>VisualAge only</H3>
+<P>
+For VisualAge only, you need to tweak some compiler headers and some toolkit headers.
+</P>
+<P>
+Open <CODE> Ibmcxxo\include\stdlib.h </CODE> in an editor.
+Search for "min" and add the following bold lines to the code:
+<P>
+<PRE>
+<B>#ifndef XP_OS2_VACPP</B>
+#ifndef max
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+#ifndef min
+#define min(a, b) (((a) &lt; (b)) ? (a) : (b))
+#endif
+<B>#endif /* XP_OS2_VACPP */</B>
+</PRE>
+<P>
+Open <CODE> Toolkit\h\stack16\utils.h </CODE> in an editor.
+Search for "strcasecmp" and add the following bold lines to the code:
+</P>
+<PRE>
+<B>#ifndef XP_OS2_VACPP</B>
+#define strcasecmp(x,y) strcmpi((x),(y))
+#define strncasecmp(x,y,z) strnicmp(x,y,z)
+<B>#endif /* XP_OS2_VACPP */</B>
+</PRE>
+<H3>VisualAge and GCC</H3>
+<P>
+On your boot drive, go to the tcpip/bin directory, and if you have <CODE> ln.exe </CODE>,
+rename it to <CODE> ln-old.exe </CODE>.
+</P>
+<P>
+In the PERLLIB/LIB directory, edit the file FindBin.pm. Search for the line:
+<PRE>
+ if ($^O eq 'MSWin32')
+</PRE>
+Change it to:
+<PRE>
+ if (($^O eq 'MSWin32') || ($^O eq 'os2'))
+ </PRE>
+</P>
+<H3>Step 1: Setup your environment</H3>
+<P>
+<A href="http://www.mozilla.org/ports/os2/setmozenv.cmd">SETMOZENV.CMD</A>
+uses environment variables to locate the various tools that are needed for the
+build. The following environment variables should be set to point to where
+your tools are located:
+</P>
+<PRE>
+GLIB
+LIBIDL
+AUTOCONF
+EMX
+VACPP365 (if applicable)
+MOZTOOLS
+</PRE>
+<P>
+<B>Note:</B> that if you have all of your tools directory of off the root
+directory of the same drive from which you run SETMOZENV.CMD, you do not
+need to set these variables.
+</P>
+<P>
+Once you have set the necessary variables, type:
+</P>
+<PRE>SETMOZENV</PRE> for a VisualAge build or <PRE>SETMOZENV gcc</PRE> for a GCC build.
+</PRE>
+<H3>Step 2: Get the code</H3>
+To get the code from CVS, go the directory where you want to put Warpzilla and type:
+<PRE>
+cvs checkout mozilla/client.mk
+</PRE>
+Then type:
+<PRE>
+cd mozilla
+gmake -f client.mk pull_all
+</PRE>
+<H3>Step 3: The <CODE> .mozconfig </CODE> file</H3>
+The <CODE> .mozconfig </CODE> file is a file you create in the <CODE> mozilla </CODE> directory that specifies options for the build. Some
+of the more common options are creating an obj directory which separates the source code from the built code
+or enabling security. To create a .mozconfig file, see the <A HREF="http://webtools.mozilla.org/build/config.cgi">Unix Build Configurator</A>
+<P>
+<B>We strongly recommend that you build with an obj directory</B>
+<P>
+Here is what our typical .mozconfig file look like for a debug build:
+<PRE>
+# sh
+# Build configuration script
+#
+# See http://www.mozilla.org/build/unix.html for build instructions.
+#
+
+# Options for client.mk.
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj
+
+# Options for 'configure' (same as command-line options).
+#ac_add_options --disable-tests
+#ac_add_options --enable-optimize
+#ac_add_options --disable-debug
+ac_add_options --enable-crypto
+ac_add_options --with-extensions=all
+ac_add_options --disable-profilesharing
+</PRE>
+<H3>Step 4: Build the code</H3>
+Go to the mozilla directory and type:
+<PRE>
+gmake -f client.mk build
+</PRE>
+<H3>Step 5: Run the code</H3>
+<P>The executable is located in mozilla/obj/dist/bin. Type:
+<PRE>
+mozilla
+</PRE>
+to run it.

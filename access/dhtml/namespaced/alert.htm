@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="http://www.w3.org/StyleSheets/TR/base"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml"
+ xmlns:wairole="http://www.w3.org/2005/01/wai-rdf/GUIRoleTaxonomy#"
+xmlns:aaa="http://www.w3.org/2005/07/aaa">
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8;" />
+<head>
+<title>Accessible DHTML Alerts</title>
+
+<script type="text/javascript">
+//<![CDATA[
+function setStyle(theObj, styleName, styleValue, priority) {
+	var bSuccess = false;
+
+	try {
+		if (theObj.style && theObj.style.setProperty) {
+			theObj.style.setProperty(styleName, styleValue,priority);
+			bSuccess = true;
+		}
+	} catch (ex) {
+		alert('exception caught setting style: ' + ex.message); // cannot do anything try the next method
+	}
+	if (!bSuccess) {
+		try {
+			theObj.style[styleName] = styleValue;
+			bSuccess = true;
+		} catch (exNext) {
+			alert('exception caught setting direct style: ' + exNext.message); // cannot do anything
+		}
+	}
+	return bSuccess;
+} // end of setStyle
+
+var gFocusItem = null;
+
+function doFocus() {
+	try {
+		if (gFocusItem != null) {
+			gFocusItem.focus();
+			gFocusItem=null;
+		}
+	} catch (error) {
+		alert("DEBUG: error in doFocus()");
+	}
+}
+
+var FOCUS_TEXT = "This div is created in the DOM as needed.  Focus is set to it when it is displayed";
+var NOFOCUS_TEXT = "This div is created in the DOM as needed. Focus has NOT been set to it";
+var counter = 0;
+
+function createAlert(alertText, bGiveFocus) {
+	var popupDiv = document.createElement("div");
+	popupDiv.setAttribute("role", "wairole:alert");
+	var divId = "alert" + counter++;
+	popupDiv.setAttribute("id", divId);
+	popupDiv.setAttribute("tabindex", "-1");
+	popupDiv.setAttribute("class", "popup");
+	setStyle(popupDiv,"display", "block", "");
+	var dataNode = document.createTextNode(alertText);
+	popupDiv.appendChild(dataNode);
+	var close = document.createElement("a");
+	close.setAttribute("onclick", "closeAlert('" +divId + "');");
+	close.setAttribute("href", "#");
+	var closeText = document.createTextNode("close");
+	close.appendChild(closeText);
+	var closeDiv = document.createElement("div");
+	setStyle(closeDiv, "clear", "both","");
+	setStyle(closeDiv,"text-align","right","");
+	setStyle(closeDiv,"margin-top","5px","");
+	closeDiv.appendChild(close);
+	popupDiv.appendChild(closeDiv);
+	//var contentDiv = document.getElementById("content");
+
+	// try parenting to a div on the page rather than document.body
+	var divParent = document.getElementById("alertParent");
+	divParent.appendChild(popupDiv);
+	//document.body.appendChild(popupDiv);
+	if (bGiveFocus) {
+		gFocusItem = popupDiv;
+		setTimeout("doFocus();", 0);
+	}
+	return false; // handled
+}
+
+function closeAlert(divId) {
+	var popupDiv = document.getElementById(divId);
+	setStyle(popupDiv,"display", "none", "");
+	var divParent = document.getElementById("alertParent");
+	divParent.removeChild(popupDiv);
+	//document.body.removeChild(popupDiv);
+}
+
+function showAlertDisp(alertId, bGiveFocus) {
+	var alertDiv = document.getElementById(alertId);
+	setStyle(alertDiv, "display", "block", "");
+	if (bGiveFocus == true) {
+		gFocusItem = alertDiv;
+		setTimeout("doFocus();",0);
+	}
+}
+
+function showAlertVis(alertId, bGiveFocus) {
+	var alertDiv = document.getElementById(alertId);
+	setStyle(alertDiv, "visibility", "visible", "");
+	if (bGiveFocus == true) {
+		gFocusItem = alertDiv;
+		setTimeout("doFocus();",0);
+	}
+}
+function hideAlertDisp(alertId) {
+	var alertDiv = document.getElementById(alertId);
+	setStyle(alertDiv, "display", "none", "");
+}
+function hideAlertVis(alertId) {
+	var alertDiv = document.getElementById(alertId);
+	setStyle(alertDiv, "visibility", "hidden", "");
+}
+//]]>
+</script>
+<style type="text/css">
+.popup {
+	width:200px;
+	height:125px;
+	background-color:white;
+	color:black;
+	text-align:center;
+	border-width:3px;
+	border-color:black;
+	border-style:solid;
+	padding:5%;
+	position:absolute;
+	z-index:100;
+}
+</style>
+</head>
+<body>
+<p>Buttons to create different alerts </p><br />
+<div><button onclick="createAlert(FOCUS_TEXT,true);">Create and Focus</button></div>
+<div><button onclick="createAlert(NOFOCUS_TEXT,false);">Create - no Focus</button></div>
+<div><button onclick="showAlertVis('alertVis', true);">Show (via visibility style) and Focus</button></div>
+<div><button onclick="showAlertVis('alertVis', false);">Show (via visibility style) - no Focus</button></div>
+<div><button onclick="showAlertDisp('alertDisp', true);">Show (via display style) and Focus</button></div>
+<div><button onclick="showAlertDisp('alertDisp', false);">Show (via display style) - no Focus</button></div>
+<div role="wairole:alert" tabindex="-1" class="popup" style="visibility:hidden;" id="alertVis">
+  <span>This popup is created as a div in the HTML content, rather than being created in the DOM at
+     the time of use. The visibility style is changed from &quot;hidden&quot; to &quot;visible&quot;
+        to hide and show it.
+  </span>
+  <div style="text-align:right;margin-top:10px;">
+    <a href="javascript:hideAlertVis('alertVis');">close</a>
+  </div>
+</div>
+<div role="wairole:alert" tabindex="-1" class="popup" style="display:none;" id="alertDisp">
+  <span>This popup is created as a div in the HTML content, rather than being created in the DOM at
+     the time of use. The display style is changed from &quot;none&quot; to &quot;block&quot;
+        to hide and show it.
+  </span>
+  <div style="text-align:right;margin-top:10px;">
+    <a href="javascript:hideAlertDisp('alertDisp');">close</a>
+  </div>
+</div>
+<span style="display:block" id="alertParent">
+</span>
+<p> text after to help with selection in order to view alert source</p>
+</body>
+</html>

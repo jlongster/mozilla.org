@@ -1,0 +1,416 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> #ifndef <a href="../pkcs12/pkcs12t.h.dep.html#_PKCS12T_H_">_PKCS12T_H_</a>
+<b><a name="38">   38</a></b> #define <a href="#38">_PKCS12T_H_</a>
+<b><a name="39">   39</a></b> 
+<b><a name="40">   40</a></b> #include "seccomon.h"
+<b><a name="41">   41</a></b> #include "secoid.h"
+<b><a name="42">   42</a></b> #include "cert.h"
+<b><a name="43">   43</a></b> #include "key.h"
+<b><a name="44">   44</a></b> #include "plarena.h"
+<b><a name="45">   45</a></b> #include "secpkcs7.h"
+<b><a name="46">   46</a></b> #include "secdig.h"        /* for SGNDigestInfo */
+<b><a name="47">   47</a></b> 
+<b><a name="48">   48</a></b> typedef enum {
+<b><a name="49">   49</a></b>   SECPKCS12TargetTokenNoCAs,                /* CA get loaded intothe fixed token,
+<b><a name="50">   50</a></b>                                          * User certs go to target token */
+<b><a name="51">   51</a></b>   SECPKCS12TargetTokenIntermediateCAs,  /* User certs and intermediates go to
+<b><a name="52">   52</a></b>                                          * target token, root certs got to
+<b><a name="53">   53</a></b>                                          * fixed token */
+<b><a name="54">   54</a></b>   SECPKCS12TargetTokenAllCAs                /* All certs go to target token */
+<b><a name="55">   55</a></b> } <a href="#55">SECPKCS12TargetTokenCAs</a>;
+<b><a name="56">   56</a></b> 
+<b><a name="57">   57</a></b> /* PKCS12 Structures */
+<b><a name="58">   58</a></b> typedef struct <a href="../pkcs12/pkcs12t.h.dep.html#<a href="#58">SEC_PKCS12PFXItem</a>Str">SEC_PKCS12PFXItemStr</a> SEC_PKCS12PFXItem;
+<b><a name="59">   59</a></b> typedef struct <a href="#59">SEC_PKCS12MacData</a>Str SEC_PKCS12MacData;
+<b><a name="60">   60</a></b> typedef struct <a href="#60">SEC_PKCS12AuthenticatedSafe</a>Str SEC_PKCS12AuthenticatedSafe;
+<b><a name="61">   61</a></b> typedef struct <a href="../pkcs12/pkcs12t.h.dep.html#<a href="#61">SEC_PKCS12BaggageItem</a>Str">SEC_PKCS12BaggageItemStr</a> SEC_PKCS12BaggageItem;
+<b><a name="62">   62</a></b> typedef struct <a href="../pkcs12/pkcs12t.h.dep.html#<a href="#62">SEC_PKCS12Baggage</a>Str">SEC_PKCS12BaggageStr</a> SEC_PKCS12Baggage;
+<b><a name="63">   63</a></b> typedef struct <a href="#63">SEC_PKCS12Baggage_OLD</a>Str SEC_PKCS12Baggage_OLD;
+<b><a name="64">   64</a></b> typedef struct <a href="../pkcs12/pkcs12t.h.dep.html#<a href="#64">SEC_PKCS12ESPVKItem</a>Str">SEC_PKCS12ESPVKItemStr</a> SEC_PKCS12ESPVKItem;
+<b><a name="65">   65</a></b> typedef struct <a href="#65">SEC_PKCS12PVKSupportingData</a>Str SEC_PKCS12PVKSupportingData;
+<b><a name="66">   66</a></b> typedef struct <a href="#66">SEC_PKCS12PVKAdditionalData</a>Str SEC_PKCS12PVKAdditionalData;
+<b><a name="67">   67</a></b> typedef struct <a href="../pkcs12/pkcs12t.h.dep.html#<a href="#67">SEC_PKCS12SafeContents</a>Str">SEC_PKCS12SafeContentsStr</a> SEC_PKCS12SafeContents;
+<b><a name="68">   68</a></b> typedef struct <a href="#68">SEC_PKCS12SafeBag</a>Str SEC_PKCS12SafeBag;
+<b><a name="69">   69</a></b> typedef struct <a href="../pkcs12/pkcs12t.h.dep.html#<a href="#69">SEC_PKCS12PrivateKey</a>Str">SEC_PKCS12PrivateKeyStr</a> SEC_PKCS12PrivateKey;
+<b><a name="70">   70</a></b> typedef struct <a href="../pkcs12/pkcs12t.h.dep.html#<a href="#70">SEC_PKCS12PrivateKeyBag</a>Str">SEC_PKCS12PrivateKeyBagStr</a> SEC_PKCS12PrivateKeyBag;
+<b><a name="71">   71</a></b> typedef struct <a href="../pkcs12/pkcs12t.h.dep.html#<a href="#71">SEC_PKCS12CertAndCRLBag</a>Str">SEC_PKCS12CertAndCRLBagStr</a> SEC_PKCS12CertAndCRLBag;
+<b><a name="72">   72</a></b> typedef struct <a href="#72">SEC_PKCS12CertAndCRL</a>Str SEC_PKCS12CertAndCRL;
+<b><a name="73">   73</a></b> typedef struct <a href="#73">SEC_PKCS12X509CertCRL</a>Str SEC_PKCS12X509CertCRL;
+<b><a name="74">   74</a></b> typedef struct <a href="#74">SEC_PKCS12SDSICert</a>Str SEC_PKCS12SDSICert;
+<b><a name="75">   75</a></b> typedef struct <a href="#75">SEC_PKCS12Secret</a>Str SEC_PKCS12Secret;
+<b><a name="76">   76</a></b> typedef struct <a href="../pkcs12/pkcs12t.h.dep.html#<a href="#76">SEC_PKCS12SecretAdditional</a>Str">SEC_PKCS12SecretAdditionalStr</a> SEC_PKCS12SecretAdditional;
+<b><a name="77">   77</a></b> typedef struct <a href="#77">SEC_PKCS12SecretItem</a>Str SEC_PKCS12SecretItem;
+<b><a name="78">   78</a></b> typedef struct <a href="#78">SEC_PKCS12SecretBag</a>Str SEC_PKCS12SecretBag;
+<b><a name="79">   79</a></b> 
+<b><a name="80">   80</a></b> typedef <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *(* <a href="#80">SEC_PKCS12PasswordFunc</a>)(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *args);
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b> /* PKCS12 types */
+<b><a name="83">   83</a></b> 
+<b><a name="84">   84</a></b> /* stores shrouded keys */
+<b><a name="85">   85</a></b> struct <a href="#85">SEC_PKCS12BaggageStr</a>
+<b><a name="86">   86</a></b> {
+<b><a name="87">   87</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>     *poolp;
+<b><a name="88">   88</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12BaggageItem">SEC_PKCS12BaggageItem</a> **bags;
+<b><a name="89">   89</a></b> 
+<b><a name="90">   90</a></b>     int luggage_size;                /* used locally */
+<b><a name="91">   91</a></b> };
+<b><a name="92">   92</a></b> 
+<b><a name="93">   93</a></b> /* additional data to be associated with keys.        currently there
+<b><a name="94">   94</a></b>  * is nothing defined to be stored here.  allows future expansion.
+<b><a name="95">   95</a></b>  */
+<b><a name="96">   96</a></b> struct <a href="#96">SEC_PKCS12PVKAdditionalDataStr</a>
+<b><a name="97">   97</a></b> {
+<b><a name="98">   98</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>        *poolp;
+<b><a name="99">   99</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a>        *pvkAdditionalTypeTag;        /* used locally */
+<b><a name="100">  100</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>     pvkAdditionalType;
+<b><a name="101">  101</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>     pvkAdditionalContent;
+<b><a name="102">  102</a></b> };
+<b><a name="103">  103</a></b> 
+<b><a name="104">  104</a></b> /* cert and other supporting data for private keys.  used
+<b><a name="105">  105</a></b>  * for both shrouded and non-shrouded keys.
+<b><a name="106">  106</a></b>  */
+<b><a name="107">  107</a></b> struct <a href="#107">SEC_PKCS12PVKSupportingDataStr</a>
+<b><a name="108">  108</a></b> {
+<b><a name="109">  109</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>                *poolp;
+<b><a name="110">  110</a></b>     <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>         **assocCerts;
+<b><a name="111">  111</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>                regenerable;
+<b><a name="112">  112</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>                 <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#nickname">nickname</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#nickname"><sup>[1]</sup></a>;
+<b><a name="113">  113</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12PVKAdditionalData">SEC_PKCS12PVKAdditionalData</a>     pvkAdditional;
+<b><a name="114">  114</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>                pvkAdditionalDER;
+<b><a name="115">  115</a></b> 
+<b><a name="116">  116</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>                uniNickName;
+<b><a name="117">  117</a></b>     /* used locally */
+<b><a name="118">  118</a></b>     int                        nThumbs;
+<b><a name="119">  119</a></b> };
+<b><a name="120">  120</a></b> 
+<b><a name="121">  121</a></b> /* shrouded key structure.  supports only pkcs8 shrouding
+<b><a name="122">  122</a></b>  * currently.
+<b><a name="123">  123</a></b>  */
+<b><a name="124">  124</a></b> struct <a href="#124">SEC_PKCS12ESPVKItemStr</a>
+<b><a name="125">  125</a></b> {
+<b><a name="126">  126</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *poolp;                /* used locally */
+<b><a name="127">  127</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a>        *espvkTag;        /* used locally */
+<b><a name="128">  128</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>        espvkOID;
+<b><a name="129">  129</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12PVKSupportingData">SEC_PKCS12PVKSupportingData</a> espvkData;
+<b><a name="130">  130</a></b>     union
+<b><a name="131">  131</a></b>     {
+<b><a name="132">  132</a></b>         <a href="../pk11wrap/secmodt.h.dep.html#SECKEYEncryptedPrivateKeyInfo">SECKEYEncryptedPrivateKeyInfo</a> *pkcs8KeyShroud;
+<b><a name="133">  133</a></b>     } espvkCipherText;
+<b><a name="134">  134</a></b> 
+<b><a name="135">  135</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> duplicate;        /* used locally */
+<b><a name="136">  136</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> problem_cert;         /* used locally */
+<b><a name="137">  137</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> single_cert;                /* used locally */
+<b><a name="138">  138</a></b>     int nCerts;                        /* used locally */
+<b><a name="139">  139</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derCert;                /* used locally */
+<b><a name="140">  140</a></b> };
+<b><a name="141">  141</a></b> 
+<b><a name="142">  142</a></b> /* generic bag store for the safe.  safeBagType identifies
+<b><a name="143">  143</a></b>  * the type of bag stored.
+<b><a name="144">  144</a></b>  */
+<b><a name="145">  145</a></b> struct <a href="#145">SEC_PKCS12SafeBagStr</a>
+<b><a name="146">  146</a></b> {
+<b><a name="147">  147</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *poolp;
+<b><a name="148">  148</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a>        *safeBagTypeTag;        /* used locally */
+<b><a name="149">  149</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>     safeBagType;
+<b><a name="150">  150</a></b>     union
+<b><a name="151">  151</a></b>     {
+<b><a name="152">  152</a></b>         <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12PrivateKeyBag">SEC_PKCS12PrivateKeyBag</a>        *keyBag;
+<b><a name="153">  153</a></b>         <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12CertAndCRLBag">SEC_PKCS12CertAndCRLBag</a> *certAndCRLBag;
+<b><a name="154">  154</a></b>         <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12SecretBag">SEC_PKCS12SecretBag</a>     *secretBag;
+<b><a name="155">  155</a></b>     } safeContent;
+<b><a name="156">  156</a></b> 
+<b><a name="157">  157</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>        derSafeContent;
+<b><a name="158">  158</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>         safeBagName;
+<b><a name="159">  159</a></b> 
+<b><a name="160">  160</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>        uniSafeBagName;
+<b><a name="161">  161</a></b> };
+<b><a name="162">  162</a></b> 
+<b><a name="163">  163</a></b> /* stores private keys and certificates in a list.  each safebag
+<b><a name="164">  164</a></b>  * has an ID identifying the type of content stored.
+<b><a name="165">  165</a></b>  */
+<b><a name="166">  166</a></b> struct <a href="#166">SEC_PKCS12SafeContentsStr</a>
+<b><a name="167">  167</a></b> {
+<b><a name="168">  168</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>             *poolp;
+<b><a name="169">  169</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12SafeBag">SEC_PKCS12SafeBag</a>        **contents;
+<b><a name="170">  170</a></b> 
+<b><a name="171">  171</a></b>     /* used for tracking purposes */
+<b><a name="172">  172</a></b>     int safe_size;
+<b><a name="173">  173</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> old;
+<b><a name="174">  174</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> swapUnicode;
+<b><a name="175">  175</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> possibleSwapUnicode;
+<b><a name="176">  176</a></b> };
+<b><a name="177">  177</a></b> 
+<b><a name="178">  178</a></b> /* private key structure which holds encrypted private key and
+<b><a name="179">  179</a></b>  * supporting data including nickname and certificate thumbprint.
+<b><a name="180">  180</a></b>  */
+<b><a name="181">  181</a></b> struct <a href="#181">SEC_PKCS12PrivateKeyStr</a>
+<b><a name="182">  182</a></b> {
+<b><a name="183">  183</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *poolp;
+<b><a name="184">  184</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12PVKSupportingData">SEC_PKCS12PVKSupportingData</a> pvkData;
+<b><a name="185">  185</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#SECKEYPrivateKeyInfo">SECKEYPrivateKeyInfo</a>        pkcs8data;   /* borrowed from PKCS 8 */
+<b><a name="186">  186</a></b> 
+<b><a name="187">  187</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> duplicate;        /* used locally */
+<b><a name="188">  188</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> problem_cert;/* used locally */
+<b><a name="189">  189</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> single_cert;        /* used locally */
+<b><a name="190">  190</a></b>     int nCerts;                /* used locally */
+<b><a name="191">  191</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derCert;        /* used locally */
+<b><a name="192">  192</a></b> };
+<b><a name="193">  193</a></b> 
+<b><a name="194">  194</a></b> /* private key bag, holds a (null terminated) list of private key
+<b><a name="195">  195</a></b>  * structures.
+<b><a name="196">  196</a></b>  */
+<b><a name="197">  197</a></b> struct <a href="#197">SEC_PKCS12PrivateKeyBagStr</a>
+<b><a name="198">  198</a></b> {
+<b><a name="199">  199</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>     *poolp;
+<b><a name="200">  200</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12PrivateKey">SEC_PKCS12PrivateKey</a>         **privateKeys;
+<b><a name="201">  201</a></b> 
+<b><a name="202">  202</a></b>     int bag_size;        /* used locally */
+<b><a name="203">  203</a></b> };
+<b><a name="204">  204</a></b> 
+<b><a name="205">  205</a></b> /* container to hold certificates.  currently supports x509
+<b><a name="206">  206</a></b>  * and sdsi certificates
+<b><a name="207">  207</a></b>  */
+<b><a name="208">  208</a></b> struct <a href="#208">SEC_PKCS12CertAndCRLStr</a>
+<b><a name="209">  209</a></b> {
+<b><a name="210">  210</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>     *poolp;
+<b><a name="211">  211</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a>            *BagTypeTag;    /* used locally */
+<b><a name="212">  212</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>         BagID;
+<b><a name="213">  213</a></b>     union
+<b><a name="214">  214</a></b>     {
+<b><a name="215">  215</a></b>             <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12X509CertCRL">SEC_PKCS12X509CertCRL</a>        *x509;
+<b><a name="216">  216</a></b>             <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12SDSICert">SEC_PKCS12SDSICert</a>        *sdsi;
+<b><a name="217">  217</a></b>     } <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>;
+<b><a name="218">  218</a></b> 
+<b><a name="219">  219</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derValue;
+<b><a name="220">  220</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#nickname">nickname</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#nickname"><sup>[1]</sup></a>;                /* used locally */
+<b><a name="221">  221</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> duplicate;                /* used locally */
+<b><a name="222">  222</a></b> };
+<b><a name="223">  223</a></b> 
+<b><a name="224">  224</a></b> /* x509 certificate structure.        typically holds the der encoding
+<b><a name="225">  225</a></b>  * of the x509 certificate.  thumbprint contains a digest of the
+<b><a name="226">  226</a></b>  * certificate
+<b><a name="227">  227</a></b>  */
+<b><a name="228">  228</a></b> struct <a href="#228">SEC_PKCS12X509CertCRLStr</a>
+<b><a name="229">  229</a></b> {
+<b><a name="230">  230</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>                     *poolp;
+<b><a name="231">  231</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7ContentInfo">SEC_PKCS7ContentInfo</a>        certOrCRL;
+<b><a name="232">  232</a></b>     <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>                thumbprint;
+<b><a name="233">  233</a></b> 
+<b><a name="234">  234</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *derLeafCert;        /* used locally */
+<b><a name="235">  235</a></b> };
+<b><a name="236">  236</a></b> 
+<b><a name="237">  237</a></b> /* sdsi certificate structure.        typically holds the der encoding
+<b><a name="238">  238</a></b>  * of the sdsi certificate.  thumbprint contains a digest of the
+<b><a name="239">  239</a></b>  * certificate
+<b><a name="240">  240</a></b>  */
+<b><a name="241">  241</a></b> struct <a href="#241">SEC_PKCS12SDSICertStr</a>
+<b><a name="242">  242</a></b> {
+<b><a name="243">  243</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>     *poolp;
+<b><a name="244">  244</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>         <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>;
+<b><a name="245">  245</a></b>     <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>   thumbprint;
+<b><a name="246">  246</a></b> };
+<b><a name="247">  247</a></b> 
+<b><a name="248">  248</a></b> /* contains a null terminated list of certs and crls */
+<b><a name="249">  249</a></b> struct <a href="#249">SEC_PKCS12CertAndCRLBagStr</a>
+<b><a name="250">  250</a></b> {
+<b><a name="251">  251</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>                     *poolp;
+<b><a name="252">  252</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12CertAndCRL">SEC_PKCS12CertAndCRL</a>        **certAndCRLs;
+<b><a name="253">  253</a></b> 
+<b><a name="254">  254</a></b>     int bag_size;        /* used locally */
+<b><a name="255">  255</a></b> };
+<b><a name="256">  256</a></b> 
+<b><a name="257">  257</a></b> /* additional secret information.  currently no information
+<b><a name="258">  258</a></b>  * stored in this structure.
+<b><a name="259">  259</a></b>  */
+<b><a name="260">  260</a></b> struct <a href="#260">SEC_PKCS12SecretAdditionalStr</a>
+<b><a name="261">  261</a></b> {
+<b><a name="262">  262</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>     *poolp;
+<b><a name="263">  263</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a>            *secretTypeTag;         /* used locally */
+<b><a name="264">  264</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>         secretAdditionalType;
+<b><a name="265">  265</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>         secretAdditionalContent;
+<b><a name="266">  266</a></b> };
+<b><a name="267">  267</a></b> 
+<b><a name="268">  268</a></b> /* secrets container.  this will be used to contain currently
+<b><a name="269">  269</a></b>  * unspecified secrets.  (it's a secret)
+<b><a name="270">  270</a></b>  */
+<b><a name="271">  271</a></b> struct <a href="#271">SEC_PKCS12SecretStr</a>
+<b><a name="272">  272</a></b> {
+<b><a name="273">  273</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>     *poolp;
+<b><a name="274">  274</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>        secretName;
+<b><a name="275">  275</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>        <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>;
+<b><a name="276">  276</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12SecretAdditional">SEC_PKCS12SecretAdditional</a>        secretAdditional;
+<b><a name="277">  277</a></b> 
+<b><a name="278">  278</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>        uniSecretName;
+<b><a name="279">  279</a></b> };
+<b><a name="280">  280</a></b> 
+<b><a name="281">  281</a></b> struct <a href="#281">SEC_PKCS12SecretItemStr</a>
+<b><a name="282">  282</a></b> {
+<b><a name="283">  283</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>     *poolp;
+<b><a name="284">  284</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12Secret">SEC_PKCS12Secret</a>        secret;
+<b><a name="285">  285</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12SafeBag">SEC_PKCS12SafeBag</a>        subFolder;
+<b><a name="286">  286</a></b> };    
+<b><a name="287">  287</a></b> 
+<b><a name="288">  288</a></b> /* a bag of secrets.  holds a null terminated list of secrets.
+<b><a name="289">  289</a></b>  */
+<b><a name="290">  290</a></b> struct <a href="#290">SEC_PKCS12SecretBagStr</a>
+<b><a name="291">  291</a></b> {
+<b><a name="292">  292</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>             *poolp;
+<b><a name="293">  293</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12SecretItem">SEC_PKCS12SecretItem</a>        **secrets;
+<b><a name="294">  294</a></b> 
+<b><a name="295">  295</a></b>     int bag_size;        /* used locally */
+<b><a name="296">  296</a></b> };
+<b><a name="297">  297</a></b> 
+<b><a name="298">  298</a></b> struct <a href="#298">SEC_PKCS12MacDataStr</a>
+<b><a name="299">  299</a></b> {
+<b><a name="300">  300</a></b>     <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>        safeMac;
+<b><a name="301">  301</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>                macSalt;
+<b><a name="302">  302</a></b> };
+<b><a name="303">  303</a></b> 
+<b><a name="304">  304</a></b> /* outer transfer unit */
+<b><a name="305">  305</a></b> struct <a href="#305">SEC_PKCS12PFXItemStr</a>
+<b><a name="306">  306</a></b> {
+<b><a name="307">  307</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>                *poolp;
+<b><a name="308">  308</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12MacData">SEC_PKCS12MacData</a>        macData;
+<b><a name="309">  309</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7ContentInfo">SEC_PKCS7ContentInfo</a>        authSafe; 
+<b><a name="310">  310</a></b> 
+<b><a name="311">  311</a></b>     /* for compatibility with beta */
+<b><a name="312">  312</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a>                old;
+<b><a name="313">  313</a></b>     <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>         old_safeMac;
+<b><a name="314">  314</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>                old_macSalt;
+<b><a name="315">  315</a></b> 
+<b><a name="316">  316</a></b>     /* compatibility between platforms for unicode swapping */
+<b><a name="317">  317</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a>                swapUnicode;
+<b><a name="318">  318</a></b> };
+<b><a name="319">  319</a></b> 
+<b><a name="320">  320</a></b> struct <a href="#320">SEC_PKCS12BaggageItemStr</a> {
+<b><a name="321">  321</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>            *poolp;
+<b><a name="322">  322</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12ESPVKItem">SEC_PKCS12ESPVKItem</a>        **espvks;
+<b><a name="323">  323</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12SafeBag">SEC_PKCS12SafeBag</a>        **unencSecrets;
+<b><a name="324">  324</a></b> 
+<b><a name="325">  325</a></b>     int nEspvks;
+<b><a name="326">  326</a></b>     int nSecrets; 
+<b><a name="327">  327</a></b> };
+<b><a name="328">  328</a></b>     
+<b><a name="329">  329</a></b> /* stores shrouded keys */
+<b><a name="330">  330</a></b> struct <a href="#330">SEC_PKCS12Baggage_OLDStr</a>
+<b><a name="331">  331</a></b> {
+<b><a name="332">  332</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>     *poolp;
+<b><a name="333">  333</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12ESPVKItem">SEC_PKCS12ESPVKItem</a> **espvks;
+<b><a name="334">  334</a></b> 
+<b><a name="335">  335</a></b>     int luggage_size;                /* used locally */
+<b><a name="336">  336</a></b> };
+<b><a name="337">  337</a></b> 
+<b><a name="338">  338</a></b> /* authenticated safe, stores certs, keys, and shrouded keys */
+<b><a name="339">  339</a></b> struct <a href="#339">SEC_PKCS12AuthenticatedSafeStr</a>
+<b><a name="340">  340</a></b> {
+<b><a name="341">  341</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>     *poolp;
+<b><a name="342">  342</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>         <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>;
+<b><a name="343">  343</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a>            *transportTypeTag;        /* local not part of encoding*/
+<b><a name="344">  344</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>         transportMode;
+<b><a name="345">  345</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>         privacySalt;
+<b><a name="346">  346</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12Baggage">SEC_PKCS12Baggage</a>          baggage;
+<b><a name="347">  347</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7ContentInfo">SEC_PKCS7ContentInfo</a>  *safe;
+<b><a name="348">  348</a></b> 
+<b><a name="349">  349</a></b>     /* used for beta compatibility */
+<b><a name="350">  350</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> old;
+<b><a name="351">  351</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> emptySafe;
+<b><a name="352">  352</a></b>     <a href="../pkcs12/pkcs12t.h.dep.html#SEC_PKCS12Baggage_OLD">SEC_PKCS12Baggage_OLD</a> old_baggage;
+<b><a name="353">  353</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7ContentInfo">SEC_PKCS7ContentInfo</a> old_safe;
+<b><a name="354">  354</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> swapUnicode;
+<b><a name="355">  355</a></b> };
+<b><a name="356">  356</a></b> #define <a href="#356">SEC_PKCS12_PFX_VERSION</a>                1                /* what we create */
+<b><a name="357">  357</a></b> 
+<b><a name="358">  358</a></b> 
+<b><a name="359">  359</a></b> 
+<b><a name="360">  360</a></b> /* PKCS 12 Templates */
+<b><a name="361">  361</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#361">SEC_PKCS12PFXItemTemplate_OLD</a>[];
+<b><a name="362">  362</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#362">SEC_PKCS12AuthenticatedSafeTemplate_OLD</a>[];
+<b><a name="363">  363</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#363">SEC_PKCS12BaggageTemplate_OLD</a>[];
+<b><a name="364">  364</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#364">SEC_PKCS12PFXItemTemplate</a>[];
+<b><a name="365">  365</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#365">SEC_PKCS12MacDataTemplate</a>[];
+<b><a name="366">  366</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#366">SEC_PKCS12AuthenticatedSafeTemplate</a>[];
+<b><a name="367">  367</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#367">SEC_PKCS12BaggageTemplate</a>[];
+<b><a name="368">  368</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#368">SEC_PKCS12ESPVKItemTemplate</a>[];
+<b><a name="369">  369</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#369">SEC_PKCS12PVKSupportingDataTemplate</a>[];
+<b><a name="370">  370</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#370">SEC_PKCS12PVKAdditionalTemplate</a>[];
+<b><a name="371">  371</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#371">SEC_PKCS12SafeContentsTemplate_OLD</a>[];
+<b><a name="372">  372</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#372">SEC_PKCS12SafeContentsTemplate</a>[];
+<b><a name="373">  373</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#373">SEC_PKCS12SafeBagTemplate</a>[];
+<b><a name="374">  374</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#374">SEC_PKCS12PrivateKeyTemplate</a>[];
+<b><a name="375">  375</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#375">SEC_PKCS12PrivateKeyBagTemplate</a>[];
+<b><a name="376">  376</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#376">SEC_PKCS12CertAndCRLTemplate</a>[];
+<b><a name="377">  377</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#377">SEC_PKCS12CertAndCRLBagTemplate</a>[];
+<b><a name="378">  378</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#378">SEC_PKCS12X509CertCRLTemplate_OLD</a>[];
+<b><a name="379">  379</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#379">SEC_PKCS12X509CertCRLTemplate</a>[];
+<b><a name="380">  380</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#380">SEC_PKCS12SDSICertTemplate</a>[];
+<b><a name="381">  381</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#381">SEC_PKCS12SecretBagTemplate</a>[];
+<b><a name="382">  382</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#382">SEC_PKCS12SecretTemplate</a>[];
+<b><a name="383">  383</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#383">SEC_PKCS12SecretItemTemplate</a>[];
+<b><a name="384">  384</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#384">SEC_PKCS12SecretAdditionalTemplate</a>[];
+<b><a name="385">  385</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#385">SGN_DigestInfoTemplate</a>[];
+<b><a name="386">  386</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#386">SEC_PointerToPKCS12KeyBagTemplate</a>[];
+<b><a name="387">  387</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#387">SEC_PointerToPKCS12CertAndCRLBagTemplate</a>[];
+<b><a name="388">  388</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#388">SEC_PointerToPKCS12CertAndCRLBagTemplate_OLD</a>[];
+<b><a name="389">  389</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#389">SEC_PointerToPKCS12SecretBagTemplate</a>[];
+<b><a name="390">  390</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#390">SEC_PointerToPKCS12X509CertCRLTemplate_OLD</a>[];
+<b><a name="391">  391</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#391">SEC_PointerToPKCS12X509CertCRLTemplate</a>[];
+<b><a name="392">  392</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#392">SEC_PointerToPKCS12SDSICertTemplate</a>[];
+<b><a name="393">  393</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#393">SEC_PKCS12CodedSafeBagTemplate</a>[];
+<b><a name="394">  394</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#394">SEC_PKCS12CodedCertBagTemplate</a>[];
+<b><a name="395">  395</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#395">SEC_PKCS12CodedCertAndCRLBagTemplate</a>[];
+<b><a name="396">  396</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#396">SEC_PKCS12PVKSupportingDataTemplate_OLD</a>[];
+<b><a name="397">  397</a></b> extern const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#397">SEC_PKCS12ESPVKItemTemplate_OLD</a>[];
+<b><a name="398">  398</a></b> #endif
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

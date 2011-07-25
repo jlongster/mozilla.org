@@ -1,0 +1,1167 @@
+<?php
+
+$html_title = 'NSS API Guidelines';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+   <H1>NSS API Guidelines</H1>
+
+<!-- Change Log:
+
+   04/04/00 mlarson Created from original notes by relyea 
+                    
+-->
+
+<i><FONT SIZE="-1">
+
+Newsgroup: <A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A>
+
+</FONT></i>
+</center>
+
+<H2>Introduction</H2>
+
+This document describes how the NSS code is organized, the libraries that
+get built out of the NSS sources, and some guidelines for writing NSS
+code. The guidelines will familiarize you with some of the ways that things
+are done in the NSS code. This will help you to understand the existing NSS
+code. It should also help you figure out how to write new code and
+where to put it.</P>
+
+Some of the guidelines in this document are more forward-looking than
+documentary: these rules are to help us achieve more consistent and 
+usable code in the future, but some of the existing code doesn't follow
+all of these rules.</P>
+
+This document contains the following sections:</P>
+
+<!-- BEGIN TABLE OF CONTENTS -->
+
+<FONT SIZE="-1">
+<UL>
+    <LI>
+        <A HREF="#Structure">NSS API Structure</A>
+        <UL>
+            <LI>
+                <A HREF="#Layering">Layering</A>
+            </LI>
+            <LI>
+                <A HREF="#Libraries">Libraries</A>
+            </LI>
+        </UL>
+    </P>
+    </LI>
+
+    <LI>
+        <A HREF="#Naming">Naming Conventions</A>
+        <UL>
+            <LI>
+                <A HREF="#CVSID">CVS ID</A>
+            </LI>
+            <LI>
+                <A HREF="#HeaderFiles">Header Files</A>
+            </LI>
+            <LI>
+                <A HREF="#FuncsAndTypes">Functions and Types</A>
+            </LI>
+        </UL>
+    </P>
+    </LI>
+    <LI>
+        <A HREF="#Opaque">Opaque Data Structures</A>
+    </P>
+    </LI>
+    <LI>
+        <A HREF="#Arenas">Memory Allocation with Arenas</A>
+    </P>
+    </LI>
+    <LI>
+        <A HREF="#Errors">Error Handling</A>
+    </P>
+    </LI>
+    <LI>
+        <A HREF="#ThreadSafety">Thread Safety</A>
+    </P>
+    </LI>
+    <LI>
+        <A HREF="#Design">Methods/Functions Design</A>
+        <UL>
+            <LI>
+                <A HREF="#InitShutdown">Init, Shutdown Functions</A>
+            </LI>
+            <LI>
+                <A HREF="#OpenClose">Open, Close Functions</A>
+            </LI>
+            <LI>
+                <A HREF="#CreateFuncs">Creation Functions</A>
+            </LI>
+            <LI>
+                <A HREF="#DestroyFuncs">Destruction Functions</A>
+            </LI>
+            <LI>
+                <A HREF="#DupCopy">Dup, Copy, and Reference Functions</A>
+            </LI>
+            <LI>
+                <A HREF="#SearchFuncs">Search Functions</A>
+            </LI>
+            <LI>
+                <A HREF="#Accessors">Accesssor Functions</A>
+            </LI>
+            <LI>
+                <A HREF="#Params">Parameter ordering</A>
+            </LI>
+            <LI>
+                <A HREF="#Callbacks">Callback Functions</A>
+            </LI>
+        </UL>
+    </P>
+    </LI>
+</UL>
+</FONT>
+
+<!-- END TABLE OF CONTENTS -->
+
+<A NAME="Structure">
+<H2>NSS API Structure</H2>
+</A>
+<UL>
+    This section explains the structure and relationships of the 
+    NSS libraries. The <A HREF="#Layering">Layering</A> section 
+    explains how the NSS code is layered and how higher-level
+    functions wrap low-level functions. The <A HREF="#Libraries">
+    Libraries</A> section descibes the NSS libraries, the functionality
+    each provides, and the layer in which the library (mostly)
+    operates.</P>
+
+
+<H3>
+<A NAME="Layering"></A>Layering</H3>
+
+    Each separate component of the API should live in its own
+    layer. The functions in these APIs should never call API layers above them.
+    In addition, some low-level APIs may be completely opaque to higher level
+    layers. That is, access to these functions should only be provided by the
+    API directly above them.
+    The NSS APIs are layered as shown in the diagram:
+
+<CENTER><IMG SRC="layer.gif" HEIGHT=507 WIDTH=427 ALIGN=CENTER></CENTER>
+
+    The boxes in the gray are exported only through PKCS #11. PKCS #11 is only
+    exported through the Wrappers. The areas that need the most work (both
+    here and throughout the code) is 1) the relationship of the
+    Certificate library with just about every other component (most noticeably
+    PKCS #12, PKCS #7, and PKCS #11), 2) Splitting Low Key and High Key
+    components more clearly, 3) the Crypto wrappers (PKCS #11 Wrappers)
+    and High Key, 3) PKCS #12 and PKCS #5.</P>
+
+
+<A NAME="Libraries">
+<H3>Libraries</H3>
+</A>
+
+
+    NSS compiles into the libraries described below. The Layer indicates
+    the main layer (as in the diagram above) in which the library operates.
+    The Directory is the location of the library code in the NSS source 
+    tree. The Public Headers is a list of header files that contain types
+    and functions that are publicly available to higer-level APIs.</P>
+   
+    <TABLE COLS=5 BORDER=1 VALIGN=TOP WIDTH="75%">
+        <TR>
+            <TH WIDTH=5%>Library</TH>
+            <TH WIDTH=50%>Description</TH>
+            <TH WIDTH=5%>Layer</TH>
+            <TH WIDTH=5%>Directory</TH>
+            <TH WIDTH=5%>Public Headers</TH>
+        </TR>
+<!-- asn and base not built yet
+        <TR VALIGN=TOP>
+            <TD><TT>asn</TT></TD>
+            <TD>
+                Provides functions to encode and decode data between
+                Abstract Syntax Notation number One (ASN.1) formats and 
+                application-usable formats. ASN.1 is used to encode protocol or
+                certificate data in a language-independent format.</P>
+            </TD>
+            <TD>ASN.1/DER</TD>
+            <TD><TT>lib/asn1</TT></TD>
+            <TD><TT>nssasn1t.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>nssb</TT></TD>
+            <TD>
+                Provides foundation-level functions and data types used by
+                all of the higher-level libraries: memory Arenas, error
+                set/get functions, and UTF8 string types.
+            </TD>
+            <TD>AtoB, Item, Port</TD>
+            <TD><TT>lib/base</TT></TD>
+            <TD><TT>nssbase.h, nssbaset.h</TT></TD>
+        </TR>
+asn and base not built yet -->
+        <TR VALIGN=TOP>
+            <TD><TT>certdb</TT></TD>
+            <TD>
+                Provides all certificate handling functions and types. The
+                <TT>certdb</TT> library manipulates the certificate database
+                (add, create, delete certificates and CRLs). It also provides
+                general certificate-handling routines (create a certificate,
+                verify, add/check certificate extensions).
+            </TD>
+            <TD>Low Cert</TD>
+            <TD><TT>lib/certdb</TT></TD>
+            <TD><TT>cdbhdl.h, certdb.h, cert.h, certt.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>certhi</TT></TD>
+            <TD>
+                Provides high-level certificate-related functions that do
+                not access the certificate database nor individual 
+                certificate data directly. Currently OCSP checking settings
+                are exported through <TT>certhi</TT>
+            </TD>
+            <TD>High Cert</TD>
+            <TD><TT>lib/certhigh</TT></TD>
+            <TD><TT>ocsp.h, ocspt.h</TT></TD>
+        </TR>
+<!-- nnsckfw not built at present
+
+        <TR VALIGN=TOP>
+            <TD><TT>nssckfw</TT></TD>
+            <TD>
+                <FONT COLOR=RED>Hmmm.... nssckfw does not actually seem to 
+                be part of the build????</FONT>
+                Provides the NSS Cryptoki Framework: a layer that wraps
+                the PKCS#11 implementation to provide PKCS#11 service to 
+                higher layers.
+            </TD>
+            <TD>Crypto Wrapper</TD>
+            <TD><TT>lib/ckfw</TT></TD>
+            <TD><TT>nssckfw.h, nssckfwt.h, nssckp.h, nsscku.h, nssckfwc.h,
+                    nssckmdt.h, nssckt.h</TT></TD>
+        </TR>
+nssckfw not built at present -->
+        <TR VALIGN=TOP>
+            <TD><TT>crmf</TT></TD>
+            <TD>
+                Provides functions and data types to handle Certificate
+                Management Message Format (CMMF) and Certificate Request
+                Message Format (CRMF, see <A HREF="http://www.imc.org/rfc2511">
+                RFC 2511</A>) data. CMMF no longer exists as a proposed 
+                standard; CMMF functions have been incorporated into the
+                proposal for <A HREF="http://www.imc.org/rfc2510">
+                Certificate Management Protocols (CMP)</A>. 
+            </TD>
+            <TD>Same Level as SSL</TD>
+            <TD><TT>lib/crmf</TT></TD>
+            <TD><TT>cmmf.h, crmf.h, crmft.h, cmmft.h, crmffut.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>cryptohi</TT></TD>
+            <TD>
+                Provides high-level cryptographic support operations 
+                --such as signing, verifying signatures, key generation
+                and manipulation, and hashing-- and data types. This code
+                is above the PKCS #11 layer.
+            </TD>
+            <TD>Sign/Verify</TD>
+            <TD><TT>lib/cryptohi</TT></TD>
+            <TD><TT>cryptohi.h, cryptoht.h, hasht.h, keyhi.h, keythi.h, 
+                    key.h, keyt.h, sechash.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>fort</TT></TD>
+            <TD>
+                Provides a PKCS #11 interface to Fortezza crypto services.
+                Fortezza is a set of security algorithms used by the 
+                U.S. government. There is also a <TT>swft</TT> library
+                that provides a software-only implementation of a PKCS #11
+                Fortezza token. 
+            </TD>
+            <TD>PKCS #11</TD>
+            <TD><TT>lib/fortcrypt</TT></TD>
+            <TD><TT>cryptint.h, fmutex.h, fortsock.h, fpkcs11.h, fpkcs11f.h,
+                    fpkcs11t.h, fpkmem.h, fpkstrs.h, genci.h, maci.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>freebl</TT></TD>
+            <TD>
+                Provides the API to actual cryptographic operations. The 
+                <TT>freebl</TT> is a wrapper API: you must supply a 
+                library that implements the cryptographic operations
+                (such as BSAFE from RSA Security). (This is also known as
+                the "bottom layer" API, or BLAPI.)
+            </TD>
+            <TD>Within PKCS #11, wraps Crypto</TD>
+            <TD><TT>lib/freebl</TT></TD>
+            <TD><TT>blapi.h, blapit.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>jar</TT></TD>
+            <TD>
+                Provides support for reading a writing data in Java Archive
+                (jar) format, including zlib compression. 
+            </TD>
+            <TD>Port</TD>
+            <TD><TT>lib/jar</TT></TD>
+            <TD><TT>jar-ds.h, jar.h, jarfile.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>nss</TT></TD>
+            <TD>
+                Provides high-level initialiazation and shutdown of
+                security services. Specifically, this library provides
+                <TT>NSS_Init()</TT> for establishing default certificate,
+                key, and module databases and initializing a default
+                random number generator. <TT>NSS_Shutdown()</TT> closes the
+                databases to prevent further access by an application.
+            </TD>
+            <TD>Above High Cert, High Key</TD>
+            <TD><TT>lib/nss</TT></TD>
+            <TD><TT>nss.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>pk11wrap</TT></TD>
+            <TD>
+                Provides access to PKCS #11 modules through a unified
+                interface. The <TT>pkcs11wrap</TT> library provides
+                functions for selecting/finding PKCS #11 modules and slots.
+                It also provides functions that invoke operations in selected
+                modules and slots (key selection and generation, signing, 
+                encryption and decryption, etc.).
+            </TD>
+            <TD>Crypto Wrapper</TD>
+            <TD><TT>lib/pk11wrap</TT></TD>
+            <TD><TT>pk11func.h, secmod.h, secmodt.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>pkcs12</TT></TD>
+            <TD>
+                Provides functions and types for encoding and decoding 
+                PKCS #12 data. PKCS #12 can be used to to encode keys and
+                certificates for export or import into other applications.
+            </TD>
+            <TD>PKCS #12</TD>
+            <TD><TT>lib/pkcs12</TT></TD>
+            <TD><TT>pkcs12t.h, pkcs12.h, p12plcy.h, p12.h, p12t.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>pkcs7</TT></TD>
+            <TD>
+                Provides functions and types for encoding and decoding 
+                encrypted data in PKCS #7 format. PKCS #7 is used, for
+                example, to encrypt certificate data for exchange between
+                applications or to encrypt S/MIME message data.
+            </TD>
+            <TD>PKCS #7</TD>
+            <TD><TT>lib/pkcs7</TT></TD>
+            <TD><TT>secmime.h, secpkcs7.h, pkcs7t.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>softoken</TT></TD>
+            <TD>
+                Provides a software implementation of a PKCS #11 module.
+            </TD>
+            <TD>PKCS #11: implementation</TD>
+            <TD><TT>lib/softoken</TT></TD>
+            <TD><TT>keydbt.h, keylow.h, keytboth.h, keytlow.h, secpkcs5.h, 
+                    pkcs11.h, pkcs11f.h, pkcs11p.h, pkcs11t.h, 
+                    pkcs11u.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>ssl</TT></TD>
+            <TD>
+                Provides an implementation of the SSL protocol using NSS
+                and NSPR.
+            </TD>
+            <TD>SSL</TD>
+            <TD><TT>lib/ssl</TT></TD>
+            <TD><TT>ssl.h, sslerr.h, sslproto.h, preenc.h</TT></TD>
+        </TR>
+        <TR VALIGN=TOP>
+            <TD><TT>secutil</TT></TD>
+            <TD>
+                Provides utility functions and data types used by other 
+                libraries. The library supports base-64 encoding/decoding,
+                reader-writer locks, the <TT>SECItem</TT> data type, DER
+                encoding/decoding, error types and numbers, OID handling,
+                and secure random number generation.
+            </TD>
+            <TD>Utility for any Layer</TD>
+            <TD><TT>lib/util</TT></TD>
+            <TD><TT>base64.h, ciferfam.h, nssb64.h, nssb64t.h, nsslocks.h,
+                    nssrwlk.h, nssrwlkt.h, portreg.h, pqgutil.h, secasn1.h,
+                    secasn1t.h, seccomon.h, secder.h, secdert.h, secdig.h,
+                    secdigt.h, secitem.h, secoid.h, secoidt.h, secport.h,
+                    secrng.h, secrngt.h, secerr.h, watcomfx.h</TT></TD>
+        </TR>
+    </TABLE>
+
+</UL>
+
+<A NAME="Naming">
+<H2>Naming Conventions</H2>
+</A>
+
+<UL>
+    This section describes the rules that (ideally) should be followed
+    for naming and identifying new files, functions, and data types.</P>
+
+
+<A NAME="CVSID">
+<H3>CVS ID</H3>
+</A>
+
+    Each file should include a CVS ID string for identification. The preferred
+    format is
+<PRE>
+        "@(#) $RCSfile: nss-guidelines.html,
+&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp v $ $Revision$ $Date$ $Name$"
+</PRE>
+    You can put the string in a comment or in a static char array (use 
+    <TT>#idfef DEBUG</TT> to include the array in debug builds only). The
+    advantage of using an array is that you can use <TT>strings(1)</TT> to 
+    pull the ID tags out of a (debug) compiled library. You can even put them 
+    in header files; the header files are protected from double inclusion. 
+    The only catch is that you have to disambiguate the name of the array.</P>
+
+    Here is an example from <TT>lib/base/baset.h</TT>:</P>
+<PRE>
+    #ifdef DEBUG
+    static const char BASET_CVS_ID[] = "@(#) $RCSfile: nss-guidelines.html,
+&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp v $ $Revision$ $Date$ $Name$";
+    #endif /* DEBUG */
+</PRE>
+
+    The difference between this and Id is that Id has some useless information
+    (<i>every</i> file is "experimental"), and doesn't have Name. Name is the 
+    tag (if any) from which this file was pulled. If you're good about tagging 
+    your releases and then checking out (or exporting!) from the tag to do your
+    build, this saves you from having to screw around with specific files 
+    revision numbers.
+
+
+<A NAME="HeaderFiles">
+<H3>Header Files</H3>
+</A>
+
+We have a standard ideal naming system for include files.&nbsp; We'd been
+moving towards one, but for the NSS 3.0 project we actually wrote it down.
+<br>&nbsp;
+<br>&nbsp;
+<table BORDER COLS=3 WIDTH="90%" NOSAVE >
+<tr>
+<th></th>
+
+<th WIDTH=30%>Data Types</th>
+
+<th>Function Prototypes</th>
+</tr>
+
+<tr>
+<td>Public</td>
+
+<td>nss____t.h</td>
+
+<td>nss____.h</td>
+</tr>
+
+<tr>
+<td>Friend (only if required)</td>
+
+<td>nss____tf.h</td>
+
+<td>nss____f.h</td>
+</tr>
+
+<tr>
+<td>NSS-private</td>
+
+<td>____t.h</td>
+
+<td>____.h</td>
+</tr>
+
+<tr>
+<td>Module-private</td>
+
+<td>____tm.h</td>
+
+<td>____m.h</td>
+</tr>
+</table>
+
+<p>The files on the right include the files to their left; the files in
+a row include the files directly above them.&nbsp; Header files always
+include what they need; the files are protected against double inclusion
+(and even double opening by the compiler).&nbsp; Note that not all eight
+files necessarily exist.&nbsp; Further, this is the simple ideal; often
+reality is more complex.
+<p>It'd be nice to keep names to 8.3, even though we no longer support
+win16.&nbsp; This usually gives us four characters to identify a module
+of NSS.
+<p>In short:
+<ol>
+<li>
+Header files for consumption outside NSS start with "nss."</li>
+
+<li>
+Header files with types have a trailing "t"; header files with prototypes
+don't.&nbsp; "extern"&nbsp;declarations of data also go in the prototypes
+files.</li>
+
+<li>
+"Friend"&nbsp;headers are for things that we really wish weren't used by
+non-NSS code, but which are.&nbsp; Those files have a trailing "f,"&nbsp;and
+their use should be deprecated.</li>
+
+<li>
+"Module"&nbsp;heaaders are for things used only within a specific subset
+of NSS; things which would have been "static"&nbsp;if we had combined separate
+C source files together.&nbsp; These header files have a trailing "m."</li>
+</ol>
+
+
+<A NAME="FuncsAndTypes">
+<H3>Functions and Types</H3>    
+</A>
+
+    There are a number of ways of doing things in our API, as well as naming
+    decisions for functions that can affect the usefulness of our library.
+    If our library is self-consistent with how we accomplish these tasks,
+    it makes it easier for the developer to learn how to use our functions.
+    This section of the document should grow as we develop our API.</P>
+
+    First some general rules (these rules derive from the existing coding
+    practice inside the security library, since consistency is more important
+    then religious wars about "what looks pretty").</P>
+<OL>
+    <LI>
+    <B>Public functions</B> should have the form <TT>LAYER_Body()</TT> where
+    <TT>LAYER</TT> is an all caps prefix for what layer the function lives in, 
+    and <TT>Body</TT> is concatenated English words where the beginning letter 
+    of each word is capitalized ("camel-capped").</P>
+    
+    For Example: <TT>LAYER_CapitalizedEnglishWords()</TT> or 
+    <TT>CERT_DestroyCertificate().</TT></LI></P>
+
+    <LI>
+    <B>Data types</B> and typdefs should have the Form <TT>LAYERBody</TT>, 
+    with the same definitions for <TT>LAYER</TT> as public functions and 
+    <TT>Body</TT> is camel-capped English words.</P>
+
+    For example: <TT>LAYERCapitalizedEnglishWords</TT> or 
+    <TT>SECKEYPrivateKey.</TT></P>
+    </LI>
+    
+    <LI>
+    <B>Structures</B> should have the same name as their typedefs with the 
+    string <TT>Str</TT> added to the end. </P>
+
+    For example <TT>LAYERCapitalizedEnglishWordsStr</TT>
+    or <TT>SECKEYPrivateKeyStr.</TT></P>
+    </LI>
+
+    <LI>
+    <B>Private functions</B> should have the form <TT>layer_Body()</TT> where 
+    <TT>layer</TT> is the all lower case prefix for what layer the function 
+    lives in, and <TT>Body</TT> is camel-capped English words. Private 
+    functions include functions that may be "public" in a C sense, but are 
+    not exported out of the layer.</P>
+   
+    For example: <TT>layer_CapitalizedEnglishWords()</TT>
+    or <TT>pk11_GenerateKeyID().</TT></P>
+    </LI>
+    
+    <LI>
+    <B>Public macros</B> should have the form <TT>LAYER_BODY()</TT> where 
+    <TT>LAYER</TT> is an all caps prefix for what layer the macro lives in, 
+    and <TT>BODY</TT> is camel-capped English words separated by underscores.
+    </P>
+     For example: <TT>LAYER_UPPER_CASE_ENGLISH_WORDS()</TT> or
+     <TT>DER_CONVERT_BIT_STRING()</TT>.</P>
+    </LI>
+    
+    <LI>
+    <B>Structure members</B> for exposed data structures should have the form 
+    capitalizedEnglishWords (the first letter uncapitalized).</P>
+
+    For example: <TT>PK11RSAGenParamsStr.<B>keySizeInBits</B></TT></P>
+    </LI>
+    
+    <LI>
+    For <B>members of enums</B>, our current API has no standard (typedefs for 
+    enums should follow the Data types standard). There seem to be three 
+    reasonable options:</P>
+    
+    <OL TYPE=a>
+        <LI>Enum members have the same standard as exposed data structure 
+            members.
+        </LI>
+        <LI>Enum members have the same standard as Data types.
+        </LI>
+        <LI>Enum members have the same standard as Public Macros (minus the
+            <TT>'()'</TT> of course).</P>
+        </LI>
+    </OL>
+    Options b and c are the most preferable options. Option a (currently the
+    most common use of enums) creates namespace pollution.</P>
+    </LI>
+
+    <LI>
+    <B>Callback functions</B> and functions used in function tables should
+    have a typedef used to define the complete signature of the given function.
+    Function typedefs should have the following format:<TT> LAYERBody()</TT>
+    with the same definitions for <TT>LAYER</TT> as public functinos and 
+    <TT>Body</TT> is camel-capped English words.</P>
+   
+    For example: <TT>LAYERCapitalizedEnglishWords</TT> or 
+    <TT>SECKEYPrivateKey.</TT></P></LI>
+</OL>
+    
+    
+
+</UL>
+
+<A NAME="Opaque">
+<H2>Opaque Data Structures</H2>
+</A>
+
+<UL>
+    There are many data structures in the security library whose definition
+    is effectively private to the portion of the security library that defines
+    and operates on those data structures. External code does not have access
+    to these definitions. The goal here is to increase the opaqueness of these
+    structures. This will allow us to modify the size, definition, and format
+    of these data structures in future releases without interfering with the
+    operation of existing applications that use the security library.</P>
+
+    The first task is to make sure the declaration of the data structure
+    lives in a private header file, while the definition lives in the public.
+    Since the current standard in the security library is to <TT>typedef</TT>
+    the data structure name, the easiest way to accomplish this would be to
+    add the typedef to the public header file.</P>
+
+    For example, for the structure <TT>SECMyOpaqueData</TT> you would add:
+    <PRE>
+    typedef struct SECMyOpaqueDataStr SECMyOpaqueData;</PRE>
+
+    Then add the actual structure definition to the private header file.
+    In this same example:
+    <PRE>
+    struct SECMyOpaqueDataStr {
+        unsigned long myPrivateData1;
+        unsigned long myPrivateData2;
+        char *myName;
+    };</PRE>
+
+    The second task is to determine if individual data fields within the
+    data structure is part of the API. One example may be the 
+    <TT>peerCert</TT> field in an SSL data structure. Accessor functions 
+    for these data elements should be added to the API.</P>
+
+    There can be legitimate exceptions to this "make everything opaque"
+    rule, like container structures such as <TT>SECItem</TT>, or maybe 
+    linked list data structures. These data structures need to be examined 
+    on a case by case basis to determine if 1) they are truly stable and 
+    will not change in future release, and 2) it is necessary for the callers 
+    of the API to know the size of these structures (as they may allocate 
+    new ones and pass them down).</P>
+    
+</UL>
+
+<A NAME="Arenas">
+<H2>Memory Allocation with Arenas</H2>
+</A>
+<UL>
+    This section discusses memory allocation using arenas. Current NSS code
+    uses arenas, and this section explains some of the improvements that
+    we will be making to improve the facility in the future.</P>
+
+    NSS does make some use of traditional memory allocation functions, wrapping
+    NSPR's <TT>PR_Alloc</TT> in a util function called <TT>PORT_Alloc</TT>.
+    But NSS will make widespread use of an NSPR memory-allocation facility that 
+    uses "Arenas" and "ArenaPools." It was added for use by javascript; it is 
+    a fast, lightweight, non-thread-safe (though "free-threaded") 
+    implementation.</P>
+
+    Experience has shown that users of the security library expect 
+    the arenas to be threadsafe, so we found that we had to add locking. 
+    While we are at it, we want to add a couple of other changes we found 
+    useful.
+    </P>
+
+    <ul>
+        <li>
+        There has always been confusion as to what the difference is between 
+        Arenas and ArenaPools, and assertions that usually the terms are 
+        being used incorrectly. So, we will simplify it down to one type for 
+        the logical "memory bucket" type.</P>
+
+        Consensus called that type <TT>NSSArena</TT>.</P>
+        </li>
+        
+        <li>
+        We have lots of code that takes an optional arena pointer, and which 
+        will use the arena if there is one, or the heap if there isn't.
+        Therefore, we'll wrap that logic into the allocators. Sure, knowing 
+        what to free takes some discipline not to leak, but it simplifies 
+        things a lot. Also, the implementation of free ``works'' (i.e., 
+        doesn't crash) no matter if it came from an arena or the heap, as 
+        long as it was allocated from our allocators. Combined with purify, 
+        this also helps us catch cases where things being allocated by one 
+        allocator are freed by another, which is a common Windows pitfall.
+        </P>
+        </li>
+
+        <li>
+        The security code often wants to be sure to zero memory when it's being
+        freed; we'll just add it to the primitives to be done with it.</P>
+        </li>
+        </ul>
+
+    The <TT>ARENA_THREADMARK</TT> preprocessor definition (defined 
+    by default in debug builds), and the code it encloses, will be added to 
+    add some checking for the following situation:</P>
+    <ol>
+    <li>
+    Thread A marks the arena, and allocates some memory from it.</li>
+    
+    <li>
+    Thread B allocates some memory from the arena.</li>
+    
+    <li>
+    Thread A&nbsp;releases the arena back to the mark.</li>
+    
+    <li>
+    (Thread B now finds itself with a pointer to released data.)</li>
+    
+    <li>
+    Some thread -- doesn't matter which -- allocates some data from the arena;
+    this may well overlap the chunk thread B has.</li>
+    
+    <li>
+    Boom.</P></li>
+    </ol>
+    So what the threadmark code does is note the thread ID whenever an arena
+    is marked, and it disallows any allocations or marks by any other thread.
+    (Frees are allowed.)</P>
+
+    The <TT>ARENA_DESTRUCTOR_LIST</TT> preprocessor definition, and the code 
+    it encloses, are part of an effort to make the following features work 
+    together:</P>
+    <ol>
+        <li>
+        Arenas, and the way they let you allocate a whole bunch of stuff 
+        and then blow them all away at once,</li>
+    
+        <li>
+        Lazy creation of pure-memory objects from ASN.1 blobs, so the mere use
+        of (e.g.) <TT>NSSPKIXCertificate</TT> doesn't drag in all the code for 
+        all the constituent objects unless they're actually used, and</li>
+        
+        <li>
+        Our agressive pointer-tracking facility.</P></li>
+        </ol>
+
+    All of these are useful things, but they don't combine well. 
+    Now that some of the pressure for the pointer-tracking has eased off, I
+    think we can just drop its use when it's too hard.</P>
+
+    A lot of routines are defined to take an <TT>NSSArena *arenaOpt</TT> 
+    argument. This means that if an arena is specified (non-null), it 
+    is used; otherwise (the argument is null) the routine will just use the 
+    heap. You can almost think of the heap as a big default arena that you 
+    can't destroy.</P>
+
+</UL>
+
+<A NAME="Errors">
+<H2>Error Handling</H2>
+</A>
+
+<UL>
+
+    NSS 3.0 introduces the concept of an "error stack." When something goes 
+    wrong and the call stack unwinds with routines returning an error 
+    indication, each level (at least, each level that has something to say 
+    about the problem) layers its own error number on the stack. At the 
+    bottom of the stack is the fundamental error (e.g. "file not found") 
+    and at the top is an error relating to what you were trying to do.</P>
+
+    Note that error stacks are vertical, never horizontal: if multiple
+    things go wrong simultaneously, and you want to report them all, you need
+    another mechanism. </P>
+
+    Errors, though integers, are done as external constants instead of 
+    preprocessor definitions. This is so that adding one error doesn't 
+    trigger the entire tree to rebuild. Likewise, the external references 
+    to errors are made in the prototypes files, with the functions that 
+    can return them.</P>
+
+    Error stacks are thread-private.</P>
+ 
+    The usual semantic is that public routines clear the stack first, private
+    routines don't. Usually, every public routine has a private counterpart,
+    and the implementation of the public routine looks like this:</P>
+<PRE>
+    NSSImplement rv *
+    NSSType_Method
+    (
+        NSSType *t,
+        NSSFoo *arg1,
+        NSSBar *arg2
+    )
+    {
+        nss_ClearErrorStack();
+
+        #ifdef DEBUG
+            if(&nbsp;!nssFoo_verifyPointer(arg1) ) return (rv *)NULL;
+            if(&nbsp;!nssBar_verifyPointer(arg2) ) return (rv *)NULL;
+        #endif /* DEBUG */
+
+        return nssType_Method(t, arg1, arg2);
+    }
+</PRE>
+    Besides error cases, all documented entry points should check pointers,
+    wherever possible, in the debug case. Pointers to user-supplied buffers
+    and templates should be checked against NULL. Pointers to context-style
+    functions should be checked using special debug macros. These macros only
+    define code when DEBUG is turned on, and provide a way for systems to 
+    register, deregister, and check valid pointers.</P>
+
+    <TT>SECPORT_DECL_PTR_CLASS(<I>classname</I>,<I>size</I>) </TT>- declare
+    a class of pointers (labelled <I>classname</I>) this object file needs
+    to check. This class is local only to this object file. <I>Size</I> is
+    the expected number of pointers of type <I>classname</I>.</P>
+
+    <TT>SECPORT_DECL_GLOBAL_PTR_CLASS(<I>classname</I>,<I>size</I>) </TT>-
+    same as above except <I>classname</I> is can be used in other object files.
+    </P>
+
+    <TT>SECPORT_ADD_POINTER(<I>classname</I>,<I>pointer</I>)</TT> - Add
+    <I>pointer</I> as a valid pointer for class <I>classname</I>. This is 
+    usually called by a Create function.</P>
+
+    <TT>SECPORT_VERIFY_POINTER(<I>classname</I>,<I>pointer</I>,<I>secError</I>,
+    <I>returnValue</I>)</TT>- Check if a given <I>pointer</I> really belongs 
+    to the requested class. If it doesn't set the error <I>secError</I> and 
+    return the value <I>returnValue</I>.</P>
+
+    <TT>SECPORT_REMOVE_POINTER(<I>classname</I>,<I>pointer</I>)</TT> - Remove
+    a pointer from the valid list. Usually called by a Destroy function.</P>
+
+    Finally, error logging should be added an documented when debug is turned
+    on. Interfaces for these are in NSPR. </P>
+
+</UL>
+
+<A NAME="ThreadSafety">
+<H2>Thread Safety</H2>
+</A>
+<UL>
+    Code developed using the NSS APIs needs to be make use of the thread 
+    safety features. The first part to examine is <B>object creation</B> and 
+    <B>deletion</B>. Object creation is usually not a problem. No other 
+    threads have access to memory just allocated in creation. (Exceptions to 
+    this include objects which are created on the fly or as global objects.)
+    Deletion, on the other hand, may be trickier. Other threads may be 
+    referencing the object at the time a different thread chooses to delete it. 
+    Some of these semantics depend on the way the application is using the 
+    object, and how and when the application chooses to destroy it. For 
+    some data structures, this problem can be removed by protected reference 
+    counting. The object does not ever disappear until all users of the object 
+    have released it.</P>
+
+    <P>Next examine any <B>global data</B>. These include function local static
+    structures. Global data that just gets initialized, but never changed,
+    does not need to be protected by mutexes. We should also determine if global
+    data should be moved to a session context (see 
+    <A HREF="#SessionContext">session context</A> and 
+    <A HREF="#GlobalEffects">global effects </A>below). Also note that 
+    permanent objects (like data in files, databases, tokens, etc.) should be 
+    treated as global data. Global data which is only changed rarely, should be 
+    protected by reader/writer locks.
+
+    <P>Besides global data,<B> allocated data</B> that gets modified needs
+    to be examined. Data that's just allocated within a function is safe to
+    modify, no other code has access to that data pointer. Once that data 
+    pointer is made visible to the 'outside' (either by returning the pointer, 
+    or attaching the pointer to an existing visible data structure) access to 
+    the data should be protected. Data structures that are basically 
+    "read-only" (like <TT>SECKEYPublicKeys</TT>, or <TT>PK11SymKeys</TT>) 
+    need not be protected.</P>
+
+    <A NAME="SessionContext">Many</A> of the data structures in the security
+    code contain some sort of <B>session state</B> or <B>session context</B>.
+    These data structures may be accessed without data protection as long as
+    </P>
+    <OL>
+        <LI>
+        This semantic is documented in the functions that use these data 
+        structures.
+        </P></LI>
+    
+        <LI>
+        These data structures are used for single streams, and not meant to 
+        be reused.
+        </P></LI>
+    </OL>
+   
+    Examples of these data in structures may include things like
+    the PKCS #7 <TT>ContentInfo</TT> structure. Example code should be 
+    included in the documentation to show how to safely use these data 
+    objects.</P>
+
+    <P>A major type of global and allocated data that should be examined is
+    various <B>data on lists</B>. Queued, linked, and hash table stored objects
+    should be examined with special care. Make sure adding, removing, accessing,
+    and destroying these objects are all safe operations.
+
+    <P>There are a number of strategies, and full books about how to safely
+    access data on lists. Here are a couple of the simple strategies and their
+    issues:</P>
+    <UL>
+        <B>Use hash tables:</B> Hash table lookups are usually quite
+        fast, limiting the contention on the lock. This is best for large 
+        lists of objects. Be sure to calculate the hash value first, then 
+        only lock over the hash table value itself. Be sure to increment the 
+        reference count on the returned objected before unlocking. Examples 
+        of hash tables can be found in 
+        <A HREF="http://lxr.mozilla.org/mozilla/source/security/nss/lib/certdb/pcertdb.c#5891"><TT>security/nss/lib/certdb/pcertdb.c</TT></A></P>
+
+        <B>Lock over the entire search: </B>For small linked listed, queues,
+        or arrays, you can lock over the entire search. This strategy is best 
+        if the lists are short, and even better, if the lists are relatively 
+        read only (they don't change very often) and reader/writer locks 
+        are used.</P>
+
+        <B>Copy the linked list: </B>Instead of operating on the global list,
+        you can copy the list. This also requires small lists. </P>
+
+        <B>Lock over single element with retry:</B> For medium sized lists,
+        you can secure a reference to each element, complete your 
+        complicated test, then detect of the given element has been removed 
+        from the list. In the case of removal, the search can either be 1) 
+        restarted, or 2) terminated. This method is a lot more complicated 
+        than the other methodes, and requires the calling search code to be 
+        tolerant of looking at the same element multiple times (potenitally).
+        </P>
+
+        Examples of the last three strategies can be found in 
+        <A HREF="http://lxr.mozilla.org/mozilla/source/security/nss/lib/pk11wrap/pk11slot.c"><TT>security/nss/lib/pk11wrap/pk11slot.c.</TT></A></P>
+    </UL>
+
+    On last comment about lists. Whenever possible use the NSPR list
+    primitives. From these you can even set up <TT>SECUtil</TT> style 
+    thread-safe lists that use some combination of the above strategies.</P>
+
+    <P><A NAME="ServiceFunctions"></A>In order to be fully thread safe, your
+    code must understand the semantics of the <B>service functions </B>it calls,
+    and whether they are thread safe. For now we should document (internal)
+    what service functions we call, and how we expect them to behave in a 
+    threaded environment.
+
+    <P><A NAME="GlobalEffects"></A>Finally, from an API point of view, we should
+    examine functions which have <B>global effects</B>. Functions like 
+    <TT>XXX_SetDefaultYYY();</TT> should not operate on global data, 
+    particularly if they may be called multiple times to provide different 
+    semantics for different operations. For example, operations like</P>
+
+    <UL>
+        <TT>SEC_SetKey(keyForOperation);</TT></BR>
+        <TT>SEC_Encrypt(Data,Length);</TT></P>
+    </UL>
+
+    should be avoided. Instead, a context handle should be created, and
+    the <TT>SEC_SetKey()</TT> function above should be made on that handle. 
+    Fortunately most of the existing API already has the correct semantics.
+    </P>
+
+    <P>The exception to this global effects rule may be functions which set
+    global state for an application at initialization time.
+
+</UL>
+
+<A NAME="Design">
+<H2>Methods/Functions Design</H2>
+<UL>
+<A NAME="InitShutdown">
+    <H3>
+    Init, Shutdown Functions</H3>
+</A>
+
+    If a layer has some global initialization tasks that need to be completed
+    before the layer can be used, that layer should supply an initialization
+    function of the form <TT>LAYER_Init()</TT>. If an initialization function
+    is supplied, a corresponding <TT>LAYER_Shutdown()</TT> function should
+    also be supplied. <TT>LAYER_INIT()</TT> should increment a count of the
+    number of times it is called, and <TT>LAYER_Shutdown()</TT> should decrement
+    that count, and shutdown when the count reaches '0'.</P>
+
+<A NAME="OpenClose">
+    <H3>
+    Open, Close Functions</H3>
+</A>
+
+    Open functions should have a corresponding close function. Open and close
+    function are not reference counted like init and shutdown functions.</P>
+
+<A NAME="CreateFuncs">
+    <H3>
+    Creation Functions</H3>
+</A>
+    In general, data objects should all have functions which create them. These
+    functions should have the form 
+    <TT>LAYER_CreateDataType[FromDataType]()</TT>. For instance generating 
+    a new key would change from <TT>PK11_KeyGen() </TT>to
+    <TT>PK11_CreateSymKey()</TT>.</P>
+
+<A NAME="DestroyFuncs">
+    <H3>
+    Destruction Functions</H3>
+</A>
+    In the security library we have 3 different ways of saying "get rid of
+    this data object": Free, Delete, and Destroy. It turns out there are several
+    different semantics of getting rid of a data object as well: 1) decrement
+    the reference count, and when the object goes to '0' free/delete/destroy
+    it, 2) destroy it right now, this very instance, not matter what, 3) make
+    any permanent objects associated with this data object go away, a 
+    combination of 1 and 3 or 2 and 3. Unfortunately within the security 
+    library Free, Delete, and Destroy are all used interchangeably for 
+    all sorts of object destruction: For instance 
+    <TT>CERT_DestroyCertificate()</TT> is type 1, <TT>PK11_DestroySlot()</TT>
+    is type 2, and <TT>PK11_DestroyTokenObject()</TT> is type 3 [NOTE: for 
+    non-reference counted functions 1 and 2 are the same]. We are 
+    standardizing on the following definitions:</P>
+
+    <P>Destroy - means #1 for reference counted objects, #2 for non reference
+    counted objects.
+
+    <P>Delete - means #3.
+
+    <P>This has the advantage of <I>not</I> surfacing the reference countedness
+    of a data object. If you own a pointer to an object, you just always destroy
+    it. There is no way to destroy an object bypassing it's reference count.
+    Also, the signature of public destruction functions do not have the 'freeit'
+    PRBool, since the structures that are being freed are opaque.</P>
+
+<A NAME="DupCopy">
+    <H3>
+    Dup, Copy, and Reference Functions</H3>
+</A>
+    Functions that return a new reference or copy of a given object should
+    have the form <TT>LAYER_DupDataType()</TT>. For instance 
+    <TT>CERT_DupCertifiate()</TT> will remain the same, but 
+    <TT>PK11_ReferenceSlot()</TT> will become <TT>PK11_DupSlot()</TT>, and 
+    <TT>PK11_CloneContext() </TT>will become <TT>PK11_DupContext()</TT>.</P>
+
+<A NAME="SearchFuncs">
+    <H3>
+    Search Functions</H3>
+</A>
+    There are several different kinds of searches done in the security library.
+    The first is a search for exactly one object that meets the given criteria.
+    These types of searches include <TT>CERT_FindCertByDERCert()</TT>, 
+    <TT>PK11_FindAnyCertFromDERCert()</TT>, <TT>PK11_FindKeyByCert()</TT>,
+    <TT>PK11_GetBestSlot()</TT>. These functions should all have the form 
+    <TT>LAYER_FindDataType[ByDataType]()</TT>.</P>
+
+    <P>The second kind of search looks for all the objects that match a given
+    criteria. These functions operate on a variety of level. Some return 
+    allocated arrays of data, some return linked lists of data, others use 
+    callbacks to return data elements one at a time. Unfortunately there are 
+    good reasons to maintain all of these types. So here are the guidelines 
+    to make them more manageable:
+
+    <UL>
+    <P>All callback operating search functions should be in the low level of
+    the API (if exposed at all). Application writers dealing with SSL and PKCS
+    #7 layers should not have to see any of these functions. These functions
+    should have the form <TT>LAYER_TraverseStorageObjectOrList()</TT>.
+
+    <P>List and Array returning functions should be available at the higher
+    layers of the API, most wrapping&nbsp; <TT>LAYER_Traverse()</TT> functions.
+    They should have the form 
+    <TT>LAYER_LookupDataType{List|Array}[ByDataType]()</TT>.
+    </UL>
+
+<A NAME="Accessors">
+    <H3>
+    Accesssor Functions</H3>
+</A>
+    Accessor Functions should use the following formats:</P>
+    <UL>
+      <TT>LAYER_DataTypeGetElement()</TT> -- Get a specific element of a 
+      data structure.</BR>
+  
+      <TT>LAYER_DataTypeSetElement()</TT> -- Set a specific element of a 
+      data structure.</BR>
+
+      <TT>LAYER_DataTypeExtractDataType()</TT> -- Get a pointer to the 
+      second data type which was derived for elements of the first data
+      type.</P>
+    </UL>
+
+    Examples: <TT>PK11_SlotGetSeries()</TT>, <TT>PK11_SymKeyGetSeries()</TT>,
+    <TT>CERT_CertificateExtractPublicKey()</TT></P>
+
+<A NAME="Params">
+    <H3>
+    Parameter ordering</H3>
+</A>
+    Most functions will have a 'Natural' ordering for parameters. To keep 
+    consistency we should have some some minimal parameter consistency. 
+    First, for most functions, they can be seen as operating on a particular 
+    object. That object the function is operating on should come first. For 
+    instance most SSL functions this is usually the NSPR Socket, or the 
+    SSL Socket structure; Update, final, encrypt, decrypt type functions 
+    operate on their state contexts; etc.</P>
+
+    <P>All encrypt/decrypt functions which return data inline should have a
+    consistent signature of:</P>
+
+<PRE>
+SECStatus MY_FunctionName(MyContext *<I>context</I>, 
+                      unsigned char *<I>outBuf</I>, 
+                       SECBufferLen *<I>outLen</I>, 
+                       SECBufferLen  <I>maxOutLength</I>, 
+                      unsigned char *<I>inBuf</I>, 
+                       SECBufferLen  <I>inLen</I>)
+</PRE>
+
+    Encrypt/decrypt like functions that have different properties (additional
+    parameters, callbacks, etc.) should insert the additional parameters 
+    between the context (first parameter) and the output buffer.</P>
+
+    <P>All hashing update, MACing update, and encrypt/decrypt functions which
+    act like filters should have a consistent signature of :
+<PRE>
+SECStatus PK11_DigestOp(PK11Context *<I>context</I>, 
+                      unsigned char *<I>inBuf</I>, 
+                       SECBufferLen  <I>inLen</I>)
+</PRE>
+
+    Functions like these that have different properties (additional parameters,
+    callbacks, etc.) should insert the additional parameters between the context
+    (first parameter) and the input buffer.</P>
+
+    <P>Within your layer, multiple similar functions should have consistent
+    parameter order.
+
+<A NAME="Callbacks">
+    <H3>
+    Callback Functions</H3>
+</A>
+    Callback functions should all conta
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

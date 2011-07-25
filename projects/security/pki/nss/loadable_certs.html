@@ -1,0 +1,129 @@
+<HTML>
+<HEAD>
+<TITLE>NSS 3.1 Loadable Root Certificates</TITLE>
+</HEAD>
+
+<center>
+<h2>NSS 3.1 Loadable Root Certificates</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Main technical contact: 
+<A HREF="mailto:relyea@netscape.com?subject=loadable root certs feedback">Bob Relyea</A><BR>
+
+Manager: 
+<A HREF="mailto:wtc@netscape.com?subject=loadable root certs feedback">Wan-Teh Chang</A></FONT></i>
+</center>
+
+<hr>
+<a href="#background">Background</a><BR>
+<a href="#changed">What Has Changed?</a><BR>
+<a href="#mycode">How Does This Affect My Code?</a><BR>
+<a href="#where">Where Can I Find the Plug-in Module?</a><BR>
+<a href="#sampleinstall">Sample code for installing the module</a><BR>
+<a href="#samplegetcerts">Sample code to get the certs with the module loaded</a><BR>
+<hr>
+
+
+
+<a name="background"><h3>Background</h3></a>
+
+Any PKI deployment must provide a scheme for propagating trust. Until now, the primary mechanism for  
+doing so in PKI deployments with Netscape products has been to build root certificates for 
+leading certificate authorities (CAs) into the products. 
+
+<p>Unfortunately, an inherent problem with this approach has been the difficulty of upgrading CA 
+certificates in the field. In addition, NSS is now open source. Vendors' products may have their own 
+requirements for which trusted roots they include. Users may need to run several different products 
+with different requirements at the same time.
+
+<p>Finally, some products, like servers, may need to ship without long lists of built-in 
+trusted root certificates because these products often operate within their own heirarchy.
+
+<p>For these reasons, we would like to be able to change the built-in trusted root certificates 
+on the fly without releasing a new product.
+
+<a name ="changed"><h3>What Has Changed</h3></a>
+
+NSS 3.1 no longer has a compiled-in list of root certificates. If you run NSS 3.1 in such a way as to 
+generate a new database, these built-in root certificates do not get copied into the database. 
+Instead, a PKCS #11 module is loaded after the database is initialized. The root certificates
+and trust information is loaded from this PKCS #11 module. Any trust bits in existing databases 
+won't get overridden. Changes in trust get written back to the database, not the PKCS #11 module.
+
+<a name="mycode"><h3>How Does This Affect My Code?</h3></a>
+
+First, you need to make sure this PKCS #11 module gets installed. You can do this one of two ways:
+
+<ul>
+	<li>Make sure that the built-in module is installed in the same directory where the key and 
+certificate databases live. NSS will find it and install it, looking under the following names:<BR><BR> 
+	
+	<tt>roots.dll&nbsp;&nbsp;&nbsp;libroots.so&nbsp;&nbsp;&nbsp;libroots.sl<BR>
+	nssckbi.dll libnssckbi.so libnssckbi.sl<BR>
+	mozckbi.dll libmozckbi.so libmozckbi.sl<BR>
+	netckbi.dll libnetckbi.so libnetckbi.sl</tt><BR>	
+	<BR>
+	or
+	<BR><BR>
+	<li>Use the <tt>SECMOD_AddNewModule()</tt> call in your application if the built-in module isn't loaded.
+</ul>
+
+Next, you need to change any code that displays root certificates to search both the database 
+and the PKCS #11 module.
+
+<a name="where"><h3>Where Can I Find the Plug-in Module?</h3></a>
+
+The plug-in is built as part of NSS libraries under <tt>dist/${OBJDIR}/lib</tt> and is called one of the following:
+
+<tt><pre>
+	 ttlibnssckbi.so
+	 nssckbi.dll
+	 libnssckbi.sl
+</pre></tt>
+
+<a name="sampleinstall"><h3>Sample code for installing the module</h3></a>
+	
+
+<tt><pre>
+	 /*
+	 * initialize NSS as normal....
+	 */
+
+
+	/*
+	 * check to see if you have a rootcert module installed
+	 */
+
+	hasroot = PR_FALSE;
+	list = PK11_GetAllTokens(CK_INVALID_MECH,PR_FALSE,PR_FALSE, &pwdata);
+	if (list) for (le->list->head; le; le->next) {
+	   if (PK11_HasRootCerts(le->slot) {
+		hasroot = PR_TRUE;
+		break;
+	   }
+	}
+
+	if (!hasroot) {
+		dll_path = yourFindrootCertModuleInYourInstallTree();
+		SECMOD_AddNewModule("Root Certs",dll_path, 0, 0);
+	}
+
+</pre></tt>
+
+<a name="samplegetcerts"><h3>Sample code to get the certs with the module loaded</h3></a>
+
+Change
+<pre>
+	<tt>rv = CERT_TraversePermCerts(handle, &lt;your_callback&gt;, &numCerts);</tt>
+</pre>
+to
+<pre>
+	<tt>list = PK11_GetAllTokens(CK_INVALID_MECH,PR_FALSE,PR_FALSE, &pwdata);
+	if (list) for (le = list->head; le; le->next) {
+	    rv = PK11_CertsInSlot(le->slot, &lt;your_callback&gt;, &lt;your_params&gt;);
+	}
+</pre>
+

@@ -1,0 +1,873 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* 
+<b><a name="2">    2</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="3">    3</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="4">    4</a></b>  *
+<b><a name="5">    5</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="6">    6</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="7">    7</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="8">    8</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="9">    9</a></b>  *
+<b><a name="10">   10</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="11">   11</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="12">   12</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="13">   13</a></b>  * License.
+<b><a name="14">   14</a></b>  *
+<b><a name="15">   15</a></b>  * The Original Code is the elliptic curve math library for prime field curves using floating point operations.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Initial Developer of the Original Code is
+<b><a name="18">   18</a></b>  * Sun Microsystems, Inc.
+<b><a name="19">   19</a></b>  * Portions created by the Initial Developer are Copyright (C) 2003
+<b><a name="20">   20</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="21">   21</a></b>  *
+<b><a name="22">   22</a></b>  * Contributor(s):
+<b><a name="23">   23</a></b>  *   Stephen Fung &lt;fungstep@hotmail.com&gt;, Sun Microsystems Laboratories
+<b><a name="24">   24</a></b>  *
+<b><a name="25">   25</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="26">   26</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="27">   27</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="28">   28</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="29">   29</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="30">   30</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="31">   31</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="32">   32</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="33">   33</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="34">   34</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="35">   35</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="36">   36</a></b>  *
+<b><a name="37">   37</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> /* This source file is meant to be included by other source files
+<b><a name="40">   40</a></b>  * (ecp_fp###.c, where ### is one of 160, 192, 224) and should not
+<b><a name="41">   41</a></b>  * constitute an independent compilation unit. It requires the following
+<b><a name="42">   42</a></b>  * preprocessor definitions be made: ECFP_BSIZE - the number of bits in
+<b><a name="43">   43</a></b>  * the field's prime 
+<b><a name="44">   44</a></b>  * ECFP_NUMDOUBLES - the number of doubles to store one
+<b><a name="45">   45</a></b>  * multi-precision integer in floating point 
+<b><a name="46">   46</a></b> 
+<b><a name="47">   47</a></b> /* Adds a prefix to a given token to give a unique token name. Prefixes
+<b><a name="48">   48</a></b>  * with "ecfp" + ECFP_BSIZE + "_". e.g. if ECFP_BSIZE = 160, then
+<b><a name="49">   49</a></b>  * PREFIX(hello) = ecfp160_hello This optimization allows static function
+<b><a name="50">   50</a></b>  * linking and compiler loop unrolling without code duplication. */
+<b><a name="51">   51</a></b> #ifndef <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>
+<b><a name="52">   52</a></b> #define <a href="#52">PREFIX</a>(b) <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX1">PREFIX1</a>(<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_BSIZE">ECFP_BSIZE</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_BSIZE"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_BSIZE"><sup>[2]</sup></a>, b)
+<b><a name="53">   53</a></b> #define <a href="#53">PREFIX1</a>(bsize, b) <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX2">PREFIX2</a>(bsize, b)
+<b><a name="54">   54</a></b> #define <a href="#54">PREFIX2</a>(bsize, b) ecfp ## bsize ## _ ## b
+<b><a name="55">   55</a></b> #endif
+<b><a name="56">   56</a></b> 
+<b><a name="57">   57</a></b> /* Returns true iff every double in d is 0. (If d == 0 and it is tidied,
+<b><a name="58">   58</a></b>  * this will be true.) */
+<b><a name="59">   59</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#59">isZero</a>) (const double *d) {
+<b><a name="60">   60</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="61">   61</a></b> 
+<b><a name="62">   62</a></b>         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="63">   63</a></b>                 <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (d[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>] != 0)
+<b><a name="64">   64</a></b>                         return <a href="../../freebl/mpi/mpi.h.dep.html#MP_NO">MP_NO</a>;
+<b><a name="65">   65</a></b>         }
+<b><a name="66">   66</a></b>         return <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>;
+<b><a name="67">   67</a></b> }
+<b><a name="68">   68</a></b> 
+<b><a name="69">   69</a></b> /* Sets the multi-precision floating point number at t = 0 */
+<b><a name="70">   70</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#70">zero</a>) (double *t) {
+<b><a name="71">   71</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="72">   72</a></b> 
+<b><a name="73">   73</a></b>         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="74">   74</a></b>                 t[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = 0;
+<b><a name="75">   75</a></b>         }
+<b><a name="76">   76</a></b> }
+<b><a name="77">   77</a></b> 
+<b><a name="78">   78</a></b> /* Sets the multi-precision floating point number at t = 1 */
+<b><a name="79">   79</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#79">one</a>) (double *t) {
+<b><a name="80">   80</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b>         t[0] = 1;
+<b><a name="83">   83</a></b>         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 1; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="84">   84</a></b>                 t[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = 0;
+<b><a name="85">   85</a></b>         }
+<b><a name="86">   86</a></b> }
+<b><a name="87">   87</a></b> 
+<b><a name="88">   88</a></b> /* Checks if point P(x, y, z) is at infinity. Uses Jacobian coordinates. */
+<b><a name="89">   89</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#89">pt_is_inf_jac</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * p) {
+<b><a name="90">   90</a></b>         return <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#isZero">isZero</a>) (p-&gt;z);
+<b><a name="91">   91</a></b> }
+<b><a name="92">   92</a></b> 
+<b><a name="93">   93</a></b> /* Sets the Jacobian point P to be at infinity. */
+<b><a name="94">   94</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#94">set_pt_inf_jac</a>) (<a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * p) {
+<b><a name="95">   95</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>) (p-&gt;z);
+<b><a name="96">   96</a></b> }
+<b><a name="97">   97</a></b> 
+<b><a name="98">   98</a></b> /* Checks if point P(x, y) is at infinity. Uses Affine coordinates. */
+<b><a name="99">   99</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#99">pt_is_inf_aff</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_aff_pt">ecfp_aff_pt</a> * p) {
+<b><a name="100">  100</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#isZero">isZero</a>) (p-&gt;x) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a> &amp;&amp; <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#isZero">isZero</a>) (p-&gt;y) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>)
+<b><a name="101">  101</a></b>                 return <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>;
+<b><a name="102">  102</a></b>         return <a href="../../freebl/mpi/mpi.h.dep.html#MP_NO">MP_NO</a>;
+<b><a name="103">  103</a></b> }
+<b><a name="104">  104</a></b> 
+<b><a name="105">  105</a></b> /* Sets the affine point P to be at infinity. */
+<b><a name="106">  106</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#106">set_pt_inf_aff</a>) (<a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_aff_pt">ecfp_aff_pt</a> * p) {
+<b><a name="107">  107</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>) (p-&gt;x);
+<b><a name="108">  108</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>) (p-&gt;y);
+<b><a name="109">  109</a></b> }
+<b><a name="110">  110</a></b> 
+<b><a name="111">  111</a></b> /* Checks if point P(x, y, z, a*z^4) is at infinity. Uses Modified
+<b><a name="112">  112</a></b>  * Jacobian coordinates. */
+<b><a name="113">  113</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#113">pt_is_inf_jm</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jm_pt">ecfp_jm_pt</a> * p) {
+<b><a name="114">  114</a></b>         return <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#isZero">isZero</a>) (p-&gt;z);
+<b><a name="115">  115</a></b> }
+<b><a name="116">  116</a></b> 
+<b><a name="117">  117</a></b> /* Sets the Modified Jacobian point P to be at infinity. */
+<b><a name="118">  118</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#118">set_pt_inf_jm</a>) (<a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jm_pt">ecfp_jm_pt</a> * p) {
+<b><a name="119">  119</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>) (p-&gt;z);
+<b><a name="120">  120</a></b> }
+<b><a name="121">  121</a></b> 
+<b><a name="122">  122</a></b> /* Checks if point P(x, y, z, z^2, z^3) is at infinity. Uses Chudnovsky
+<b><a name="123">  123</a></b>  * Jacobian coordinates */
+<b><a name="124">  124</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#124">pt_is_inf_chud</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * p) {
+<b><a name="125">  125</a></b>         return <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#isZero">isZero</a>) (p-&gt;z);
+<b><a name="126">  126</a></b> }
+<b><a name="127">  127</a></b> 
+<b><a name="128">  128</a></b> /* Sets the Chudnovsky Jacobian point P to be at infinity. */
+<b><a name="129">  129</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#129">set_pt_inf_chud</a>) (<a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * p) {
+<b><a name="130">  130</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>) (p-&gt;z);
+<b><a name="131">  131</a></b> }
+<b><a name="132">  132</a></b> 
+<b><a name="133">  133</a></b> /* Copies a multi-precision floating point number, Setting dest = src */
+<b><a name="134">  134</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#134">copy</a>) (double *dest, const double *src) {
+<b><a name="135">  135</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="136">  136</a></b> 
+<b><a name="137">  137</a></b>         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="138">  138</a></b>                 dest[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = src[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>];
+<b><a name="139">  139</a></b>         }
+<b><a name="140">  140</a></b> }
+<b><a name="141">  141</a></b> 
+<b><a name="142">  142</a></b> /* Sets dest = -src */
+<b><a name="143">  143</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#143">negLong</a>) (double *dest, const double *src) {
+<b><a name="144">  144</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="145">  145</a></b> 
+<b><a name="146">  146</a></b>         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; 2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="147">  147</a></b>                 dest[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = -src[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>];
+<b><a name="148">  148</a></b>         }
+<b><a name="149">  149</a></b> }
+<b><a name="150">  150</a></b> 
+<b><a name="151">  151</a></b> /* Sets r = -p p = (x, y, z, z2, z3) r = (x, -y, z, z2, z3) Uses
+<b><a name="152">  152</a></b>  * Chudnovsky Jacobian coordinates. */
+<b><a name="153">  153</a></b> /* TODO reverse order */
+<b><a name="154">  154</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#154">pt_neg_chud</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * p, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * r) {
+<b><a name="155">  155</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="156">  156</a></b> 
+<b><a name="157">  157</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;x, p-&gt;x);
+<b><a name="158">  158</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z, p-&gt;z);
+<b><a name="159">  159</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z2, p-&gt;z2);
+<b><a name="160">  160</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z3, p-&gt;z3);
+<b><a name="161">  161</a></b>         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="162">  162</a></b>                 r-&gt;y[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = -p-&gt;y[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>];
+<b><a name="163">  163</a></b>         }
+<b><a name="164">  164</a></b> }
+<b><a name="165">  165</a></b> 
+<b><a name="166">  166</a></b> /* Computes r = x + y. Does not tidy or reduce. Any combinations of r, x,
+<b><a name="167">  167</a></b>  * y can point to the same data. Componentwise adds first ECFP_NUMDOUBLES
+<b><a name="168">  168</a></b>  * doubles of x and y and stores the result in r. */
+<b><a name="169">  169</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#169">addShort</a>) (double *r, const double *x, const double *y) {
+<b><a name="170">  170</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="171">  171</a></b> 
+<b><a name="172">  172</a></b>         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="173">  173</a></b>                 *r++ = *x++ + *y++;
+<b><a name="174">  174</a></b>         }
+<b><a name="175">  175</a></b> }
+<b><a name="176">  176</a></b> 
+<b><a name="177">  177</a></b> /* Computes r = x + y. Does not tidy or reduce. Any combinations of r, x,
+<b><a name="178">  178</a></b>  * y can point to the same data. Componentwise adds first
+<b><a name="179">  179</a></b>  * 2*ECFP_NUMDOUBLES doubles of x and y and stores the result in r. */
+<b><a name="180">  180</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#180">addLong</a>) (double *r, const double *x, const double *y) {
+<b><a name="181">  181</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="182">  182</a></b> 
+<b><a name="183">  183</a></b>         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; 2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="184">  184</a></b>                 *r++ = *x++ + *y++;
+<b><a name="185">  185</a></b>         }
+<b><a name="186">  186</a></b> }
+<b><a name="187">  187</a></b> 
+<b><a name="188">  188</a></b> /* Computes r = x - y. Does not tidy or reduce. Any combinations of r, x,
+<b><a name="189">  189</a></b>  * y can point to the same data. Componentwise subtracts first
+<b><a name="190">  190</a></b>  * ECFP_NUMDOUBLES doubles of x and y and stores the result in r. */
+<b><a name="191">  191</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#191">subtractShort</a>) (double *r, const double *x, const double *y) {
+<b><a name="192">  192</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="193">  193</a></b> 
+<b><a name="194">  194</a></b>         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="195">  195</a></b>                 *r++ = *x++ - *y++;
+<b><a name="196">  196</a></b>         }
+<b><a name="197">  197</a></b> }
+<b><a name="198">  198</a></b> 
+<b><a name="199">  199</a></b> /* Computes r = x - y. Does not tidy or reduce. Any combinations of r, x,
+<b><a name="200">  200</a></b>  * y can point to the same data. Componentwise subtracts first
+<b><a name="201">  201</a></b>  * 2*ECFP_NUMDOUBLES doubles of x and y and stores the result in r. */
+<b><a name="202">  202</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#202">subtractLong</a>) (double *r, const double *x, const double *y) {
+<b><a name="203">  203</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="204">  204</a></b> 
+<b><a name="205">  205</a></b>         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; 2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="206">  206</a></b>                 *r++ = *x++ - *y++;
+<b><a name="207">  207</a></b>         }
+<b><a name="208">  208</a></b> }
+<b><a name="209">  209</a></b> 
+<b><a name="210">  210</a></b> /* Computes r = x*y.  Both x and y should be tidied and reduced,
+<b><a name="211">  211</a></b>  * r must be different (point to different memory) than x and y.
+<b><a name="212">  212</a></b>  * Does not tidy or reduce. */
+<b><a name="213">  213</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#213">multiply</a>)(double *r, const double *x, const double *y) {
+<b><a name="214">  214</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>, j;
+<b><a name="215">  215</a></b> 
+<b><a name="216">  216</a></b>         for(j=0;j&lt;<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-1;j++) {
+<b><a name="217">  217</a></b>                 r[j] = x[0] * y[j];
+<b><a name="218">  218</a></b>                 r[j+(<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-1)] = x[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-1] * y[j];
+<b><a name="219">  219</a></b>         }
+<b><a name="220">  220</a></b>         r[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-1] = x[0] * y[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-1];
+<b><a name="221">  221</a></b>         r[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-1] += x[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-1] * y[0];
+<b><a name="222">  222</a></b>         r[2*<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-2] = x[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-1] * y[<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-1];
+<b><a name="223">  223</a></b>         r[2*<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-1] = 0;
+<b><a name="224">  224</a></b>         
+<b><a name="225">  225</a></b>         for(<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>=1;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>-1;<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="226">  226</a></b>                 for(j=0;j&lt;<a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>;j++) {
+<b><a name="227">  227</a></b>                         r[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>+j] += (x[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>] * y[j]);
+<b><a name="228">  228</a></b>                 }
+<b><a name="229">  229</a></b>         }
+<b><a name="230">  230</a></b> }
+<b><a name="231">  231</a></b> 
+<b><a name="232">  232</a></b> /* Computes the square of x and stores the result in r.  x should be
+<b><a name="233">  233</a></b>  * tidied &amp; reduced, r will be neither tidied nor reduced. 
+<b><a name="234">  234</a></b>  * r should point to different memory than x */
+<b><a name="235">  235</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#235">square</a>) (double *r, const double *x) {
+<b><a name="236">  236</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (r, x, x);
+<b><a name="237">  237</a></b> }
+<b><a name="238">  238</a></b> 
+<b><a name="239">  239</a></b> /* Perform a point doubling in Jacobian coordinates. Input and output
+<b><a name="240">  240</a></b>  * should be multi-precision floating point integers. */
+<b><a name="241">  241</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#241">pt_dbl_jac</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * dp, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * dr,
+<b><a name="242">  242</a></b>                                                  const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group) {
+<b><a name="243">  243</a></b>         double t0[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], t1[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>],
+<b><a name="244">  244</a></b>                 M[2 * ECFP_NUMDOUBLE<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>], <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>[2 * ECFP_NUMDOUBLE<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>];
+<b><a name="245">  245</a></b> 
+<b><a name="246">  246</a></b>         /* Check for point at infinity */
+<b><a name="247">  247</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_jac">pt_is_inf_jac</a>) (dp) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="248">  248</a></b>                 /* Set r = pt at infinity */
+<b><a name="249">  249</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#set_pt_inf_jac">set_pt_inf_jac</a>) (dr);
+<b><a name="250">  250</a></b>                 goto CLEANUP;
+<b><a name="251">  251</a></b>         }
+<b><a name="252">  252</a></b> 
+<b><a name="253">  253</a></b>         /* Perform typical point doubling operations */
+<b><a name="254">  254</a></b> 
+<b><a name="255">  255</a></b>         /* TODO? is it worthwhile to do optimizations for when pz = 1? */
+<b><a name="256">  256</a></b> 
+<b><a name="257">  257</a></b>         if (group-&gt;aIsM3) {
+<b><a name="258">  258</a></b>                 /* When a = -3, M = 3(px - pz^2)(px + pz^2) */
+<b><a name="259">  259</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t1, dp-&gt;z);
+<b><a name="260">  260</a></b>                 group-&gt;ecfp_reduce(t1, t1, group);        /* 2^23 since the negative
+<b><a name="261">  261</a></b>                                                                                          * rounding buys another bit */
+<b><a name="262">  262</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addShort">addShort</a>) (t0, dp-&gt;x, t1);        /* 2*2^23 */
+<b><a name="263">  263</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t1, dp-&gt;x, t1);        /* 2 * 2^23 */
+<b><a name="264">  264</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (M, t0, t1);        /* 40 * 2^46 */
+<b><a name="265">  265</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (t0, M, M);        /* 80 * 2^46 */
+<b><a name="266">  266</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (M, t0, M);        /* 120 * 2^46 &lt; 2^53 */
+<b><a name="267">  267</a></b>                 group-&gt;ecfp_reduce(M, M, group);
+<b><a name="268">  268</a></b>         } else {
+<b><a name="269">  269</a></b>                 /* Generic case */
+<b><a name="270">  270</a></b>                 /* M = 3 (px^2) + a*(pz^4) */
+<b><a name="271">  271</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, dp-&gt;x);
+<b><a name="272">  272</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (M, t0, t0);
+<b><a name="273">  273</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (t0, t0, M);        /* t0 = 3(px^2) */
+<b><a name="274">  274</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (M, dp-&gt;z);
+<b><a name="275">  275</a></b>                 group-&gt;ecfp_reduce(M, M, group);
+<b><a name="276">  276</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t1, M);
+<b><a name="277">  277</a></b>                 group-&gt;ecfp_reduce(t1, t1, group);
+<b><a name="278">  278</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (M, t1, group-&gt;curvea);        /* M = a(pz^4) */
+<b><a name="279">  279</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (M, M, t0);
+<b><a name="280">  280</a></b>                 group-&gt;ecfp_reduce(M, M, group);
+<b><a name="281">  281</a></b>         }
+<b><a name="282">  282</a></b> 
+<b><a name="283">  283</a></b>         /* rz = 2 * py * pz */
+<b><a name="284">  284</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, dp-&gt;y, dp-&gt;z);
+<b><a name="285">  285</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (t1, t1, t1);
+<b><a name="286">  286</a></b>         group-&gt;ecfp_reduce(dr-&gt;z, t1, group);
+<b><a name="287">  287</a></b> 
+<b><a name="288">  288</a></b>         /* t0 = 2y^2 */
+<b><a name="289">  289</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, dp-&gt;y);
+<b><a name="290">  290</a></b>         group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="291">  291</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addShort">addShort</a>) (t0, t0, t0);
+<b><a name="292">  292</a></b> 
+<b><a name="293">  293</a></b>         /* S = 4 * px * py^2 = 2 * px * t0 */
+<b><a name="294">  294</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, dp-&gt;x, t0);
+<b><a name="295">  295</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="296">  296</a></b>         group-&gt;ecfp_reduce(<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, group);
+<b><a name="297">  297</a></b> 
+<b><a name="298">  298</a></b>         /* rx = M^2 - 2 * S */
+<b><a name="299">  299</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t1, M);
+<b><a name="300">  300</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (t1, t1, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="301">  301</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (t1, t1, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="302">  302</a></b>         group-&gt;ecfp_reduce(dr-&gt;x, t1, group);
+<b><a name="303">  303</a></b> 
+<b><a name="304">  304</a></b>         /* ry = M * (S - rx) - 8 * py^4 */
+<b><a name="305">  305</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t1, t0);        /* t1 = 4y^4 */
+<b><a name="306">  306</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, dr-&gt;x);
+<b><a name="307">  307</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, M, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="308">  308</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractLong">subtractLong</a>) (t0, t0, t1);
+<b><a name="309">  309</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractLong">subtractLong</a>) (t0, t0, t1);
+<b><a name="310">  310</a></b>         group-&gt;ecfp_reduce(dr-&gt;y, t0, group);
+<b><a name="311">  311</a></b> 
+<b><a name="312">  312</a></b>   CLEANUP:
+<b><a name="313">  313</a></b>         return;
+<b><a name="314">  314</a></b> }
+<b><a name="315">  315</a></b> 
+<b><a name="316">  316</a></b> /* Perform a point addition using coordinate system Jacobian + Affine -&gt;
+<b><a name="317">  317</a></b>  * Jacobian. Input and output should be multi-precision floating point
+<b><a name="318">  318</a></b>  * integers. */
+<b><a name="319">  319</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#319">pt_add_jac_aff</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * p, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_aff_pt">ecfp_aff_pt</a> * q,
+<b><a name="320">  320</a></b>                                                          <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * r, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group) {
+<b><a name="321">  321</a></b>         /* Temporary storage */
+<b><a name="322">  322</a></b>         double <a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>[2 * ECFP_NUMDOU<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>LES], <a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>[2 * ECFP_NUMDOU<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>LES],
+<b><a name="323">  323</a></b>                 C[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], C2[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>],
+<b><a name="324">  324</a></b>                 D[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], C3[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>];
+<b><a name="325">  325</a></b> 
+<b><a name="326">  326</a></b>         /* Check for point at infinity for p or q */
+<b><a name="327">  327</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_aff">pt_is_inf_aff</a>) (q) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="328">  328</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;x, p-&gt;x);
+<b><a name="329">  329</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;y, p-&gt;y);
+<b><a name="330">  330</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z, p-&gt;z);
+<b><a name="331">  331</a></b>                 goto CLEANUP;
+<b><a name="332">  332</a></b>         } else if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_jac">pt_is_inf_jac</a>) (p) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="333">  333</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;x, q-&gt;x);
+<b><a name="334">  334</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;y, q-&gt;y);
+<b><a name="335">  335</a></b>                 /* Since the affine point is not infinity, we can set r-&gt;z = 1 */
+<b><a name="336">  336</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#one">one</a>) (r-&gt;z);
+<b><a name="337">  337</a></b>                 goto CLEANUP;
+<b><a name="338">  338</a></b>         }
+<b><a name="339">  339</a></b> 
+<b><a name="340">  340</a></b>         /* Calculates c = qx * pz^2 - px d = (qy * b - py) rx = d^2 - c^3 + 2
+<b><a name="341">  341</a></b>          * (px * c^2) ry = d * (c-rx) - py*c^3 rz = c * pz */
+<b><a name="342">  342</a></b> 
+<b><a name="343">  343</a></b>         /* A = pz^2, B = pz^3 */
+<b><a name="344">  344</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, p-&gt;z);
+<b><a name="345">  345</a></b>         group-&gt;ecfp_reduce(<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, <a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, group);
+<b><a name="346">  346</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, <a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, p-&gt;z);
+<b><a name="347">  347</a></b>         group-&gt;ecfp_reduce(<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, <a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, group);
+<b><a name="348">  348</a></b> 
+<b><a name="349">  349</a></b>         /* C = qx * A - px */
+<b><a name="350">  350</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (C, q-&gt;x, <a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>);
+<b><a name="351">  351</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (C, C, p-&gt;x);
+<b><a name="352">  352</a></b>         group-&gt;ecfp_reduce(C, C, group);
+<b><a name="353">  353</a></b> 
+<b><a name="354">  354</a></b>         /* D = qy * B - py */
+<b><a name="355">  355</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (D, q-&gt;y, <a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>);
+<b><a name="356">  356</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (D, D, p-&gt;y);
+<b><a name="357">  357</a></b>         group-&gt;ecfp_reduce(D, D, group);
+<b><a name="358">  358</a></b> 
+<b><a name="359">  359</a></b>         /* C2 = C^2, C3 = C^3 */
+<b><a name="360">  360</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (C2, C);
+<b><a name="361">  361</a></b>         group-&gt;ecfp_reduce(C2, C2, group);
+<b><a name="362">  362</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (C3, C2, C);
+<b><a name="363">  363</a></b>         group-&gt;ecfp_reduce(C3, C3, group);
+<b><a name="364">  364</a></b> 
+<b><a name="365">  365</a></b>         /* rz = A = pz * C */
+<b><a name="366">  366</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, p-&gt;z, C);
+<b><a name="367">  367</a></b>         group-&gt;ecfp_reduce(r-&gt;z, <a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, group);
+<b><a name="368">  368</a></b> 
+<b><a name="369">  369</a></b>         /* C = px * C^2, untidied, unreduced */
+<b><a name="370">  370</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (C, p-&gt;x, C2);
+<b><a name="371">  371</a></b> 
+<b><a name="372">  372</a></b>         /* A = D^2, untidied, unreduced */
+<b><a name="373">  373</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, D);
+<b><a name="374">  374</a></b> 
+<b><a name="375">  375</a></b>         /* rx = B = A - C3 - C - C = D^2 - (C^3 + 2 * (px * C^2) */
+<b><a name="376">  376</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, <a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, C3);
+<b><a name="377">  377</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractLong">subtractLong</a>) (<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, <a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, C);
+<b><a name="378">  378</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractLong">subtractLong</a>) (<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, <a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, C);
+<b><a name="379">  379</a></b>         group-&gt;ecfp_reduce(r-&gt;x, <a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, group);
+<b><a name="380">  380</a></b> 
+<b><a name="381">  381</a></b>         /* B = py * C3, untidied, unreduced */
+<b><a name="382">  382</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, p-&gt;y, C3);
+<b><a name="383">  383</a></b> 
+<b><a name="384">  384</a></b>         /* C = px * C^2 - rx */
+<b><a name="385">  385</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (C, C, r-&gt;x);
+<b><a name="386">  386</a></b>         group-&gt;ecfp_reduce(C, C, group);
+<b><a name="387">  387</a></b> 
+<b><a name="388">  388</a></b>         /* ry = A = D * C - py * C^3 */
+<b><a name="389">  389</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, D, C);
+<b><a name="390">  390</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractLong">subtractLong</a>) (<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, <a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, <a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>);
+<b><a name="391">  391</a></b>         group-&gt;ecfp_reduce(r-&gt;y, <a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, group);
+<b><a name="392">  392</a></b> 
+<b><a name="393">  393</a></b>   CLEANUP:
+<b><a name="394">  394</a></b>         return;
+<b><a name="395">  395</a></b> }
+<b><a name="396">  396</a></b> 
+<b><a name="397">  397</a></b> /* Perform a point addition using Jacobian coordinate system. Input and
+<b><a name="398">  398</a></b>  * output should be multi-precision floating point integers. */
+<b><a name="399">  399</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#399">pt_add_jac</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * p, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * q,
+<b><a name="400">  400</a></b>                                                  <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * r, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group) {
+<b><a name="401">  401</a></b> 
+<b><a name="402">  402</a></b>         /* Temporary Storage */
+<b><a name="403">  403</a></b>         double t0[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], t1[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>],
+<b><a name="404">  404</a></b>                 U[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], R[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>],
+<b><a name="405">  405</a></b>                 <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>[2 * ECFP_NUMDOUBLE<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>], <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2 * ECFP_NUMDOUBLE<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>],
+<b><a name="406">  406</a></b>                 H3[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>];
+<b><a name="407">  407</a></b> 
+<b><a name="408">  408</a></b>         /* Check for point at infinity for p, if so set r = q */
+<b><a name="409">  409</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_jac">pt_is_inf_jac</a>) (p) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="410">  410</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;x, q-&gt;x);
+<b><a name="411">  411</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;y, q-&gt;y);
+<b><a name="412">  412</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z, q-&gt;z);
+<b><a name="413">  413</a></b>                 goto CLEANUP;
+<b><a name="414">  414</a></b>         }
+<b><a name="415">  415</a></b> 
+<b><a name="416">  416</a></b>         /* Check for point at infinity for p, if so set r = q */
+<b><a name="417">  417</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_jac">pt_is_inf_jac</a>) (q) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="418">  418</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;x, p-&gt;x);
+<b><a name="419">  419</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;y, p-&gt;y);
+<b><a name="420">  420</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z, p-&gt;z);
+<b><a name="421">  421</a></b>                 goto CLEANUP;
+<b><a name="422">  422</a></b>         }
+<b><a name="423">  423</a></b> 
+<b><a name="424">  424</a></b>         /* U = px * qz^2 , S = py * qz^3 */
+<b><a name="425">  425</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, q-&gt;z);
+<b><a name="426">  426</a></b>         group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="427">  427</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (U, p-&gt;x, t0);
+<b><a name="428">  428</a></b>         group-&gt;ecfp_reduce(U, U, group);
+<b><a name="429">  429</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, t0, q-&gt;z);
+<b><a name="430">  430</a></b>         group-&gt;ecfp_reduce(t1, t1, group);
+<b><a name="431">  431</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, p-&gt;y, t1);
+<b><a name="432">  432</a></b>         group-&gt;ecfp_reduce(<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, t0, group);
+<b><a name="433">  433</a></b> 
+<b><a name="434">  434</a></b>         /* H = qx*(pz)^2 - U , R = (qy * pz^3 - S) */
+<b><a name="435">  435</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, p-&gt;z);
+<b><a name="436">  436</a></b>         group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="437">  437</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, q-&gt;x, t0);
+<b><a name="438">  438</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, U);
+<b><a name="439">  439</a></b>         group-&gt;ecfp_reduce(<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, group);
+<b><a name="440">  440</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, t0, p-&gt;z);        /* t1 = pz^3 */
+<b><a name="441">  441</a></b>         group-&gt;ecfp_reduce(t1, t1, group);
+<b><a name="442">  442</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, t1, q-&gt;y);        /* t0 = qy * pz^3 */
+<b><a name="443">  443</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (t0, t0, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="444">  444</a></b>         group-&gt;ecfp_reduce(R, t0, group);
+<b><a name="445">  445</a></b> 
+<b><a name="446">  446</a></b>         /* U = U*H^2, H3 = H^3 */
+<b><a name="447">  447</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>);
+<b><a name="448">  448</a></b>         group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="449">  449</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, U, t0);
+<b><a name="450">  450</a></b>         group-&gt;ecfp_reduce(U, t1, group);
+<b><a name="451">  451</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>3, t0, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>);
+<b><a name="452">  452</a></b>         group-&gt;ecfp_reduce(H3, H3, group);
+<b><a name="453">  453</a></b> 
+<b><a name="454">  454</a></b>         /* rz = pz * qz * H */
+<b><a name="455">  455</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, q-&gt;z, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>);
+<b><a name="456">  456</a></b>         group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="457">  457</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, t0, p-&gt;z);
+<b><a name="458">  458</a></b>         group-&gt;ecfp_reduce(r-&gt;z, t1, group);
+<b><a name="459">  459</a></b> 
+<b><a name="460">  460</a></b>         /* rx = R^2 - H^3 - 2 * U */
+<b><a name="461">  461</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, R);
+<b><a name="462">  462</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t0, t0, H3);
+<b><a name="463">  463</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t0, t0, U);
+<b><a name="464">  464</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t0, t0, U);
+<b><a name="465">  465</a></b>         group-&gt;ecfp_reduce(r-&gt;x, t0, group);
+<b><a name="466">  466</a></b> 
+<b><a name="467">  467</a></b>         /* ry = R(U - rx) - S*H3 */
+<b><a name="468">  468</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t1, U, r-&gt;x);
+<b><a name="469">  469</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, t1, R);
+<b><a name="470">  470</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, H3);
+<b><a name="471">  471</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractLong">subtractLong</a>) (t1, t0, t1);
+<b><a name="472">  472</a></b>         group-&gt;ecfp_reduce(r-&gt;y, t1, group);
+<b><a name="473">  473</a></b> 
+<b><a name="474">  474</a></b>   CLEANUP:
+<b><a name="475">  475</a></b>         return;
+<b><a name="476">  476</a></b> }
+<b><a name="477">  477</a></b> 
+<b><a name="478">  478</a></b> /* Perform a point doubling in Modified Jacobian coordinates. Input and
+<b><a name="479">  479</a></b>  * output should be multi-precision floating point integers. */
+<b><a name="480">  480</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#480">pt_dbl_jm</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jm_pt">ecfp_jm_pt</a> * p, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jm_pt">ecfp_jm_pt</a> * r,
+<b><a name="481">  481</a></b>                                                 const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group) {
+<b><a name="482">  482</a></b> 
+<b><a name="483">  483</a></b>         /* Temporary storage */
+<b><a name="484">  484</a></b>         double t0[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], t1[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>],
+<b><a name="485">  485</a></b>                 M[2 * ECFP_NUMDOUBLE<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>], <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>[2 * ECFP_NUMDOUBLE<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>],
+<b><a name="486">  486</a></b>                 U[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], T[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>];
+<b><a name="487">  487</a></b> 
+<b><a name="488">  488</a></b>         /* Check for point at infinity */
+<b><a name="489">  489</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_jm">pt_is_inf_jm</a>) (p) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="490">  490</a></b>                 /* Set r = pt at infinity by setting rz = 0 */
+<b><a name="491">  491</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#set_pt_inf_jm">set_pt_inf_jm</a>) (r);
+<b><a name="492">  492</a></b>                 goto CLEANUP;
+<b><a name="493">  493</a></b>         }
+<b><a name="494">  494</a></b> 
+<b><a name="495">  495</a></b>         /* M = 3 (px^2) + a*(pz^4) */
+<b><a name="496">  496</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, p-&gt;x);
+<b><a name="497">  497</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (M, t0, t0);
+<b><a name="498">  498</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (t0, t0, M);        /* t0 = 3(px^2) */
+<b><a name="499">  499</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addShort">addShort</a>) (t0, t0, p-&gt;az4);
+<b><a name="500">  500</a></b>         group-&gt;ecfp_reduce(M, t0, group);
+<b><a name="501">  501</a></b> 
+<b><a name="502">  502</a></b>         /* rz = 2 * py * pz */
+<b><a name="503">  503</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, p-&gt;y, p-&gt;z);
+<b><a name="504">  504</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (t1, t1, t1);
+<b><a name="505">  505</a></b>         group-&gt;ecfp_reduce(r-&gt;z, t1, group);
+<b><a name="506">  506</a></b> 
+<b><a name="507">  507</a></b>         /* t0 = 2y^2, U = 8y^4 */
+<b><a name="508">  508</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, p-&gt;y);
+<b><a name="509">  509</a></b>         group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="510">  510</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addShort">addShort</a>) (t0, t0, t0);
+<b><a name="511">  511</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (U, t0);
+<b><a name="512">  512</a></b>         group-&gt;ecfp_reduce(U, U, group);
+<b><a name="513">  513</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addShort">addShort</a>) (U, U, U);
+<b><a name="514">  514</a></b> 
+<b><a name="515">  515</a></b>         /* S = 4 * px * py^2 = 2 * px * t0 */
+<b><a name="516">  516</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, p-&gt;x, t0);
+<b><a name="517">  517</a></b>         group-&gt;ecfp_reduce(<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, group);
+<b><a name="518">  518</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#add<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort">add<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort</a>) (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="519">  519</a></b> 
+<b><a name="520">  520</a></b>         /* rx = M^2 - 2S */
+<b><a name="521">  521</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (T, M);
+<b><a name="522">  522</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (T, T, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="523">  523</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (T, T, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="524">  524</a></b>         group-&gt;ecfp_reduce(r-&gt;x, T, group);
+<b><a name="525">  525</a></b> 
+<b><a name="526">  526</a></b>         /* ry = M * (S - rx) - U */
+<b><a name="527">  527</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, r-&gt;x);
+<b><a name="528">  528</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, M, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="529">  529</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t0, t0, U);
+<b><a name="530">  530</a></b>         group-&gt;ecfp_reduce(r-&gt;y, t0, group);
+<b><a name="531">  531</a></b> 
+<b><a name="532">  532</a></b>         /* ra*z^4 = 2*U*(apz4) */
+<b><a name="533">  533</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, U, p-&gt;az4);
+<b><a name="534">  534</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (t1, t1, t1);
+<b><a name="535">  535</a></b>         group-&gt;ecfp_reduce(r-&gt;az4, t1, group);
+<b><a name="536">  536</a></b> 
+<b><a name="537">  537</a></b>   CLEANUP:
+<b><a name="538">  538</a></b>         return;
+<b><a name="539">  539</a></b> }
+<b><a name="540">  540</a></b> 
+<b><a name="541">  541</a></b> /* Perform a point doubling using coordinates Affine -&gt; Chudnovsky
+<b><a name="542">  542</a></b>  * Jacobian. Input and output should be multi-precision floating point
+<b><a name="543">  543</a></b>  * integers. */
+<b><a name="544">  544</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#544">pt_dbl_aff2chud</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_aff_pt">ecfp_aff_pt</a> * p, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * r,
+<b><a name="545">  545</a></b>                                                           const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group) {
+<b><a name="546">  546</a></b>         double t0[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], t1[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>],
+<b><a name="547">  547</a></b>                 M[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], twoY2[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>],
+<b><a name="548">  548</a></b>                 <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>[2 * ECFP_NUMDOUBLE<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>];
+<b><a name="549">  549</a></b> 
+<b><a name="550">  550</a></b>         /* Check for point at infinity for p, if so set r = O */
+<b><a name="551">  551</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_aff">pt_is_inf_aff</a>) (p) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="552">  552</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#set_pt_inf_chud">set_pt_inf_chud</a>) (r);
+<b><a name="553">  553</a></b>                 goto CLEANUP;
+<b><a name="554">  554</a></b>         }
+<b><a name="555">  555</a></b> 
+<b><a name="556">  556</a></b>         /* M = 3(px)^2 + a */
+<b><a name="557">  557</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, p-&gt;x);
+<b><a name="558">  558</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (t1, t0, t0);
+<b><a name="559">  559</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (t1, t1, t0);
+<b><a name="560">  560</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addShort">addShort</a>) (t1, t1, group-&gt;curvea);
+<b><a name="561">  561</a></b>         group-&gt;ecfp_reduce(M, t1, group);
+<b><a name="562">  562</a></b> 
+<b><a name="563">  563</a></b>         /* twoY2 = 2*(py)^2, S = 4(px)(py)^2 */
+<b><a name="564">  564</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (twoY2, p-&gt;y);
+<b><a name="565">  565</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (twoY2, twoY2, twoY2);
+<b><a name="566">  566</a></b>         group-&gt;ecfp_reduce(twoY2, twoY2, group);
+<b><a name="567">  567</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, p-&gt;x, twoY2);
+<b><a name="568">  568</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="569">  569</a></b>         group-&gt;ecfp_reduce(<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, group);
+<b><a name="570">  570</a></b> 
+<b><a name="571">  571</a></b>         /* rx = M^2 - 2S */
+<b><a name="572">  572</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, M);
+<b><a name="573">  573</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (t0, t0, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="574">  574</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (t0, t0, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="575">  575</a></b>         group-&gt;ecfp_reduce(r-&gt;x, t0, group);
+<b><a name="576">  576</a></b> 
+<b><a name="577">  577</a></b>         /* ry = M(S-rx) - 8y^4 */
+<b><a name="578">  578</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (t0, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, r-&gt;x);
+<b><a name="579">  579</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, t0, M);
+<b><a name="580">  580</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, twoY2);
+<b><a name="581">  581</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractLong">subtractLong</a>) (t1, t1, t0);
+<b><a name="582">  582</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractLong">subtractLong</a>) (t1, t1, t0);
+<b><a name="583">  583</a></b>         group-&gt;ecfp_reduce(r-&gt;y, t1, group);
+<b><a name="584">  584</a></b> 
+<b><a name="585">  585</a></b>         /* rz = 2py */
+<b><a name="586">  586</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addShort">addShort</a>) (r-&gt;z, p-&gt;y, p-&gt;y);
+<b><a name="587">  587</a></b> 
+<b><a name="588">  588</a></b>         /* rz2 = rz^2 */
+<b><a name="589">  589</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, r-&gt;z);
+<b><a name="590">  590</a></b>         group-&gt;ecfp_reduce(r-&gt;z2, t0, group);
+<b><a name="591">  591</a></b> 
+<b><a name="592">  592</a></b>         /* rz3 = rz^3 */
+<b><a name="593">  593</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, r-&gt;z, r-&gt;z2);
+<b><a name="594">  594</a></b>         group-&gt;ecfp_reduce(r-&gt;z3, t0, group);
+<b><a name="595">  595</a></b> 
+<b><a name="596">  596</a></b>   CLEANUP:
+<b><a name="597">  597</a></b>         return;
+<b><a name="598">  598</a></b> }
+<b><a name="599">  599</a></b> 
+<b><a name="600">  600</a></b> /* Perform a point addition using coordinates: Modified Jacobian +
+<b><a name="601">  601</a></b>  * Chudnovsky Jacobian -&gt; Modified Jacobian. Input and output should be
+<b><a name="602">  602</a></b>  * multi-precision floating point integers. */
+<b><a name="603">  603</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#603">pt_add_jm_chud</a>) (<a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jm_pt">ecfp_jm_pt</a> * p, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * q,
+<b><a name="604">  604</a></b>                                                          <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jm_pt">ecfp_jm_pt</a> * r, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group) {
+<b><a name="605">  605</a></b> 
+<b><a name="606">  606</a></b>         double t0[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], t1[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>],
+<b><a name="607">  607</a></b>                 U[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], R[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>],
+<b><a name="608">  608</a></b>                 <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>[2 * ECFP_NUMDOUBLE<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>], <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2 * ECFP_NUMDOUBLE<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>],
+<b><a name="609">  609</a></b>                 H3[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], pz2[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>];
+<b><a name="610">  610</a></b> 
+<b><a name="611">  611</a></b>         /* Check for point at infinity for p, if so set r = q need to convert
+<b><a name="612">  612</a></b>          * from Chudnovsky form to Modified Jacobian form */
+<b><a name="613">  613</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_jm">pt_is_inf_jm</a>) (p) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="614">  614</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;x, q-&gt;x);
+<b><a name="615">  615</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;y, q-&gt;y);
+<b><a name="616">  616</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z, q-&gt;z);
+<b><a name="617">  617</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, q-&gt;z2);
+<b><a name="618">  618</a></b>                 group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="619">  619</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, t0, group-&gt;curvea);
+<b><a name="620">  620</a></b>                 group-&gt;ecfp_reduce(r-&gt;az4, t1, group);
+<b><a name="621">  621</a></b>                 goto CLEANUP;
+<b><a name="622">  622</a></b>         }
+<b><a name="623">  623</a></b>         /* Check for point at infinity for q, if so set r = p */
+<b><a name="624">  624</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_chud">pt_is_inf_chud</a>) (q) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="625">  625</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;x, p-&gt;x);
+<b><a name="626">  626</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;y, p-&gt;y);
+<b><a name="627">  627</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z, p-&gt;z);
+<b><a name="628">  628</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;az4, p-&gt;az4);
+<b><a name="629">  629</a></b>                 goto CLEANUP;
+<b><a name="630">  630</a></b>         }
+<b><a name="631">  631</a></b> 
+<b><a name="632">  632</a></b>         /* U = px * qz^2 */
+<b><a name="633">  633</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (U, p-&gt;x, q-&gt;z2);
+<b><a name="634">  634</a></b>         group-&gt;ecfp_reduce(U, U, group);
+<b><a name="635">  635</a></b> 
+<b><a name="636">  636</a></b>         /* H = qx*(pz)^2 - U */
+<b><a name="637">  637</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, p-&gt;z);
+<b><a name="638">  638</a></b>         group-&gt;ecfp_reduce(pz2, t0, group);
+<b><a name="639">  639</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, pz2, q-&gt;x);
+<b><a name="640">  640</a></b>         group-&gt;ecfp_reduce(<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, group);
+<b><a name="641">  641</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, U);
+<b><a name="642">  642</a></b> 
+<b><a name="643">  643</a></b>         /* U = U*H^2, H3 = H^3 */
+<b><a name="644">  644</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>);
+<b><a name="645">  645</a></b>         group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="646">  646</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, U, t0);
+<b><a name="647">  647</a></b>         group-&gt;ecfp_reduce(U, t1, group);
+<b><a name="648">  648</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>3, t0, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>);
+<b><a name="649">  649</a></b>         group-&gt;ecfp_reduce(H3, H3, group);
+<b><a name="650">  650</a></b> 
+<b><a name="651">  651</a></b>         /* S = py * qz^3 */
+<b><a name="652">  652</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, p-&gt;y, q-&gt;z3);
+<b><a name="653">  653</a></b>         group-&gt;ecfp_reduce(<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, group);
+<b><a name="654">  654</a></b> 
+<b><a name="655">  655</a></b>         /* R = (qy * z1^3 - s) */
+<b><a name="656">  656</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, pz2, p-&gt;z);
+<b><a name="657">  657</a></b>         group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="658">  658</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (R, t0, q-&gt;y);
+<b><a name="659">  659</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (R, R, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="660">  660</a></b>         group-&gt;ecfp_reduce(R, R, group);
+<b><a name="661">  661</a></b> 
+<b><a name="662">  662</a></b>         /* rz = pz * qz * H */
+<b><a name="663">  663</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, q-&gt;z, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>);
+<b><a name="664">  664</a></b>         group-&gt;ecfp_reduce(t1, t1, group);
+<b><a name="665">  665</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, p-&gt;z, t1);
+<b><a name="666">  666</a></b>         group-&gt;ecfp_reduce(r-&gt;z, t0, group);
+<b><a name="667">  667</a></b> 
+<b><a name="668">  668</a></b>         /* rx = R^2 - H^3 - 2 * U */
+<b><a name="669">  669</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, R);
+<b><a name="670">  670</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t0, t0, H3);
+<b><a name="671">  671</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t0, t0, U);
+<b><a name="672">  672</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t0, t0, U);
+<b><a name="673">  673</a></b>         group-&gt;ecfp_reduce(r-&gt;x, t0, group);
+<b><a name="674">  674</a></b> 
+<b><a name="675">  675</a></b>         /* ry = R(U - rx) - S*H3 */
+<b><a name="676">  676</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t1, U, r-&gt;x);
+<b><a name="677">  677</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, t1, R);
+<b><a name="678">  678</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, H3);
+<b><a name="679">  679</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractLong">subtractLong</a>) (t1, t0, t1);
+<b><a name="680">  680</a></b>         group-&gt;ecfp_reduce(r-&gt;y, t1, group);
+<b><a name="681">  681</a></b> 
+<b><a name="682">  682</a></b>         if (group-&gt;aIsM3) {                        /* a == -3 */
+<b><a name="683">  683</a></b>                 /* a(rz^4) = -3 * ((rz^2)^2) */
+<b><a name="684">  684</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, r-&gt;z);
+<b><a name="685">  685</a></b>                 group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="686">  686</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t1, t0);
+<b><a name="687">  687</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (t0, t1, t1);
+<b><a name="688">  688</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#addLong">addLong</a>) (t0, t0, t1);
+<b><a name="689">  689</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#negLong">negLong</a>) (t0, t0);
+<b><a name="690">  690</a></b>                 group-&gt;ecfp_reduce(r-&gt;az4, t0, group);
+<b><a name="691">  691</a></b>         } else {                                        /* Generic case */
+<b><a name="692">  692</a></b>                 /* a(rz^4) = a * ((rz^2)^2) */
+<b><a name="693">  693</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, r-&gt;z);
+<b><a name="694">  694</a></b>                 group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="695">  695</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t1, t0);
+<b><a name="696">  696</a></b>                 group-&gt;ecfp_reduce(t1, t1, group);
+<b><a name="697">  697</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, group-&gt;curvea, t1);
+<b><a name="698">  698</a></b>                 group-&gt;ecfp_reduce(r-&gt;az4, t0, group);
+<b><a name="699">  699</a></b>         }
+<b><a name="700">  700</a></b>   CLEANUP:
+<b><a name="701">  701</a></b>         return;
+<b><a name="702">  702</a></b> }
+<b><a name="703">  703</a></b> 
+<b><a name="704">  704</a></b> /* Perform a point addition using Chudnovsky Jacobian coordinates. Input
+<b><a name="705">  705</a></b>  * and output should be multi-precision floating point integers. */
+<b><a name="706">  706</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#706">pt_add_chud</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * p, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * q,
+<b><a name="707">  707</a></b>                                                   <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * r, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group) {
+<b><a name="708">  708</a></b> 
+<b><a name="709">  709</a></b>         /* Temporary Storage */
+<b><a name="710">  710</a></b>         double t0[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], t1[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>],
+<b><a name="711">  711</a></b>                 U[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>], R[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>],
+<b><a name="712">  712</a></b>                 <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>[2 * ECFP_NUMDOUBLE<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>], <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2 * ECFP_NUMDOUBLE<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>],
+<b><a name="713">  713</a></b>                 H3[2 * <a href="../../freebl/ecl/ecp_fp160.c.dep.html#ECFP_NUMDOUBLES">ECFP_NUMDOUBLES</a><a href="../../freebl/ecl/ecp_fp192.c.dep.html#ECFP_NUMDOUBLES"><sup>[1]</sup></a><a href="../../freebl/ecl/ecp_fp224.c.dep.html#ECFP_NUMDOUBLES"><sup>[2]</sup></a>];
+<b><a name="714">  714</a></b> 
+<b><a name="715">  715</a></b>         /* Check for point at infinity for p, if so set r = q */
+<b><a name="716">  716</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_chud">pt_is_inf_chud</a>) (p) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="717">  717</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;x, q-&gt;x);
+<b><a name="718">  718</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;y, q-&gt;y);
+<b><a name="719">  719</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z, q-&gt;z);
+<b><a name="720">  720</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z2, q-&gt;z2);
+<b><a name="721">  721</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z3, q-&gt;z3);
+<b><a name="722">  722</a></b>                 goto CLEANUP;
+<b><a name="723">  723</a></b>         }
+<b><a name="724">  724</a></b> 
+<b><a name="725">  725</a></b>         /* Check for point at infinity for p, if so set r = q */
+<b><a name="726">  726</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_chud">pt_is_inf_chud</a>) (q) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="727">  727</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;x, p-&gt;x);
+<b><a name="728">  728</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;y, p-&gt;y);
+<b><a name="729">  729</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z, p-&gt;z);
+<b><a name="730">  730</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z2, p-&gt;z2);
+<b><a name="731">  731</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (r-&gt;z3, p-&gt;z3);
+<b><a name="732">  732</a></b>                 goto CLEANUP;
+<b><a name="733">  733</a></b>         }
+<b><a name="734">  734</a></b> 
+<b><a name="735">  735</a></b>         /* U = px * qz^2 */
+<b><a name="736">  736</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (U, p-&gt;x, q-&gt;z2);
+<b><a name="737">  737</a></b>         group-&gt;ecfp_reduce(U, U, group);
+<b><a name="738">  738</a></b> 
+<b><a name="739">  739</a></b>         /* H = qx*(pz)^2 - U */
+<b><a name="740">  740</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, q-&gt;x, p-&gt;z2);
+<b><a name="741">  741</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, U);
+<b><a name="742">  742</a></b>         group-&gt;ecfp_reduce(<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, group);
+<b><a name="743">  743</a></b> 
+<b><a name="744">  744</a></b>         /* U = U*H^2, H3 = H^3 */
+<b><a name="745">  745</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>);
+<b><a name="746">  746</a></b>         group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="747">  747</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, U, t0);
+<b><a name="748">  748</a></b>         group-&gt;ecfp_reduce(U, t1, group);
+<b><a name="749">  749</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>3, t0, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>);
+<b><a name="750">  750</a></b>         group-&gt;ecfp_reduce(H3, H3, group);
+<b><a name="751">  751</a></b> 
+<b><a name="752">  752</a></b>         /* S = py * qz^3 */
+<b><a name="753">  753</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, p-&gt;y, q-&gt;z3);
+<b><a name="754">  754</a></b>         group-&gt;ecfp_reduce(<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, group);
+<b><a name="755">  755</a></b> 
+<b><a name="756">  756</a></b>         /* rz = pz * qz * H */
+<b><a name="757">  757</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, q-&gt;z, <a href="../../freebl/md5.c.dep.html#H">H</a><a href="../../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>);
+<b><a name="758">  758</a></b>         group-&gt;ecfp_reduce(t0, t0, group);
+<b><a name="759">  759</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, t0, p-&gt;z);
+<b><a name="760">  760</a></b>         group-&gt;ecfp_reduce(r-&gt;z, t1, group);
+<b><a name="761">  761</a></b> 
+<b><a name="762">  762</a></b>         /* R = (qy * z1^3 - s) */
+<b><a name="763">  763</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, q-&gt;y, p-&gt;z3);
+<b><a name="764">  764</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(subtract<a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>hort) (t0, t0, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="765">  765</a></b>         group-&gt;ecfp_reduce(R, t0, group);
+<b><a name="766">  766</a></b> 
+<b><a name="767">  767</a></b>         /* rx = R^2 - H^3 - 2 * U */
+<b><a name="768">  768</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, R);
+<b><a name="769">  769</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t0, t0, H3);
+<b><a name="770">  770</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t0, t0, U);
+<b><a name="771">  771</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t0, t0, U);
+<b><a name="772">  772</a></b>         group-&gt;ecfp_reduce(r-&gt;x, t0, group);
+<b><a name="773">  773</a></b> 
+<b><a name="774">  774</a></b>         /* ry = R(U - rx) - S*H3 */
+<b><a name="775">  775</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractShort">subtractShort</a>) (t1, U, r-&gt;x);
+<b><a name="776">  776</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, t1, R);
+<b><a name="777">  777</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t1, <a href="../../freebl/alg2268.c.dep.html#S">S</a><a href="../../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, H3);
+<b><a name="778">  778</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#subtractLong">subtractLong</a>) (t1, t0, t1);
+<b><a name="779">  779</a></b>         group-&gt;ecfp_reduce(r-&gt;y, t1, group);
+<b><a name="780">  780</a></b> 
+<b><a name="781">  781</a></b>         /* rz2 = rz^2 */
+<b><a name="782">  782</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#square">square</a>) (t0, r-&gt;z);
+<b><a name="783">  783</a></b>         group-&gt;ecfp_reduce(r-&gt;z2, t0, group);
+<b><a name="784">  784</a></b> 
+<b><a name="785">  785</a></b>         /* rz3 = rz^3 */
+<b><a name="786">  786</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#multiply">multiply</a>) (t0, r-&gt;z, r-&gt;z2);
+<b><a name="787">  787</a></b>         group-&gt;ecfp_reduce(r-&gt;z3, t0, group);
+<b><a name="788">  788</a></b> 
+<b><a name="789">  789</a></b>   CLEANUP:
+<b><a name="790">  790</a></b>         return;
+<b><a name="791">  791</a></b> }
+<b><a name="792">  792</a></b> 
+<b><a name="793">  793</a></b> /* Expects out to be an array of size 16 of Chudnovsky Jacobian points.
+<b><a name="794">  794</a></b>  * Fills in Chudnovsky Jacobian form (x, y, z, z^2, z^3), for -15P, -13P,
+<b><a name="795">  795</a></b>  * -11P, -9P, -7P, -5P, -3P, -P, P, 3P, 5P, 7P, 9P, 11P, 13P, 15P */
+<b><a name="796">  796</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#796">precompute_chud</a>) (<a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * out, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_aff_pt">ecfp_aff_pt</a> * p,
+<b><a name="797">  797</a></b>                                                           const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group) {
+<b><a name="798">  798</a></b> 
+<b><a name="799">  799</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> p2;
+<b><a name="800">  800</a></b> 
+<b><a name="801">  801</a></b>         /* Set out[8] = P */
+<b><a name="802">  802</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (out[8].x, p-&gt;x);
+<b><a name="803">  803</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (out[8].y, p-&gt;y);
+<b><a name="804">  804</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#one">one</a>) (out[8].z);
+<b><a name="805">  805</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#one">one</a>) (out[8].z2);
+<b><a name="806">  806</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#one">one</a>) (out[8].z3);
+<b><a name="807">  807</a></b> 
+<b><a name="808">  808</a></b>         /* Set p2 = 2P */
+<b><a name="809">  809</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_dbl_aff2chud">pt_dbl_aff2chud</a>) (p, &amp;p2, group);
+<b><a name="810">  810</a></b> 
+<b><a name="811">  811</a></b>         /* Set 3P, 5P, ..., 15P */
+<b><a name="812">  812</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_chud">pt_add_chud</a>) (&amp;out[8], &amp;p2, &amp;out[9], group);
+<b><a name="813">  813</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_chud">pt_add_chud</a>) (&amp;out[9], &amp;p2, &amp;out[10], group);
+<b><a name="814">  814</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_chud">pt_add_chud</a>) (&amp;out[10], &amp;p2, &amp;out[11], group);
+<b><a name="815">  815</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_chud">pt_add_chud</a>) (&amp;out[11], &amp;p2, &amp;out[12], group);
+<b><a name="816">  816</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_chud">pt_add_chud</a>) (&amp;out[12], &amp;p2, &amp;out[13], group);
+<b><a name="817">  817</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_chud">pt_add_chud</a>) (&amp;out[13], &amp;p2, &amp;out[14], group);
+<b><a name="818">  818</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_chud">pt_add_chud</a>) (&amp;out[14], &amp;p2, &amp;out[15], group);
+<b><a name="819">  819</a></b> 
+<b><a name="820">  820</a></b>         /* Set -15P, -13P, ..., -P */
+<b><a name="821">  821</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_neg_chud">pt_neg_chud</a>) (&amp;out[8], &amp;out[7]);
+<b><a name="822">  822</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_neg_chud">pt_neg_chud</a>) (&amp;out[9], &amp;out[6]);
+<b><a name="823">  823</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_neg_chud">pt_neg_chud</a>) (&amp;out[10], &amp;out[5]);
+<b><a name="824">  824</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_neg_chud">pt_neg_chud</a>) (&amp;out[11], &amp;out[4]);
+<b><a name="825">  825</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_neg_chud">pt_neg_chud</a>) (&amp;out[12], &amp;out[3]);
+<b><a name="826">  826</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_neg_chud">pt_neg_chud</a>) (&amp;out[13], &amp;out[2]);
+<b><a name="827">  827</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_neg_chud">pt_neg_chud</a>) (&amp;out[14], &amp;out[1]);
+<b><a name="828">  828</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_neg_chud">pt_neg_chud</a>) (&amp;out[15], &amp;out[0]);
+<b><a name="829">  829</a></b> }
+<b><a name="830">  830</a></b> 
+<b><a name="831">  831</a></b> /* Expects out to be an array of size 16 of Jacobian points. Fills in
+<b><a name="832">  832</a></b>  * Jacobian form (x, y, z), for O, P, 2P, ... 15P */
+<b><a name="833">  833</a></b> void <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="#833">precompute_jac</a>) (<a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * precomp, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_aff_pt">ecfp_aff_pt</a> * p,
+<b><a name="834">  834</a></b>                                                          const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group) {
+<b><a name="835">  835</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="836">  836</a></b> 
+<b><a name="837">  837</a></b>         /* fill precomputation table */
+<b><a name="838">  838</a></b>         /* set precomp[0] */
+<b><a name="839">  839</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#set_pt_inf_jac">set_pt_inf_jac</a>) (&amp;precomp[0]);
+<b><a name="840">  840</a></b>         /* set precomp[1] */
+<b><a name="841">  841</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (precomp[1].x, p-&gt;x);
+<b><a name="842">  842</a></b>         <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(copy) (precomp[1].y, p-&gt;y);
+<b><a name="843">  843</a></b>         if (<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_is_inf_aff">pt_is_inf_aff</a>) (p) == <a href="../../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="844">  844</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>) (precomp[1].z);
+<b><a name="845">  845</a></b>         } else {
+<b><a name="846">  846</a></b>                 <a href="../../freebl/ecl/ecp_fpinc.c.dep.html#PREFIX">PREFIX</a>(<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#one">one</a>) (precomp[1].z);
+<b><a name="847">  847</a></b>         }
+<b><a name="848">  848</a></b>         /* set precomp[2] */
+<b><a name="849">  849</a></b>         group-&gt;<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_dbl_jac">pt_dbl_jac</a>(&amp;precomp[1], &amp;precomp[2], group);
+<b><a name="850">  850</a></b> 
+<b><a name="851">  851</a></b>         /* set rest of precomp */
+<b><a name="852">  852</a></b>         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 3; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; 16; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="853">  853</a></b>                 group-&gt;<a href="../../freebl/ecl/ecp_fp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nc.c.dep.html#pt_add_jac_aff">pt_add_jac_aff</a>(&amp;precomp[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> - 1], p, &amp;precomp[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>], group);
+<b><a name="854">  854</a></b>         }
+<b><a name="855">  855</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

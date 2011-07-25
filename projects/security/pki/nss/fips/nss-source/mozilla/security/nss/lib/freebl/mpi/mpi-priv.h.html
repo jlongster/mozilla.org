@@ -1,0 +1,336 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /*
+<b><a name="2">    2</a></b>  *  mpi-priv.h        - Private header file for MPI 
+<b><a name="3">    3</a></b>  *  Arbitrary precision integer arithmetic library
+<b><a name="4">    4</a></b>  *
+<b><a name="5">    5</a></b>  *  NOTE WELL: the content of this header file is NOT part of the "public"
+<b><a name="6">    6</a></b>  *  API for the MPI library, and may change at any time.  
+<b><a name="7">    7</a></b>  *  Application programs that use libmpi should NOT include this header file.
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="10">   10</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="11">   11</a></b>  *
+<b><a name="12">   12</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="13">   13</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="14">   14</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="15">   15</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="18">   18</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="19">   19</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="20">   20</a></b>  * License.
+<b><a name="21">   21</a></b>  *
+<b><a name="22">   22</a></b>  * The Original Code is the MPI Arbitrary Precision Integer Arithmetic library.
+<b><a name="23">   23</a></b>  *
+<b><a name="24">   24</a></b>  * The Initial Developer of the Original Code is
+<b><a name="25">   25</a></b>  * Michael J. Fromberger.
+<b><a name="26">   26</a></b>  * Portions created by the Initial Developer are Copyright (C) 1998
+<b><a name="27">   27</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="28">   28</a></b>  *
+<b><a name="29">   29</a></b>  * Contributor(s):
+<b><a name="30">   30</a></b>  *   Netscape Communications Corporation
+<b><a name="31">   31</a></b>  *
+<b><a name="32">   32</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="33">   33</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="34">   34</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="35">   35</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="36">   36</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="37">   37</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="38">   38</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="39">   39</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="40">   40</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="41">   41</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="42">   42</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="43">   43</a></b>  *
+<b><a name="44">   44</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="45">   45</a></b> /* $Id$ */
+<b><a name="46">   46</a></b> #ifndef <a href="../../freebl/mpi/mpi-priv.h.dep.html#_MPI_PRIV_H_">_MPI_PRIV_H_</a>
+<b><a name="47">   47</a></b> #define <a href="#47">_MPI_PRIV_H_</a> 1
+<b><a name="48">   48</a></b> 
+<b><a name="49">   49</a></b> #include "mpi.h"
+<b><a name="50">   50</a></b> #include &lt;stdlib.h&gt;
+<b><a name="51">   51</a></b> #include &lt;string.h&gt;
+<b><a name="52">   52</a></b> #include &lt;ctype.h&gt;
+<b><a name="53">   53</a></b> 
+<b><a name="54">   54</a></b> #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_DEBUG">MP_DEBUG</a>
+<b><a name="55">   55</a></b> #include &lt;stdio.h&gt;
+<b><a name="56">   56</a></b> 
+<b><a name="57">   57</a></b> #define <a href="#57">DIAG</a>(T,V) {fprintf(stderr,T);<a href="../../freebl/mpi/mpi.c.dep.html#mp_print">mp_print</a>(V,stderr);fputc('\n',stderr);}
+<b><a name="58">   58</a></b> #else
+<b><a name="59">   59</a></b> #define <a href="#59">DIAG</a>(T,V)
+<b><a name="60">   60</a></b> #endif
+<b><a name="61">   61</a></b> 
+<b><a name="62">   62</a></b> /* If we aren't using a wired-in logarithm table, we need to include
+<b><a name="63">   63</a></b>    the math library to get the log() function
+<b><a name="64">   64</a></b>  */
+<b><a name="65">   65</a></b> 
+<b><a name="66">   66</a></b> /* {{{ s_logv_2[] - log table for 2 in various bases */
+<b><a name="67">   67</a></b> 
+<b><a name="68">   68</a></b> #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_LOGTAB">MP_LOGTAB</a>
+<b><a name="69">   69</a></b> /*
+<b><a name="70">   70</a></b>   A table of the logs of 2 for various bases (the 0 and 1 entries of
+<b><a name="71">   71</a></b>   this table are meaningless and should not be referenced).  
+<b><a name="72">   72</a></b> 
+<b><a name="73">   73</a></b>   This table is used to compute output lengths for the mp_toradix()
+<b><a name="74">   74</a></b>   function.  Since a number n in radix r takes up about log_r(n)
+<b><a name="75">   75</a></b>   digits, we estimate the output size by taking the least integer
+<b><a name="76">   76</a></b>   greater than log_r(n), where:
+<b><a name="77">   77</a></b> 
+<b><a name="78">   78</a></b>   log_r(n) = log_2(n) * log_r(2)
+<b><a name="79">   79</a></b> 
+<b><a name="80">   80</a></b>   This table, therefore, is a table of log_r(2) for 2 &lt;= r &lt;= 36,
+<b><a name="81">   81</a></b>   which are the output bases supported.  
+<b><a name="82">   82</a></b>  */
+<b><a name="83">   83</a></b> 
+<b><a name="84">   84</a></b> extern const float <a href="#84">s_logv_2</a>[];
+<b><a name="85">   85</a></b> #define <a href="#85">LOG_V_2</a>(R)  <a href="../../freebl/mpi/logtab.h.dep.html#s_logv_2">s_logv_2</a><a href="../../freebl/mpi/mpi-priv.h.dep.html#s_logv_2"><sup>[1]</sup></a>[(R)]
+<b><a name="86">   86</a></b> 
+<b><a name="87">   87</a></b> #else
+<b><a name="88">   88</a></b> 
+<b><a name="89">   89</a></b> /* 
+<b><a name="90">   90</a></b>    If MP_LOGTAB is not defined, use the math library to compute the
+<b><a name="91">   91</a></b>    logarithms on the fly.  Otherwise, use the table.
+<b><a name="92">   92</a></b>    Pick which works best for your system.
+<b><a name="93">   93</a></b>  */
+<b><a name="94">   94</a></b> 
+<b><a name="95">   95</a></b> #include &lt;math.h&gt;
+<b><a name="96">   96</a></b> #define <a href="#96">LOG_V_2</a>(R)  (log(2.0)/log(R))
+<b><a name="97">   97</a></b> 
+<b><a name="98">   98</a></b> #endif /* if MP_LOGTAB */
+<b><a name="99">   99</a></b> 
+<b><a name="100">  100</a></b> /* }}} */
+<b><a name="101">  101</a></b> 
+<b><a name="102">  102</a></b> /* {{{ Digit arithmetic macros */
+<b><a name="103">  103</a></b> 
+<b><a name="104">  104</a></b> /*
+<b><a name="105">  105</a></b>   When adding and multiplying digits, the results can be larger than
+<b><a name="106">  106</a></b>   can be contained in an mp_digit.  Thus, an mp_word is used.  These
+<b><a name="107">  107</a></b>   macros mask off the upper and lower digits of the mp_word (the
+<b><a name="108">  108</a></b>   mp_word may be more than 2 mp_digits wide, but we only concern
+<b><a name="109">  109</a></b>   ourselves with the low-order 2 mp_digits)
+<b><a name="110">  110</a></b>  */
+<b><a name="111">  111</a></b> 
+<b><a name="112">  112</a></b> #define  <a href="#112">CARRYOUT</a>(<a href="../../freebl/sha512.c.dep.html#W">W</a><a href="../../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>)  (<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>)((<a href="../../freebl/sha512.c.dep.html#W">W</a><a href="../../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>)&gt;&gt;<a href="../../freebl/mpi/mpi.h.dep.html#DIGIT_BIT">DIGIT_BIT</a>)
+<b><a name="113">  113</a></b> #define  <a href="#113">ACCUM</a>(<a href="../../freebl/sha512.c.dep.html#W">W</a><a href="../../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>)     (<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>)(<a href="../../freebl/sha512.c.dep.html#W">W</a><a href="../../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>)
+<b><a name="114">  114</a></b> 
+<b><a name="115">  115</a></b> #define <a href="#115">MP_MIN</a>(a,b)   (((a) &lt; (b)) ? (a) : (b))
+<b><a name="116">  116</a></b> #define <a href="#116">MP_MAX</a>(a,b)   (((a) &gt; (b)) ? (a) : (b))
+<b><a name="117">  117</a></b> #define <a href="#117">MP_HOWMANY</a>(a,b) (((a) + (b) - 1)/(b))
+<b><a name="118">  118</a></b> #define <a href="#118">MP_ROUNDUP</a>(a,b) (<a href="../../freebl/mpi/mpi-priv.h.dep.html#MP_HOWMANY">MP_HOWMANY</a>(a,b) * (b))
+<b><a name="119">  119</a></b> 
+<b><a name="120">  120</a></b> /* }}} */
+<b><a name="121">  121</a></b> 
+<b><a name="122">  122</a></b> /* {{{ Comparison constants */
+<b><a name="123">  123</a></b> 
+<b><a name="124">  124</a></b> #define  <a href="#124">MP_LT</a>       -1
+<b><a name="125">  125</a></b> #define  <a href="#125">MP_EQ</a>        0
+<b><a name="126">  126</a></b> #define  <a href="#126">MP_GT</a>        1
+<b><a name="127">  127</a></b> 
+<b><a name="128">  128</a></b> /* }}} */
+<b><a name="129">  129</a></b> 
+<b><a name="130">  130</a></b> /* {{{ private function declarations */
+<b><a name="131">  131</a></b> 
+<b><a name="132">  132</a></b> /* 
+<b><a name="133">  133</a></b>    If MP_MACRO is false, these will be defined as actual functions;
+<b><a name="134">  134</a></b>    otherwise, suitable macro definitions will be used.  This works
+<b><a name="135">  135</a></b>    around the fact that ANSI C89 doesn't support an 'inline' keyword
+<b><a name="136">  136</a></b>    (although I hear C9x will ... about bloody time).  At present, the
+<b><a name="137">  137</a></b>    macro definitions are identical to the function bodies, but they'll
+<b><a name="138">  138</a></b>    expand in place, instead of generating a function call.
+<b><a name="139">  139</a></b> 
+<b><a name="140">  140</a></b>    I chose these particular functions to be made into macros because
+<b><a name="141">  141</a></b>    some profiling showed they are called a lot on a typical workload,
+<b><a name="142">  142</a></b>    and yet they are primarily housekeeping.
+<b><a name="143">  143</a></b>  */
+<b><a name="144">  144</a></b> #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_MACRO">MP_MACRO</a> == 0
+<b><a name="145">  145</a></b>  void     <a href="#145">s_mp_setz</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *dp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> count); /* zero digits           */
+<b><a name="146">  146</a></b>  void     <a href="#146">s_mp_copy</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *sp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *dp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> count); /* copy */
+<b><a name="147">  147</a></b>  void    *<a href="#147">s_mp_alloc</a>(size_t nb, size_t ni);       /* general allocator     */
+<b><a name="148">  148</a></b>  void     <a href="#148">s_mp_free</a>(void *ptr);                   /* general free function */
+<b><a name="149">  149</a></b> extern unsigned long <a href="#149">mp_allocs</a>;
+<b><a name="150">  150</a></b> extern unsigned long <a href="#150">mp_frees</a>;
+<b><a name="151">  151</a></b> extern unsigned long <a href="#151">mp_copies</a>;
+<b><a name="152">  152</a></b> #else
+<b><a name="153">  153</a></b> 
+<b><a name="154">  154</a></b>  /* Even if these are defined as macros, we need to respect the settings
+<b><a name="155">  155</a></b>     of the MP_MEMSET and MP_MEMCPY configuration options...
+<b><a name="156">  156</a></b>   */
+<b><a name="157">  157</a></b>  #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_MEMSET">MP_MEMSET</a> == 0
+<b><a name="158">  158</a></b>   #define  <a href="#158">s_mp_setz</a>(dp, count) \
+<b><a name="159">  159</a></b>        {int ix;for(ix=0;ix&lt;(count);ix++)(dp)[ix]=0;}
+<b><a name="160">  160</a></b>  #else
+<b><a name="161">  161</a></b>   #define  <a href="#161">s_mp_setz</a>(dp, count) memset(dp, 0, (count) * sizeof(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>))
+<b><a name="162">  162</a></b>  #endif /* MP_MEMSET */
+<b><a name="163">  163</a></b> 
+<b><a name="164">  164</a></b>  #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_MEMCPY">MP_MEMCPY</a> == 0
+<b><a name="165">  165</a></b>   #define  <a href="#165">s_mp_copy</a>(sp, dp, count) \
+<b><a name="166">  166</a></b>        {int ix;for(ix=0;ix&lt;(count);ix++)(dp)[ix]=(sp)[ix];}
+<b><a name="167">  167</a></b>  #else
+<b><a name="168">  168</a></b>   #define  <a href="#168">s_mp_copy</a>(sp, dp, count) memcpy(dp, sp, (count) * sizeof(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>))
+<b><a name="169">  169</a></b>  #endif /* MP_MEMCPY */
+<b><a name="170">  170</a></b> 
+<b><a name="171">  171</a></b>  #define  <a href="#171">s_mp_alloc</a>(nb, ni)  calloc(nb, ni)
+<b><a name="172">  172</a></b>  #define  <a href="#172">s_mp_free</a>(ptr) {if(ptr) free(ptr);}
+<b><a name="173">  173</a></b> #endif /* MP_MACRO */
+<b><a name="174">  174</a></b> 
+<b><a name="175">  175</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#175">s_mp_grow</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> min);   /* increase allocated size */
+<b><a name="176">  176</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#176">s_mp_pad</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> min);    /* left pad with zeroes    */
+<b><a name="177">  177</a></b> 
+<b><a name="178">  178</a></b> #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_MACRO">MP_MACRO</a> == 0
+<b><a name="179">  179</a></b>  void     <a href="#179">s_mp_clamp</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp);               /* clip leading zeroes     */
+<b><a name="180">  180</a></b> #else
+<b><a name="181">  181</a></b>  #define  <a href="#181">s_mp_clamp</a>(mp)\
+<b><a name="182">  182</a></b>   { <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> used = <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(mp); \
+<b><a name="183">  183</a></b>     while (used &gt; 1 &amp;&amp; <a href="../../freebl/mpi/mpi.h.dep.html#DIGIT">DIGIT</a>(mp, used - 1) == 0) --used; \
+<b><a name="184">  184</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(mp) = used; \
+<b><a name="185">  185</a></b>   } 
+<b><a name="186">  186</a></b> #endif /* MP_MACRO */
+<b><a name="187">  187</a></b> 
+<b><a name="188">  188</a></b> void     <a href="#188">s_mp_exch</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b);      /* swap a and b in place   */
+<b><a name="189">  189</a></b> 
+<b><a name="190">  190</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#190">s_mp_lshd</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> p);     /* left-shift by p digits  */
+<b><a name="191">  191</a></b> void     <a href="#191">s_mp_rshd</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> p);     /* right-shift by p digits */
+<b><a name="192">  192</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#192">s_mp_mul_2d</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d);  /* multiply by 2^d in place */
+<b><a name="193">  193</a></b> void     <a href="#193">s_mp_div_2d</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d);  /* divide by 2^d in place  */
+<b><a name="194">  194</a></b> void     <a href="#194">s_mp_mod_2d</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d);  /* modulo 2^d in place     */
+<b><a name="195">  195</a></b> void     <a href="#195">s_mp_div_2</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp);               /* divide by 2 in place    */
+<b><a name="196">  196</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#196">s_mp_mul_2</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp);               /* multiply by 2 in place  */
+<b><a name="197">  197</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#197">s_mp_norm</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *pd); 
+<b><a name="198">  198</a></b>                                                /* normalize for division  */
+<b><a name="199">  199</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#199">s_mp_add_d</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d);   /* unsigned digit addition */
+<b><a name="200">  200</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#200">s_mp_sub_d</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d);   /* unsigned digit subtract */
+<b><a name="201">  201</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#201">s_mp_mul_d</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d);   /* unsigned digit multiply */
+<b><a name="202">  202</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#202">s_mp_div_d</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mp, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *r);
+<b><a name="203">  203</a></b>                                                /* unsigned digit divide   */
+<b><a name="204">  204</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#204">s_mp_reduce</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *x, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mu);
+<b><a name="205">  205</a></b>                                                /* Barrett reduction       */
+<b><a name="206">  206</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#206">s_mp_add</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b); /* magnitude addition      */
+<b><a name="207">  207</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#207">s_mp_add_3arg</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="208">  208</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#208">s_mp_sub</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b); /* magnitude subtract      */
+<b><a name="209">  209</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#209">s_mp_sub_3arg</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="210">  210</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#210">s_mp_add_offset</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> offset);
+<b><a name="211">  211</a></b>                                                /* a += b * RADIX^offset   */
+<b><a name="212">  212</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#212">s_mp_mul</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b); /* magnitude multiply      */
+<b><a name="213">  213</a></b> #if <a href="../../freebl/mpi/mpi-config.h.dep.html#MP_SQUARE">MP_SQUARE</a><a href="../../freebl/mpi/mulsqr.c.dep.html#MP_SQUARE"><sup>[1]</sup></a>
+<b><a name="214">  214</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#214">s_mp_sqr</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a);                  /* magnitude square        */
+<b><a name="215">  215</a></b> #else
+<b><a name="216">  216</a></b> #define  <a href="#216">s_mp_sqr</a>(a) <a href="../../freebl/mpi/mpi.c.dep.html#s_mp_mul">s_mp_mul</a>(a, a)
+<b><a name="217">  217</a></b> #endif
+<b><a name="218">  218</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#218">s_mp_div</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rem, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *div, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *quot); /* magnitude div */
+<b><a name="219">  219</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#219">s_mp_exptmod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="220">  220</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#220">s_mp_2expt</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> k);    /* a = 2^k                 */
+<b><a name="221">  221</a></b> int      <a href="#221">s_mp_cmp</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b); /* magnitude comparison */
+<b><a name="222">  222</a></b> int      <a href="#222">s_mp_cmp_d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d); /* magnitude digit compare */
+<b><a name="223">  223</a></b> int      <a href="#223">s_mp_ispow2</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *v);         /* is v a power of 2?      */
+<b><a name="224">  224</a></b> int      <a href="#224">s_mp_ispow2d</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> d);             /* is d a power of 2?      */
+<b><a name="225">  225</a></b> 
+<b><a name="226">  226</a></b> int      <a href="#226">s_mp_tovalue</a>(char ch, int r);          /* convert ch to value    */
+<b><a name="227">  227</a></b> char     <a href="#227">s_mp_todigit</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> val, int r, int low); /* convert val to digit */
+<b><a name="228">  228</a></b> int      <a href="#228">s_mp_outlen</a>(int bits, int r);          /* output length in bytes */
+<b><a name="229">  229</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> <a href="#229">s_mp_invmod_radix</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> <a href="../../freebl/mksp.c.dep.html#P">P</a>);   /* returns (<a href="../../freebl/mksp.c.dep.html#P">P</a> ** -1) mod RADIX */
+<b><a name="230">  230</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#230">s_mp_invmod_odd_m</a>( const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="231">  231</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#231">s_mp_invmod_2d</a>(    const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> k,       <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="232">  232</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="#232">s_mp_invmod_even_m</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *m, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c);
+<b><a name="233">  233</a></b> 
+<b><a name="234">  234</a></b> #ifdef NSS_USE_COMBA
+<b><a name="235">  235</a></b> 
+<b><a name="236">  236</a></b> #define <a href="#236">IS_POWER_OF_2</a>(a) ((a) &amp;&amp; !((a) &amp; ((a)-1)))
+<b><a name="237">  237</a></b> 
+<b><a name="238">  238</a></b> void <a href="#238">s_mp_mul_comba_4</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *C);
+<b><a name="239">  239</a></b> void <a href="#239">s_mp_mul_comba_8</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *C);
+<b><a name="240">  240</a></b> void <a href="#240">s_mp_mul_comba_16</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *C);
+<b><a name="241">  241</a></b> void <a href="#241">s_mp_mul_comba_32</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *C);
+<b><a name="242">  242</a></b> 
+<b><a name="243">  243</a></b> void <a href="#243">s_mp_sqr_comba_4</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>);
+<b><a name="244">  244</a></b> void <a href="#244">s_mp_sqr_comba_8</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>);
+<b><a name="245">  245</a></b> void <a href="#245">s_mp_sqr_comba_16</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>);
+<b><a name="246">  246</a></b> void <a href="#246">s_mp_sqr_comba_32</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../../freebl/alg2268.c.dep.html#B">B</a><a href="../../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>);
+<b><a name="247">  247</a></b> 
+<b><a name="248">  248</a></b> #endif /* end NSS_USE_COMBA */
+<b><a name="249">  249</a></b> 
+<b><a name="250">  250</a></b> /* ------ mpv functions, operate on arrays of digits, not on mp_int's ------ */
+<b><a name="251">  251</a></b> #if defined (__OS2__) &amp;&amp; defined (__IBMC__)
+<b><a name="252">  252</a></b> #define <a href="#252">MPI_ASM_DECL</a> __cdecl
+<b><a name="253">  253</a></b> #else
+<b><a name="254">  254</a></b> #define <a href="#254">MPI_ASM_DECL</a>
+<b><a name="255">  255</a></b> #endif
+<b><a name="256">  256</a></b> 
+<b><a name="257">  257</a></b> #ifdef MPI_AMD64
+<b><a name="258">  258</a></b> 
+<b><a name="259">  259</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> <a href="../../freebl/mpi/mpi-priv.h.dep.html#MPI_ASM_DECL">MPI_ASM_DECL</a></a> <a href="#259">s_mpv_mul_set_vec64</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>*, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a>, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>);
+<b><a name="260">  260</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> <a href="../../freebl/mpi/mpi-priv.h.dep.html#MPI_ASM_DECL">MPI_ASM_DECL</a></a> <a href="#260">s_mpv_mul_add_vec64</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>*, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>*, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a>, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>);
+<b><a name="261">  261</a></b> 
+<b><a name="262">  262</a></b> /* c = a * b */
+<b><a name="263">  263</a></b> #define <a href="#263">s_mpv_mul_d</a>(a, a_len, b, c) \
+<b><a name="264">  264</a></b>         ((unsigned long*)c)[a_len] = s_mpv_mul_set_vec64(c, a, a_len, b)
+<b><a name="265">  265</a></b> 
+<b><a name="266">  266</a></b> /* c += a * b */
+<b><a name="267">  267</a></b> #define <a href="#267">s_mpv_mul_d_add</a>(a, a_len, b, c) \
+<b><a name="268">  268</a></b>         ((unsigned long*)c)[a_len] = s_mpv_mul_add_vec64(c, a, a_len, b)
+<b><a name="269">  269</a></b> 
+<b><a name="270">  270</a></b> #else
+<b><a name="271">  271</a></b> 
+<b><a name="272">  272</a></b> void     <a href="../../freebl/mpi/mpi-priv.h.dep.html#MPI_ASM_DECL">MPI_ASM_DECL</a></a> <a href="#272">s_mpv_mul_d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> a_len,
+<b><a name="273">  273</a></b>                                         <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *c);
+<b><a name="274">  274</a></b> void     <a href="../../freebl/mpi/mpi-priv.h.dep.html#MPI_ASM_DECL">MPI_ASM_DECL</a></a> <a href="#274">s_mpv_mul_d_add</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> a_len,
+<b><a name="275">  275</a></b>                                             <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *c);
+<b><a name="276">  276</a></b> 
+<b><a name="277">  277</a></b> #endif
+<b><a name="278">  278</a></b> 
+<b><a name="279">  279</a></b> void     <a href="../../freebl/mpi/mpi-priv.h.dep.html#MPI_ASM_DECL">MPI_ASM_DECL</a></a> <a href="#279">s_mpv_mul_d_add_prop</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *a,
+<b><a name="280">  280</a></b>                                                 <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> a_len, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b, 
+<b><a name="281">  281</a></b>                                                 <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *c);
+<b><a name="282">  282</a></b> void     <a href="../../freebl/mpi/mpi-priv.h.dep.html#MPI_ASM_DECL">MPI_ASM_DECL</a></a> <a href="#282">s_mpv_sqr_add_prop</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *a,
+<b><a name="283">  283</a></b>                                                 <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> a_len,
+<b><a name="284">  284</a></b>                                                 <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *sqrs);
+<b><a name="285">  285</a></b> 
+<b><a name="286">  286</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   <a href="../../freebl/mpi/mpi-priv.h.dep.html#MPI_ASM_DECL">MPI_ASM_DECL</a></a> <a href="#286">s_mpv_div_2dx1d</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> Nhi, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> Nlo,
+<b><a name="287">  287</a></b>                             <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> divisor, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *quot, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *rem);
+<b><a name="288">  288</a></b> 
+<b><a name="289">  289</a></b> /* c += a * b * (MP_RADIX ** offset);  */
+<b><a name="290">  290</a></b> #define <a href="#290">s_mp_mul_d_add_offset</a>(a, b, c, off) \
+<b><a name="291">  291</a></b> (<a href="../../freebl/mpi/mpi.c.dep.html#s_mpv_mul_d_add_prop">s_mpv_mul_d_add_prop</a><a href="../../freebl/mpi/mpi_amd64.c.dep.html#s_mpv_mul_d_add_prop"><sup>[1]</sup></a><a href="../../freebl/mpi/mpi_hp.c.dep.html#s_mpv_mul_d_add_prop"><sup>[2]</sup></a><a href="../../freebl/mpi/mpi_sparc.c.dep.html#s_mpv_mul_d_add_prop"><sup>[3]</sup></a><a href="../../freebl/mpi/mpi_x86_asm.c.dep.html#s_mpv_mul_d_add_prop"><sup>[4]</sup></a><a href="../../freebl/mpi/mpvalpha.c.dep.html#s_mpv_mul_d_add_prop"><sup>[5]</sup></a>(<a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(a), <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a), b, <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(c) + off), <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>)
+<b><a name="292">  292</a></b> 
+<b><a name="293">  293</a></b> typedef struct {
+<b><a name="294">  294</a></b>   <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a>       N;        /* modulus N */
+<b><a name="295">  295</a></b>   <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>     n0prime; /* n0' = - (n0 ** -1) mod MP_RADIX */
+<b><a name="296">  296</a></b>   <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a>      b;        /* R == 2 ** b,  also b = # significant bits in N */
+<b><a name="297">  297</a></b> } <a href="#297">mp_mont_modulus</a>;
+<b><a name="298">  298</a></b> 
+<b><a name="299">  299</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#299">s_mp_mul_mont</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c, 
+<b><a name="300">  300</a></b>                        <a href="../../freebl/mpi/mpi-priv.h.dep.html#mp_mont_modulus">mp_mont_modulus</a> *mmm);
+<b><a name="301">  301</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#301">s_mp_redc</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *T, <a href="../../freebl/mpi/mpi-priv.h.dep.html#mp_mont_modulus">mp_mont_modulus</a> *mmm);
+<b><a name="302">  302</a></b> 
+<b><a name="303">  303</a></b> /*
+<b><a name="304">  304</a></b>  * s_mpi_getProcessorLineSize() returns the size in bytes of the cache line
+<b><a name="305">  305</a></b>  * if a cache exists, or zero if there is no cache. If more than one
+<b><a name="306">  306</a></b>  * cache line exists, it should return the smallest line size (which is
+<b><a name="307">  307</a></b>  * usually the L1 cache).
+<b><a name="308">  308</a></b>  *
+<b><a name="309">  309</a></b>  * mp_modexp uses this information to make sure that private key information
+<b><a name="310">  310</a></b>  * isn't being leaked through the cache.
+<b><a name="311">  311</a></b>  *
+<b><a name="312">  312</a></b>  * see mpcpucache.c for the implementation.
+<b><a name="313">  313</a></b>  */
+<b><a name="314">  314</a></b> unsigned long <a href="#314">s_mpi_getProcessorLineSize</a>();
+<b><a name="315">  315</a></b> 
+<b><a name="316">  316</a></b> /* }}} */
+<b><a name="317">  317</a></b> #endif
+<b><a name="318">  318</a></b> 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

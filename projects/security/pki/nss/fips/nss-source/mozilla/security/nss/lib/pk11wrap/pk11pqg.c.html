@@ -1,0 +1,413 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2001
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> /* Thse functions are stub functions which will get replaced with calls through
+<b><a name="37">   37</a></b>  * PKCS #11.
+<b><a name="38">   38</a></b>  */
+<b><a name="39">   39</a></b> 
+<b><a name="40">   40</a></b> #include "pk11func.h"
+<b><a name="41">   41</a></b> #include "secmod.h"
+<b><a name="42">   42</a></b> #include "secmodi.h"
+<b><a name="43">   43</a></b> #include "secmodti.h"
+<b><a name="44">   44</a></b> #include "pkcs11t.h"
+<b><a name="45">   45</a></b> #include "pk11pqg.h"
+<b><a name="46">   46</a></b> #include "pqgutil.h"
+<b><a name="47">   47</a></b> #include "secerr.h"
+<b><a name="48">   48</a></b> 
+<b><a name="49">   49</a></b> 
+<b><a name="50">   50</a></b> /* Generate PQGParams and PQGVerify structs.
+<b><a name="51">   51</a></b>  * Length of P specified by j.  Length of h will match length of P.
+<b><a name="52">   52</a></b>  * Length of SEED in bytes specified in seedBytes.
+<b><a name="53">   53</a></b>  * seedBbytes must be in the range [20..255] or an error will result.
+<b><a name="54">   54</a></b>  */
+<b><a name="55">   55</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="56">   56</a></b> <a href="#56">PK11_PQG_ParamGenSeedLen</a>( unsigned int <a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#j">j</a>, unsigned int seedBytes,
+<b><a name="57">   57</a></b>                                  <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> **pParams, <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> **pVfy)
+<b><a name="58">   58</a></b> {
+<b><a name="59">   59</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a> = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="60">   60</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE">CK_ATTRIBUTE</a></a> genTemplate[5];
+<b><a name="61">   61</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE">CK_ATTRIBUTE</a></a> *attrs = genTemplate;
+<b><a name="62">   62</a></b>     int <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#count">count</a><a href="../mozilla/nsprpub/pr/tests/attach.c.dep.html#count"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/cvar.c.dep.html#count"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/cvar2.c.dep.html#count"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#count"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/tests/select2.c.dep.html#count"><sup>[5]</sup></a><a href="../mozilla/nsprpub/pr/tests/stat.c.dep.html#count"><sup>[6]</sup></a><a href="../mozilla/nsprpub/pr/tests/suspend.c.dep.html#count"><sup>[7]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#count"><sup>[8]</sup></a><a href="../mozilla/nsprpub/pr/tests/threads.c.dep.html#count"><sup>[9]</sup></a><a href="../mozilla/nsprpub/pr/tests/time.c.dep.html#count"><sup>[10]</sup></a> = sizeof(genTemplate)/sizeof(genTemplate[0]);
+<b><a name="63">   63</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM">CK_MECHANISM</a></a> <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a>;
+<b><a name="64">   64</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> objectID = <a href="../softoken/pkcs11t.h.dep.html#CK_INVALID_HANDLE">CK_INVALID_HANDLE</a>;
+<b><a name="65">   65</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="66">   66</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE">CK_ATTRIBUTE</a></a> pTemplate[] = {
+<b><a name="67">   67</a></b>         { <a href="../softoken/pkcs11t.h.dep.html#CKA_PRIME">CKA_PRIME</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="68">   68</a></b>         { <a href="../softoken/pkcs11t.h.dep.html#CKA_SUBPRIME">CKA_SUBPRIME</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="69">   69</a></b>         { <a href="../softoken/pkcs11t.h.dep.html#CKA_BASE">CKA_BASE</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="70">   70</a></b>     };
+<b><a name="71">   71</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE">CK_ATTRIBUTE</a></a> vTemplate[] = {
+<b><a name="72">   72</a></b>         { <a href="../softoken/pkcs11n.h.dep.html#CKA_NETSCAPE_PQG_COUNTER">CKA_NETSCAPE_PQG_COUNTER</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="73">   73</a></b>         { <a href="../softoken/pkcs11n.h.dep.html#CKA_NETSCAPE_PQG_SEED">CKA_NETSCAPE_PQG_SEED</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="74">   74</a></b>         { <a href="../softoken/pkcs11n.h.dep.html#CKA_NETSCAPE_PQG_H">CKA_NETSCAPE_PQG_H</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="75">   75</a></b>     };
+<b><a name="76">   76</a></b>     int pTemplateCount = sizeof(pTemplate)/sizeof(pTemplate[0]);
+<b><a name="77">   77</a></b>     int vTemplateCount = sizeof(vTemplate)/sizeof(vTemplate[0]);
+<b><a name="78">   78</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *parena = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="79">   79</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *varena = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="80">   80</a></b>     <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> *params = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="81">   81</a></b>     <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> *<a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a> = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="82">   82</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> primeBits = <a href="../freebl/blapit.h.dep.html#PQG_INDEX_TO_PBITS">PQG_INDEX_TO_PBITS</a>(<a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#j">j</a>);
+<b><a name="83">   83</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> seedBits = seedBytes*8;
+<b><a name="84">   84</a></b> 
+<b><a name="85">   85</a></b>     *pParams = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="86">   86</a></b>     *pVfy =  <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="87">   87</a></b> 
+<b><a name="88">   88</a></b>     if (primeBits == (<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>)-1) {
+<b><a name="89">   89</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="90">   90</a></b>         goto loser;
+<b><a name="91">   91</a></b>     }
+<b><a name="92">   92</a></b>     <a href="../pk11wrap/secmodi.h.dep.html#PK11_SETATTRS">PK11_SETATTRS</a><a href="../ssl/ssl3con.c.dep.html#PK11_SETATTRS"><sup>[1]</sup></a><a href="../ssl/ssl3ecc.c.dep.html#PK11_SETATTRS"><sup>[2]</sup></a>(attrs, <a href="../softoken/pkcs11t.h.dep.html#CKA_PRIME_BITS">CKA_PRIME_BITS</a>,&amp;primeBits,sizeof(primeBits)); attrs++;
+<b><a name="93">   93</a></b>     if (seedBits != 0) {
+<b><a name="94">   94</a></b>             <a href="../pk11wrap/secmodi.h.dep.html#PK11_SETATTRS">PK11_SETATTRS</a><a href="../ssl/ssl3con.c.dep.html#PK11_SETATTRS"><sup>[1]</sup></a><a href="../ssl/ssl3ecc.c.dep.html#PK11_SETATTRS"><sup>[2]</sup></a>(attrs, <a href="../softoken/pkcs11n.h.dep.html#CKA_NETSCAPE_PQG_SEED_BITS">CKA_NETSCAPE_PQG_SEED_BITS</a>, 
+<b><a name="95">   95</a></b>                                         &amp;seedBits, sizeof(seedBits)); attrs++;
+<b><a name="96">   96</a></b>     }
+<b><a name="97">   97</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#count">count</a><a href="../mozilla/nsprpub/pr/tests/attach.c.dep.html#count"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/cvar.c.dep.html#count"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/cvar2.c.dep.html#count"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#count"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/tests/select2.c.dep.html#count"><sup>[5]</sup></a><a href="../mozilla/nsprpub/pr/tests/stat.c.dep.html#count"><sup>[6]</sup></a><a href="../mozilla/nsprpub/pr/tests/suspend.c.dep.html#count"><sup>[7]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#count"><sup>[8]</sup></a><a href="../mozilla/nsprpub/pr/tests/threads.c.dep.html#count"><sup>[9]</sup></a><a href="../mozilla/nsprpub/pr/tests/time.c.dep.html#count"><sup>[10]</sup></a> = attrs - genTemplate;
+<b><a name="98">   98</a></b>     <a href="../mozilla/nsprpub/pr/include/prlog.h.dep.html#PR_ASSERT">PR_ASSERT</a></a>(<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#count">count</a><a href="../mozilla/nsprpub/pr/tests/attach.c.dep.html#count"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/cvar.c.dep.html#count"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/cvar2.c.dep.html#count"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#count"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/tests/select2.c.dep.html#count"><sup>[5]</sup></a><a href="../mozilla/nsprpub/pr/tests/stat.c.dep.html#count"><sup>[6]</sup></a><a href="../mozilla/nsprpub/pr/tests/suspend.c.dep.html#count"><sup>[7]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#count"><sup>[8]</sup></a><a href="../mozilla/nsprpub/pr/tests/threads.c.dep.html#count"><sup>[9]</sup></a><a href="../mozilla/nsprpub/pr/tests/time.c.dep.html#count"><sup>[10]</sup></a> &lt;= sizeof(genTemplate)/sizeof(<a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE">CK_ATTRIBUTE</a></a>));
+<b><a name="99">   99</a></b> 
+<b><a name="100">  100</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a> = <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_GetInternalSlot">PK11_GetInternalSlot</a>();
+<b><a name="101">  101</a></b>     if (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="102">  102</a></b>         /* set error */
+<b><a name="103">  103</a></b>         goto loser;
+<b><a name="104">  104</a></b>     }
+<b><a name="105">  105</a></b> 
+<b><a name="106">  106</a></b>     /* Initialize the Key Gen Mechanism */
+<b><a name="107">  107</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a>.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a> = <a href="../softoken/pkcs11t.h.dep.html#CKM_DSA_PARAMETER_GEN">CKM_DSA_PARAMETER_GEN</a>;
+<b><a name="108">  108</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a>.pParameter = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="109">  109</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a>.ulParameterLen = 0;
+<b><a name="110">  110</a></b> 
+<b><a name="111">  111</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_EnterSlotMonitor">PK11_EnterSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="112">  112</a></b>     crv = <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_GenerateKey(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;session,
+<b><a name="113">  113</a></b>                          &amp;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a>, genTemplate, <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#count">count</a><a href="../mozilla/nsprpub/pr/tests/attach.c.dep.html#count"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/cvar.c.dep.html#count"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/cvar2.c.dep.html#count"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#count"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/tests/select2.c.dep.html#count"><sup>[5]</sup></a><a href="../mozilla/nsprpub/pr/tests/stat.c.dep.html#count"><sup>[6]</sup></a><a href="../mozilla/nsprpub/pr/tests/suspend.c.dep.html#count"><sup>[7]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#count"><sup>[8]</sup></a><a href="../mozilla/nsprpub/pr/tests/threads.c.dep.html#count"><sup>[9]</sup></a><a href="../mozilla/nsprpub/pr/tests/time.c.dep.html#count"><sup>[10]</sup></a>, &amp;objectID);
+<b><a name="114">  114</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_ExitSlotMonitor">PK11_ExitSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="115">  115</a></b> 
+<b><a name="116">  116</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="117">  117</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>( <a href="../pk11wrap/pk11err.c.dep.html#PK11_MapError">PK11_MapError</a>(crv) );
+<b><a name="118">  118</a></b>         goto loser;
+<b><a name="119">  119</a></b>     }
+<b><a name="120">  120</a></b> 
+<b><a name="121">  121</a></b>     parena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(60);
+<b><a name="122">  122</a></b>     if (!parena) {
+<b><a name="123">  123</a></b>         goto loser;
+<b><a name="124">  124</a></b>     }        
+<b><a name="125">  125</a></b> 
+<b><a name="126">  126</a></b>     crv = <a href="../pk11wrap/pk11obj.c.dep.html#PK11_GetAttributes">PK11_GetAttributes</a>(parena, <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, objectID, pTemplate, pTemplateCount);
+<b><a name="127">  127</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="128">  128</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>( <a href="../pk11wrap/pk11err.c.dep.html#PK11_MapError">PK11_MapError</a>(crv) );
+<b><a name="129">  129</a></b>         goto loser;
+<b><a name="130">  130</a></b>     }
+<b><a name="131">  131</a></b> 
+<b><a name="132">  132</a></b> 
+<b><a name="133">  133</a></b>     params = (<a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> *)<a href="../util/secport.c.dep.html#PORT_ArenaAlloc">PORT_ArenaAlloc</a>(parena,sizeof(<a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a>));
+<b><a name="134">  134</a></b>     if (params == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="135">  135</a></b>         goto loser;
+<b><a name="136">  136</a></b>     }
+<b><a name="137">  137</a></b> 
+<b><a name="138">  138</a></b>     /* fill in Params */
+<b><a name="139">  139</a></b>     params-&gt;arena = parena;
+<b><a name="140">  140</a></b>     params-&gt;prime.<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = siUnsignedInteger;
+<b><a name="141">  141</a></b>     params-&gt;prime.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = pTemplate[0].pValue;
+<b><a name="142">  142</a></b>     params-&gt;prime.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = pTemplate[0].ulValueLen;
+<b><a name="143">  143</a></b>     params-&gt;subPrime.<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = siUnsignedInteger;
+<b><a name="144">  144</a></b>     params-&gt;subPrime.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = pTemplate[1].pValue;
+<b><a name="145">  145</a></b>     params-&gt;subPrime.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = pTemplate[1].ulValueLen;
+<b><a name="146">  146</a></b>     params-&gt;<a href="../mozilla/nsprpub/lib/libc/src/base64.c.dep.html#base">base</a><a href="../mozilla/nsprpub/lib/tests/base64t.c.dep.html#base"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/xnotify.c.dep.html#base"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#base"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#base"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#base"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#base"><sup>[6]</sup></a>.<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = siUnsignedInteger;
+<b><a name="147">  147</a></b>     params-&gt;<a href="../mozilla/nsprpub/lib/libc/src/base64.c.dep.html#base">base</a><a href="../mozilla/nsprpub/lib/tests/base64t.c.dep.html#base"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/xnotify.c.dep.html#base"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#base"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#base"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#base"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#base"><sup>[6]</sup></a>.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = pTemplate[2].pValue;
+<b><a name="148">  148</a></b>     params-&gt;<a href="../mozilla/nsprpub/lib/libc/src/base64.c.dep.html#base">base</a><a href="../mozilla/nsprpub/lib/tests/base64t.c.dep.html#base"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/xnotify.c.dep.html#base"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#base"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#base"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#base"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#base"><sup>[6]</sup></a>.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = pTemplate[2].ulValueLen;
+<b><a name="149">  149</a></b> 
+<b><a name="150">  150</a></b> 
+<b><a name="151">  151</a></b>     varena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(60);
+<b><a name="152">  152</a></b>     if (!varena) {
+<b><a name="153">  153</a></b>         goto loser;
+<b><a name="154">  154</a></b>     }        
+<b><a name="155">  155</a></b> 
+<b><a name="156">  156</a></b>     crv = <a href="../pk11wrap/pk11obj.c.dep.html#PK11_GetAttributes">PK11_GetAttributes</a>(varena, <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, objectID, vTemplate, vTemplateCount);
+<b><a name="157">  157</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="158">  158</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>( <a href="../pk11wrap/pk11err.c.dep.html#PK11_MapError">PK11_MapError</a>(crv) );
+<b><a name="159">  159</a></b>         goto loser;
+<b><a name="160">  160</a></b>     }
+<b><a name="161">  161</a></b> 
+<b><a name="162">  162</a></b> 
+<b><a name="163">  163</a></b>     <a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a> = (<a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> *)<a href="../util/secport.c.dep.html#PORT_ArenaAlloc">PORT_ArenaAlloc</a>(varena,sizeof(<a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a>));
+<b><a name="164">  164</a></b>     if (<a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="165">  165</a></b>         goto loser;
+<b><a name="166">  166</a></b>     }
+<b><a name="167">  167</a></b>     /* fill in Params */
+<b><a name="168">  168</a></b>     <a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>-&gt;arena = varena;
+<b><a name="169">  169</a></b>     <a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>-&gt;<a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#counter">counter</a> = (unsigned int)(*(<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>*)vTemplate[0].pValue);
+<b><a name="170">  170</a></b>     <a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>-&gt;seed.<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = siUnsignedInteger;
+<b><a name="171">  171</a></b>     <a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>-&gt;seed.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = vTemplate[1].pValue;
+<b><a name="172">  172</a></b>     <a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>-&gt;seed.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = vTemplate[1].ulValueLen;
+<b><a name="173">  173</a></b>     <a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>-&gt;h.<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = siUnsignedInteger;
+<b><a name="174">  174</a></b>     <a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>-&gt;h.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = vTemplate[2].pValue;
+<b><a name="175">  175</a></b>     <a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>-&gt;h.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = vTemplate[2].ulValueLen;
+<b><a name="176">  176</a></b> 
+<b><a name="177">  177</a></b>     <a href="../pk11wrap/pk11obj.c.dep.html#PK11_DestroyObject">PK11_DestroyObject</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,objectID);
+<b><a name="178">  178</a></b>     <a href="../pk11wrap/pk11slot.c.dep.html#PK11_FreeSlot">PK11_FreeSlot</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="179">  179</a></b> 
+<b><a name="180">  180</a></b>     *pParams = params;
+<b><a name="181">  181</a></b>     *pVfy =  <a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>;
+<b><a name="182">  182</a></b> 
+<b><a name="183">  183</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="184">  184</a></b> 
+<b><a name="185">  185</a></b> loser:
+<b><a name="186">  186</a></b>     if (objectID != <a href="../softoken/pkcs11t.h.dep.html#CK_INVALID_HANDLE">CK_INVALID_HANDLE</a>) {
+<b><a name="187">  187</a></b>         <a href="../pk11wrap/pk11obj.c.dep.html#PK11_DestroyObject">PK11_DestroyObject</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,objectID);
+<b><a name="188">  188</a></b>     }
+<b><a name="189">  189</a></b>     if (parena != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="190">  190</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(parena,<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>);
+<b><a name="191">  191</a></b>     }
+<b><a name="192">  192</a></b>     if (varena != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="193">  193</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(varena,<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>);
+<b><a name="194">  194</a></b>     }
+<b><a name="195">  195</a></b>     if (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>) {
+<b><a name="196">  196</a></b>         <a href="../pk11wrap/pk11slot.c.dep.html#PK11_FreeSlot">PK11_FreeSlot</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="197">  197</a></b>     }
+<b><a name="198">  198</a></b>     return SECFailure;
+<b><a name="199">  199</a></b> }
+<b><a name="200">  200</a></b> 
+<b><a name="201">  201</a></b> /* Generate PQGParams and PQGVerify structs.
+<b><a name="202">  202</a></b>  * Length of seed and length of h both equal length of P. 
+<b><a name="203">  203</a></b>  * All lengths are specified by "j", according to the table above.
+<b><a name="204">  204</a></b>  */
+<b><a name="205">  205</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="206">  206</a></b> <a href="#206">PK11_PQG_ParamGen</a>(unsigned int <a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#j">j</a>, <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> **pParams, <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> **pVfy)
+<b><a name="207">  207</a></b> {
+<b><a name="208">  208</a></b>     return <a href="../pk11wrap/pk11pqg.c.dep.html#PK11_PQG_ParamGenSeedLen">PK11_PQG_ParamGenSeedLen</a>(<a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#j">j</a>, 0, pParams, pVfy);
+<b><a name="209">  209</a></b> }
+<b><a name="210">  210</a></b> 
+<b><a name="211">  211</a></b> /*  Test PQGParams for validity as DSS PQG values.
+<b><a name="212">  212</a></b>  *  If vfy is non-NULL, test PQGParams to make sure they were generated
+<b><a name="213">  213</a></b>  *       using the specified seed, counter, and h values.
+<b><a name="214">  214</a></b>  *
+<b><a name="215">  215</a></b>  *  Return value indicates whether Verification operation ran succesfully
+<b><a name="216">  216</a></b>  *  to completion, but does not indicate if PQGParams are valid or not.
+<b><a name="217">  217</a></b>  *  If return value is SECSuccess, then *pResult has these meanings:
+<b><a name="218">  218</a></b>  *       SECSuccess: PQGParams are valid.
+<b><a name="219">  219</a></b>  *       SECFailure: PQGParams are invalid.
+<b><a name="220">  220</a></b>  */
+<b><a name="221">  221</a></b> 
+<b><a name="222">  222</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="223">  223</a></b> <a href="#223">PK11_PQG_VerifyParams</a>(const <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> *params, const <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> *vfy, 
+<b><a name="224">  224</a></b>                                                         <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> *result)
+<b><a name="225">  225</a></b> {
+<b><a name="226">  226</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE">CK_ATTRIBUTE</a></a> keyTempl[] = {
+<b><a name="227">  227</a></b>         { <a href="../softoken/pkcs11t.h.dep.html#CKA_CLASS">CKA_CLASS</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="228">  228</a></b>         { <a href="../softoken/pkcs11t.h.dep.html#CKA_KEY_TYPE">CKA_KEY_TYPE</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="229">  229</a></b>         { <a href="../softoken/pkcs11t.h.dep.html#CKA_PRIME">CKA_PRIME</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="230">  230</a></b>         { <a href="../softoken/pkcs11t.h.dep.html#CKA_SUBPRIME">CKA_SUBPRIME</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="231">  231</a></b>         { <a href="../softoken/pkcs11t.h.dep.html#CKA_BASE">CKA_BASE</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="232">  232</a></b>         { <a href="../softoken/pkcs11t.h.dep.html#CKA_TOKEN">CKA_TOKEN</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="233">  233</a></b>         { <a href="../softoken/pkcs11n.h.dep.html#CKA_NETSCAPE_PQG_COUNTER">CKA_NETSCAPE_PQG_COUNTER</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="234">  234</a></b>         { <a href="../softoken/pkcs11n.h.dep.html#CKA_NETSCAPE_PQG_SEED">CKA_NETSCAPE_PQG_SEED</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="235">  235</a></b>         { <a href="../softoken/pkcs11n.h.dep.html#CKA_NETSCAPE_PQG_H">CKA_NETSCAPE_PQG_H</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 0 },
+<b><a name="236">  236</a></b>     };
+<b><a name="237">  237</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE">CK_ATTRIBUTE</a></a> *attrs;
+<b><a name="238">  238</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a> ckfalse = <a href="../softoken/pkcs11t.h.dep.html#CK_FALSE">CK_FALSE</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/trivial/trivial.c.dep.html#CK_FALSE"><sup>[1]</sup></a>;
+<b><a name="239">  239</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> class = <a href="../softoken/pkcs11t.h.dep.html#CKO_KG_PARAMETERS">CKO_KG_PARAMETERS</a>;
+<b><a name="240">  240</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_KEY_TYPE">CK_KEY_TYPE</a> keyType = <a href="../softoken/pkcs11t.h.dep.html#CKK_DSA">CKK_DSA</a>;
+<b><a name="241">  241</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="242">  242</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>;
+<b><a name="243">  243</a></b>     int keyCount;
+<b><a name="244">  244</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> objectID;
+<b><a name="245">  245</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> <a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#counter">counter</a>;
+<b><a name="246">  246</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="247">  247</a></b> 
+<b><a name="248">  248</a></b>     attrs = keyTempl;
+<b><a name="249">  249</a></b>     <a href="../pk11wrap/secmodi.h.dep.html#PK11_SETATTRS">PK11_SETATTRS</a><a href="../ssl/ssl3con.c.dep.html#PK11_SETATTRS"><sup>[1]</sup></a><a href="../ssl/ssl3ecc.c.dep.html#PK11_SETATTRS"><sup>[2]</sup></a>(attrs, <a href="../softoken/pkcs11t.h.dep.html#CKA_CLASS">CKA_CLASS</a>, &amp;class, sizeof(class)); attrs++;
+<b><a name="250">  250</a></b>     <a href="../pk11wrap/secmodi.h.dep.html#PK11_SETATTRS">PK11_SETATTRS</a><a href="../ssl/ssl3con.c.dep.html#PK11_SETATTRS"><sup>[1]</sup></a><a href="../ssl/ssl3ecc.c.dep.html#PK11_SETATTRS"><sup>[2]</sup></a>(attrs, <a href="../softoken/pkcs11t.h.dep.html#CKA_KEY_TYPE">CKA_KEY_TYPE</a>, &amp;keyType, sizeof(keyType)); attrs++;
+<b><a name="251">  251</a></b>     <a href="../pk11wrap/secmodi.h.dep.html#PK11_SETATTRS">PK11_SETATTRS</a><a href="../ssl/ssl3con.c.dep.html#PK11_SETATTRS"><sup>[1]</sup></a><a href="../ssl/ssl3ecc.c.dep.html#PK11_SETATTRS"><sup>[2]</sup></a>(attrs, <a href="../softoken/pkcs11t.h.dep.html#CKA_PRIME">CKA_PRIME</a>, params-&gt;prime.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, 
+<b><a name="252">  252</a></b>                                                 params-&gt;prime.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>); attrs++;
+<b><a name="253">  253</a></b>     <a href="../pk11wrap/secmodi.h.dep.html#PK11_SETATTRS">PK11_SETATTRS</a><a href="../ssl/ssl3con.c.dep.html#PK11_SETATTRS"><sup>[1]</sup></a><a href="../ssl/ssl3ecc.c.dep.html#PK11_SETATTRS"><sup>[2]</sup></a>(attrs, <a href="../softoken/pkcs11t.h.dep.html#CKA_SUBPRIME">CKA_SUBPRIME</a>, params-&gt;subPrime.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, 
+<b><a name="254">  254</a></b>                                                 params-&gt;subPrime.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>); attrs++;
+<b><a name="255">  255</a></b>     <a href="../pk11wrap/secmodi.h.dep.html#PK11_SETATTRS">PK11_SETATTRS</a><a href="../ssl/ssl3con.c.dep.html#PK11_SETATTRS"><sup>[1]</sup></a><a href="../ssl/ssl3ecc.c.dep.html#PK11_SETATTRS"><sup>[2]</sup></a>(attrs, <a href="../softoken/pkcs11t.h.dep.html#CKA_BASE">CKA_BASE</a>,params-&gt;<a href="../mozilla/nsprpub/lib/libc/src/base64.c.dep.html#base">base</a><a href="../mozilla/nsprpub/lib/tests/base64t.c.dep.html#base"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/xnotify.c.dep.html#base"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#base"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#base"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#base"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#base"><sup>[6]</sup></a>.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>,params-&gt;<a href="../mozilla/nsprpub/lib/libc/src/base64.c.dep.html#base">base</a><a href="../mozilla/nsprpub/lib/tests/base64t.c.dep.html#base"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/xnotify.c.dep.html#base"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#base"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#base"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#base"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#base"><sup>[6]</sup></a>.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>); attrs++;
+<b><a name="256">  256</a></b>     <a href="../pk11wrap/secmodi.h.dep.html#PK11_SETATTRS">PK11_SETATTRS</a><a href="../ssl/ssl3con.c.dep.html#PK11_SETATTRS"><sup>[1]</sup></a><a href="../ssl/ssl3ecc.c.dep.html#PK11_SETATTRS"><sup>[2]</sup></a>(attrs, <a href="../softoken/pkcs11t.h.dep.html#CKA_TOKEN">CKA_TOKEN</a>, &amp;ckfalse, sizeof(ckfalse)); attrs++;
+<b><a name="257">  257</a></b>     if (vfy) {
+<b><a name="258">  258</a></b>         <a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#counter">counter</a> = vfy-&gt;<a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#counter">counter</a>;
+<b><a name="259">  259</a></b>         <a href="../pk11wrap/secmodi.h.dep.html#PK11_SETATTRS">PK11_SETATTRS</a><a href="../ssl/ssl3con.c.dep.html#PK11_SETATTRS"><sup>[1]</sup></a><a href="../ssl/ssl3ecc.c.dep.html#PK11_SETATTRS"><sup>[2]</sup></a>(attrs, <a href="../softoken/pkcs11n.h.dep.html#CKA_NETSCAPE_PQG_COUNTER">CKA_NETSCAPE_PQG_COUNTER</a>, 
+<b><a name="260">  260</a></b>                         &amp;<a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#counter">counter</a>, sizeof(<a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#counter">counter</a>)); attrs++;
+<b><a name="261">  261</a></b>         <a href="../pk11wrap/secmodi.h.dep.html#PK11_SETATTRS">PK11_SETATTRS</a><a href="../ssl/ssl3con.c.dep.html#PK11_SETATTRS"><sup>[1]</sup></a><a href="../ssl/ssl3ecc.c.dep.html#PK11_SETATTRS"><sup>[2]</sup></a>(attrs, <a href="../softoken/pkcs11n.h.dep.html#CKA_NETSCAPE_PQG_SEED">CKA_NETSCAPE_PQG_SEED</a>, 
+<b><a name="262">  262</a></b>                         vfy-&gt;seed.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, vfy-&gt;seed.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>); attrs++;
+<b><a name="263">  263</a></b>         <a href="../pk11wrap/secmodi.h.dep.html#PK11_SETATTRS">PK11_SETATTRS</a><a href="../ssl/ssl3con.c.dep.html#PK11_SETATTRS"><sup>[1]</sup></a><a href="../ssl/ssl3ecc.c.dep.html#PK11_SETATTRS"><sup>[2]</sup></a>(attrs, <a href="../softoken/pkcs11n.h.dep.html#CKA_NETSCAPE_PQG_H">CKA_NETSCAPE_PQG_H</a>, 
+<b><a name="264">  264</a></b>                         vfy-&gt;h.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, vfy-&gt;h.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>); attrs++;
+<b><a name="265">  265</a></b>     }
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b>     keyCount = attrs - keyTempl;
+<b><a name="268">  268</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(keyCount &lt;= sizeof(keyTempl)/sizeof(keyTempl[0]));
+<b><a name="269">  269</a></b> 
+<b><a name="270">  270</a></b> 
+<b><a name="271">  271</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a> = <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_GetInternalSlot">PK11_GetInternalSlot</a>();
+<b><a name="272">  272</a></b>     if (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="273">  273</a></b>         return SECFailure;
+<b><a name="274">  274</a></b>     }
+<b><a name="275">  275</a></b> 
+<b><a name="276">  276</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_EnterSlotMonitor">PK11_EnterSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="277">  277</a></b>     crv = <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_CreateObject(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;session, keyTempl, keyCount, 
+<b><a name="278">  278</a></b>                                                                 &amp;objectID);
+<b><a name="279">  279</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_ExitSlotMonitor">PK11_ExitSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="280">  280</a></b> 
+<b><a name="281">  281</a></b>     /* throw away the keys, we only wanted the return code */
+<b><a name="282">  282</a></b>     <a href="../pk11wrap/pk11obj.c.dep.html#PK11_DestroyObject">PK11_DestroyObject</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,objectID);
+<b><a name="283">  283</a></b>     <a href="../pk11wrap/pk11slot.c.dep.html#PK11_FreeSlot">PK11_FreeSlot</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="284">  284</a></b> 
+<b><a name="285">  285</a></b>     *result = <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="286">  286</a></b>     if (crv == <a href="../softoken/pkcs11t.h.dep.html#CKR_ATTRIBUTE_VALUE_INVALID">CKR_ATTRIBUTE_VALUE_INVALID</a>) {
+<b><a name="287">  287</a></b>         *result = SECFailure;
+<b><a name="288">  288</a></b>     } else if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="289">  289</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>( <a href="../pk11wrap/pk11err.c.dep.html#PK11_MapError">PK11_MapError</a>(crv) );
+<b><a name="290">  290</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="291">  291</a></b>     }
+<b><a name="292">  292</a></b>     return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="293">  293</a></b> 
+<b><a name="294">  294</a></b> }
+<b><a name="295">  295</a></b> 
+<b><a name="296">  296</a></b> 
+<b><a name="297">  297</a></b> 
+<b><a name="298">  298</a></b> /**************************************************************************
+<b><a name="299">  299</a></b>  *  Free the PQGParams struct and the things it points to.                *
+<b><a name="300">  300</a></b>  **************************************************************************/
+<b><a name="301">  301</a></b> extern void 
+<b><a name="302">  302</a></b> <a href="#302">PK11_PQG_DestroyParams</a>(<a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> *params) {
+<b><a name="303">  303</a></b>      <a href="../util/pqgutil.c.dep.html#PQG_DestroyParams">PQG_DestroyParams</a>(params);
+<b><a name="304">  304</a></b>      return;
+<b><a name="305">  305</a></b> }
+<b><a name="306">  306</a></b> 
+<b><a name="307">  307</a></b> /**************************************************************************
+<b><a name="308">  308</a></b>  *  Free the PQGVerify struct and the things it points to.                *
+<b><a name="309">  309</a></b>  **************************************************************************/
+<b><a name="310">  310</a></b> extern void
+<b><a name="311">  311</a></b> <a href="#311">PK11_PQG_DestroyVerify</a>(<a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> *vfy) {
+<b><a name="312">  312</a></b>     <a href="../util/pqgutil.c.dep.html#PQG_DestroyVerify">PQG_DestroyVerify</a>(vfy);
+<b><a name="313">  313</a></b>     return;
+<b><a name="314">  314</a></b> }
+<b><a name="315">  315</a></b> 
+<b><a name="316">  316</a></b> /**************************************************************************
+<b><a name="317">  317</a></b>  *  Return a pointer to a new PQGParams struct that is constructed from   *
+<b><a name="318">  318</a></b>  *  copies of the arguments passed in.                                    *
+<b><a name="319">  319</a></b>  *  Return NULL on failure.                                               *
+<b><a name="320">  320</a></b>  **************************************************************************/
+<b><a name="321">  321</a></b> extern <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> *
+<b><a name="322">  322</a></b> <a href="#322">PK11_PQG_NewParams</a>(const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * prime, const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * subPrime, 
+<b><a name="323">  323</a></b>                                                  const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * <a href="../mozilla/nsprpub/lib/libc/src/base64.c.dep.html#base">base</a><a href="../mozilla/nsprpub/lib/tests/base64t.c.dep.html#base"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/xnotify.c.dep.html#base"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#base"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#base"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#base"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#base"><sup>[6]</sup></a>) {
+<b><a name="324">  324</a></b>     return <a href="../util/pqgutil.c.dep.html#PQG_NewParams">PQG_NewParams</a>(prime, subPrime, <a href="../mozilla/nsprpub/lib/libc/src/base64.c.dep.html#base">base</a><a href="../mozilla/nsprpub/lib/tests/base64t.c.dep.html#base"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/xnotify.c.dep.html#base"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#base"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#base"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#base"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#base"><sup>[6]</sup></a>);
+<b><a name="325">  325</a></b> }
+<b><a name="326">  326</a></b> 
+<b><a name="327">  327</a></b> 
+<b><a name="328">  328</a></b> /**************************************************************************
+<b><a name="329">  329</a></b>  * Fills in caller's "prime" SECItem with the prime value in params.
+<b><a name="330">  330</a></b>  * Contents can be freed by calling SECITEM_FreeItem(prime, PR_FALSE);        
+<b><a name="331">  331</a></b>  **************************************************************************/
+<b><a name="332">  332</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="333">  333</a></b> <a href="#333">PK11_PQG_GetPrimeFromParams</a>(const <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> *params, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * prime) {
+<b><a name="334">  334</a></b>     return <a href="../util/pqgutil.c.dep.html#PQG_GetPrimeFromParams">PQG_GetPrimeFromParams</a>(params, prime);
+<b><a name="335">  335</a></b> }
+<b><a name="336">  336</a></b> 
+<b><a name="337">  337</a></b> 
+<b><a name="338">  338</a></b> /**************************************************************************
+<b><a name="339">  339</a></b>  * Fills in caller's "subPrime" SECItem with the prime value in params.
+<b><a name="340">  340</a></b>  * Contents can be freed by calling SECITEM_FreeItem(subPrime, PR_FALSE);        
+<b><a name="341">  341</a></b>  **************************************************************************/
+<b><a name="342">  342</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="343">  343</a></b> <a href="#343">PK11_PQG_GetSubPrimeFromParams</a>(const <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> *params, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * subPrime) {
+<b><a name="344">  344</a></b>     return <a href="../util/pqgutil.c.dep.html#PQG_GetSubPrimeFromParams">PQG_GetSubPrimeFromParams</a>(params, subPrime);
+<b><a name="345">  345</a></b> }
+<b><a name="346">  346</a></b> 
+<b><a name="347">  347</a></b> 
+<b><a name="348">  348</a></b> /**************************************************************************
+<b><a name="349">  349</a></b>  * Fills in caller's "base" SECItem with the base value in params.
+<b><a name="350">  350</a></b>  * Contents can be freed by calling SECITEM_FreeItem(base, PR_FALSE);        
+<b><a name="351">  351</a></b>  **************************************************************************/
+<b><a name="352">  352</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="353">  353</a></b> <a href="#353">PK11_PQG_GetBaseFromParams</a>(const <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> *params, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/nsprpub/lib/libc/src/base64.c.dep.html#base">base</a><a href="../mozilla/nsprpub/lib/tests/base64t.c.dep.html#base"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/xnotify.c.dep.html#base"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#base"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#base"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#base"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#base"><sup>[6]</sup></a>) {
+<b><a name="354">  354</a></b>     return <a href="../util/pqgutil.c.dep.html#PQG_GetBaseFromParams">PQG_GetBaseFromParams</a>(params, <a href="../mozilla/nsprpub/lib/libc/src/base64.c.dep.html#base">base</a><a href="../mozilla/nsprpub/lib/tests/base64t.c.dep.html#base"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/xnotify.c.dep.html#base"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#base"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#base"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#base"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#base"><sup>[6]</sup></a>);
+<b><a name="355">  355</a></b> }
+<b><a name="356">  356</a></b> 
+<b><a name="357">  357</a></b> 
+<b><a name="358">  358</a></b> /**************************************************************************
+<b><a name="359">  359</a></b>  *  Return a pointer to a new PQGVerify struct that is constructed from   *
+<b><a name="360">  360</a></b>  *  copies of the arguments passed in.                                    *
+<b><a name="361">  361</a></b>  *  Return NULL on failure.                                               *
+<b><a name="362">  362</a></b>  **************************************************************************/
+<b><a name="363">  363</a></b> extern <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> *
+<b><a name="364">  364</a></b> <a href="#364">PK11_PQG_NewVerify</a>(unsigned int <a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#counter">counter</a>, const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * seed, 
+<b><a name="365">  365</a></b>                                                         const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * h) {
+<b><a name="366">  366</a></b>     return <a href="../util/pqgutil.c.dep.html#PQG_NewVerify">PQG_NewVerify</a>(<a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#counter">counter</a>, seed, h);
+<b><a name="367">  367</a></b> }
+<b><a name="368">  368</a></b> 
+<b><a name="369">  369</a></b> 
+<b><a name="370">  370</a></b> /**************************************************************************
+<b><a name="371">  371</a></b>  * Returns "counter" value from the PQGVerify.
+<b><a name="372">  372</a></b>  **************************************************************************/
+<b><a name="373">  373</a></b> extern unsigned int 
+<b><a name="374">  374</a></b> <a href="#374">PK11_PQG_GetCounterFromVerify</a>(const <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> *<a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>) {
+<b><a name="375">  375</a></b>     return <a href="../util/pqgutil.c.dep.html#PQG_GetCounterFromVerify">PQG_GetCounterFromVerify</a>(<a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>);
+<b><a name="376">  376</a></b> }
+<b><a name="377">  377</a></b> 
+<b><a name="378">  378</a></b> /**************************************************************************
+<b><a name="379">  379</a></b>  * Fills in caller's "seed" SECItem with the seed value in verify.
+<b><a name="380">  380</a></b>  * Contents can be freed by calling SECITEM_FreeItem(seed, PR_FALSE);        
+<b><a name="381">  381</a></b>  **************************************************************************/
+<b><a name="382">  382</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="383">  383</a></b> <a href="#383">PK11_PQG_GetSeedFromVerify</a>(const <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> *<a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *seed) {
+<b><a name="384">  384</a></b>     return <a href="../util/pqgutil.c.dep.html#PQG_GetSeedFromVerify">PQG_GetSeedFromVerify</a>(<a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>, seed);
+<b><a name="385">  385</a></b> }
+<b><a name="386">  386</a></b> 
+<b><a name="387">  387</a></b> 
+<b><a name="388">  388</a></b> /**************************************************************************
+<b><a name="389">  389</a></b>  * Fills in caller's "h" SECItem with the h value in verify.
+<b><a name="390">  390</a></b>  * Contents can be freed by calling SECITEM_FreeItem(h, PR_FALSE);        
+<b><a name="391">  391</a></b>  **************************************************************************/
+<b><a name="392">  392</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="393">  393</a></b> <a href="#393">PK11_PQG_GetHFromVerify</a>(const <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> *<a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * h) {
+<b><a name="394">  394</a></b>     return <a href="../util/pqgutil.c.dep.html#PQG_GetHFromVerify">PQG_GetHFromVerify</a>(<a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#verify">verify</a>, h);
+<b><a name="395">  395</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

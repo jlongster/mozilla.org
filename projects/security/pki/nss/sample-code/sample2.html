@@ -1,0 +1,207 @@
+<?php
+
+$html_title = 'sample2';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+ <tt><br>
+ /* Example code to illustrate DES enccryption/decryption using NSS.<br>
+ &nbsp;* The example skips the details of obtaining the Key &amp; IV to use, 
+and<br>
+ &nbsp;* just uses a hardcoded Key &amp; IV. <br>
+ &nbsp;* Note: IV is only needed if Cipher Blocking Chaining (CBC) mode of 
+encryption<br>
+ &nbsp;*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; is used<br>
+ &nbsp;*<br>
+ &nbsp;* The recommended approach is to store and transport WRAPPED (encrypted)<br>
+ &nbsp;* DES Keys (IVs can be in the clear). However, it is a common (and 
+dangerous)<br>
+ &nbsp;* practice to use raw DES Keys. This example shows the use of a RAW 
+key.<br>
+ &nbsp;*/<br>
+ <br>
+ <br>
+ #include "nss.h"<br>
+ #include "pk11pub.h"<br>
+ <br>
+ /* example Key &amp; IV */<br>
+ unsigned char gKey[] = {0xe8, 0xa7, 0x7c, 0xe2, 0x05, 0x63, 0x6a, 0x31};<br>
+ unsigned char gIV[] = {0xe4, 0xbb, 0x3b, 0xd3, 0xc3, 0x71, 0x2e, 0x58};<br>
+ <br>
+ int main(int argc, char **argv)<br>
+ {<br>
+ &nbsp; CK_MECHANISM_TYPE&nbsp; cipherMech;<br>
+ &nbsp; PK11SlotInfo*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; slot = NULL;<br>
+ &nbsp; PK11SymKey*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SymKey = NULL;<br>
+ &nbsp; SECItem*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+SecParam = NULL;<br>
+ &nbsp; PK11Context*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; EncContext = NULL;<br>
+ &nbsp; SECItem&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+keyItem, ivItem;<br>
+ &nbsp; SECStatus&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; rv, 
+rv1, rv2;<br>
+ &nbsp; unsigned char&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; data[1024], buf1[1024], 
+buf2[1024];<br>
+ &nbsp; int&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+i, result_len, tmp1_outlen, tmp2_outlen;<br>
+ <br>
+ &nbsp; /* Initialize NSS<br>
+ &nbsp;&nbsp; * If your application code has already initialized NSS, you 
+can skip it<br>
+ &nbsp;&nbsp; * here.<br>
+ &nbsp;&nbsp; * This code uses the simplest of the Init functions, which
+does not<br>
+ &nbsp;&nbsp; * require a NSS database to exist<br>
+ &nbsp;&nbsp; */<br>
+ &nbsp; rv = NSS_NoDB_Init(".");<br>
+ &nbsp; if (rv != SECSuccess)<br>
+ &nbsp; {<br>
+ &nbsp;&nbsp;&nbsp; fprintf(stderr, "NSS initialization failed (err %d)\n",<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_GetError());<br>
+ &nbsp;&nbsp;&nbsp; goto out;<br>
+ &nbsp; } <br>
+ <br>
+ &nbsp; /* choose mechanism: CKM_DES_CBC_PAD, CKM_DES3_ECB, CKM_DES3_CBC.....&nbsp; 
+<br>
+ &nbsp;&nbsp; * Note that some mechanisms (*_PAD) imply the padding is handled 
+for you <br>
+ &nbsp;&nbsp; * by NSS. If you choose something else, then data padding is 
+the <br>
+ &nbsp;&nbsp; * application's responsibility<br>
+ &nbsp;&nbsp; */<br>
+ &nbsp; cipherMech = CKM_DES_CBC_PAD;<br>
+ &nbsp; slot = PK11_GetBestSlot(cipherMech, NULL);<br>
+ &nbsp; /* slot = PK11_GetInternalKeySlot(); is a simpler alternative but 
+in<br>
+ &nbsp;&nbsp; * theory, it *may not* return the optimal slot for the operation. 
+For<br>
+ &nbsp;&nbsp; * DES ops, Internal slot is typically the best slot<br>
+ &nbsp;&nbsp; */<br>
+ &nbsp; if (slot == NULL)<br>
+ &nbsp; {<br>
+ &nbsp;&nbsp;&nbsp; fprintf(stderr, "Unable to find security device (err
+%d)\n",<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_GetError());<br>
+ &nbsp;&nbsp;&nbsp; goto out;<br>
+ &nbsp; }<br>
+ <br>
+ &nbsp; /* NSS passes blobs around as SECItems. These contain a pointer to 
+<br>
+ &nbsp;&nbsp; * data and a length. Turn the raw key into a SECItem. */<br>
+ &nbsp; keyItem.type = siBuffer;<br>
+ &nbsp; keyItem.data = gKey;<br>
+ &nbsp; keyItem.len = sizeof(gKey);<br>
+ <br>
+ &nbsp; /* Turn the raw key into a key object. We use PK11_OriginUnwrap <br>
+ &nbsp;&nbsp; * to indicate the key was unwrapped - which is what should
+be done <br>
+ &nbsp;&nbsp; * normally anyway - using raw keys isn't a good idea */<br>
+ &nbsp; SymKey = PK11_ImportSymKey(slot, cipherMech, PK11_OriginUnwrap, CKA_ENCRYPT,<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+&amp;keyItem, NULL);<br>
+ &nbsp; if (SymKey == NULL)<br>
+ &nbsp; {<br>
+ &nbsp;&nbsp;&nbsp; fprintf(stderr, "Failure to import key into NSS (err
+%d)\n",<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_GetError());<br>
+ &nbsp;&nbsp;&nbsp; goto out;<br>
+ &nbsp; }<br>
+ <br>
+ &nbsp; /* set up the PKCS11 encryption paramters.<br>
+ &nbsp;&nbsp; * when not using CBC mode, ivItem.data and ivItem.len can be 
+0, or you<br>
+ &nbsp;&nbsp; * can simply pass NULL for the iv parameter in PK11_ParamFromIV 
+func<br>
+ &nbsp;&nbsp; */<br>
+ &nbsp; ivItem.type = siBuffer;<br>
+ &nbsp; ivItem.data = gIV;<br>
+ &nbsp; ivItem.len = sizeof(gIV);<br>
+ &nbsp; SecParam = PK11_ParamFromIV(cipherMech, &amp;ivItem);<br>
+ &nbsp; if (SecParam == NULL)<br>
+ &nbsp; {<br>
+ &nbsp;&nbsp;&nbsp; fprintf(stderr, "Failure to set up PKCS11 param (err
+%d)\n",<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_GetError());<br>
+ &nbsp;&nbsp;&nbsp; goto out;<br>
+ &nbsp; }<br>
+ <br>
+ &nbsp; /* sample data we'll encrypt and decrypt */<br>
+ &nbsp; strcpy(data, "Encrypt me!");<br>
+ &nbsp; fprintf(stderr, "Clear Data: %s\n", data);<br>
+ <br>
+ &nbsp; /* ========================= START SECTION ============================= 
+*/<br>
+ &nbsp; /* If using the the same key and iv over and over, stuff before this&nbsp;&nbsp;&nbsp;&nbsp; 
+*/<br>
+ &nbsp; /* section and after this section needs to be done only ONCE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+*/<br>
+ <br>
+ &nbsp; /* ENCRYPT data into buf1. buf1 len must be atleast (data len + 8) 
+*/<br>
+ &nbsp; tmp1_outlen = tmp2_outlen = 0;<br>
+ &nbsp; <br>
+ &nbsp; /* Create cipher context */<br>
+ &nbsp; EncContext = PK11_CreateContextBySymKey(cipherMech, CKA_ENCRYPT,<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+SymKey, SecParam);<br>
+ &nbsp; rv1 = PK11_CipherOp(EncContext, buf1, &amp;tmp1_outlen, sizeof(buf1),<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+data, strlen(data)+1);<br>
+ &nbsp; rv2 = PK11_DigestFinal(EncContext, buf1+tmp1_outlen, &amp;tmp2_outlen,<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+sizeof(buf1)-tmp1_outlen);<br>
+ &nbsp; PK11_DestroyContext(EncContext, PR_TRUE);<br>
+ &nbsp; result_len = tmp1_outlen + tmp2_outlen;<br>
+ &nbsp; if (rv1 != SECSuccess || rv2 != SECSuccess)<br>
+ &nbsp;&nbsp;&nbsp; goto out;<br>
+ <br>
+ &nbsp; fprintf(stderr, "Encrypted Data: ");<br>
+ &nbsp; for (i=0; i&lt;result_len; i++)<br>
+ &nbsp;&nbsp;&nbsp; fprintf(stderr, "%02x ", buf1[i]);<br>
+ &nbsp; fprintf(stderr, "\n");<br>
+ <br>
+ <br>
+ &nbsp; /* DECRYPT buf1 into buf2. buf2 len must be atleast buf1 len */<br>
+ &nbsp; tmp1_outlen = tmp2_outlen = 0;<br>
+ &nbsp; <br>
+ &nbsp; /* Create cipher context */<br>
+ &nbsp; EncContext = PK11_CreateContextBySymKey(cipherMech, CKA_DECRYPT,<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+SymKey, SecParam);<br>
+ &nbsp; rv1 = PK11_CipherOp(EncContext, buf2, &amp;tmp1_outlen, sizeof(buf2),<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+buf1, result_len);<br>
+ &nbsp; rv2 = PK11_DigestFinal(EncContext, buf2+tmp1_outlen, &amp;tmp2_outlen,<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+result_len-tmp1_outlen);<br>
+ &nbsp; PK11_DestroyContext(EncContext, PR_TRUE);<br>
+ &nbsp; result_len = tmp1_outlen + tmp2_outlen;<br>
+ &nbsp; if (rv1 != SECSuccess || rv2 != SECSuccess)<br>
+ &nbsp;&nbsp;&nbsp; goto out;<br>
+ &nbsp; <br>
+ &nbsp; fprintf(stderr, "Decrypted Data: %s\n", buf2);<br>
+ <br>
+ &nbsp; /* =========================== END SECTION ============================= 
+*/<br>
+ <br>
+ &nbsp; <br>
+ out:<br>
+ &nbsp; if (SymKey)<br>
+ &nbsp;&nbsp;&nbsp; PK11_FreeSymKey(SymKey);<br>
+ &nbsp; if (SecParam)<br>
+ &nbsp;&nbsp;&nbsp; SECITEM_FreeItem(SecParam, PR_TRUE);<br>
+ <br>
+ }</tt><br>
+ <br>
+ 
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

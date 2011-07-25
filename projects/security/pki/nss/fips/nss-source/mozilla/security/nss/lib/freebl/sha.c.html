@@ -1,0 +1,179 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is SHA 180-1 Reference Implementation (Compact version).
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Paul Kocher of Cryptography Research.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1995-9
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> #include "sha.h"
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> static void <a href="#39">shaHashBlock</a>(<a href="../freebl/sha.h.dep.html#SHA_CTX">SHA_CTX</a> *ctx);
+<b><a name="40">   40</a></b> 
+<b><a name="41">   41</a></b> void <a href="#41">shaInit</a>(<a href="../freebl/sha.h.dep.html#SHA_CTX">SHA_CTX</a> *ctx) {
+<b><a name="42">   42</a></b>   <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="43">   43</a></b> 
+<b><a name="44">   44</a></b>   ctx-&gt;lenW = 0;
+<b><a name="45">   45</a></b>   ctx-&gt;sizeHi = ctx-&gt;sizeLo = 0;
+<b><a name="46">   46</a></b> 
+<b><a name="47">   47</a></b>   /* Initialize H with the magic constants (see FIPS180 for constants)
+<b><a name="48">   48</a></b>    */
+<b><a name="49">   49</a></b>   ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[0] = 0x67452301L;
+<b><a name="50">   50</a></b>   ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[1] = 0xefcdab89L;
+<b><a name="51">   51</a></b>   ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2] = 0x98badcfeL;
+<b><a name="52">   52</a></b>   ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[3] = 0x10325476L;
+<b><a name="53">   53</a></b>   ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[4] = 0xc3d2e1f0L;
+<b><a name="54">   54</a></b> 
+<b><a name="55">   55</a></b>   for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; 80; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++)
+<b><a name="56">   56</a></b>     ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = 0;
+<b><a name="57">   57</a></b> }
+<b><a name="58">   58</a></b> 
+<b><a name="59">   59</a></b> 
+<b><a name="60">   60</a></b> void <a href="#60">shaUpdate</a>(<a href="../freebl/sha.h.dep.html#SHA_CTX">SHA_CTX</a> *ctx, unsigned char *dataIn, int len) {
+<b><a name="61">   61</a></b>   <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="62">   62</a></b> 
+<b><a name="63">   63</a></b>   /* Read the data into W and process blocks as they get full
+<b><a name="64">   64</a></b>    */
+<b><a name="65">   65</a></b>   for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; len; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="66">   66</a></b>     ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[ctx-&gt;len<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> / 4] &lt;&lt;= 8;
+<b><a name="67">   67</a></b>     ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[ctx-&gt;len<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> / 4] |= (uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned long)dataIn[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>];
+<b><a name="68">   68</a></b>     if ((++ctx-&gt;lenW) % 64 == 0) {
+<b><a name="69">   69</a></b>       <a href="../freebl/sha.c.dep.html#shaHashBlock">shaHashBlock</a>(ctx);
+<b><a name="70">   70</a></b>       ctx-&gt;lenW = 0;
+<b><a name="71">   71</a></b>     }
+<b><a name="72">   72</a></b>     ctx-&gt;sizeLo += 8;
+<b><a name="73">   73</a></b>     ctx-&gt;sizeHi += (ctx-&gt;sizeLo &lt; 8);
+<b><a name="74">   74</a></b>   }
+<b><a name="75">   75</a></b> }
+<b><a name="76">   76</a></b> 
+<b><a name="77">   77</a></b> 
+<b><a name="78">   78</a></b> void <a href="#78">shaFinal</a>(<a href="../freebl/sha.h.dep.html#SHA_CTX">SHA_CTX</a> *ctx, unsigned char hashout[20]) {
+<b><a name="79">   79</a></b>   unsigned char pad0x80 = 0x80;
+<b><a name="80">   80</a></b>   unsigned char pad0x00 = 0x00;
+<b><a name="81">   81</a></b>   unsigned char padlen[8];
+<b><a name="82">   82</a></b>   <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="83">   83</a></b> 
+<b><a name="84">   84</a></b>   /* Pad with a binary 1 (e.g. 0x80), then zeroes, then length
+<b><a name="85">   85</a></b>    */
+<b><a name="86">   86</a></b>   padlen[0] = (unsigned char)((ctx-&gt;sizeHi &gt;&gt; 24) &amp; 255);
+<b><a name="87">   87</a></b>   padlen[1] = (unsigned char)((ctx-&gt;sizeHi &gt;&gt; 16) &amp; 255);
+<b><a name="88">   88</a></b>   padlen[2] = (unsigned char)((ctx-&gt;sizeHi &gt;&gt; 8) &amp; 255);
+<b><a name="89">   89</a></b>   padlen[3] = (unsigned char)((ctx-&gt;sizeHi &gt;&gt; 0) &amp; 255);
+<b><a name="90">   90</a></b>   padlen[4] = (unsigned char)((ctx-&gt;sizeLo &gt;&gt; 24) &amp; 255);
+<b><a name="91">   91</a></b>   padlen[5] = (unsigned char)((ctx-&gt;sizeLo &gt;&gt; 16) &amp; 255);
+<b><a name="92">   92</a></b>   padlen[6] = (unsigned char)((ctx-&gt;sizeLo &gt;&gt; 8) &amp; 255);
+<b><a name="93">   93</a></b>   padlen[7] = (unsigned char)((ctx-&gt;sizeLo &gt;&gt; 0) &amp; 255);
+<b><a name="94">   94</a></b>   <a href="../freebl/sha.c.dep.html#shaUpdate">shaUpdate</a>(ctx, &amp;pad0x80, 1);
+<b><a name="95">   95</a></b>   while (ctx-&gt;lenW != 56)
+<b><a name="96">   96</a></b>     <a href="../freebl/sha.c.dep.html#shaUpdate">shaUpdate</a>(ctx, &amp;pad0x00, 1);
+<b><a name="97">   97</a></b>   <a href="../freebl/sha.c.dep.html#shaUpdate">shaUpdate</a>(ctx, padlen, 8);
+<b><a name="98">   98</a></b> 
+<b><a name="99">   99</a></b>   /* Output hash
+<b><a name="100">  100</a></b>    */
+<b><a name="101">  101</a></b>   for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; 20; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="102">  102</a></b>     hashout[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = (uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned char)(ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> / 4] &gt;&gt; 24);
+<b><a name="103">  103</a></b>     ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> / 4] &lt;&lt;= 8;
+<b><a name="104">  104</a></b>   }
+<b><a name="105">  105</a></b> 
+<b><a name="106">  106</a></b>   /*
+<b><a name="107">  107</a></b>    *  Re-initialize the context (also zeroizes contents)
+<b><a name="108">  108</a></b>    */
+<b><a name="109">  109</a></b>   <a href="../freebl/sha.c.dep.html#shaInit">shaInit</a>(ctx);
+<b><a name="110">  110</a></b> }
+<b><a name="111">  111</a></b> 
+<b><a name="112">  112</a></b> 
+<b><a name="113">  113</a></b> void <a href="#113">shaBlock</a>(unsigned char *dataIn, int len, unsigned char hashout[20]) {
+<b><a name="114">  114</a></b>   <a href="../freebl/sha.h.dep.html#SHA_CTX">SHA_CTX</a> ctx;
+<b><a name="115">  115</a></b> 
+<b><a name="116">  116</a></b>   <a href="../freebl/sha.c.dep.html#shaInit">shaInit</a>(&amp;ctx);
+<b><a name="117">  117</a></b>   <a href="../freebl/sha.c.dep.html#shaUpdate">shaUpdate</a>(&amp;ctx, dataIn, len);
+<b><a name="118">  118</a></b>   <a href="../freebl/sha.c.dep.html#shaFinal">shaFinal</a>(&amp;ctx, hashout);
+<b><a name="119">  119</a></b> }
+<b><a name="120">  120</a></b> 
+<b><a name="121">  121</a></b> 
+<b><a name="122">  122</a></b> #define <a href="#122">SHA_ROTL</a>(X,n) (((X) &lt;&lt; (n)) | ((X) &gt;&gt; (32-(n))))
+<b><a name="123">  123</a></b> 
+<b><a name="124">  124</a></b> static void <a href="#124">shaHashBlock</a>(<a href="../freebl/sha.h.dep.html#SHA_CTX">SHA_CTX</a> *ctx) {
+<b><a name="125">  125</a></b>   int t;
+<b><a name="126">  126</a></b>   unsigned long <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>,<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>,C,D,E,TEMP;
+<b><a name="127">  127</a></b> 
+<b><a name="128">  128</a></b>   for (t = 16; t &lt;= 79; t++)
+<b><a name="129">  129</a></b>     ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t] =
+<b><a name="130">  130</a></b>       <a href="../freebl/sha.c.dep.html#SHA_ROTL">SHA_ROTL</a><a href="../freebl/sha_fast.h.dep.html#SHA_ROTL"><sup>[1]</sup></a></a></a>(ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-3] ^ ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-8] ^ ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-14] ^ ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-16], 1);
+<b><a name="131">  131</a></b> 
+<b><a name="132">  132</a></b>   <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a> = ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[0];
+<b><a name="133">  133</a></b>   <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a> = ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[1];
+<b><a name="134">  134</a></b>   C = ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2];
+<b><a name="135">  135</a></b>   D = ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[3];
+<b><a name="136">  136</a></b>   E = ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[4];
+<b><a name="137">  137</a></b> 
+<b><a name="138">  138</a></b>   for (t = 0; t &lt;= 19; t++) {
+<b><a name="139">  139</a></b>     TEMP = SH<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>_ROTL(<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>,5) + (((C^D)&amp;<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>)^D)     + E + ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t] + 0x5a827999L;
+<b><a name="140">  140</a></b>     E = D; D = C; C = SH<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>_ROTL(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, 30); <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a> = <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>; <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a> = TEMP;
+<b><a name="141">  141</a></b>   }
+<b><a name="142">  142</a></b>   for (t = 20; t &lt;= 39; t++) {
+<b><a name="143">  143</a></b>     TEMP = SH<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>_ROTL(<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>,5) + (<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>^C^D)           + E + ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t] + 0x6ed9eba1L;
+<b><a name="144">  144</a></b>     E = D; D = C; C = SH<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>_ROTL(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, 30); <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a> = <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>; <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a> = TEMP;
+<b><a name="145">  145</a></b>   }
+<b><a name="146">  146</a></b>   for (t = 40; t &lt;= 59; t++) {
+<b><a name="147">  147</a></b>     TEMP = SH<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>_ROTL(<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>,5) + ((<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>&amp;C)|(D&amp;(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>|C))) + E + ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t] + 0x8f1bbcdcL;
+<b><a name="148">  148</a></b>     E = D; D = C; C = SH<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>_ROTL(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, 30); <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a> = <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>; <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a> = TEMP;
+<b><a name="149">  149</a></b>   }
+<b><a name="150">  150</a></b>   for (t = 60; t &lt;= 79; t++) {
+<b><a name="151">  151</a></b>     TEMP = SH<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>_ROTL(<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>,5) + (<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>^C^D)           + E + ctx-&gt;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t] + 0xca62c1d6L;
+<b><a name="152">  152</a></b>     E = D; D = C; C = SH<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>_ROTL(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, 30); <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a> = <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>; <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a> = TEMP;
+<b><a name="153">  153</a></b>   }
+<b><a name="154">  154</a></b> 
+<b><a name="155">  155</a></b>   ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[0] += <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>;
+<b><a name="156">  156</a></b>   ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[1] += <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>;
+<b><a name="157">  157</a></b>   ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2] += C;
+<b><a name="158">  158</a></b>   ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[3] += D;
+<b><a name="159">  159</a></b>   ctx-&gt;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[4] += E;
+<b><a name="160">  160</a></b> }
+<b><a name="161">  161</a></b> 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

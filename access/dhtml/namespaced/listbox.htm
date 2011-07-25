@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="http://www.w3.org/StyleSheets/TR/base"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:wairole="http://www.w3.org/2005/01/wai-rdf/GUIRoleTaxonomy#"
+      xmlns:aaa="http://www.w3.org/2005/07/aaa">
+<head>
+<meta http-equiv="content-type" content="text/xhtml; charset=utf-8" />
+<title>Listbox</title>
+<style type="text/css">
+  @namespace wairole  url("http://www.w3.org/2005/01/wai-rdf/GUIRoleTaxonomy#");
+  @namespace aaa url("http://www.w3.org/2005/07/aaa");
+  div[role="wairole:listbox"] { overflow: auto; width: 20%; height: 25em; cursor: default; border: 1px solid gray; padding-left: .5em;}
+  div[role="wairole:listbox"] > div[role="wairole:option"].selected { color: black; background-color: beige; }
+  div[role="wairole:listbox"]:focus > div[role="wairole:option"].selected { color: white; background-color: #222222; }
+</style>
+<script>
+<![CDATA[
+function getFirstOption(listbox)
+{
+  var option = listbox.firstChild;
+  if (isText(option)) {
+    option = getRelativeOption(option, 1, false);
+  }
+  return option;
+};
+
+function getLastOption(listbox)
+{
+  var option = listbox.lastChild;
+  if (isText(option)) {
+    option = getRelativeOption(option, -1, false);
+  }
+  return option;
+};
+
+function getList(option)
+{
+  return option.parentNode;
+};
+
+function isText(node)
+{
+  return node && node.nodeType == node.TEXT_NODE;
+};
+
+function getRelativeOption(option, delta, wrap)
+{
+  // delta: -1 = prev, 1 = next
+  if (delta == 1) {  // Next
+    var newOption = option.nextSibling;
+    if (isText(newOption)) {
+      newOption = newOption.nextSibling;
+    }
+    if (newOption && newOption.getAttribute("role") == "wairole:option") {
+      return newOption;
+    }
+    return wrap ? getFirstOption(getList(option)) : option;
+  }
+  var newOption = option.previousSibling;
+  if (isText(newOption)) {
+    newOption = newOption.previousSibling;
+  }
+  if (newOption && newOption.getAttribute("role") == "wairole:option") {
+    return newOption;
+  }
+  return wrap ? getLastOption(getList(option)) : option;
+};
+
+function optionKeyEvent(event)
+{
+  var listbox = event.target;
+  var selectionDelta = 0;  // (-1 = up, 0 = no change, 1 = down)
+
+  if (event.type == "keydown") {
+    if (event.altKey) {
+      return true;  // Browser should use this, the listbox view doesn't need alt-modified keys
+    }
+    // XXX Implement multiple selection (ctrl+arrow, shift+arrow, ctrl+space)
+    if (event.keyCode == event.DOM_VK_HOME) {
+      try {
+        setSelectedOption(getFirstOption(listbox));
+      } catch(ex) { }
+      return false;
+    }
+    if (event.keyCode == event.DOM_VK_END) {
+      try {
+        setSelectedOption(getLastOption(listbox));
+      } catch(ex) { }
+      return false;
+    }
+    if (event.keyCode == event.DOM_VK_DOWN) {
+      selectionDelta = 1;
+    }
+    else if (event.keyCode == event.DOM_VK_UP) {
+      selectionDelta = -1;
+    }
+    else {
+      return true;  // We didn't need key, don't consume event
+    }
+  }
+  else if (event.type == "keypress") {
+    var option = getSelectedOption(listbox);
+    // Implement incremental find here, instead of keydown, because we
+    // need to capture printable characters in a keypress handler
+    var key;
+    if (event.charCode > ' ' && !event.altKey && !event.ctrlKey &&
+       !event.shiftKey && !event.metaKey) {
+      key = String.fromCharCode(event.charCode);
+    }
+    else {
+      listbox._incrementalString = "";
+      return true;
+    }
+    key = key.toLowerCase();
+    if (event.timeStamp - listbox._lastKeyTime > 1000)
+      listbox._incrementalString = key;
+    else
+      listbox._incrementalString += key;
+    listbox._lastKeyTime = event.timeStamp;
+    var length = listbox._incrementalString.length;
+    var incrementalString = listbox._incrementalString;
+    var charIndex = 1;
+    while (charIndex < length && incrementalString[charIndex] == incrementalString[charIndex - 1])
+      charIndex++;
+    // If all letters in incremental string are same, just try to match the first one
+    if (charIndex == length) {
+      length = 1;
+      incrementalString = incrementalString.substring(0, length);
+    }
+    var origOption = option;
+    if (length == 1) {
+      option = getRelativeOption(option, 1, true);
+    }
+    do {
+      var text = option.firstChild.data;
+      if (option.firstChild.data.substring(0, length).toLowerCase() == incrementalString) {
+        setSelectedOption(option);
+        return false;
+      }
+      option = getRelativeOption(option, 1, true);
+    } while (option != origOption);
+    return false;
+  }
+
+  if (selectionDelta) {
+    option = getRelativeOption(getSelectedOption(listbox), selectionDelta, false);
+    setSelectedOption(option);
+    return false;
+  }
+  return true;  // Browser can still use event
+};
+
+function optionClick(event)
+{
+  // Cache last focused listbox item on the listbox
+  // The last focused item is always the only item in the tab order for this listbox,
+  // so we need to set its tabindex to 0, and the others to -1
+  var target = event.target;
+  if (target.getAttribute("role") != "wairole:option") {
+    return;
+  }
+  setSelectedOption(target);
+};
+
+function getSelectedOption(listbox)
+{
+  var oldOptionId = listbox.getAttributeNS("http://www.w3.org/2005/07/aaa", "activedescendant");
+  return document.getElementById(oldOptionId);
+}
+
+function setSelectedOption(option)
+{
+  if (option.getAttribute("role") != "wairole:option") {
+    alert("Not an option");
+    return;
+  }
+  var listbox = getList(option);
+  var oldOption = getSelectedOption(listbox);
+
+  // Set class so that we show selection appearance
+  oldOption.removeAttribute("class");
+  option.setAttribute("class", "selected");
+  listbox.setAttributeNS("http://www.w3.org/2005/07/aaa", "activedescendant", option.id);
+};
+]]>
+</script>
+</head>
+<body>
+<h1>Accessible ARIA Listbox</h1>
+<p>How to use: keyboard works as in normal listbox view. This example uses activedescendant to style the current item, instead of focusing it</p>
+<div role="wairole:listbox" tabindex="0" id="list1"
+     onclick="return optionClick(event);"
+     onkeydown="return optionKeyEvent(event);"
+     onkeypress="return optionKeyEvent(event);"
+     aaa:activedescendant="list1-1">
+  <div role="wairole:option" id="list1-1" class="selected">Green</div>
+  <div role="wairole:option" id="list1-2">Orange</div>
+  <div role="wairole:option" id="list1-3">Red</div>
+  <div role="wairole:option" id="list1-4">Blue</div>
+  <div role="wairole:option" id="list1-5">Violet</div>
+  <div role="wairole:option" id="list1-6">Periwinkle</div>
+</div>
+
+<input type="text"/>
+</body>
+</html>

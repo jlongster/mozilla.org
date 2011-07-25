@@ -1,0 +1,698 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> /*
+<b><a name="38">   38</a></b>  * PQG parameter generation/verification.  Based on FIPS 186-1.
+<b><a name="39">   39</a></b>  *
+<b><a name="40">   40</a></b>  * $Id$
+<b><a name="41">   41</a></b>  */
+<b><a name="42">   42</a></b> 
+<b><a name="43">   43</a></b> #include "prerr.h"
+<b><a name="44">   44</a></b> #include "secerr.h"
+<b><a name="45">   45</a></b> 
+<b><a name="46">   46</a></b> #include "prtypes.h"
+<b><a name="47">   47</a></b> #include "blapi.h"
+<b><a name="48">   48</a></b> #include "secitem.h"
+<b><a name="49">   49</a></b> #include "mpi.h"
+<b><a name="50">   50</a></b> #include "mpprime.h"
+<b><a name="51">   51</a></b> #include "mplogic.h"
+<b><a name="52">   52</a></b> #include "secmpi.h"
+<b><a name="53">   53</a></b> 
+<b><a name="54">   54</a></b> #define <a href="#54">MAX_ITERATIONS</a> 600  /* Maximum number of iterations of primegen */
+<b><a name="55">   55</a></b> #define <a href="#55">PQG_Q_PRIMALITY_TESTS</a> 18 /* from HAC table 4.4 */
+<b><a name="56">   56</a></b> #define <a href="#56">PQG_P_PRIMALITY_TESTS</a> 5  /* from HAC table 4.4 */
+<b><a name="57">   57</a></b> 
+<b><a name="58">   58</a></b>  /* XXX to be replaced by define in blapit.h */
+<b><a name="59">   59</a></b> #define <a href="#59">BITS_IN_Q</a> 160
+<b><a name="60">   60</a></b> 
+<b><a name="61">   61</a></b> /* For FIPS-compliance testing.
+<b><a name="62">   62</a></b> ** The following array holds the seed defined in FIPS 186-1 appendix 5.
+<b><a name="63">   63</a></b> ** This seed is used to generate P and Q according to appendix 2; use of
+<b><a name="64">   64</a></b> ** this seed will exactly generate the PQG specified in appendix 2.
+<b><a name="65">   65</a></b> */
+<b><a name="66">   66</a></b> #ifdef FIPS_186_1_A5_TEST
+<b><a name="67">   67</a></b> static const unsigned char <a href="#67">fips_186_1_a5_pqseed</a>[] = {
+<b><a name="68">   68</a></b>     0xd5, 0x01, 0x4e, 0x4b, 0x60, 0xef, 0x2b, 0xa8,
+<b><a name="69">   69</a></b>     0xb6, 0x21, 0x1b, 0x40, 0x62, 0xba, 0x32, 0x24,
+<b><a name="70">   70</a></b>     0xe0, 0x42, 0x7d, 0xd3
+<b><a name="71">   71</a></b> };
+<b><a name="72">   72</a></b> #endif
+<b><a name="73">   73</a></b> 
+<b><a name="74">   74</a></b> /* Get a seed for generating P and Q.  If in testing mode, copy in the
+<b><a name="75">   75</a></b> ** seed from FIPS 186-1 appendix 5.  Otherwise, obtain bytes from the
+<b><a name="76">   76</a></b> ** global random number generator.
+<b><a name="77">   77</a></b> */
+<b><a name="78">   78</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="79">   79</a></b> <a href="#79">getPQseed</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *seed, PRArenaPool* arena)
+<b><a name="80">   80</a></b> {
+<b><a name="81">   81</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv;
+<b><a name="82">   82</a></b> 
+<b><a name="83">   83</a></b>     if (!seed-&gt;data) {
+<b><a name="84">   84</a></b>         seed-&gt;data = (unsigned char*)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, seed-&gt;len);
+<b><a name="85">   85</a></b>     }
+<b><a name="86">   86</a></b>     if (!seed-&gt;data) {
+<b><a name="87">   87</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="88">   88</a></b>         return SECFailure;
+<b><a name="89">   89</a></b>     }
+<b><a name="90">   90</a></b> #ifdef FIPS_186_1_A5_TEST
+<b><a name="91">   91</a></b>     memcpy(seed-&gt;data, <a href="../freebl/pqg.c.dep.html#fips_186_1_a5_pqseed">fips_186_1_a5_pqseed</a>, seed-&gt;len);
+<b><a name="92">   92</a></b>     return SECSuccess;
+<b><a name="93">   93</a></b> #else
+<b><a name="94">   94</a></b>     rv = <a href="../freebl/prng_fips1861.c.dep.html#RNG_GenerateGlobalRandomBytes">RNG_GenerateGlobalRandomBytes</a>(seed-&gt;data, seed-&gt;len);
+<b><a name="95">   95</a></b>     /*
+<b><a name="96">   96</a></b>      * NIST CMVP disallows a sequence of 20 bytes with the most
+<b><a name="97">   97</a></b>      * significant byte equal to 0.  Perhaps they interpret
+<b><a name="98">   98</a></b>      * "a sequence of at least 160 bits" as "a number &gt;= 2^159".
+<b><a name="99">   99</a></b>      * So we always set the most significant bit to 1. (bug 334533)
+<b><a name="100">  100</a></b>      */
+<b><a name="101">  101</a></b>     seed-&gt;data[0] |= 0x80;
+<b><a name="102">  102</a></b>     return rv;
+<b><a name="103">  103</a></b> #endif
+<b><a name="104">  104</a></b> }
+<b><a name="105">  105</a></b> 
+<b><a name="106">  106</a></b> /* Generate a candidate h value.  If in testing mode, use the h value
+<b><a name="107">  107</a></b> ** specified in FIPS 186-1 appendix 5, h = 2.  Otherwise, obtain bytes
+<b><a name="108">  108</a></b> ** from the global random number generator.
+<b><a name="109">  109</a></b> */
+<b><a name="110">  110</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="111">  111</a></b> <a href="#111">generate_h_candidate</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *hit, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>)
+<b><a name="112">  112</a></b> {
+<b><a name="113">  113</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECSuccess;
+<b><a name="114">  114</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>   err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="115">  115</a></b> #ifdef FIPS_186_1_A5_TEST
+<b><a name="116">  116</a></b>     memset(hit-&gt;data, 0, hit-&gt;len);
+<b><a name="117">  117</a></b>     hit-&gt;data[hit-&gt;len-1] = 0x02;
+<b><a name="118">  118</a></b> #else
+<b><a name="119">  119</a></b>     rv = <a href="../freebl/prng_fips1861.c.dep.html#RNG_GenerateGlobalRandomBytes">RNG_GenerateGlobalRandomBytes</a>(hit-&gt;data, hit-&gt;len);
+<b><a name="120">  120</a></b> #endif
+<b><a name="121">  121</a></b>     if (rv)
+<b><a name="122">  122</a></b>         return SECFailure;
+<b><a name="123">  123</a></b>     err = <a href="../freebl/mpi/mpi.c.dep.html#mp_read_unsigned_octets">mp_read_unsigned_octets</a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, hit-&gt;data, hit-&gt;len);
+<b><a name="124">  124</a></b>     if (err) {
+<b><a name="125">  125</a></b>         <a href="../freebl/secmpi.h.dep.html#MP_TO_SEC_ERROR">MP_TO_SEC_ERROR</a>(err);
+<b><a name="126">  126</a></b>         return SECFailure;
+<b><a name="127">  127</a></b>     }
+<b><a name="128">  128</a></b>     return SECSuccess;
+<b><a name="129">  129</a></b> }
+<b><a name="130">  130</a></b> 
+<b><a name="131">  131</a></b> /* Compute SHA[(SEED + addend) mod 2**g]
+<b><a name="132">  132</a></b> ** Result is placed in shaOutBuf.
+<b><a name="133">  133</a></b> ** This computation is used in steps 2 and 7 of FIPS 186 Appendix 2.2 .
+<b><a name="134">  134</a></b> */
+<b><a name="135">  135</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="136">  136</a></b> <a href="#136">addToSeedThenSHA</a>(const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * seed,
+<b><a name="137">  137</a></b>                  unsigned long   addend,
+<b><a name="138">  138</a></b>                  int             g,
+<b><a name="139">  139</a></b>                  unsigned char * shaOutBuf)
+<b><a name="140">  140</a></b> {
+<b><a name="141">  141</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> str = { 0, 0, 0 };
+<b><a name="142">  142</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> s, sum, modulus, <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="143">  143</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>    err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="144">  144</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv  = SECSuccess;
+<b><a name="145">  145</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;s)       = 0;
+<b><a name="146">  146</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;sum)     = 0;
+<b><a name="147">  147</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;modulus) = 0;
+<b><a name="148">  148</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>)     = 0;
+<b><a name="149">  149</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;s) );
+<b><a name="150">  150</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;sum) );
+<b><a name="151">  151</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;modulus) );
+<b><a name="152">  152</a></b>     <a href="../freebl/secmpi.h.dep.html#SECITEM_TO_MPINT">SECITEM_TO_MPINT</a>(*seed, &amp;s); /* s = seed */
+<b><a name="153">  153</a></b>     /* seed += addend */
+<b><a name="154">  154</a></b>     if (addend &lt; <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGIT_MAX">MP_DIGIT_MAX</a></a></a>) {
+<b><a name="155">  155</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_add_d">mp_add_d</a>(&amp;s, (<a href="../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>)addend, &amp;s) );
+<b><a name="156">  156</a></b>     } else {
+<b><a name="157">  157</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>) );
+<b><a name="158">  158</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_set_ulong">mp_set_ulong</a>(&amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, addend) );
+<b><a name="159">  159</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_add">mp_add</a>(&amp;s, &amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, &amp;s) );
+<b><a name="160">  160</a></b>     }
+<b><a name="161">  161</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_div_2d">mp_div_2d</a>(&amp;s, (<a href="../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>)g, NULL, &amp;sum) );/*sum = s mod 2**g */
+<b><a name="162">  162</a></b>     <a href="../freebl/secmpi.h.dep.html#MPINT_TO_SECITEM">MPINT_TO_SECITEM</a>(&amp;sum, &amp;str, NULL);
+<b><a name="163">  163</a></b>     rv = <a href="../freebl/sha_fast.c.dep.html#SHA1_HashBuf">SHA1_HashBuf</a>(shaOutBuf, str.data, str.len); /* SHA1 hash result */
+<b><a name="164">  164</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="165">  165</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;s);
+<b><a name="166">  166</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;sum);
+<b><a name="167">  167</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;modulus);
+<b><a name="168">  168</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>);
+<b><a name="169">  169</a></b>     if (str.data)
+<b><a name="170">  170</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(&amp;str, PR_FALSE);
+<b><a name="171">  171</a></b>     if (err) {
+<b><a name="172">  172</a></b>         <a href="../freebl/secmpi.h.dep.html#MP_TO_SEC_ERROR">MP_TO_SEC_ERROR</a>(err);
+<b><a name="173">  173</a></b>         return SECFailure;
+<b><a name="174">  174</a></b>     }
+<b><a name="175">  175</a></b>     return rv;
+<b><a name="176">  176</a></b> }
+<b><a name="177">  177</a></b> 
+<b><a name="178">  178</a></b> /*
+<b><a name="179">  179</a></b> **  Perform steps 2 and 3 of FIPS 186, appendix 2.2.
+<b><a name="180">  180</a></b> **  Generate Q from seed.
+<b><a name="181">  181</a></b> */
+<b><a name="182">  182</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="183">  183</a></b> <a href="#183">makeQfromSeed</a>(
+<b><a name="184">  184</a></b>       unsigned int  g,          /* input.  Length of seed in bits. */
+<b><a name="185">  185</a></b> const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>   *   seed,       /* input.  */
+<b><a name="186">  186</a></b>       <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a>    *   Q)          /* output. */
+<b><a name="187">  187</a></b> {
+<b><a name="188">  188</a></b>     unsigned char <a href="../util/secoid.c.dep.html#sha1">sha1</a>[<a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>];
+<b><a name="189">  189</a></b>     unsigned char sha2[<a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>];
+<b><a name="190">  190</a></b>     unsigned char U[<a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>];
+<b><a name="191">  191</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv  = SECSuccess;
+<b><a name="192">  192</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>    err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="193">  193</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="194">  194</a></b>     /* ******************************************************************
+<b><a name="195">  195</a></b>     ** Step 2.
+<b><a name="196">  196</a></b>     ** "Compute U = SHA[SEED] XOR SHA[(SEED+1) mod 2**g]."
+<b><a name="197">  197</a></b>     **/
+<b><a name="198">  198</a></b>     <a href="../softoken/ecdecode.c.dep.html#CHECK_SEC_OK">CHECK_SEC_OK</a><a href="../freebl/secmpi.h.dep.html#CHECK_SEC_OK"><sup>[1]</sup></a>( <a href="../freebl/sha_fast.c.dep.html#SHA1_HashBuf">SHA1_HashBuf</a>(<a href="../util/secoid.c.dep.html#sha1">sha1</a>, seed-&gt;data, seed-&gt;len) );
+<b><a name="199">  199</a></b>     <a href="../softoken/ecdecode.c.dep.html#CHECK_SEC_OK">CHECK_SEC_OK</a><a href="../freebl/secmpi.h.dep.html#CHECK_SEC_OK"><sup>[1]</sup></a>( <a href="../freebl/pqg.c.dep.html#addToSeedThenSHA">addToSeedThenSHA</a>(seed, 1, g, sha2) );
+<b><a name="200">  200</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;<a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>; ++<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) 
+<b><a name="201">  201</a></b>         U[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = <a href="../ut<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>l/seco<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>d.c.dep.html#sha1">sha1</a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] ^ sha2[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>];
+<b><a name="202">  202</a></b>     /* ******************************************************************
+<b><a name="203">  203</a></b>     ** Step 3.
+<b><a name="204">  204</a></b>     ** "Form Q from U by setting the most signficant bit (the 2**159 bit)
+<b><a name="205">  205</a></b>     **  and the least signficant bit to 1.  In terms of boolean operations,
+<b><a name="206">  206</a></b>     **  Q = U OR 2**159 OR 1.  Note that 2**159 &lt; Q &lt; 2**160."
+<b><a name="207">  207</a></b>     */
+<b><a name="208">  208</a></b>     U[0]             |= 0x80;  /* U is MSB first */
+<b><a name="209">  209</a></b>     U[<a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>-1] |= 0x01;
+<b><a name="210">  210</a></b>     err = <a href="../freebl/mpi/mpi.c.dep.html#mp_read_unsigned_octets">mp_read_unsigned_octets</a>(Q, U, <a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>);
+<b><a name="211">  211</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="212">  212</a></b>      memset(U, 0, <a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>);
+<b><a name="213">  213</a></b>      memset(<a href="../util/secoid.c.dep.html#sha1">sha1</a>, 0, <a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>);
+<b><a name="214">  214</a></b>      memset(sha2, 0, <a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>);
+<b><a name="215">  215</a></b>      if (err) {
+<b><a name="216">  216</a></b>         <a href="../freebl/secmpi.h.dep.html#MP_TO_SEC_ERROR">MP_TO_SEC_ERROR</a>(err);
+<b><a name="217">  217</a></b>         return SECFailure;
+<b><a name="218">  218</a></b>      }
+<b><a name="219">  219</a></b>      return rv;
+<b><a name="220">  220</a></b> }
+<b><a name="221">  221</a></b> 
+<b><a name="222">  222</a></b> /*  Perform steps 7, 8 and 9 of FIPS 186, appendix 2.2.
+<b><a name="223">  223</a></b> **  Generate P from Q, seed, L, and offset.
+<b><a name="224">  224</a></b> */
+<b><a name="225">  225</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="226">  226</a></b> <a href="#226">makePfromQandSeed</a>(
+<b><a name="227">  227</a></b>       unsigned int  L,          /* Length of P in bits.  Per FIPS 186. */
+<b><a name="228">  228</a></b>       unsigned int  offset,     /* Per FIPS 186, appendix 2.2. */
+<b><a name="229">  229</a></b>       unsigned int  g,          /* input.  Length of seed in bits. */
+<b><a name="230">  230</a></b> const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>   *   seed,       /* input.  */
+<b><a name="231">  231</a></b> const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a>    *   Q,          /* input.  */
+<b><a name="232">  232</a></b>       <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a>    *   <a href="../freebl/mksp.c.dep.html#P">P</a>)          /* output. */
+<b><a name="233">  233</a></b> {
+<b><a name="234">  234</a></b>     unsigned int  k;            /* Per FIPS 186, appendix 2.2. */
+<b><a name="235">  235</a></b>     unsigned int  n;            /* Per FIPS 186, appendix 2.2. */
+<b><a name="236">  236</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a>      b;            /* Per FIPS 186, appendix 2.2. */
+<b><a name="237">  237</a></b>     unsigned char V_k[<a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>];
+<b><a name="238">  238</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a>        <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>, X, c, twoQ, V_n, <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="239">  239</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>    err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="240">  240</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv  = SECSuccess;
+<b><a name="241">  241</a></b>     /* Initialize bignums */
+<b><a name="242">  242</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>)     = 0;
+<b><a name="243">  243</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;X)     = 0;
+<b><a name="244">  244</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;c)     = 0;
+<b><a name="245">  245</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;twoQ)  = 0;
+<b><a name="246">  246</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;V_n)   = 0;
+<b><a name="247">  247</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>)   = 0;
+<b><a name="248">  248</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>)    );
+<b><a name="249">  249</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;X)    );
+<b><a name="250">  250</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;c)    );
+<b><a name="251">  251</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;twoQ) );
+<b><a name="252">  252</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>)  );
+<b><a name="253">  253</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;V_n)  );
+<b><a name="254">  254</a></b>     /* L - 1 = n*160 + b */
+<b><a name="255">  255</a></b>     n = (L - 1) / <a href="../freebl/pqg.c.dep.html#BITS_IN_Q">BITS_IN_Q</a>;
+<b><a name="256">  256</a></b>     b = (L - 1) % <a href="../freebl/pqg.c.dep.html#BITS_IN_Q">BITS_IN_Q</a>;
+<b><a name="257">  257</a></b>     /* ******************************************************************
+<b><a name="258">  258</a></b>     ** Step 7.
+<b><a name="259">  259</a></b>     **  "for k = 0 ... n let
+<b><a name="260">  260</a></b>     **           V_k = SHA[(SEED + offset + k) mod 2**g]."
+<b><a name="261">  261</a></b>     **
+<b><a name="262">  262</a></b>     ** Step 8.
+<b><a name="263">  263</a></b>     **  "Let W be the integer 
+<b><a name="264">  264</a></b>     **    W = V_0 + (V_1 * 2**160) + ... + (V_n-1 * 2**((n-1)*160)) 
+<b><a name="265">  265</a></b>     **         + ((V_n mod 2**b) * 2**(n*160))
+<b><a name="266">  266</a></b>     */
+<b><a name="267">  267</a></b>     for (k=0; k&lt;n; ++k) { /* Do the first n terms of V_k */
+<b><a name="268">  268</a></b>         /* Do step 7 for iteration k.
+<b><a name="269">  269</a></b>         ** V_k = SHA[(seed + offset + k) mod 2**g]
+<b><a name="270">  270</a></b>         */
+<b><a name="271">  271</a></b>         <a href="../softoken/ecdecode.c.dep.html#CHECK_SEC_OK">CHECK_SEC_OK</a><a href="../freebl/secmpi.h.dep.html#CHECK_SEC_OK"><sup>[1]</sup></a>( <a href="../freebl/pqg.c.dep.html#addToSeedThenSHA">addToSeedThenSHA</a>(seed, offset + k, g, V_k) );
+<b><a name="272">  272</a></b>         /* Do step 8 for iteration k.
+<b><a name="273">  273</a></b>         ** W += V_k * 2**(k*160)
+<b><a name="274">  274</a></b>         */
+<b><a name="275">  275</a></b>         <a href="../freebl/secmpi.h.dep.html#OCTETS_TO_MPINT">OCTETS_TO_MPINT</a>(V_k, &amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, <a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>);      /* get bignum V_k     */
+<b><a name="276">  276</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mplogic.c.dep.html#mpl_lsh">mpl_lsh</a>(&amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, &amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, k*160) );   /* <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = V_k &lt;&lt; k*160 */
+<b><a name="277">  277</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_add">mp_add</a>(&amp;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>, &amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, &amp;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>) );         /* <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> += <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>           */
+<b><a name="278">  278</a></b>     }
+<b><a name="279">  279</a></b>     /* Step 8, continued.
+<b><a name="280">  280</a></b>     **   [W += ((V_n mod 2**b) * 2**(n*160))] 
+<b><a name="281">  281</a></b>     */
+<b><a name="282">  282</a></b>     <a href="../softoken/ecdecode.c.dep.html#CHECK_SEC_OK">CHECK_SEC_OK</a><a href="../freebl/secmpi.h.dep.html#CHECK_SEC_OK"><sup>[1]</sup></a>( <a href="../freebl/pqg.c.dep.html#addToSeedThenSHA">addToSeedThenSHA</a>(seed, offset + n, g, V_k) );
+<b><a name="283">  283</a></b>     <a href="../freebl/secmpi.h.dep.html#OCTETS_TO_MPINT">OCTETS_TO_MPINT</a>(V_k, &amp;V_n, <a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>);          /* get bignum V_n     */
+<b><a name="284">  284</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_div_2d">mp_div_2d</a>(&amp;V_n, b, NULL, &amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>) );   /* <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = V_n mod 2**b */
+<b><a name="285">  285</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mplogic.c.dep.html#mpl_lsh">mpl_lsh</a>(&amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, &amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, n*160) );       /* <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> &lt;&lt; n*160 */
+<b><a name="286">  286</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_add">mp_add</a>(&amp;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>, &amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, &amp;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>) );             /* <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> += <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>           */
+<b><a name="287">  287</a></b>     /* Step 8, continued.
+<b><a name="288">  288</a></b>     ** "and let X = W + 2**(L-1).
+<b><a name="289">  289</a></b>     **  Note that 0 &lt;= W &lt; 2**(L-1) and hence 2**(L-1) &lt;= X &lt; 2**L."
+<b><a name="290">  290</a></b>     */
+<b><a name="291">  291</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mplogic.c.dep.html#mpl_set_bit">mpl_set_bit</a>(&amp;X, (<a href="../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a>)(L-1), 1) );    /* X = 2**(L-1) */
+<b><a name="292">  292</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_add">mp_add</a>(&amp;X, &amp;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>, &amp;X) );                    /* X += <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>       */
+<b><a name="293">  293</a></b>     /*************************************************************
+<b><a name="294">  294</a></b>     ** Step 9.
+<b><a name="295">  295</a></b>     ** "Let c = X mod 2q  and set p = X - (c - 1).
+<b><a name="296">  296</a></b>     **  Note that p is congruent to 1 mod 2q."
+<b><a name="297">  297</a></b>     */
+<b><a name="298">  298</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mul_2">mp_mul_2</a>(Q, &amp;twoQ) );                    /* 2q           */
+<b><a name="299">  299</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mod">mp_mod</a>(&amp;X, &amp;twoQ, &amp;c) );                 /* c = X mod 2q */
+<b><a name="300">  300</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sub_d">mp_sub_d</a>(&amp;c, 1, &amp;c) );                   /* c -= 1       */
+<b><a name="301">  301</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK">CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sub">mp_sub</a>(&amp;X, &amp;c, <a href="../freebl/mksp.c.dep.html#P">P</a>) );                     /* <a href="../freebl/mksp.c.dep.html#P">P</a> = X - c    */
+<b><a name="302">  302</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="303">  303</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>);
+<b><a name="304">  304</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;X);
+<b><a name="305">  305</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;c);
+<b><a name="306">  306</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;twoQ);
+<b><a name="307">  307</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;V_n);
+<b><a name="308">  308</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>);
+<b><a name="309">  309</a></b>     if (err) {
+<b><a name="310">  310</a></b>         <a href="../freebl/secmpi.h.dep.html#MP_TO_SEC_ERROR">MP_TO_SEC_ERROR</a>(err);
+<b><a name="311">  311</a></b>         return SECFailure;
+<b><a name="312">  312</a></b>     }
+<b><a name="313">  313</a></b>     return rv;
+<b><a name="314">  314</a></b> }
+<b><a name="315">  315</a></b> 
+<b><a name="316">  316</a></b> /*
+<b><a name="317">  317</a></b> ** Generate G from h, P, and Q.
+<b><a name="318">  318</a></b> */
+<b><a name="319">  319</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="320">  320</a></b> <a href="#320">makeGfromH</a>(const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../freebl/mksp.c.dep.html#P">P</a>,     /* input.  */
+<b><a name="321">  321</a></b>            const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *Q,     /* input.  */
+<b><a name="322">  322</a></b>                  <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>,     /* input and output. */
+<b><a name="323">  323</a></b>                  <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *<a href="../freebl/md5.c.dep.html#G">G</a>,     /* output. */
+<b><a name="324">  324</a></b>                  PRBool *passed)
+<b><a name="325">  325</a></b> {
+<b><a name="326">  326</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> exp, pm1;
+<b><a name="327">  327</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="328">  328</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECSuccess;
+<b><a name="329">  329</a></b>     *passed = PR_FALSE;
+<b><a name="330">  330</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;exp) = 0;
+<b><a name="331">  331</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;pm1) = 0;
+<b><a name="332">  332</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;exp) );
+<b><a name="333">  333</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;pm1) );
+<b><a name="334">  334</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK">CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sub_d">mp_sub_d</a>(<a href="../freebl/mksp.c.dep.html#P">P</a>, 1, &amp;pm1) );        /* <a href="../freebl/mksp.c.dep.html#P">P</a> - 1            */
+<b><a name="335">  335</a></b>     if ( <a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, &amp;pm1) &gt;= 0)                   /* <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a> &gt;= P-1         */
+<b><a name="336">  336</a></b>         C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_sub">mp_sub</a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, &amp;pm1, <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>) );      /* <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a> = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a> mod (P-1)  */
+<b><a name="337">  337</a></b>     /* Let b = 2**n (smallest power of 2 greater than P).
+<b><a name="338">  338</a></b>     ** Since P-1 &gt;= b/2, and H &lt; b, quotient(H/(P-1)) = 0 or 1
+<b><a name="339">  339</a></b>     ** so the above operation safely computes H mod (P-1)
+<b><a name="340">  340</a></b>     */
+<b><a name="341">  341</a></b>     /* Check for H = to 0 or 1.  Regen H if so.  (Regen means return error). */
+<b><a name="342">  342</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_d">mp_cmp_d</a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, 1) &lt;= 0) {
+<b><a name="343">  343</a></b>         rv = SECFailure;
+<b><a name="344">  344</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="345">  345</a></b>     }
+<b><a name="346">  346</a></b>     /* Compute G, according to the equation  G = (H ** ((P-1)/Q)) mod P */
+<b><a name="347">  347</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_div">mp_div</a>(&amp;pm1, Q, &amp;exp, NULL) );  /* exp = (P-1)/Q      */
+<b><a name="348">  348</a></b>     C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK( <a href="../freebl/mpi/mpmontg.c.dep.html#mp_exptmod">mp_exptmod</a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, &amp;exp, <a href="../freebl/mksp.c.dep.html#P">P</a>, <a href="../freebl/md5.c.dep.html#G">G</a>) );    /* <a href="../freebl/md5.c.dep.html#G">G</a> = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a> ** exp mod <a href="../freebl/mksp.c.dep.html#P">P</a> */
+<b><a name="349">  349</a></b>     /* Check for G == 0 or G == 1, return error if so. */
+<b><a name="350">  350</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_d">mp_cmp_d</a>(<a href="../freebl/md5.c.dep.html#G">G</a>, 1) &lt;= 0) {
+<b><a name="351">  351</a></b>         rv = SECFailure;
+<b><a name="352">  352</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="353">  353</a></b>     }
+<b><a name="354">  354</a></b>     *passed = PR_TRUE;
+<b><a name="355">  355</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="356">  356</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;exp);
+<b><a name="357">  357</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;pm1);
+<b><a name="358">  358</a></b>     if (err) {
+<b><a name="359">  359</a></b>         <a href="../freebl/secmpi.h.dep.html#MP_TO_SEC_ERROR">MP_TO_SEC_ERROR</a>(err);
+<b><a name="360">  360</a></b>         rv = SECFailure;
+<b><a name="361">  361</a></b>     }
+<b><a name="362">  362</a></b>     return rv;
+<b><a name="363">  363</a></b> }
+<b><a name="364">  364</a></b> 
+<b><a name="365">  365</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="366">  366</a></b> <a href="#366">PQG_ParamGen</a>(unsigned int j, <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> **pParams, <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> **pVfy)
+<b><a name="367">  367</a></b> {
+<b><a name="368">  368</a></b>     unsigned int L;            /* Length of P in bits.  Per FIPS 186. */
+<b><a name="369">  369</a></b>     unsigned int seedBytes;
+<b><a name="370">  370</a></b> 
+<b><a name="371">  371</a></b>     if (j &gt; 8 || !pParams || !pVfy) {
+<b><a name="372">  372</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="373">  373</a></b>         return SECFailure;
+<b><a name="374">  374</a></b>     }
+<b><a name="375">  375</a></b>     L = 512 + (j * 64);         /* bits in P */
+<b><a name="376">  376</a></b>     seedBytes = L/8;
+<b><a name="377">  377</a></b>     return <a href="../freebl/pqg.c.dep.html#PQG_ParamGenSeedLen">PQG_ParamGenSeedLen</a>(j, seedBytes, pParams, pVfy);
+<b><a name="378">  378</a></b> }
+<b><a name="379">  379</a></b> 
+<b><a name="380">  380</a></b> /* This code uses labels and gotos, so that it can follow the numbered
+<b><a name="381">  381</a></b> ** steps in the algorithms from FIPS 186 appendix 2.2 very closely,
+<b><a name="382">  382</a></b> ** and so that the correctness of this code can be easily verified.
+<b><a name="383">  383</a></b> ** So, please forgive the ugly c code.
+<b><a name="384">  384</a></b> **/
+<b><a name="385">  385</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="386">  386</a></b> <a href="#386">PQG_ParamGenSeedLen</a>(unsigned int j, unsigned int seedBytes,
+<b><a name="387">  387</a></b>                     <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> **pParams, <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> **pVfy)
+<b><a name="388">  388</a></b> {
+<b><a name="389">  389</a></b>     unsigned int  L;        /* Length of P in bits.  Per FIPS 186. */
+<b><a name="390">  390</a></b>     unsigned int  n;        /* Per FIPS 186, appendix 2.2. */
+<b><a name="391">  391</a></b>     unsigned int  b;        /* Per FIPS 186, appendix 2.2. */
+<b><a name="392">  392</a></b>     unsigned int  g;        /* Per FIPS 186, appendix 2.2. */
+<b><a name="393">  393</a></b>     unsigned int  counter;  /* Per FIPS 186, appendix 2.2. */
+<b><a name="394">  394</a></b>     unsigned int  offset;   /* Per FIPS 186, appendix 2.2. */
+<b><a name="395">  395</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>      *seed;     /* Per FIPS 186, appendix 2.2. */
+<b><a name="396">  396</a></b>     PRArenaPool  *arena  = NULL;
+<b><a name="397">  397</a></b>     <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a>    *params = NULL;
+<b><a name="398">  398</a></b>     <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a>    *verify = NULL;
+<b><a name="399">  399</a></b>     PRBool passed;
+<b><a name="400">  400</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> hit = { 0, 0, 0 };
+<b><a name="401">  401</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> <a href="../freebl/mksp.c.dep.html#P">P</a>, Q, <a href="../freebl/md5.c.dep.html#G">G</a>, <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, l;
+<b><a name="402">  402</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>    err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="403">  403</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv  = SECFailure;
+<b><a name="404">  404</a></b>     int iterations = 0;
+<b><a name="405">  405</a></b>     if (j &gt; 8 || seedBytes &lt; 20 || !pParams || !pVfy) {
+<b><a name="406">  406</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="407">  407</a></b>         return SECFailure;
+<b><a name="408">  408</a></b>     }
+<b><a name="409">  409</a></b>     /* Initialize an arena for the params. */
+<b><a name="410">  410</a></b>     arena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../freebl/blapit.h.dep.html#NSS_FREEBL_DEFAULT_CHUNKSIZE">NSS_FREEBL_DEFAULT_CHUNKSIZE</a>);
+<b><a name="411">  411</a></b>     if (!arena) {
+<b><a name="412">  412</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="413">  413</a></b>         return SECFailure;
+<b><a name="414">  414</a></b>     }
+<b><a name="415">  415</a></b>     params = (<a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> *)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, sizeof(<a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a>));
+<b><a name="416">  416</a></b>     if (!params) {
+<b><a name="417">  417</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="418">  418</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(arena, PR_TRUE);
+<b><a name="419">  419</a></b>         return SECFailure;
+<b><a name="420">  420</a></b>     }
+<b><a name="421">  421</a></b>     params-&gt;arena = arena;
+<b><a name="422">  422</a></b>     /* Initialize an arena for the verify. */
+<b><a name="423">  423</a></b>     arena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../freebl/blapit.h.dep.html#NSS_FREEBL_DEFAULT_CHUNKSIZE">NSS_FREEBL_DEFAULT_CHUNKSIZE</a>);
+<b><a name="424">  424</a></b>     if (!arena) {
+<b><a name="425">  425</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="426">  426</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(params-&gt;arena, PR_TRUE);
+<b><a name="427">  427</a></b>         return SECFailure;
+<b><a name="428">  428</a></b>     }
+<b><a name="429">  429</a></b>     verify = (<a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> *)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, sizeof(<a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a>));
+<b><a name="430">  430</a></b>     if (!verify) {
+<b><a name="431">  431</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="432">  432</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(arena, PR_TRUE);
+<b><a name="433">  433</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(params-&gt;arena, PR_TRUE);
+<b><a name="434">  434</a></b>         return SECFailure;
+<b><a name="435">  435</a></b>     }
+<b><a name="436">  436</a></b>     verify-&gt;arena = arena;
+<b><a name="437">  437</a></b>     seed = &amp;verify-&gt;seed;
+<b><a name="438">  438</a></b>     arena = NULL;
+<b><a name="439">  439</a></b>     /* Initialize bignums */
+<b><a name="440">  440</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#M<a href="../freebl/mksp.c.dep.html#P">P</a>_DIGITS">M<a href="../freebl/mksp.c.dep.html#P">P</a>_DIGITS</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>) = 0;
+<b><a name="441">  441</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;Q) = 0;
+<b><a name="442">  442</a></b>     MP_DI<a href="../freebl/md5.c.dep.html#G">G</a>ITS(&amp;<a href="../freebl/md5.c.dep.html#G">G</a>) = 0;
+<b><a name="443">  443</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>) = 0;
+<b><a name="444">  444</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;l) = 0;
+<b><a name="445">  445</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK">CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>) );
+<b><a name="446">  446</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;Q) );
+<b><a name="447">  447</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a>) );
+<b><a name="448">  448</a></b>     C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>) );
+<b><a name="449">  449</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;l) );
+<b><a name="450">  450</a></b>     /* Compute lengths. */
+<b><a name="451">  451</a></b>     L = 512 + (j * 64);               /* bits in P */
+<b><a name="452">  452</a></b>     n = (L - 1) / <a href="../freebl/pqg.c.dep.html#BITS_IN_Q">BITS_IN_Q</a>;          /* <a href="../freebl/pqg.c.dep.html#BITS_IN_Q">BITS_IN_Q</a> is 160 */  
+<b><a name="453">  453</a></b>     b = (L - 1) % <a href="../freebl/pqg.c.dep.html#BITS_IN_Q">BITS_IN_Q</a>;
+<b><a name="454">  454</a></b>     g = seedBytes * BITS_PER_BYTE;    /* bits in seed, NOT G of PQG. */
+<b><a name="455">  455</a></b> step_1:
+<b><a name="456">  456</a></b>     /* ******************************************************************
+<b><a name="457">  457</a></b>     ** Step 1.
+<b><a name="458">  458</a></b>     ** "Choose an abitrary sequence of at least 160 bits and call it SEED.
+<b><a name="459">  459</a></b>     **  Let g be the length of SEED in bits."
+<b><a name="460">  460</a></b>     */
+<b><a name="461">  461</a></b>     if (++iterations &gt; <a href="../freebl/pqg.c.dep.html#MAX_ITERATIONS">MAX_ITERATIONS</a>) {        /* give up after a while */
+<b><a name="462">  462</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NEED_RANDOM);
+<b><a name="463">  463</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="464">  464</a></b>     }
+<b><a name="465">  465</a></b>     seed-&gt;len = seedBytes;
+<b><a name="466">  466</a></b>     <a href="../softoken/ecdecode.c.dep.html#CHECK_SEC_OK">CHECK_SEC_OK</a><a href="../freebl/secmpi.h.dep.html#CHECK_SEC_OK"><sup>[1]</sup></a>( <a href="../freebl/pqg.c.dep.html#getPQseed">getPQseed</a>(seed, verify-&gt;arena) );
+<b><a name="467">  467</a></b>     /* ******************************************************************
+<b><a name="468">  468</a></b>     ** Step 2.
+<b><a name="469">  469</a></b>     ** "Compute U = SHA[SEED] XOR SHA[(SEED+1) mod 2**g]."
+<b><a name="470">  470</a></b>     **
+<b><a name="471">  471</a></b>     ** Step 3.
+<b><a name="472">  472</a></b>     ** "Form Q from U by setting the most signficant bit (the 2**159 bit) 
+<b><a name="473">  473</a></b>     **  and the least signficant bit to 1.  In terms of boolean operations,
+<b><a name="474">  474</a></b>     **  Q = U OR 2**159 OR 1.  Note that 2**159 &lt; Q &lt; 2**160."
+<b><a name="475">  475</a></b>     */
+<b><a name="476">  476</a></b>     <a href="../softoken/ecdecode.c.dep.html#CHECK_SEC_OK">CHECK_SEC_OK</a><a href="../freebl/secmpi.h.dep.html#CHECK_SEC_OK"><sup>[1]</sup></a>( <a href="../freebl/pqg.c.dep.html#makeQfromSeed">makeQfromSeed</a>(g, seed, &amp;Q) );
+<b><a name="477">  477</a></b>     /* ******************************************************************
+<b><a name="478">  478</a></b>     ** Step 4.
+<b><a name="479">  479</a></b>     ** "Use a robust primality testing algorithm to test whether q is prime."
+<b><a name="480">  480</a></b>     **
+<b><a name="481">  481</a></b>     ** Appendix 2.1 states that a Rabin test with at least 50 iterations
+<b><a name="482">  482</a></b>     ** "will give an acceptable probability of error."
+<b><a name="483">  483</a></b>     */
+<b><a name="484">  484</a></b>     /*CHECK_SEC_OK( prm_RabinTest(&amp;Q, &amp;passed) );*/
+<b><a name="485">  485</a></b>     err = <a href="../freebl/mpi/mpprime.c.dep.html#mpp_pprime">mpp_pprime</a>(&amp;Q, <a href="../freebl/pqg.c.dep.html#PQG_Q_PRIMALITY_TESTS">PQG_Q_PRIMALITY_TESTS</a>);
+<b><a name="486">  486</a></b>     passed = (err == <a href="../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) ? SECSuccess : SECFailure;
+<b><a name="487">  487</a></b>     /* ******************************************************************
+<b><a name="488">  488</a></b>     ** Step 5. "If q is not prime, goto step 1."
+<b><a name="489">  489</a></b>     */
+<b><a name="490">  490</a></b>     if (passed != SECSuccess)
+<b><a name="491">  491</a></b>         goto step_1;
+<b><a name="492">  492</a></b>     /* ******************************************************************
+<b><a name="493">  493</a></b>     ** Step 6. "Let counter = 0 and offset = 2."
+<b><a name="494">  494</a></b>     */
+<b><a name="495">  495</a></b>     counter = 0;
+<b><a name="496">  496</a></b>     offset  = 2;
+<b><a name="497">  497</a></b> step_7:
+<b><a name="498">  498</a></b>     /* ******************************************************************
+<b><a name="499">  499</a></b>     ** Step 7.
+<b><a name="500">  500</a></b>     ** "for k = 0 ... n let
+<b><a name="501">  501</a></b>     **          V_k = SHA[(SEED + offset + k) mod 2**g]."
+<b><a name="502">  502</a></b>     **
+<b><a name="503">  503</a></b>     ** Step 8.
+<b><a name="504">  504</a></b>     ** "Let W be the sum of  (V_k * 2**(k*160)) for k = 0 ... n
+<b><a name="505">  505</a></b>     **  and let X = W + 2**(L-1).
+<b><a name="506">  506</a></b>     **  Note that 0 &lt;= W &lt; 2**(L-1) and hence 2**(L-1) &lt;= X &lt; 2**L."
+<b><a name="507">  507</a></b>     **
+<b><a name="508">  508</a></b>     ** Step 9.
+<b><a name="509">  509</a></b>     ** "Let c = X mod 2q  and set p = X - (c - 1).
+<b><a name="510">  510</a></b>     **  Note that p is congruent to 1 mod 2q."
+<b><a name="511">  511</a></b>     */
+<b><a name="512">  512</a></b>     <a href="../softoken/ecdecode.c.dep.html#CHECK_SEC_OK">CHECK_SEC_OK</a><a href="../freebl/secmpi.h.dep.html#CHECK_SEC_OK"><sup>[1]</sup></a>( <a href="../freebl/pqg.c.dep.html#make<a href="../freebl/mksp.c.dep.html#P">P</a>fromQandSeed">make<a href="../freebl/mksp.c.dep.html#P">P</a>fromQandSeed</a>(L, offset, g, seed, &amp;Q, &amp;<a href="../freebl/mksp.c.dep.html#P">P</a>) );
+<b><a name="513">  513</a></b>     /*************************************************************
+<b><a name="514">  514</a></b>     ** Step 10.
+<b><a name="515">  515</a></b>     ** "if p &lt; 2**(L-1), then goto step 13."
+<b><a name="516">  516</a></b>     */
+<b><a name="517">  517</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mplogic.c.dep.html#mpl_set_bit">mpl_set_bit</a>(&amp;l, (<a href="../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a>)(L-1), 1) ); /* l = 2**(L-1) */
+<b><a name="518">  518</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>, &amp;l) &lt; 0)
+<b><a name="519">  519</a></b>         goto step_13;
+<b><a name="520">  520</a></b>     /************************************************************
+<b><a name="521">  521</a></b>     ** Step 11.
+<b><a name="522">  522</a></b>     ** "Perform a robust primality test on p."
+<b><a name="523">  523</a></b>     */
+<b><a name="524">  524</a></b>     /*CHECK_SEC_OK( prm_RabinTest(&amp;P, &amp;passed) );*/
+<b><a name="525">  525</a></b>     err = <a href="../freebl/mpi/mpprime.c.dep.html#mpp_pprime">mpp_pprime</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>, <a href="../freebl/mksp.c.dep.html#P">P</a>QG_<a href="../freebl/mksp.c.dep.html#P">P</a>_<a href="../freebl/mksp.c.dep.html#P">P</a>RIMALITY_TESTS);
+<b><a name="526">  526</a></b>     passed = (err == <a href="../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) ? SECSuccess : SECFailure;
+<b><a name="527">  527</a></b>     /* ******************************************************************
+<b><a name="528">  528</a></b>     ** Step 12. "If p passes the test performed in step 11, go to step 15."
+<b><a name="529">  529</a></b>     */
+<b><a name="530">  530</a></b>     if (passed == SECSuccess)
+<b><a name="531">  531</a></b>         goto step_15;
+<b><a name="532">  532</a></b> step_13:
+<b><a name="533">  533</a></b>     /* ******************************************************************
+<b><a name="534">  534</a></b>     ** Step 13.  "Let counter = counter + 1 and offset = offset + n + 1."
+<b><a name="535">  535</a></b>     */
+<b><a name="536">  536</a></b>     counter++;
+<b><a name="537">  537</a></b>     offset += n + 1;
+<b><a name="538">  538</a></b>     /* ******************************************************************
+<b><a name="539">  539</a></b>     ** Step 14.  "If counter &gt;= 4096 goto step 1, otherwise go to step 7."
+<b><a name="540">  540</a></b>     */
+<b><a name="541">  541</a></b>     if (counter &gt;= 4096)
+<b><a name="542">  542</a></b>         goto step_1;
+<b><a name="543">  543</a></b>     goto step_7;
+<b><a name="544">  544</a></b> step_15:
+<b><a name="545">  545</a></b>     /* ******************************************************************
+<b><a name="546">  546</a></b>     ** Step 15.  
+<b><a name="547">  547</a></b>     ** "Save the value of SEED and the value of counter for use
+<b><a name="548">  548</a></b>     **  in certifying the proper generation of p and q."
+<b><a name="549">  549</a></b>     */
+<b><a name="550">  550</a></b>     /* Generate h. */
+<b><a name="551">  551</a></b>     <a href="../util/secitem.c.dep.html#SECITEM_AllocItem">SECITEM_AllocItem</a>(NULL, &amp;hit, L/8); /* h is no longer than p */
+<b><a name="552">  552</a></b>     if (!hit.data) goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="553">  553</a></b>     do {
+<b><a name="554">  554</a></b>         /* loop generate h until 1&lt;h&lt;p-1 and (h**[(p-1)/q])mod p &gt; 1 */
+<b><a name="555">  555</a></b>         C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_SEC_OK( <a href="../freebl/pqg.c.dep.html#generate_h_candidate">generate_h_candidate</a>(&amp;hit, &amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>) );
+<b><a name="556">  556</a></b>         C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_SEC_OK( <a href="../freebl/pqg.c.dep.html#make<a href="../freebl/md5.c.dep.html#G">G</a>from<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>">make<a href="../freebl/md5.c.dep.html#G">G</a>from<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a></a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>, &amp;Q, &amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, &amp;<a href="../freebl/md5.c.dep.html#G">G</a>, &amp;passed) );
+<b><a name="557">  557</a></b>     } while (passed != PR_TRUE);
+<b><a name="558">  558</a></b>     /* All generation is done.  Now, save the PQG params.  */
+<b><a name="559">  559</a></b>     <a href="../freebl/secmpi.h.dep.html#M<a href="../freebl/mksp.c.dep.html#P">P</a>INT_TO_SECITEM">M<a href="../freebl/mksp.c.dep.html#P">P</a>INT_TO_SECITEM</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>, &amp;params-&gt;prime,    params-&gt;arena);
+<b><a name="560">  560</a></b>     <a href="../freebl/secmpi.h.dep.html#MPINT_TO_SECITEM">MPINT_TO_SECITEM</a>(&amp;Q, &amp;params-&gt;subPrime, params-&gt;arena);
+<b><a name="561">  561</a></b>     <a href="../freebl/secmpi.h.dep.html#MPINT_TO_SECITEM">MPINT_TO_SECITEM</a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a>, &amp;params-&gt;base,     params-&gt;arena);
+<b><a name="562">  562</a></b>     <a href="../freebl/secmpi.h.dep.html#MPINT_TO_SECITEM">MPINT_TO_SECITEM</a>(&amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, &amp;verify-&gt;h,        verify-&gt;arena);
+<b><a name="563">  563</a></b>     verify-&gt;counter = counter;
+<b><a name="564">  564</a></b>     *pParams = params;
+<b><a name="565">  565</a></b>     *pVfy = verify;
+<b><a name="566">  566</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="567">  567</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>);
+<b><a name="568">  568</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;Q);
+<b><a name="569">  569</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a>);
+<b><a name="570">  570</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>);
+<b><a name="571">  571</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;l);
+<b><a name="572">  572</a></b>     if (err) {
+<b><a name="573">  573</a></b>         <a href="../freebl/secmpi.h.dep.html#MP_TO_SEC_ERROR">MP_TO_SEC_ERROR</a>(err);
+<b><a name="574">  574</a></b>         rv = SECFailure;
+<b><a name="575">  575</a></b>     }
+<b><a name="576">  576</a></b>     if (rv) {
+<b><a name="577">  577</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(params-&gt;arena, PR_TRUE);
+<b><a name="578">  578</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(verify-&gt;arena, PR_TRUE);
+<b><a name="579">  579</a></b>     }
+<b><a name="580">  580</a></b>     if (hit.data) {
+<b><a name="581">  581</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(&amp;hit, PR_FALSE);
+<b><a name="582">  582</a></b>     }
+<b><a name="583">  583</a></b>     return rv;
+<b><a name="584">  584</a></b> }
+<b><a name="585">  585</a></b> 
+<b><a name="586">  586</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>   
+<b><a name="587">  587</a></b> <a href="#587">PQG_VerifyParams</a>(const <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> *params, 
+<b><a name="588">  588</a></b>                  const <a href="../freebl/blapit.h.dep.html#PQGVerify">PQGVerify</a> *vfy, <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> *result)
+<b><a name="589">  589</a></b> {
+<b><a name="590">  590</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECSuccess;
+<b><a name="591">  591</a></b>     int passed;
+<b><a name="592">  592</a></b>     unsigned int g, n, L, offset;
+<b><a name="593">  593</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> <a href="../freebl/mksp.c.dep.html#P">P</a>, Q, <a href="../freebl/md5.c.dep.html#G">G</a>, <a href="../freebl/mksp.c.dep.html#P">P</a>_, Q_, <a href="../freebl/md5.c.dep.html#G">G</a>_, r, h;
+<b><a name="594">  594</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="595">  595</a></b>     int j;
+<b><a name="596">  596</a></b> #define <a href="#596">CHECKPARAM</a>(cond)      \
+<b><a name="597">  597</a></b>     if (!(cond)) {            \
+<b><a name="598">  598</a></b>         *result = SECFailure; \
+<b><a name="599">  599</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;         \
+<b><a name="600">  600</a></b>     }
+<b><a name="601">  601</a></b>     if (!params || !vfy || !result) {
+<b><a name="602">  602</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="603">  603</a></b>         return SECFailure;
+<b><a name="604">  604</a></b>     }
+<b><a name="605">  605</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#M<a href="../freebl/mksp.c.dep.html#P">P</a>_DIGITS">M<a href="../freebl/mksp.c.dep.html#P">P</a>_DIGITS</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>) = 0;
+<b><a name="606">  606</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;Q) = 0;
+<b><a name="607">  607</a></b>     MP_DI<a href="../freebl/md5.c.dep.html#G">G</a>ITS(&amp;<a href="../freebl/md5.c.dep.html#G">G</a>) = 0;
+<b><a name="608">  608</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;P_) = 0;
+<b><a name="609">  609</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;Q_) = 0;
+<b><a name="610">  610</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;G_) = 0;
+<b><a name="611">  611</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;r) = 0;
+<b><a name="612">  612</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;h) = 0;
+<b><a name="613">  613</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK">CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>) );
+<b><a name="614">  614</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;Q) );
+<b><a name="615">  615</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a>) );
+<b><a name="616">  616</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;P_) );
+<b><a name="617">  617</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;Q_) );
+<b><a name="618">  618</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;G_) );
+<b><a name="619">  619</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;r) );
+<b><a name="620">  620</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;h) );
+<b><a name="621">  621</a></b>     *result = SECSuccess;
+<b><a name="622">  622</a></b>     SECITEM_TO_M<a href="../freebl/mksp.c.dep.html#P">P</a>INT(params-&gt;prime,    &amp;<a href="../freebl/mksp.c.dep.html#P">P</a>);
+<b><a name="623">  623</a></b>     <a href="../freebl/secmpi.h.dep.html#SECITEM_TO_MPINT">SECITEM_TO_MPINT</a>(params-&gt;subPrime, &amp;Q);
+<b><a name="624">  624</a></b>     <a href="../freebl/secmpi.h.dep.html#SECITEM_TO_MPINT">SECITEM_TO_MPINT</a>(params-&gt;base,     &amp;<a href="../freebl/md5.c.dep.html#G">G</a>);
+<b><a name="625">  625</a></b>     /* 1.  Q is 160 bits long. */
+<b><a name="626">  626</a></b>     <a href="../freebl/pqg.c.dep.html#CHECKPARAM">CHECKPARAM</a>( <a href="../freebl/mpi/mplogic.c.dep.html#mpl_significant_bits">mpl_significant_bits</a>(&amp;Q) == 160 );
+<b><a name="627">  627</a></b>     /* 2.  P is one of the 9 valid lengths. */
+<b><a name="628">  628</a></b>     L = <a href="../freebl/mpi/mplogic.c.dep.html#mpl_significant_bits">mpl_significant_bits</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>);
+<b><a name="629">  629</a></b>     j = <a href="../freebl/blapit.h.dep.html#PQG_PBITS_TO_INDEX">PQG_PBITS_TO_INDEX</a>(L);
+<b><a name="630">  630</a></b>     <a href="../freebl/pqg.c.dep.html#CHECKPARAM">CHECKPARAM</a>( j &gt;= 0 &amp;&amp; j &lt;= 8 );
+<b><a name="631">  631</a></b>     /* 3.  G &lt; P */
+<b><a name="632">  632</a></b>     CHECK<a href="../freebl/mksp.c.dep.html#P">P</a>ARAM( <a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a>, &amp;<a href="../freebl/mksp.c.dep.html#P">P</a>) &lt; 0 );
+<b><a name="633">  633</a></b>     /* 4.  P % Q == 1 */
+<b><a name="634">  634</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK">CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mod">mp_mod</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>, &amp;Q, &amp;r) );
+<b><a name="635">  635</a></b>     <a href="../freebl/pqg.c.dep.html#CHECKPARAM">CHECKPARAM</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_d">mp_cmp_d</a>(&amp;r, 1) == 0 );
+<b><a name="636">  636</a></b>     /* 5.  Q is prime */
+<b><a name="637">  637</a></b>     <a href="../freebl/pqg.c.dep.html#CHECKPARAM">CHECKPARAM</a>( <a href="../freebl/mpi/mpprime.c.dep.html#mpp_pprime">mpp_pprime</a>(&amp;Q, <a href="../freebl/pqg.c.dep.html#PQG_Q_PRIMALITY_TESTS">PQG_Q_PRIMALITY_TESTS</a>) == <a href="../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a> );
+<b><a name="638">  638</a></b>     /* 6.  P is prime */
+<b><a name="639">  639</a></b>     CHECK<a href="../freebl/mksp.c.dep.html#P">P</a>ARAM( <a href="../freebl/mpi/mpprime.c.dep.html#mpp_pprime">mpp_pprime</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>, <a href="../freebl/mksp.c.dep.html#P">P</a>QG_<a href="../freebl/mksp.c.dep.html#P">P</a>_<a href="../freebl/mksp.c.dep.html#P">P</a>RIMALITY_TESTS) == <a href="../freebl/mpi/mpi.h.dep.html#M<a href="../freebl/mksp.c.dep.html#P">P</a>_YES">M<a href="../freebl/mksp.c.dep.html#P">P</a>_YES</a> );
+<b><a name="640">  640</a></b>     /* Steps 7-12 are done only if the optional PQGVerify is supplied. */
+<b><a name="641">  641</a></b>     /* 7.  counter &lt; 4096 */
+<b><a name="642">  642</a></b>     <a href="../freebl/pqg.c.dep.html#CHECKPARAM">CHECKPARAM</a>( vfy-&gt;counter &lt; 4096 );
+<b><a name="643">  643</a></b>     /* 8.  g &gt;= 160 and g &lt; 2048   (g is length of seed in bits) */
+<b><a name="644">  644</a></b>     g = vfy-&gt;seed.len * 8;
+<b><a name="645">  645</a></b>     <a href="../freebl/pqg.c.dep.html#CHECKPARAM">CHECKPARAM</a>( g &gt;= 160 &amp;&amp; g &lt; 2048 );
+<b><a name="646">  646</a></b>     /* 9.  Q generated from SEED matches Q in PQGParams. */
+<b><a name="647">  647</a></b>     <a href="../softoken/ecdecode.c.dep.html#CHECK_SEC_OK">CHECK_SEC_OK</a><a href="../freebl/secmpi.h.dep.html#CHECK_SEC_OK"><sup>[1]</sup></a>( <a href="../freebl/pqg.c.dep.html#makeQfromSeed">makeQfromSeed</a>(g, &amp;vfy-&gt;seed, &amp;Q_) );
+<b><a name="648">  648</a></b>     <a href="../freebl/pqg.c.dep.html#CHECKPARAM">CHECKPARAM</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>(&amp;Q, &amp;Q_) == 0 );
+<b><a name="649">  649</a></b>     /* 10. P generated from (L, counter, g, SEED, Q) matches P in PQGParams. */
+<b><a name="650">  650</a></b>     n = (L - 1) / <a href="../freebl/pqg.c.dep.html#BITS_IN_Q">BITS_IN_Q</a>;
+<b><a name="651">  651</a></b>     offset = vfy-&gt;counter * (n + 1) + 2;
+<b><a name="652">  652</a></b>     <a href="../softoken/ecdecode.c.dep.html#CHECK_SEC_OK">CHECK_SEC_OK</a><a href="../freebl/secmpi.h.dep.html#CHECK_SEC_OK"><sup>[1]</sup></a>( <a href="../freebl/pqg.c.dep.html#makePfromQandSeed">makePfromQandSeed</a>(L, offset, g, &amp;vfy-&gt;seed, &amp;Q, &amp;P_) );
+<b><a name="653">  653</a></b>     CHECK<a href="../freebl/mksp.c.dep.html#P">P</a>ARAM( <a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>, &amp;<a href="../freebl/mksp.c.dep.html#P">P</a>_) == 0 );
+<b><a name="654">  654</a></b>     /* Next two are optional: if h == 0 ignore */
+<b><a name="655">  655</a></b>     if (vfy-&gt;h.len == 0) goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="656">  656</a></b>     /* 11. 1 &lt; h &lt; P-1 */
+<b><a name="657">  657</a></b>     <a href="../freebl/secmpi.h.dep.html#SECITEM_TO_MPINT">SECITEM_TO_MPINT</a>(vfy-&gt;h, &amp;h);
+<b><a name="658">  658</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK">CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK</a>( <a href="../freebl/mpi/mplogic.c.dep.html#mpl_set_bit">mpl_set_bit</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>, 0, 0) ); /* <a href="../freebl/mksp.c.dep.html#P">P</a> is prime, p-1 == zero 1st bit */
+<b><a name="659">  659</a></b>     CHECK<a href="../freebl/mksp.c.dep.html#P">P</a>ARAM( <a href="../freebl/mpi/mpi.c.dep.html#<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>_d"><a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>_d</a>(&amp;h, 1) &gt; 0 &amp;&amp; <a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>(&amp;h, &amp;<a href="../freebl/mksp.c.dep.html#P">P</a>) );
+<b><a name="660">  660</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK">CHECK_M<a href="../freebl/mksp.c.dep.html#P">P</a>I_OK</a>( <a href="../freebl/mpi/mplogic.c.dep.html#mpl_set_bit">mpl_set_bit</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>, 0, 1) ); /* set it back */
+<b><a name="661">  661</a></b>     /* 12. G generated from h matches G in PQGParams. */
+<b><a name="662">  662</a></b>     <a href="../softoken/ecdecode.c.dep.html#CHECK_SEC_OK">CHECK_SEC_OK</a><a href="../freebl/secmpi.h.dep.html#CHECK_SEC_OK"><sup>[1]</sup></a>( <a href="../freebl/pqg.c.dep.html#makeGfromH">makeGfromH</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>, &amp;Q, &amp;h, &amp;G_, &amp;passed) );
+<b><a name="663">  663</a></b>     <a href="../freebl/pqg.c.dep.html#CHECKPARAM">CHECKPARAM</a>( passed &amp;&amp; <a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a>, &amp;<a href="../freebl/md5.c.dep.html#G">G</a>_) == 0 );
+<b><a name="664">  664</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="665">  665</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/mksp.c.dep.html#P">P</a>);
+<b><a name="666">  666</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;Q);
+<b><a name="667">  667</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a>);
+<b><a name="668">  668</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;P_);
+<b><a name="669">  669</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;Q_);
+<b><a name="670">  670</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;G_);
+<b><a name="671">  671</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;r);
+<b><a name="672">  672</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;h);
+<b><a name="673">  673</a></b>     if (err) {
+<b><a name="674">  674</a></b>         <a href="../freebl/secmpi.h.dep.html#MP_TO_SEC_ERROR">MP_TO_SEC_ERROR</a>(err);
+<b><a name="675">  675</a></b>         rv = SECFailure;
+<b><a name="676">  676</a></b>     }
+<b><a name="677">  677</a></b>     return rv;
+<b><a name="678">  678</a></b> }
+<b><a name="679">  679</a></b> 
+<b><a name="680">  680</a></b> 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

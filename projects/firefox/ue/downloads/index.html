@@ -1,0 +1,446 @@
+<?php
+
+$html_title = 'Downloading Files in Mozilla Firefox';
+$page_title = 'Downloading Files';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<link rel="stylesheet" type="text/css" href="../ue-styles.css">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+    <strong><em><a href="mailto:ben@mozilla.org?subject=Firefox Installer UE Spec">Ben Goodger</a> (11/17/2003)</em></strong>
+    
+    <h2>Status: PROVISIONAL (awaiting modification after review)</h2>
+    
+    <h2>Problems</h2>
+    <div class="category">
+      <p>Some problems with the current download manager/progress dialog:
+      <ol>
+        <li>Individual progress windows clutter workspace.
+        <li>Individual progress windows pop-up over browser, annoying. Default 
+            behaviour
+            is to stick around after download is complete.  (CONFIDENCE IN HANDLER)
+        <li>User is asked where to place files every time by default, even if 
+            they always download things to the same place. 
+        <li>User is asked how files should be handled even for types where there's
+            a sensible default action, such as opening MSWord Documents in
+            Microsoft Word. This querying is typically done by a jarringly 
+            complex Unknown Content Type dialog (<a href="#figure1">Figure 1</a>
+            presents a stab at a simplification of the concept) that interferes
+            with users' thought processes. 
+        <li>Defining and customizing automatic handlers for particular content 
+            types is tricky in the Mozilla UI, not present at all in Firefox.
+        <li>List of files downloaded is kept until manually cleared, a privacy 
+            concern for some.
+        <li>Download manager in the sidebar does not fit with the model of the 
+            sidebar as a transient source for navigation or information. Keeping
+            the panel open robs space from the browser window. At present, people
+            seem to prefer progress dialogs to it, and it is not shown by default
+            when a download is initiated. As a result, users may not even be 
+            aware that it is present, silently keeping track of everything they
+            download (see privacy concern above). Since it is not shown by default, 
+            it may as well not be there, for the majority of users. 
+      </ol>
+      </p>
+    </div>    
+
+    <h2>Solutions</h2>
+    <div class="category">
+      <p>Generally, solutions to these problems should involve understanding that:
+      <ol>
+        <li>Popup windows are annoying, so do for browser chrome what popup 
+            blocking has done for web content.
+        <li>Remants of downloads (windows that stick around) are annoying to 
+            many, and clean up after ourselves when downloading is done by 
+            closing the download UI.
+        <li>It is best to identify common download scenarios (downloading of 
+            common types, such as .doc, .zip etc) and seek ways to streamline
+            downloading and opening those files with fewer prompts and clicks.
+      </ol>
+    
+      <p>Thus the goal of this document is to specify User Interface enhancements that
+         solve the problems whilst addressing the concerns above, along with:
+
+      <ol>
+        <li>Making the UI that is presented when Firefox encounters a file type
+            it genuinely doesn't know about simpler, and making the mappings from
+            that UI into the creation of automatic content type handlers more
+            obvious.
+        <li>Making the UI that shows the list of automatic content type handlers
+            easier to use, making automatic content type handlers easier to edit.
+        <li>Providing a set of options that manage the memory of the download manager, 
+            so that aging file data does not sit about.
+        <li>Making the download manager UI more consistent with the functionality it
+            provides - a utility with a mid-long term presence that should minimize
+            its impact on browser use during its operation.
+      </ol>
+      </p>
+    </div>
+
+    <h2>Details</h2>
+    <div class="category">
+      <h3>Entry Points and Paths</h3>
+      <div class="category">
+        <p>
+          <b>User Chooses Save Image/Page As...</b>
+          <ol>
+            <li>User is prompted for a location to save this file to. The 
+                last-saved-to folder and failing that the download folder is 
+                presented by default but <i>the user is still asked every 
+                time</i> since these type of items are typically kept 
+                separate from downloaded files. 
+            <li>The file is downloaded to the location selected.
+          </ol>
+
+          <div class="notes">
+            <b>Notes</b>
+            <ol>
+              <li>Download Manager display preferences (per <a href="#figure3">Figure 3</a>
+                  are observed for such downloads.
+            </ol>
+          </div>
+        </p>
+
+        <p>
+          <b>User Chooses Download Link to Disk via context menu on a link
+             to a file.</b>
+          <ol>
+            <li>The action that occurs now is dependent on the download destination 
+                preferences specified in Download Options (<a href="#figure3">Figure 3</a>). 
+                If the user is using a download folder (they are, by default - Desktop), 
+                the file is downloaded to that location.<br><br>
+                If the user has selected to be asked every time (<a href="#figure3">Figure 3</a>),
+                they are prompted for a save location.
+          </ol>
+          <div class="notes">
+            <b>Notes</b>
+            <ol>
+              <li>Download Manager display preferences (per <a href="#figure3">Figure 3</a>
+                  are observed for such downloads.
+              <li>"Save Link As..." is renamed to "Download Link to Disk" to more correctly
+                  reflect the automation afforded by the download system defaults (autodownload
+                  to default folder, most often "Desktop"). "Link" handling is separated from
+                  handling of "Image"/"Page" above because files downloaded via "Save Link As..." 
+                  are usually of more temporally limited interest (install packets, zip files, 
+                  documents to be filed) than media (as in the "Image"/"Page" case) which 
+                  tend to be filed into more permanent locations. Files downloaded via "Save Link
+                  to Disk..." also tend to be those that require some sort of immediate attention
+                  precisely because they are not displayed inline as Images/Pages are, so the 
+                  default download to Desktop/Download Folder model works well to encourage action
+                  to review, file, install or delete the downloaded files. 
+            </ol>
+          </div>
+        </p>
+
+        <p>
+          <b>User Clicks on a Link to a file of a type that Firefox cannot 
+             handle internally. </b>
+          <ol>
+            <li>Check (internally) for an existing handler for this file type.
+                An existing handler is one of:
+                <ol type="a">
+                  <li>handle file by using the system default handler 
+                      for this type, e.g. MSWord for .doc
+                  <li>handle file by using a custom handler specified 
+                      by the user on a previous occasion
+                  <li>download the file to disk
+                </ol>
+            <li>If no existing handler is present, show the Unknown Content Type
+                dialog (<a href="#figure 1">Figure 1</a>) which makes the user
+                select how to handle the file. Default state of the "Do this 
+                automatically" checkbox is "off" - the dialog box will be shown 
+                for each download of files of this type.
+            <li>The action that occurs now is a combination of feedback from (1) 
+                and (2) and the download destination preferences specified in
+                Download Options (<a href="#figure3">Figure 3</a>). If the user
+                is using a download folder (they are, by default - Desktop), 
+                the file is downloaded to that location and depending on the results
+                of (1) and (2) the file is either opened with a handler or left alone
+                (Save to Disk) case. <br><br>
+                If the user has selected to be asked every time (<a href="#figure3">Figure 3</a>),
+                for the Save to Disk case they are prompted for a save location, 
+                otherwise the file is downloaded to a temporary location and viewed
+                with the applicable handler. 
+          </ol>
+          <div class="notes">
+            <b>Notes</b>
+            <ol>
+              <li>Download Manager display preferences (per <a href="#figure3">Figure 3</a>
+                  are observed for such downloads.
+              <li>Firefox ships with a handler set ("mimeTypes.rdf") to 
+                  automatically handle common file types (so that the user is 
+                  never presented with a decision dialog for common types), e.g.:<br>
+
+                  <table class="notes-table">
+                    <tr><td><b>.doc</b></td><td>Use System Default (typically MSWord)</td></tr>
+                    <tr><td><b>.zip</b></td><td>Save to Disk*</td></tr> 
+                  </table>
+                  * - Save to Disk or Use System Default??
+            </ol>
+          </div>
+        </p>
+      </div>
+	    
+      <h3>Figures</h3>
+    
+      <div class="figure"><div class="figure-caption"><a name="figure1">Figure 1</a>, <b>Unknown Content Type</b> dialog:</div>
+        <blockquote class="figure-body"><code><pre>
+  +----------------------------------------------------+
+  | Downloading foo.doc                                |
+  +----------------------------------------------------+
+  |                                                    |
+  | You have chosen to download                        |
+  |                                                    |
+  | [@] foo.zip                                        |
+  |                                                    |
+  | from [ http://www.goaty.com/ ]                     |
+  | which is: a Compressed (Zipped) Folder             |
+  |                                                    |
+  | What should Phoenix do with this file?             |
+  |                                                    |
+  | (*) Open with [ CompressedFolder :^]               |
+  |                 WINZIP32.EXE                       |
+  |                 Other...                           |
+  | ( ) Save to Disk                                   |
+  |     [ ] Do this automatically for files like this  |
+  |         from now on.                               |
+  |                                                    |
+  | Settings can be changed in the Downloads section   |
+  | of Tools, Options                                  |
+  |                                                    |
+  |                              ((  OK  )) ( Cancel ) |
+  +----------------------------------------------------+
+        </pre></code></blockquote>
+      </div>
+
+      <div class="figure"><div class="figure-caption"><a name="figure1b">Figure 1b</a>, <b>Unknown Content Type</b> dialog:</div>
+        <blockquote class="figure-body"><code><pre>
+  +----------------------------------------------------+
+  | Downloading foo.doc                                |
+  +----------------------------------------------------+
+  |                                                    |
+  | You have chosen to download                        |
+  |                                                    |
+  | [@] foo.zip                                        |
+  |                                                    |
+  | from [ http://www.goaty.com/ ]                     |
+  | which is: a Compressed (Zipped) Folder             |
+  |                                                    |
+  | What should Phoenix do with this file?             |
+  |                                                    |
+  | (*) Open with [ WINZIP32.exe      ] ( Choose ... ) |
+  | ( ) Save to Disk                                   |
+  |     [ ] Do this automatically for files like this  |
+  |         from now on.                               |
+  |                                                    |
+  | Settings can be changed in the Downloads section   |
+  | of Tools, Options                                  |
+  |                                                    |
+  |                              ((  OK  )) ( Cancel ) |
+  +----------------------------------------------------+
+        </pre></code></blockquote>
+      </div>
+      <div class="notes">
+        <b>Notes</b>
+        <ol>
+          <li>If there is no default handler, the menulist is replaced by a simple static field and a Choose button to configure
+              custom handlers.</li>
+        </ol>
+      </div>
+      <div class="figure"><div class="figure-caption"><a name="figure1c">Figure 1c</a>, <b>Unknown Content Type</b> dialog:</div>
+        <blockquote class="figure-body"><code><pre>
+  +----------------------------------------------------+
+  | Downloading foo.doc                                |
+  +----------------------------------------------------+
+  |                                                    |
+  | You have chosen to download                        |
+  |                                                    |
+  | [@] foo.zip                                        |
+  |                                                    |
+  | from [ http://www.goaty.com/ ]                     |
+  | which is: Possibly a Compressed (Zipped) Folder    |
+  |                 +----------------------------------------------------+
+  | What should Fir/| The site http://www.goaty.com/ told Firefox that   |
+  |                /| this file was text/plain, but this appears to be   |
+  | (*) Open with [/| incorrect, so Firefox guessed that this is a       |
+  |                /| Compressed (Zipped) Folder.                        |
+  |                /+----------------------------------------------------+
+  | ( ) Save to Dis//////////////////////////////////////////////////////
+  |     [ ] Do this automatically for files like this  |
+  |         from now on.                               |
+  |                                                    |
+  | Settings can be changed in the Downloads section   |
+  | of Tools, Options                                  |
+  |                                                    |
+  |                              ((  OK  )) ( Cancel ) |
+  +----------------------------------------------------+
+        </pre></code></blockquote>
+      </div>
+      <div class="notes">
+        <b>Notes</b>
+        <ol>
+          <li>If the type is sent incorrectly by the server, the assertion that a file is of a specific type is downgrated to a 
+              "possibility" and an infotip on the text describes the situation in more detail. (XXXben - this may be difficult
+              to do if the dialog is invoked with the interpolated mime type, rather than the original.</li>
+        </ol>    
+      </div>
+      <div class="figure"><div class="figure-caption"><a name="figure2">Figure 2</a>, <b>Options:Privacy</b> panel additions:</div>
+        <blockquote class="figure-body"><code><pre>
+  |                                                             |
+  | - Download Manager History                      ( Clear )   |
+  |   The Download Manager keeps track of recently downloaded   |
+  |   files.                                                    |
+  |                                                             |
+  |   Remove files from the download manager:                   |
+  |       [ upon successful download :^ ]                       |
+  |         when Phoenix exits                                  |
+  |         manually                                            |
+        </pre></code></blockquote>
+      </div>
+
+      <div class="figure"><div class="figure-caption"><a name="figure3">Figure 3</a>, <b>Options:Downloads</b> panel:</div>
+        <blockquote class="figure-body"><code><pre>
+   -- Download Folder --------------------------------------
+   ( ) Ask me where to save every file
+   (*) Save all files to this folder: 
+        [ My Desktop               :^] ( Show Folder )
+          My Downloads          
+          Other...
+
+   -- Download Manager -------------------------------------
+   [x] Show download manager window when a download begins.
+   [x] Close the download manager when downloads have 
+       completed.
+
+   -- File Types -------------------------------------------
+   Automatically perform the associated action with each of 
+   the following file types when done downloading:
+
+   +--------------------------------------------------+
+   | [@] Compressed (zipped) Folder    Save to Disk   |
+   | [@] MSWord Document               Open with Word |
+   |                                                  |
+   |                                                  |
+   |                                                  |
+   +--------------------------------------------------+
+     ( Change Action... )  ( Remove... )
+        </pre></code></blockquote>
+      </div>
+
+      <div class="figure"><div class="figure-caption"><a name="figure4">Figure 4</a>, <b>Edit Action</b> dialog:</div>
+        <blockquote class="figure-body"><code><pre>
+  +------------------------------------------------+
+  | When downloading files of type                 |
+  |  [@] Compresser (zipped) Folder                |
+  |                                                |
+  | always:                                        |
+  |  (*) Open in the Default application           |
+  |        (CompressedFolder)                      |
+  |  ( ) Open in this application:                 |
+  |       [ C:\Program Files\WinZip\WinZip32.exe ] |
+  |                              ( Change... )     |
+  |  ( ) Save to Disk                              |
+  |                                                |
+  |                         ((  OK  )) ( Cancel )  |
+  +------------------------------------------------+
+        </pre></code></blockquote>
+      </div>
+
+      <div class="figure"><div class="figure-caption"><a name="figure5">Figure 5</a>, <b>Current Downloads</b> window:</div>
+        <blockquote class="figure-body"><code><pre>
+              Shows up in Taskbar:
+
+      +------ Average of download percentages
+      |
+      |   +-- Number of files downloading
+      |   |
+   +--v---v--------------------------------------------+
+   | 32% (5 files downloading...) - Download Manager   |
+   +---------------------------------------------------+
+   | [@] foo.zip                                       |
+   |     [ |||||||          ] 42%                      |
+   |       _Cancel_ _Pause_                            |
+   |                                                   |
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        </pre></code></blockquote>
+      </div>
+
+      <div class="category">
+  
+        <h3>Concerns</h3>
+
+        <div class="category">
+          <p>The following represent some concerns with Download Manager based
+             downloading. All responses are based on the implementation 
+             specified here, not on actual present implementations.
+          <p>
+            <b>"The Download Window popping up is annoying"</b><br>
+            Individual Progress Windows popping up are also annoying. In fact, 
+            Download Manager improves the popup situation in two ways - if
+            a Download Manager window is already open, it will not be focused
+            when a new download begins, and you can optionally disable the 
+            Download Manager from showing at all.
+          <p>
+            <b>"The Download Window doesn't go away when it's done"</b><br>
+            Neither do Individual Progress Windows, by default. Download Manager
+            as specified here closes when current downloads are completed. This
+            behaviour is controllable via preference.
+          <p>
+            <b>"The Download Manager Keeps Track of What I Download"</b><br>
+            Just because you've been using Individual Progress Windows does not
+            mean that the Download Manager wasn't silently tracking what you've
+            been downloading anyway. The Download Manager as specified here
+            introduces privacy controls to manage what information is kept. 
+          <p>
+            <b>"Individual Progress Windows show me the status of each
+                individual download in the status bar"</b><br>
+            Fair point, however with the advent WindowsXP most users may find
+            their task bar buttons being grouped such that the status of each
+            download isn't always immediately obvious. The Download Manager 
+            specified here takes up less space in the task bar (making grouping 
+            less likely to occur) and presents an average of completion metrics 
+            for all current downloads which can be useful in the average case 
+            (1-2 downloads at a time).
+      </div>
+    </div>
+
+
+	<div class="category"><h3>Assorted Notes</h3>
+	   
+		<p>Dan raises good point - consider this scenario. Click link to foo.doc
+		   file. Current world - file saved to Local Settings\temp\~fosdff.doc.
+		   When you Ctrl+S to save it, you're saving to a wacky name in a wacky
+		   location. Instead, when you're using the default download location, 
+		   download to temp, then when done, move to the default download location
+		   (Desktop\foo.doc) and then open that file. When you hit Ctrl+S, you
+		   have a meaningful file name in a meaningful location.
+
+		<p>Dan also points out that it's not always obvious how to change MIME
+		   info stored. Some sort of way of invoking the "Change Action..." dialog
+		   from the dl mgr ("Change the way files of this type are handled..." 
+		   (verbose attempt). Some other hook to lead to the pref panel. Too
+		   often settings made through these transient dialogs are not linked
+		   in user's mind to how to undo these changes in preferences. 
+
+		<p>Arguments regarding Save Image As... vs. Save Link As... could use
+		   refinement. A little weak currently. 
+
+		<p>Finally, perhaps a "Remove All" button in the preferences panel with
+		   explanatory text/confirmation, "This will reset download settings
+		   to default settings" or some such. Not sure. Maybe Ctrl+A,Remove is
+		   enough?
+	</div>
+    <p>&nbsp;
+
+  
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

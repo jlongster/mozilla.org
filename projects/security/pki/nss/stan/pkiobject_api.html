@@ -1,0 +1,560 @@
+<?php
+
+$html_title = 'PKI Object Interface';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<h2 align="center">PKI Object Interface</h2>
+<br>
+<br>
+<b>Generic PKI Object Interface</b><br>
+<br>
+<tt><b>Destroy</b></tt><br>
+<i>implemented by: NSSSymKey, NSSPublicKey, NSSPrivateKey,
+                   NSSCert, NSSTrustDomain, NSSVolatileDomain</i><br>
+Free a reference to the object.
+<br>
+<pre>
+PRStatus
+Destroy (
+  &lt;_implementor_&gt; *imp
+);
+</pre>
+<br>
+<tt><b>DeleteStoredObject</b></tt><br>
+<i>implemented by: NSSSymKey, NSSPublicKey, NSSPrivateKey,
+                   NSSCert</i><br>
+Delete all persistent instances of the object (i.e., remove it from tokens).
+<br>
+<pre>
+PRStatus
+DeleteStoredObject (
+  &lt;_implementor_&gt; *imp,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<tt><b>GetTrustDomain</b></tt><br>
+<i>implemented by: NSSSymKey, NSSPublicKey, NSSPrivateKey,
+                   NSSCert</i><br>
+Return the trust domain containing the object.
+<br>
+<pre>
+NSSTrustDomain *
+GetTrustDomain (
+  &lt;_implementor_&gt; *imp
+);
+</pre>
+<br>
+<tt><b>GetVolatileDomain</b></tt><br>
+<i>implemented by: NSSSymKey, NSSPublicKey, NSSPrivateKey,
+                   NSSCert</i><br>
+Return the volatile domain containing the object (XXX plural?).
+<br>
+<pre>
+NSSVolatileDomain *
+GetVolatileDomain (
+  &lt;_implementor_&gt; *imp
+);
+</pre>
+<br>
+<tt><b>GetTokens</b></tt><br>
+<i>implemented by: NSSSymKey, NSSPublicKey, NSSPrivateKey,
+                   NSSCert</i><br>
+Return a NULL-terminated array of all tokens containing the object.
+<br>
+<pre>
+NSSToken **
+GetTokens (
+  &lt;_implementor_&gt; *imp,
+  NSSToken **rvOpt,
+  PRUint32 rvMaxOpt,
+  PRStatus *statusOpt
+);
+</pre>
+<tt><b>IsStillPresent</b></tt><br>
+<i>implemented by: NSSSymKey, NSSPublicKey, NSSPrivateKey,
+                   NSSCert</i><br>
+Determine if the object is still present in persistent storage (i.e., has
+any token instances).
+<br>
+<pre>
+PRBool
+IsStillPresent (
+  &lt;_implementor_&gt; *imp,
+  PRStatus *statusOpt
+);
+</pre>
+<br>
+<br>
+<b>Wrap and Derivation Interface</b><br>
+<br>
+<tt><b>WrapSymKey</b></tt><br>
+<i>implemented by: NSSPublicKey*, NSSSymKey</i><br>
+Use a symmetric key or public key to encrypt a symmetric key.
+<br>
+<pre>
+NSSItem *
+WrapSymKey (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSSymKey *keyToWrap,
+  NSSCallback *uhhOpt,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>WrapPrivateKey</b></tt><br>
+<i>implemented by: NSSSymKey</i><br>
+Use a symmetric key to encrypt a private key.
+<pre>
+NSSItem *
+WrapPrivateKey (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSPrivateKey *keyToWrap,
+  NSSCallback *uhhOpt,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<a name="UnwrapSymKey"></a>
+<tt><b>UnwrapSymKey</b></tt><br>
+<i>implemented by: NSSPrivateKey*, NSSSymKey</i><br>
+Use a private key or symmetric key to decrypt a symmetric key.  The
+resulting key will reside in the trust domain of the key that decrypted it,
+unless a volatile domain is provided, in which case it will reside there.
+The target OID describes the key type of the target (e.g., NSS_OID_DES_ECB
+for a single-DES key).
+<br>
+<pre>
+NSSSymKey *
+UnwrapSymKey (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSItem *wrappedKey,
+  NSSSymKeyType targetType,
+  NSSUTF8 *labelOpt,
+  NSSOperations operations,
+  NSSProperties properties,
+  NSSToken *destinationOpt,
+  NSSVolatileDomain *vdOpt,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<a name="UnwrapPrivateKey"></a>
+<tt><b>UnwrapPrivateKey</b></tt><br>
+<i>implemented by: NSSSymKey</i><br>
+Use a symmetric key to decrypt a private key.  The resulting key will reside 
+in the trust domain of the key that decrypted it, unless a volatile domain 
+is provided, in which case it will reside there.  The target OID describes 
+the key type of the target (e.g., NSS_OID_PKCS1_RSA_ENCRYPTION for an 
+RSA private key).
+<br>
+<pre>
+NSSPrivateKey *
+UnwrapPrivateKey (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSItem *wrappedKey,
+  NSSKeyPairType targetType,
+  NSSUTF8 *labelOpt,
+  NSSOperations operations,
+  NSSProperties properties,
+  NSSToken *destinationOpt,
+  NSSVolatileDomain *vdOpt,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<a name="Derive"></a>
+<tt><b>Derive</b></tt><br>
+<i>implemented by: NSSPrivateKey*, NSSSymKey</i><br>
+Use a key pair or symmetric key to derive a symmetric key.  For a key pair,
+the implementor is NSSPrivateKey and other-key-type is NSSPublicKey.  For a
+symmetric key, both the implementor and other-key-type are NSSSymKey.
+The target OID described the key type of the derived key.  The resulting key 
+will reside in the trust domain of the key that derived it, unless a 
+volatile domain is provided, in which case it will reside there.
+<br>
+<pre>
+NSSSymKey *
+Derive (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *ap,
+  &lt;_other-key-type_&gt; *key2,
+  NSSSymKeyType targetType,
+  PRUint32 keySizeOpt,
+  NSSOperations operations,
+  NSSProperties properties,
+  NSSToken *destinationOpt,
+  NSSVolatileDomain *vdOpt,
+  NSSCallback *uhh
+);
+</pre>
+<br>
+<br>
+<a name="cert"></a><b>Cert Interface</b><br>
+<br>
+<tt><b>NSSCert_GetType</b></tt><br>
+<pre>
+NSSCertType
+NSSCert_GetType (
+  NSSCert *c
+);
+</pre>
+<br>
+<tt><b>NSSCert_Encode</b></tt><br>
+<pre>
+NSSDER *
+NSSCert_Encode (
+  NSSCert *c,
+  NSSDER *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>NSSCert_GetDecoding</b></tt><br>
+<pre>
+void *
+NSSCert_GetDecoding (
+  NSSCert *c
+);
+</pre>
+<br>
+<a name="NSSCert_GetPublicKey"></a>
+<tt><b>NSSCert_GetPublicKey</b></tt><br>
+<pre>
+NSSPublicKey *
+NSSCert_GetPublicKey (
+  NSSCert *c
+);
+</pre>
+<br>
+<a name="NSSCert_FindPrivateKey"></a>
+<tt><b>NSSCert_FindPrivateKey</b></tt><br>
+<pre>
+NSSPrivateKey *
+NSSCert_FindPrivateKey (
+  NSSCert *c,
+  NSSCallback *uhh
+);
+</pre>
+<br>
+<tt><b>NSSCert_IsPrivateKeyAvailable</b></tt><br>
+<pre>
+PRBool
+NSSCert_IsPrivateKeyAvailable (
+  NSSCert *c,
+  NSSCallback *uhh,
+  PRStatus *statusOpt
+);
+</pre>
+<br>
+<tt><b>NSSCert_GetNames</b></tt><br>
+Return all of the names (or up to rvMaxOpt) associated with this cert.
+XXX - GetFullNames (DNs) and GetShortNames (CNs)?  SSL wants the hostname...
+<pre>
+NSSUTF8 **
+NSSCert_GetNames (
+  NSSCert *c,
+  NSSUTF8 **rvOpt,
+  PRUint32 rvMaxOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>NSSCert_GetIssuerNames</b></tt><br>
+Return all of the names (or up to rvMaxOpt) associated with the issuer of
+this cert.
+<pre>
+NSSUTF8 **
+NSSCert_GetIssuerNames (
+  NSSCert *c,
+  NSSUTF8 **rvOpt,
+  PRUint32 rvMaxOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<br>
+<tt><b>NSSCert_GetIssuerAndSerialNumber</b></tt><br>
+<pre>
+PRStatus
+NSSCert_GetIssuerAndSerialNumber (
+  NSSCert *c,
+  NSSBER *rvIssuer,
+  NSSBER *rvSerialNum,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>NSSCert_BuildChain</b></tt><br>
+<pre>
+NSSCert **
+NSSCert_BuildChain (
+  NSSCert *c,
+  NSSTime time,
+  const NSSUsages *usagesOpt,
+  NSSPolicies *policiesOpt,
+  NSSCert **rvOpt,
+  PRUint32 rvLimit,
+  NSSArena *arenaOpt,
+  PRStatus *statusOpt
+);
+</pre>
+<tt><b>NSSCert_Validate</b></tt><br>
+<pre>
+PRStatus
+NSSCert_Validate (
+  NSSCert *c,
+  NSSTime time,
+  NSSUsages *usages,
+  NSSPolicies *policiesOpt
+);
+</pre>
+<br>
+<tt><b>NSSCert_ValidateCompletely</b></tt><br>
+<pre>
+void **
+NSSCert_ValidateCompletely (
+  NSSCert *c,
+  NSSTime time,
+  NSSUsages *usages,
+  NSSPolicies *policiesOpt,
+  void **rvOpt,
+  PRUint32 rvLimit,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>NSSCert_ValidateAndDiscoverUsagesAndPolicies</b></tt><br>
+<pre>
+PRStatus
+NSSCert_ValidateAndDiscoverUsagesAndPolicies (
+  NSSCert *c,
+  NSSTime **notBeforeOutOpt,
+  NSSTime **notAfterOutOpt,
+  void *allowedUsages,
+  void *disallowedUsages,
+  void *allowedPolicies,
+  void *disallowedPolicies,
+  /* more args.. work on this fgmr */
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>NSSCert_GetTrustedUsages</b></tt><br>
+<pre>
+NSSUsages *
+NSSCert_GetTrustedUsages (
+  NSSCert *c,
+  NSSUsages *rvTrustedUsagesOpt
+);
+</pre>
+<br>
+<tt><b>NSSCert_SetTrustedUsages</b></tt><br>
+<pre>
+PRStatus
+NSSCert_SetTrustedUsages (
+  NSSCert *c,
+  NSSUsages *trustedUsages
+);
+</pre>
+<br>
+<tt><b>NSSCert_GetNotTrustedUsages</b></tt><br>
+<pre>
+NSSUsages *
+NSSCert_GetNotTrustedUsages (
+  NSSCert *c,
+  NSSUsages *rvNotTrustedUsagesOpt
+);
+</pre>
+<br>
+<tt><b>NSSCert_SetNotTrustedUsages</b></tt><br>
+<pre>
+PRStatus
+NSSCert_SetNotTrustedUsages (
+  NSSCert *c,
+  NSSUsages *notTrustedUsages
+);
+</pre>
+<br>
+<i>Additional methods:</i>
+<ul>
+<tt>
+<li><a href="crypto_api.html#Encrypt">Encrypt</a></li>
+<li><a href="crypto_api.html#Decrypt">Decrypt</a></li>
+<li><a href="crypto_api.html#Sign">Sign</a></li>
+<li><a href="crypto_api.html#SignRecover">SignRecover</a></li>
+<li><a href="crypto_api.html#Verify">Verify</a></li>
+<li><a href="crypto_api.html#VerifyRecover">VerifyRecover</a></li>
+<li><a href="crypto_api.html#CreateCryptoContext">CreateCryptoContext</a></li>
+</tt>
+</ul>
+<br>
+<br>
+<a name="pubkey"></a><b>Public Key Interface</b><br>
+<br>
+<a name="NSSPublicKey_FindCerts"></a>
+<br>
+<tt><b>NSSPublicKey_GetType</b></tt><br>
+<pre>
+NSSKeyPairType
+NSSPublicKey_GetType (
+  NSSPublicKey *bk
+);
+</pre>
+<br>
+<tt><b>NSSPublicKey_GetKeyStrength</b></tt><br>
+In bits, defined by key type (RSA modulus, DSA public value, etc.)
+<pre>
+PRUint32
+NSSPublicKey_GetKeyStrength (
+  NSSPublicKey *bk
+);
+</pre>
+<br>
+<tt><b>NSSPublicKey_GetKeyInfo</b></tt><br>
+Get specific information about the key.
+<pre>
+NSSPublicKeyInfo *
+NSSPublicKey_GetKeyInfo (
+  NSSPublicKey *bk,
+  NSSPublicKeyInfo *rvOpt
+);
+</pre>
+<br>
+<tt><b>NSSPublicKey_FindCerts</b></tt><br>
+<pre>
+NSSCert **
+NSSPublicKey_FindCerts (
+  NSSPublicKey *bk,
+  NSSCert *rvOpt[],
+  PRUint32 maximumOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<i>Additional methods:</i>
+<ul>
+<tt>
+<li><a href="crypto_api.html#Encrypt">Encrypt</a></li>
+<li><a href="crypto_api.html#Verify">Verify</a></li>
+<li><a href="crypto_api.html#VerifyRecover">VerifyRecover</a></li>
+<li><a href="crypto_api.html#CreateCryptoContext">CreateCryptoContext</a></li>
+</tt>
+</ul>
+<br>
+<br>
+<a name="privkey"></a><b>Private Key Interface</b><br>
+<br>
+<tt><b>NSSPrivateKey_GetType</b></tt><br>
+<pre>
+NSSKeyPairType
+NSSPrivateKey_GetType (
+  NSSPrivateKey *vk
+);
+</pre>
+<br>
+<a name="NSSPrivateKey_FindCerts"></a>
+<tt><b>NSSPrivateKey_FindCerts</b></tt><br>
+<pre>
+NSSCert **
+NSSPrivateKey_FindCerts (
+  NSSPrivateKey *vk,
+  NSSCert *rvOpt[],
+  PRUint32 maximumOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>NSSPrivateKey_GetSignatureLength</b></tt><br>
+<pre>
+PRUint32
+NSSPrivateKey_GetSignatureLength (
+  NSSPrivateKey *vk
+);
+</pre>
+<br>
+<tt><b>NSSPrivateKey_GetPrivateModulusLength</b></tt><br>
+<pre>
+PRUint32
+NSSPrivateKey_GetPrivateModulusLength (
+  NSSPrivateKey *vk
+);
+</pre>
+<br>
+<tt><b>NSSPrivateKey_Encode</b></tt><br>
+<pre>
+NSSItem *
+NSSPrivateKey_Encode (
+  NSSPrivateKey *vk,
+  NSSAlgNParam *ap,
+  NSSUTF8 *passwordOpt,
+  NSSCallback *uhhOpt,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<i>Additional methods:</i>
+<ul>
+<tt>
+<li><a href="crypto_api.html#Decrypt">Decrypt</a></li>
+<li><a href="crypto_api.html#Verify">Verify</a></li>
+<li><a href="crypto_api.html#VerifyRecover">VerifyRecover</a></li>
+<li><a href="crypto_api.html#CreateCryptoContext">CreateCryptoContext</a></li>
+</tt>
+</ul>
+<br>
+<br>
+<a name="symkey"></a><b>Symmetric Key Interface</b><br>
+<br>
+<tt><b>NSSSymKey_GetType</b></tt><br>
+<pre>
+NSSSymKeyType
+NSSSymKey_GetType (
+  NSSSymKey *mk
+);
+</pre>
+<br>
+<tt><b>NSSSymKey_GetKeyLength</b></tt><br>
+<pre>
+PRUint32
+NSSSymKey_GetKeyLength (
+  NSSSymKey *mk
+);
+</pre>
+<tt><b>NSSSymKey_GetKeyStrength</b></tt><br>
+<pre>
+PRUint32
+NSSSymKey_GetKeyStrength (
+  NSSSymKey *mk
+);
+</pre>
+<br>
+<i>Additional methods:</i>
+<ul>
+<tt>
+<li><a href="crypto_api.html#Encrypt">Encrypt</a></li>
+<li><a href="crypto_api.html#Decrypt">Decrypt</a></li>
+<li><a href="crypto_api.html#Sign">Sign (HMAC)</a></li>
+<li><a href="crypto_api.html#Verify">Verify (HMAC)</a></li>
+<li><a href="crypto_api.html#CreateCryptoContext">CreateCryptoContext</a></li>
+</tt>
+</ul>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

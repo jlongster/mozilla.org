@@ -1,0 +1,429 @@
+<?php
+
+$html_title = '
+/export/nss_3_11_2/mozilla/security/nss/lib/cryptohi/dsautil.c';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="generator" content=
+"HTML Tidy for Windows (vers 14 February 2006), see www.w3.org">
+<meta http-equiv="Content-Language" content="en">
+<meta name="DC.date.created" content="2005-09-13T19:38:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2006-08-28T09:54:03+11:00" scheme="W3CDTF">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+    <pre>
+<a name="1">    1</a> /* ***** BEGIN LICENSE BLOCK *****<br>
+
+<a name="2">    2</a>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1<br>
+<a name="3">    3</a>  *<br>
+<a name="4">    4</a>  * The contents of this file are subject to the Mozilla Public License Version<br>
+<a name="5">    5</a>  * 1.1 (the "License"); you may not use this file except in compliance with<br>
+<a name="6">    6</a>  * the License. You may obtain a copy of the License at<br>
+<a name="7">    7</a>  * http://www.mozilla.org/MPL/<br>
+<a name="8">    8</a>  *<br>
+<a name="9">    9</a>  * Software distributed under the License is distributed on an "AS IS" basis,<br>
+<a name="10">   10</a>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License<br>
+<a name="11">   11</a>  * for the specific language governing rights and limitations under the<br>
+<a name="12">   12</a>  * License.<br>
+<a name="13">   13</a>  *<br>
+<a name="14">   14</a>  * The Original Code is the Netscape security libraries.<br>
+<a name="15">   15</a>  *<br>
+<a name="16">   16</a>  * The Initial Developer of the Original Code is<br>
+<a name="17">   17</a>  * Netscape Communications Corporation.<br>
+<a name="18">   18</a>  * Portions created by the Initial Developer are Copyright (C) 1994-2000<br>
+<a name="19">   19</a>  * the Initial Developer. All Rights Reserved.<br>
+<a name="20">   20</a>  *<br>
+<a name="21">   21</a>  * Contributor(s):<br>
+<a name="22">   22</a>  *   Dr Vipul Gupta &lt;vipul.gupta@sun.com&gt;, Sun Microsystems Laboratories<br>
+<a name="23">   23</a>  *<br>
+<a name="24">   24</a>  * Alternatively, the contents of this file may be used under the terms of<br>
+<a name="25">   25</a>  * either the GNU General Public License Version 2 or later (the "GPL"), or<br>
+<a name="26">   26</a>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),<br>
+<a name="27">   27</a>  * in which case the provisions of the GPL or the LGPL are applicable instead<br>
+<a name="28">   28</a>  * of those above. If you wish to allow use of your version of this file only<br>
+<a name="29">   29</a>  * under the terms of either the GPL or the LGPL, and not to allow others to<br>
+<a name="30">   30</a>  * use your version of this file under the terms of the MPL, indicate your<br>
+<a name="31">   31</a>  * decision by deleting the provisions above and replace them with the notice<br>
+<a name="32">   32</a>  * and other provisions required by the GPL or the LGPL. If you do not delete<br>
+<a name="33">   33</a>  * the provisions above, a recipient may use your version of this file under<br>
+<a name="34">   34</a>  * the terms of any one of the MPL, the GPL or the LGPL.<br>
+<a name="35">   35</a>  *<br>
+<a name="36">   36</a>  * ***** END LICENSE BLOCK ***** */<br>
+<a name="37">   37</a> #include "cryptohi.h"<br>
+<a name="38">   38</a> #include "secasn1.h"<br>
+<a name="39">   39</a> #include "secitem.h"<br>
+<a name="40">   40</a> #include "prerr.h"<br>
+<a name="41">   41</a>
+<a name="42">   42</a> #ifndef <a href=
+"../cryptohi/dsautil.c.dep.html#DSA_SUBPRIME_LEN">DSA_SUBPRIME_LEN</a><a href=
+"../freebl/blapit.h.dep.html#DSA_SUBPRIME_LEN">[1]</a>
+<a name="43">   43</a> #define <a href=
+"#43">DSA_SUBPRIME_LEN</a> 20        /* bytes */<br>
+<a name=
+"44">   44</a> #endif<br>
+<a name="45">   45</a>
+<a name="46">   46</a> typedef struct {<br>
+<a name="47">   47</a>     <a href=
+"../util/seccomon.h.dep.html#SECItem">SECItem</a> r;<br>
+<a name=
+"48">   48</a>     <a href=
+"../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href=
+"../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href=
+"../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href=
+"../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href=
+"../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>;<br>
+<a name="49">   49</a> } <a href="#49">DSA_ASN1Signature</a>;<br>
+<a name="50">   50</a>
+<a name="51">   51</a> const <a href=
+"../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href=
+"#51">DSA_SignatureTemplate</a>[] =<br>
+<a name="52">   52</a> {<br>
+<a name=
+"53">   53</a>     { <a href=
+"../util/secasn1t.h.dep.html#SEC_ASN1_SEQUENCE">SEC_ASN1_SEQUENCE</a>, 0, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, sizeof(<a href="../cryptohi/dsautil.c.dep.html#DSA_ASN1Signature">DSA_ASN1Signature</a>) },<br>
+<a name="54">   54</a>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INTEGER">SEC_ASN1_INTEGER</a>,<br>
+offsetof(<a href="../cryptohi/dsautil.c.dep.html#DSA_ASN1Signature">DSA_ASN1Signature</a>,r) },<br>
+<a name="55">   55</a>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INTEGER">SEC_ASN1_INTEGER</a>, off<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>etof(<a href="../cryptohi/d%3Ca%20href=">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>autil.c.dep.html#DSA_ASN1Signature"&gt;DSA_ASN1Signature,<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>) },<br>
+<a name="56">   56</a>     { 0, }<br>
+<a name="57">   57</a> };<br>
+<a name="58">   58</a>
+<a name=
+"59">   59</a> /* Input is variable length multi-byte integer, MSB first (big endian).<br>
+<a name="60">   60</a> ** Most signficant bit of first byte is NOT treated as a sign bit.<br>
+<a name="61">   61</a> ** May be one or more leading bytes of zeros.<br>
+<a name="62">   62</a> ** Output is variable length multi-byte integer, MSB first (big endian).<br>
+<a name="63">   63</a> ** Most significant bit of first byte will be zero (positive sign bit)<br>
+<a name="64">   64</a> ** No more than one leading zero byte.<br>
+<a name="65">   65</a> ** Caller supplies dest buffer, and assures that it is long enough,<br>
+<a name="66">   66</a> ** e.g. at least one byte longer that src's buffer.<br>
+<a name="67">   67</a> */<br>
+<a name="68">   68</a> void<br>
+<a name="69">   69</a> <a href="#69">DSAU_ConvertUnsignedToSigned</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>)<br>
+<a name="70">   70</a> {<br>
+<a name="71">   71</a>     unsigned char *pSrc = <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a>;<br>
+<a name="72">   72</a>     unsigned char *pDst = <a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a>;<br>
+<a name="73">   73</a>     unsigned int   cntSrc = <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>;<br>
+<a name="74">   74</a>
+<a name="75">   75</a>     /* skip any leading zeros. */<br>
+<a name=
+"76">   76</a>     while (cntSrc &amp;&amp; !(*pSrc)) {<br>
+<a name=
+"77">   77</a>             pSrc++;<br>
+<a name=
+"78">   78</a>         cntSrc--;<br>
+<a name="79">   79</a>     }<br>
+<a name=
+"80">   80</a>     if (!cntSrc) {<br>
+<a name=
+"81">   81</a>             *pDst = 0;<br>
+<a name=
+"82">   82</a>         <a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a> = 1;<br>
+<a name="83">   83</a>         return;<br>
+<a name="84">   84</a>     }<br>
+<a name="85">   85</a>
+<a name="86">   86</a>     if (*pSrc &amp; 0x80)<br>
+<a name=
+"87">   87</a>             *pDst++ = 0;<br>
+<a name="88">   88</a>
+<a name="89">   89</a>     <a href=
+"../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(pDst, pSrc, cntSrc);<br>
+<a name="90">   90</a>     <a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a> = (pDst - <a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a>) + cntSrc;<br>
+<a name="91">   91</a> }<br>
+<a name="92">   92</a>
+<a name="93">   93</a> /*<br>
+<a name=
+"94">   94</a> ** src is a buffer holding a signed variable length integer.<br>
+<a name="95">   95</a> ** dest is a buffer which will be filled with an unsigned integer,<br>
+<a name="96">   96</a> ** MSB first (big endian) with leading zeros, so that the last byte<br>
+<a name="97">   97</a> ** of src will be the LSB of the integer.  The result will be exactly<br>
+<a name="98">   98</a> ** the length specified by the caller in dest-&gt;len.<br>
+<a name="99">   99</a> ** src can be shorter than dest.  src can be longer than dst, but only<br>
+<a name="100">  100</a> ** if the extra leading bytes are zeros.<br>
+<a name="101">  101</a> */<br>
+<a name="102">  102</a> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<a name="103">  103</a> <a href=
+"#103">DSAU_ConvertSignedToFixedUnsigned</a>(<a href=
+"../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href=
+"../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href=
+"../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href=
+"../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href=
+"../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href=
+"../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>, <a href=
+"../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href=
+"../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>)<br>
+<a name="104">  104</a> {<br>
+<a name="105">  105</a>     unsigned char *pSrc = <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a>;<br>
+<a name="106">  106</a>     unsigned char *pDst = <a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a>;<br>
+<a name="107">  107</a>     unsigned int   cntSrc = <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>;<br>
+<a name="108">  108</a>     unsigned int   cntDst = <a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>;<br>
+<a name="109">  109</a>     int            zCount = cntDst - cntSrc;<br>
+<a name="110">  110</a>
+<a name="111">  111</a>     if (zCount &gt; 0) {<br>
+<a name=
+"112">  112</a>             <a href=
+"../util/secport.h.dep.html#PORT_Memset">PORT_Memset</a>(pDst, 0, zCount);<br>
+<a name="113">  113</a>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(pDst + zCount, pSrc, cntSrc);<br>
+<a name="114">  114</a>         return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;<br>
+<a name="115">  115</a>     }<br>
+<a name="116">  116</a>     if (zCount &lt;= 0) {<br>
+<a name="117">  117</a>         /* Source is longer than destination.  Check for leading zeros. */<br>
+<a name="118">  118</a>         while (zCount++ &lt; 0) {<br>
+<a name="119">  119</a>             if (*pSrc++ != 0)<br>
+<a name="120">  120</a>                 goto loser;<br>
+<a name="121">  121</a>         }<br>
+<a name="122">  122</a>     }<br>
+<a name="123">  123</a>     <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(pDst, pSrc, cntDst);<br>
+<a name="124">  124</a>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;<br>
+<a name="125">  125</a>
+<a name="126">  126</a> loser:<br>
+<a name="127">  127</a>     <a href=
+"../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>( <a href=
+"../mozilla/nsprpub/pr/include/prerr.h.dep.html#PR_INVALID_ARGUMENT_ERROR">PR_INVALID_ARGUMENT_ERROR</a> );<br>
+<a name="128">  128</a>     return SECFailure;<br>
+<a name="129">  129</a> }<br>
+<a name="130">  130</a>
+<a name=
+"131">  131</a> /* src is a "raw" ECDSA or DSA signature, the first half contains r<br>
+<a name="132">  132</a>  * and the second half contains s. dest is the DER encoded signature.<br>
+<a name="133">  133</a> */<br>
+<a name="134">  134</a> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<a name="135">  135</a> <a href="#135">common_EncodeDerSig</a>(<a href=
+"../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href=
+"../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href=
+"../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href=
+"../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href=
+"../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href=
+"../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>, <a href=
+"../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href=
+"../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>)<br>
+<a name="136">  136</a> {<br>
+<a name="137">  137</a>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *         item;<br>
+<a name="138">  138</a>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>           srcItem;<br>
+<a name="139">  139</a>     <a href="../cryptohi/dsautil.c.dep.html#DSA_ASN1Signature">DSA_ASN1Signature</a> sig;<br>
+<a name="140">  140</a>     unsigned char     *signedR;<br>
+<a name="141">  141</a>     unsigned char     *signedS;<br>
+<a name="142">  142</a>     unsigned int <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>;<br>
+<a name="143">  143</a>
+<a name=
+"144">  144</a>     /* Allocate memory with room for an extra byte that<br>
+<a name="145">  145</a>      * may be required if the top bit in the first byte<br>
+<a name="146">  146</a>      * is already set.<br>
+<a name="147">  147</a>      */<br>
+<a name="148">  148</a>     <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a> = <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>/2;<br>
+<a name="149">  149</a>     signedR = (unsigned char *) <a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a> + 1);<br>
+<a name="150">  150</a>     if (!signedR) return SECFailure;<br>
+<a name="151">  151</a>     signedS = (unsigned char *) <a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a> + 1);<br>
+<a name="152">  152</a>     if (!signedS) {<br>
+<a name="153">  153</a>         if (signedR) <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(signedR);<br>
+<a name="154">  154</a>         return SECFailure;<br>
+<a name="155">  155</a>     }<br>
+<a name="156">  156</a>
+<a name="157">  157</a>     <a href=
+"../util/secport.h.dep.html#PORT_Memset">PORT_Memset</a>(&amp;sig, 0, sizeof(sig));<br>
+<a name="158">  158</a>
+<a name=
+"159">  159</a>     /* Must convert r and s from "unsigned" integers to "signed" integers.<br>
+<a name="160">  160</a>     ** If the high order bit of the first byte (MSB) is 1, then must<br>
+<a name="161">  161</a>     ** prepend with leading zero.<br>
+<a name="162">  162</a>     ** Must remove all but one leading zero byte from numbers.<br>
+<a name="163">  163</a>     */<br>
+<a name="164">  164</a>     sig.r.<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = siUnsignedInteger;<br>
+<a name="165">  165</a>     sig.r.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a> = signedR;<br>
+<a name="166">  166</a>     sig.r.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>  = sizeof signedR;<br>
+<a name="167">  167</a>     <a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ig.<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>.<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = <a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>iUn<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ignedInteger;<br>
+<a name="168">  168</a>     <a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ig.<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a> = <a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ignedS;<br>
+<a name="169">  169</a>     <a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ig.<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>  = <a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>izeof <a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ignedR;<br>
+<a name="170">  170</a>
+<a name="171">  171</a>     <a href=
+"../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>Item.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a> = <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a>;<br>
+<a name="172">  172</a>     srcItem.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>  = <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>;<br>
+<a name="173">  173</a>
+<a name="174">  174</a>     <a href=
+"../cryptohi/dsautil.c.dep.html#DSAU_ConvertUnsignedToSigned">DSAU_ConvertUnsignedToSigned</a>(&amp;sig.r, &amp;srcItem);<br>
+<a name="175">  175</a>     srcItem.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a> += <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>;<br>
+<a name="176">  176</a>     DSAU_ConvertUn<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ignedToSigned(&amp;<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ig.<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>, &amp;<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>rcItem);<br>
+<a name="177">  177</a>
+<a name="178">  178</a>     item = <a href=
+"../util/secasn1e.c.dep.html#SEC_ASN1EncodeItem">SEC_ASN1EncodeItem</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, <a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>, &amp;sig, <a href="../cryptohi/dsautil.c.dep.html#DSA_SignatureTemplate">DSA_SignatureTemplate</a>);<br>
+<a name="179">  179</a>     if (signedR) <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(signedR);<br>
+<a name="180">  180</a>     if (signedS) <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(signedS);<br>
+<a name="181">  181</a>     if (item == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)<br>
+<a name="182">  182</a>         return SECFailure;<br>
+<a name="183">  183</a>
+<a name="184">  184</a>     /* XXX leak item? */<br>
+<a name=
+"185">  185</a>     return <a href=
+"../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;<br>
+<a name="186">  186</a> }<br>
+<a name="187">  187</a>
+<a name=
+"188">  188</a> /* src is a DER-encoded ECDSA or DSA signature.<br>
+<a name=
+"189">  189</a> ** Returns a newly-allocated SECItem structure, pointing at a newly allocated<br>
+<a name="190">  190</a> ** buffer containing the "raw" signature, which is len bytes of r,<br>
+<a name="191">  191</a> ** followed by len bytes of s. For DSA, len is always DSA_SUBPRIME_LEN.<br>
+<a name="192">  192</a> ** For ECDSA, len depends on the key size used to create the signature.<br>
+<a name="193">  193</a> */<br>
+<a name="194">  194</a> static <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<br>
+<a name="195">  195</a> <a href="#195">common_DecodeDerSig</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *item, unsigned int <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>)<br>
+<a name="196">  196</a> {<br>
+<a name="197">  197</a>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *         result = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;<br>
+<a name="198">  198</a>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a>;<br>
+<a name="199">  199</a>     <a href="../cryptohi/dsautil.c.dep.html#DSA_ASN1Signature">DSA_ASN1Signature</a> sig;<br>
+<a name="200">  200</a>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>           dst;<br>
+<a name="201">  201</a>
+<a name="202">  202</a>     <a href=
+"../util/secport.h.dep.html#PORT_Memset">PORT_Memset</a>(&amp;sig, 0, sizeof(sig));<br>
+<a name="203">  203</a>
+<a name="204">  204</a>     result = <a href=
+"../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href=
+"../util/seccomon.h.dep.html#SECItem">SECItem</a>);<br>
+<a name=
+"205">  205</a>     if (result == <a href=
+"../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)<br>
+<a name=
+"206">  206</a>         goto loser;<br>
+<a name="207">  207</a>
+<a name="208">  208</a>     result-&gt;<a href=
+"../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href=
+"../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>  = 2 * <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>;<br>
+<a name="209">  209</a>     result-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a> = (unsigned char*)<a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(2 * <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>);<br>
+<a name="210">  210</a>     if (result-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)<br>
+<a name="211">  211</a>         goto loser;<br>
+<a name="212">  212</a>
+<a name="213">  213</a>     sig.r.<a href=
+"../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = siUnsignedInteger;<br>
+<a name="214">  214</a>     <a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ig.<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>.<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = <a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>iUn<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ignedInteger;<br>
+<a name="215">  215</a>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> = <a href="../util/secasn1d.c.dep.html#SEC_ASN1DecodeItem">SEC_ASN1DecodeItem</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, &amp;sig, <a href="../cryptohi/dsautil.c.dep.html#DSA_SignatureTemplate">DSA_SignatureTemplate</a>, item);<br>
+<a name="216">  216</a>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> != <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>)<br>
+<a name="217">  217</a>         goto loser;<br>
+<a name="218">  218</a>
+<a name=
+"219">  219</a>     /* Convert sig.r and sig.s from variable  length signed integers to<br>
+<a name="220">  220</a>     ** fixed length unsigned integers.<br>
+<a name="221">  221</a>     */<br>
+<a name="222">  222</a>     dst.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a> = result-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a>;<br>
+<a name="223">  223</a>     dst.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>  = <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>;<br>
+<a name="224">  224</a>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> = <a href="../cryptohi/dsautil.c.dep.html#DSAU_ConvertSignedToFixedUnsigned">DSAU_ConvertSignedToFixedUnsigned</a>(&amp;dst, &amp;sig.r);<br>
+<a name="225">  225</a>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> != <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>)<br>
+<a name="226">  226</a>             goto loser;<br>
+<a name="227">  227</a>
+<a name="228">  228</a>     dst.<a href=
+"../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a> += <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>;<br>
+<a name="229">  229</a>     <a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>tatu<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a> = DSAU_ConvertSignedToFixedUn<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>igned(&amp;d<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>t, &amp;<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ig.<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>);<br>
+<a name="230">  230</a>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> != <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>)<br>
+<a name="231">  231</a>             goto loser;<br>
+<a name="232">  232</a>
+<a name="233">  233</a> done:<br>
+<a name="234">  234</a>     if (sig.r.<a href=
+"../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a> != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)<br>
+<a name="235">  235</a>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(sig.r.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a>);<br>
+<a name="236">  236</a>     if (<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ig.<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a> != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)<br>
+<a name="237">  237</a>         <a href="../util/%3Ca%20href=">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ecport.c.dep.html#PORT_Free"&gt;PORT_Free(<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>ig.<a href="../mozilla/nsprpub/pr/src/md/unix/ncr.c.dep.html#s">s</a><a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#s">[1]</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#s">[3]</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#s">[4]</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#s">[5]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#s">[15]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#s">[20]</a>.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data">[2]</a>);<br>
+<a name="238">  238</a>
+<a name="239">  239</a>     return result;<br>
+<a name="240">  240</a>
+<a name="241">  241</a> loser:<br>
+<a name=
+"242">  242</a>     if (result != <a href=
+"../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {<br>
+<a name=
+"243">  243</a>         <a href=
+"../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(result, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);<br>
+<a name="244">  244</a>         result = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;<br>
+<a name="245">  245</a>     }<br>
+<a name="246">  246</a>     goto done;<br>
+<a name="247">  247</a> }<br>
+<a name="248">  248</a>
+<a name=
+"249">  249</a> /* src is a "raw" DSA signature, 20 bytes of r followed by 20 bytes of s.<br>
+<a name="250">  250</a> ** dest is the signature DER encoded. ?<br>
+<a name="251">  251</a> */<br>
+<a name="252">  252</a> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<a name="253">  253</a> <a href="#253">DSAU_EncodeDerSig</a>(<a href=
+"../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href=
+"../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href=
+"../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href=
+"../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href=
+"../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href=
+"../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>, <a href=
+"../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href=
+"../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>)<br>
+<a name="254">  254</a> {<br>
+<a name="255">  255</a>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert">[1]</a>(<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a> == 2 * <a href="../cryptohi/dsautil.c.dep.html#DSA_SUBPRIME_LEN">DSA_SUBPRIME_LEN</a><a href="../freebl/blapit.h.dep.html#DSA_SUBPRIME_LEN">[1]</a>);<br>
+<a name="256">  256</a>     if (<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a> != 2 * <a href="../cryptohi/dsautil.c.dep.html#DSA_SUBPRIME_LEN">DSA_SUBPRIME_LEN</a><a href="../freebl/blapit.h.dep.html#DSA_SUBPRIME_LEN">[1]</a>) {<br>
+<a name="257">  257</a>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>( <a href="../mozilla/nsprpub/pr/include/prerr.h.dep.html#PR_INVALID_ARGUMENT_ERROR">PR_INVALID_ARGUMENT_ERROR</a> );<br>
+<a name="258">  258</a>         return SECFailure;<br>
+<a name="259">  259</a>     }<br>
+<a name="260">  260</a>
+<a name="261">  261</a>     return <a href=
+"../cryptohi/dsautil.c.dep.html#common_EncodeDerSig">common_EncodeDerSig</a>(<a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>, <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>);<br>
+<a name="262">  262</a> }<br>
+<a name="263">  263</a>
+<a name=
+"264">  264</a> /* src is a "raw" DSA signature of length len (len/2 bytes of r followed<br>
+<a name="265">  265</a> ** by len/2 bytes of s). dest is the signature DER encoded.<br>
+<a name="266">  266</a> */<br>
+<a name="267">  267</a> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<a name="268">  268</a> <a href="#268">DSAU_EncodeDerSigWithLen</a>(<a href=
+"../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href=
+"../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href=
+"../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href=
+"../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href=
+"../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href=
+"../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>, <a href=
+"../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href=
+"../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>, unsigned int <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>)<br>
+<a name="269">  269</a> {<br>
+<a name="270">  270</a>
+<a name="271">  271</a>     <a href=
+"../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href=
+"../util/utf8.c.dep.html#PORT_Assert">[1]</a>((<a href=
+"../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a> == <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>) &amp;&amp; (<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a> % 2 == 0));<br>
+<a name="272">  272</a>     if ((<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a> != <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>) || (<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a> % 2 != 0)) {<br>
+<a name="273">  273</a>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>( <a href="../mozilla/nsprpub/pr/include/prerr.h.dep.html#PR_INVALID_ARGUMENT_ERROR">PR_INVALID_ARGUMENT_ERROR</a> );<br>
+<a name="274">  274</a>         return SECFailure;<br>
+<a name="275">  275</a>     }<br>
+<a name="276">  276</a>
+<a name="277">  277</a>     return <a href=
+"../cryptohi/dsautil.c.dep.html#common_EncodeDerSig">common_EncodeDerSig</a>(<a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest">[2]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest">[3]</a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest">[4]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest">[5]</a>, <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>);<br>
+<a name="278">  278</a> }<br>
+<a name="279">  279</a>
+<a name="280">  280</a> /* src is a DER-encoded DSA signature.<br>
+<a name=
+"281">  281</a> ** Returns a newly-allocated SECItem structure, pointing at a newly allocated<br>
+<a name="282">  282</a> ** buffer containing the "raw" DSA signature, which is 20 bytes of r,<br>
+<a name="283">  283</a> ** followed by 20 bytes of s.<br>
+<a name="284">  284</a> */<br>
+<a name="285">  285</a> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<br>
+<a name="286">  286</a> <a href="#286">DSAU_DecodeDerSig</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *item)<br>
+<a name="287">  287</a> {<br>
+<a name="288">  288</a>     return <a href="../cryptohi/dsautil.c.dep.html#common_DecodeDerSig">common_DecodeDerSig</a>(item, <a href="../cryptohi/dsautil.c.dep.html#DSA_SUBPRIME_LEN">DSA_SUBPRIME_LEN</a><a href="../freebl/blapit.h.dep.html#DSA_SUBPRIME_LEN">[1]</a>);<br>
+<a name="289">  289</a> }<br>
+<a name="290">  290</a>
+<a name="291">  291</a> /* src is a DER-encoded ECDSA signature.<br>
+<a name=
+"292">  292</a> ** Returns a newly-allocated SECItem structure, pointing at a newly allocated<br>
+<a name="293">  293</a> ** buffer containing the "raw" ECDSA signature of length len containing<br>
+<a name="294">  294</a> ** r followed by s (both padded to take up exactly len/2 bytes).<br>
+<a name="295">  295</a> */<br>
+<a name="296">  296</a> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<br>
+<a name="297">  297</a> <a href="#297">DSAU_DecodeDerSigToLen</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *item, unsigned int <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>)<br>
+<a name="298">  298</a> {<br>
+<a name="299">  299</a>     return <a href="../cryptohi/dsautil.c.dep.html#common_DecodeDerSig">common_DecodeDerSig</a>(item, <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len">[1]</a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len">[2]</a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len">[3]</a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len">[6]</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len">[9]</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len">[10]</a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len">[13]</a>/2);<br>
+<a name="300">  300</a> }
+</pre>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

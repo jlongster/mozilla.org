@@ -1,0 +1,535 @@
+<?php
+
+$html_title = 'NSS 3.4 Plan';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="GENERATOR" content="Mozilla/4.76 [en] (X11; U; SunOS 5.7 sun4u) [Netscape]">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>
+NSS 3.4 Plan</h2></center>
+
+<center><i><font size=-1>Newsgroup: <a href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a></font></i>
+<br><i><font size=-1>Draft Version 0.8.1, 15 September 2001</font></i></center>
+
+<p>
+<hr size="1" width="100%">
+<h3>
+Introduction</h3>
+In July 2001 we made an interim NSS 3.3 release that only implemented some
+of the features originally planned for NSS 3.3.
+<p>The goal of NSS 3.4 is to finish the remaining features originally planned
+for NSS 3.3 and the features required by NSS clients shipping in Q1 2002.&nbsp;
+The features include the implementation of the core cert functionality
+of NSS 4.0 (code name Stan), a new SSL server session ID cache, and S/MIME
+v3 support.&nbsp; We will also continue the SSL performance enhancement
+work.
+<h3>
+<b><font size=+1>Features</font></b></h3>
+
+<h4>
+In</h4>
+
+<ol>
+<li>
+S/MIME v3.&nbsp; Netscape 6.x will support S/MIME soon.&nbsp; Our S/MIME
+code needs more code review, testing, enhancement, and documentation.&nbsp;
+It needs to interoperate with Netscape Communicator, Microsoft Outlook Express,
+and Netscape 6.x (when implemented).</li>
+
+<li>
+A new function <tt>SSL_GetChannelInfo()</tt> that addresses the inadequacies
+of the <tt>SSL_SecurityStatus()</tt> function.&nbsp; This new function
+should report all the information that Microsoft Internet Explorer reports
+on an SSL channel.&nbsp; Publish Nelson's API proposal. (PSM <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=78837">bug
+78837</a> depends on this.)</li>
+
+<li>
+Put together a list of cert handling problems that need to be fixed (some
+have been filed in Bugzilla and some are described in Bob Lord's Certificate/Key
+Storage Requirments document).&nbsp; Review NSS 4.0's cert architecture
+to verify that it addresses these problems.</li>
+
+<li>
+Implement enough NSS 4.0 cert functionality to alleviate the problems caused
+by the inability to treat certs from PKCS #11 modules the same as&nbsp;
+certs from the cert database.</li>
+
+<ul>
+<li>
+Move the current cert database code under PKCS #11.</li>
+
+<li>
+Implement the higher level cert cache and searching code using Stan opaque
+data structures.</li>
+
+<li>
+Emulate the exported cert database access functions using the low level
+Stan functions.&nbsp; If any of the exported functions can't be emulated,
+we should publish the list of the exported functions that will go away
+in NSS 3.4 immediately.</li>
+
+<li>
+Provide new utility functions to convert NSSCertificates into CERTCertificates.</li>
+
+<li>
+Provide new Stan functions that will allow applications to get around some
+of the problems with multiple sources for the same cert.</li>
+</ul>
+
+<li>
+SSL server session cache.&nbsp; Use shared memory and reduce hash collision.</li>
+
+<li>
+Implement the
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-tls-ciphersuite-05.txt">
+TLS AES ciphersuites</a>. Need to interoperate with another implementation
+of TLS AES ciphersuites. Note: the server-side code of the TLS AES ciphersuites
+using Diffe-Hellman Ephemeral (DHE) for key agreement will not be implemented.</li>
+
+<li>
+A new function to add a certificate to a specified token.</li>
+
+<li>
+NSS should be able to import a large number of wrapped keys temporarily
+and use the keys in S/MIME functions. We should write a test to verify
+that we can do this with existing NSS functions or to find out what functions
+are missing.</li>
+
+<li>
+Automatic failover from hardware to software crypto token if hardware accelerators
+fail.&nbsp; This only works if the keys are in both the hardware and software
+tokens.&nbsp; It is a concern that the automatic failover may mask bugs
+in NSS.</li>
+
+<li>
+PKCS #11 library database format.&nbsp; Design and implement a common file
+format that all crypto libraries and applications can use to determine
+which PKCS #11 libraries they need to load, and propose it to the PKCS
+#11 Work Group.</li>
+
+<li>
+DBM 1.5.6 should use source code on mozilla.org and use NSPR 4.1.2.</li>
+</ol>
+
+<h4>
+Out</h4>
+
+<ol>
+<li>
+OCSP HTTP client may potentially block for a long time.&nbsp; Possible
+solutions include a configurable timeout or a callback supplied by the
+NSS client.</li>
+
+<li>
+Multiple trust domains for virtual servers.</li>
+
+<li>
+Better error reporting, for example with an error stack.</li>
+
+<li>
+Release the <tt>regress</tt> tool, which is required by the <a href="http://www.mozilla.org/projects/security/pki/pkcs11/netscape/">Netscape
+PKCS #11 test suites</a>.</li>
+
+<li>
+Conform to latest PKCS #11 revision (2.11).</li>
+
+<li>
+Notification of hardware accelerator failures.</li>
+
+<li>
+Tools: review and implement <tt>signtool</tt> enhancement requests (Bugzilla
+bugs <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=66600">#66600</a>,
+<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=66603">#66603</a>,
+<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=66604">#66604</a>,
+<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=66606">#66606</a>,
+and <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=66608">#66608</a>).</li>
+
+<li>
+CMC support.</li>
+
+<li>
+Tools: <tt>dbck</tt> should work.</li>
+
+<li>
+AES support in S/MIME.</li>
+
+<li>
+Interpretation of the CRL nextUpdate timestamp.</li>
+
+<li>
+Conform to RFC 2459.</li>
+
+<li>
+OCSP reliability.</li>
+
+<li>
+Cross certification.</li>
+
+<li>
+Elliptic Curve Cryptography (ECC).</li>
+
+<li>
+XML Key Management Specification (XKMS).</li>
+
+<li>
+OCSP local caching.</li>
+
+<li>
+Multiple client applications share the same cert and key databases.</li>
+
+<li>
+Enable PSM to use NSS shared libraries.</li>
+
+<li>
+Resolve the remaining build issues with Mozilla client. Allow compilers
+(CC, CXX) and tools (PERL, ZIP) to be overridden. (<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=52990">Bug
+#52990</a>)</li>
+
+<li>
+Combine SVRCORE with NSS.</li>
+
+<ul>
+<li>
+move the useful SVRCORE functions to NSS; or</li>
+
+<li>
+help LDAP C SDK replace SVRCORE with existing public NSS functions.</li>
+</ul>
+
+<li>
+NSS should process UTF-8 strings correctly.&nbsp; For example, when a web
+server constructs a certificate request, it passes UTF-8 to NSS and NSS
+converts UTF-8 to UCS4 for ASN.1 Universal String encoding.</li>
+
+<li>
+NSS should support certificate nicknames in multibyte character sets.</li>
+
+<li>
+Anything that uses certificates or refers to certificates (for example,
+CRLs) should be able to use Distinguished Names (organization name, common
+name, etc.) in multibyte character sets.&nbsp; This applies to not only
+the C API functions but also the command-line tools such as <tt>certutil</tt>.</li>
+
+<li>
+Command-line tools such as <tt>certutil</tt> should support the default
+character set of the locale, which is often not UTF-8.</li>
+
+<li>
+NSS should use NSPR's error message functions for its error messages.</li>
+
+<li>
+NSS should support UTF-8 in certificate extensions.</li>
+
+<li>
+<tt>CERT_NameToAscii()</tt> should return the certificate attributes in
+UTF-8.</li>
+
+<li>
+The name of the built-in internal token is hardcoded and cannot be localized.</li>
+</ol>
+
+<h3>
+Performance Enhancement</h3>
+
+<h4>
+In</h4>
+
+<ol>
+<li>
+Instrument memory allocation.&nbsp; Reduce the contention on the heap lock.&nbsp;
+Ideally our clients should not need to use a specialized malloc package
+like SmartHeap. Possible solutions include free lists for frequently used
+data structures, zone allocators, and per-thread arena pools.</li>
+
+<li>
+Reduce lock contention.</li>
+
+<li>
+Set the TCP_NODELAY socket option when appropriate in the SSL protocol.</li>
+</ol>
+
+<h4>
+Out</h4>
+
+<ol>
+<li>
+Coalesce small reads in SSL.</li>
+</ol>
+
+<h3>
+Bugs</h3>
+The complete list of bugs that will be fixed in NSS 3.4 can be found in
+Bugzilla.&nbsp; We will assign high priority to the database corruption
+bugs.
+<h3>
+Components</h3>
+
+<blockquote>
+<li>
+NSPR 4.1.2.</li>
+
+<li>
+DBM 1.5.6.</li>
+</blockquote>
+
+<h3>
+Platforms Supported</h3>
+NSS is maintained on the platforms listed below. "Certify" means the NSS
+team will build and run QA tests for NSS on a machine with the specified
+OS.
+<br>&nbsp;
+<table BORDER >
+<caption><tbody>
+<br></tbody></caption>
+
+<tr>
+<td VALIGN=CENTER><b>Platform</b></td>
+
+<td VALIGN=CENTER><b>Build</b></td>
+
+<td VALIGN=CENTER><b>Certify</b></td>
+
+<td VALIGN=CENTER><b>Compiler(s)</b></td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER ROWSPAN="2" HEIGHT="43">AIX</td>
+
+<td VALIGN=CENTER HEIGHT="43">4.3.3 (32 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="43">4.3.3
+<br>4.3.3</td>
+
+<td VALIGN=CENTER HEIGHT="43">xlC/C++ 3.6.6</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER HEIGHT="9">4.3.3 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="9">4.3.3</td>
+
+<td VALIGN=CENTER HEIGHT="9">xlC/C++ 3.6.6</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER HEIGHT="61">Compaq Tru64</td>
+
+<td VALIGN=CENTER HEIGHT="61">5.0A</td>
+
+<td VALIGN=CENTER HEIGHT="61">5.0A&nbsp;
+<br>5.1</td>
+
+<td VALIGN=CENTER HEIGHT="61">(cc) Digital C v5.6-071</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER ROWSPAN="2" HEIGHT="58">HP-UX</td>
+
+<td VALIGN=CENTER HEIGHT="58">11.0 (32 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="58">11.0</td>
+
+<td VALIGN=CENTER HEIGHT="58">C compiler: A.11.01.00</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER HEIGHT="9">11.0 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="9">11.0</td>
+
+<td VALIGN=CENTER HEIGHT="9">C compiler A.11.01.00</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER>Linux 2.2</td>
+
+<td VALIGN=CENTER>Red Hat 6.0</td>
+
+<td VALIGN=CENTER>Red Hat 6.2</td>
+
+<td VALIGN=CENTER>egcs-1.1.2
+<br>GNU ld version 2.9.5 (with libbfd-2.9.5.0.22.so)</td>
+</tr>
+
+<tr>
+<td>Linux 2.4</td>
+
+<td>Red Hat 7.1</td>
+
+<td>Red Hat 7.1</td>
+
+<td>gcc version 2.96 20000731 (Red Hat Linux 7.1 2.96-81)</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER>NT</td>
+
+<td VALIGN=CENTER>NT 4.0 w/ SP 6a</td>
+
+<td VALIGN=CENTER>NT 4.0 w/ SP 6a&nbsp;
+<br>Win2000 w/ SP 2</td>
+
+<td VALIGN=CENTER>VC++ 6.0 Service Pack 4</td>
+</tr>
+
+<tr>
+<td>Windows</td>
+
+<td>NT 4.0 w/ SP 6a</td>
+
+<td>NT 4.0 w/ SP 6a&nbsp;
+<br>Win2000 w/ SP 2
+<p>Win95 OSR2 *&nbsp;
+<br>Win98 SE *&nbsp;
+<br>Win Me *</td>
+
+<td>VC++ 6.0 Service Pack 4</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER ROWSPAN="3" HEIGHT="66">Solaris SPARC</td>
+
+<td VALIGN=CENTER HEIGHT="66">2.6</td>
+
+<td VALIGN=CENTER HEIGHT="66">2.6</td>
+
+<td VALIGN=CENTER HEIGHT="66">WorkShop Compilers&nbsp;
+<br>C/C++ version 5.0</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER HEIGHT="12">8 (32 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="12">8 (32 bit)
+<br>8 (64 bit)
+<br>9</td>
+
+<td VALIGN=CENTER HEIGHT="12">Forte 6 update 2</td>
+</tr>
+
+<tr>
+<td VALIGN=CENTER HEIGHT="12">8 (64 bit)</td>
+
+<td VALIGN=CENTER HEIGHT="12">8
+<br>9</td>
+
+<td VALIGN=CENTER HEIGHT="12">Forte 6 update 2</td>
+</tr>
+
+<tr>
+<td>Solaris x86</td>
+
+<td>8</td>
+
+<td>8
+<br>9</td>
+
+<td>Forte 6 update 2</td>
+</tr>
+
+<tr>
+<td>Mac OS</td>
+
+<td>9</td>
+
+<td>8.5 *&nbsp;
+<br>8.6 *&nbsp;
+<br>9 *</td>
+
+<td>Metrowerks CodeWarrior Pro 5</td>
+</tr>
+</table>
+
+<p>* Full QA certification will not be done on these platforms. We will
+only verify that <a href="http://www.mozilla.org/projects/security/pki/psm/">PSM</a>
+built with NSS 3.3 works on these platforms.
+<p>** Optional.
+<p>NSS has not yet been formally certified on any other platforms. If you
+have successfully run NSS QA tests on other platforms, please post the
+test output logs and results to <a href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a>.
+If you are interested in taking responsibility for testing and maintaining
+NSS on a particular platform that's not listed above, post a message to
+<a href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a>.
+<p><b>Note regarding NT builds:</b> The build listed in the left column
+above as the "NT" build will run on NT (including Windows 2000) only and
+hence can potentially take advantage of some Win32 functions that are only
+implemented on NT, such as fibers and I/O completion ports. The build listed
+above as the "Windows" build will run on all Windows flavors -- 95, 98,
+Me, NT, and 2000.
+<p>Only NSPR makes use of this NT vs. Windows distinction and provides
+different NT and Windows builds. Many Netscape products, including NSS,
+have NT and Windows builds that are essentially the same except one difference:
+one is linked with the NT version of NSPR and the other is linked with
+the Windows version of NSPR.
+<h3>
+Documentation Plan</h3>
+At a minimum, all the <a href="http://www.mozilla.org/projects/security/pki/nss/ref/nssfunctions.html">NSS
+public functions</a> should be documented.&nbsp; The NSS engineers will
+use an HTML template provided by our technical writer to document the functions
+in a consistent style.&nbsp; We should also document the S/MIME library
+in the same way the SSL library is documented in the <a href="http://www.mozilla.org/projects/security/pki/nss/ref/ssl/">SSL
+Reference</a>, with overviews, tutorials, and sample code.&nbsp; (The API
+of the NSS base library is going to change in NSS 4.0, so we are not planning
+to do a comprehensive documentation of it at this moment.)
+<h3>
+Schedule</h3>
+We have the following target dates.
+<br>&nbsp;
+<table BORDER >
+<caption><tbody>
+<br></tbody></caption>
+
+<tr>
+<td><b>Milestone</b></td>
+
+<td><b>Date</b></td>
+</tr>
+
+<tr>
+<td>PRD approved</td>
+
+<td><font color="#000000">Fri. 09/07/01</font></td>
+</tr>
+
+<tr>
+<td>Feature complete</td>
+
+<td>Mon. 10/22/01</td>
+</tr>
+
+<tr>
+<td>Beta</td>
+
+<td>Mon. 10/29/01</td>
+</tr>
+
+<tr>
+<td>Certification (RTM Candidate)</td>
+
+<td>Mon. 11/12/01</td>
+</tr>
+
+<tr>
+<td><b>RTM</b></td>
+
+<td>Fri. 11/16/01</td>
+</tr>
+</table>
+
+<br>&nbsp;
+<br>&nbsp;
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

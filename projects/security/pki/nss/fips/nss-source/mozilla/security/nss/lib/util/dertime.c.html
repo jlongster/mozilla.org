@@ -1,0 +1,421 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> #include "prtypes.h"
+<b><a name="38">   38</a></b> #include "prtime.h"
+<b><a name="39">   39</a></b> #include "secder.h"
+<b><a name="40">   40</a></b> #include "prlong.h"
+<b><a name="41">   41</a></b> #include "secerr.h"
+<b><a name="42">   42</a></b> 
+<b><a name="43">   43</a></b> #define <a href="#43">HIDIGIT</a>(v) (((v) / 10) + '0')
+<b><a name="44">   44</a></b> #define <a href="#44">LODIGIT</a>(v) (((v) % 10) + '0')
+<b><a name="45">   45</a></b> 
+<b><a name="46">   46</a></b> #define <a href="#46">C_SINGLE_QUOTE</a> '\047'
+<b><a name="47">   47</a></b> 
+<b><a name="48">   48</a></b> #define <a href="#48">DIGITHI</a>(dig) (((dig) - '0') * 10)
+<b><a name="49">   49</a></b> #define <a href="#49">DIGITLO</a>(dig) ((dig) - '0')
+<b><a name="50">   50</a></b> #define <a href="#50">ISDIGIT</a>(dig) (((dig) &gt;= '0') &amp;&amp; ((dig) &lt;= '9'))
+<b><a name="51">   51</a></b> #define <a href="#51">CAPTURE</a>(var,p,label)                                  \
+<b><a name="52">   52</a></b> {                                                          \
+<b><a name="53">   53</a></b>     if (!<a href="../util/dertime.c.dep.html#ISDIGIT">ISDIGIT</a>((p)[0]) || !<a href="../util/dertime.c.dep.html#ISDIGIT">ISDIGIT</a>((p)[1])) goto label; \
+<b><a name="54">   54</a></b>     (var) = ((p)[0] - '0') * 10 + ((p)[1] - '0');          \
+<b><a name="55">   55</a></b> }
+<b><a name="56">   56</a></b> 
+<b><a name="57">   57</a></b> #define <a href="#57">SECMIN</a> ((time_t) 60L)
+<b><a name="58">   58</a></b> #define <a href="#58">SECHOUR</a> (60L*<a href="../util/dertime.c.dep.html#SECMIN">SECMIN</a>)
+<b><a name="59">   59</a></b> #define <a href="#59">SECDAY</a> (24L*<a href="../util/dertime.c.dep.html#SECHOUR">SECHOUR</a>)
+<b><a name="60">   60</a></b> #define <a href="#60">SECYEAR</a> (365L*<a href="../util/dertime.c.dep.html#SECDAY">SECDAY</a>)
+<b><a name="61">   61</a></b> 
+<b><a name="62">   62</a></b> static long <a href="#62">monthToDayInYear</a>[12] = {
+<b><a name="63">   63</a></b>     0,
+<b><a name="64">   64</a></b>     31,
+<b><a name="65">   65</a></b>     31+28,
+<b><a name="66">   66</a></b>     31+28+31,
+<b><a name="67">   67</a></b>     31+28+31+30,
+<b><a name="68">   68</a></b>     31+28+31+30+31,
+<b><a name="69">   69</a></b>     31+28+31+30+31+30,
+<b><a name="70">   70</a></b>     31+28+31+30+31+30+31,
+<b><a name="71">   71</a></b>     31+28+31+30+31+30+31+31,
+<b><a name="72">   72</a></b>     31+28+31+30+31+30+31+31+30,
+<b><a name="73">   73</a></b>     31+28+31+30+31+30+31+31+30+31,
+<b><a name="74">   74</a></b>     31+28+31+30+31+30+31+31+30+31+30,
+<b><a name="75">   75</a></b> };
+<b><a name="76">   76</a></b> 
+<b><a name="77">   77</a></b> /* gmttime must contains UTC time in micro-seconds unit */
+<b><a name="78">   78</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="79">   79</a></b> <a href="#79">DER_TimeToUTCTimeArena</a>(PRArenaPool* arenaOpt, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dst, int64 gmttime)
+<b><a name="80">   80</a></b> {
+<b><a name="81">   81</a></b>     PRExplodedTime printableTime;
+<b><a name="82">   82</a></b>     unsigned char *d;
+<b><a name="83">   83</a></b> 
+<b><a name="84">   84</a></b>     dst-&gt;len = 13;
+<b><a name="85">   85</a></b>     if (arenaOpt) {
+<b><a name="86">   86</a></b>         dst-&gt;data = d = (unsigned char*) <a href="../util/secport.c.dep.html#PORT_ArenaAlloc">PORT_ArenaAlloc</a>(arenaOpt, dst-&gt;len);
+<b><a name="87">   87</a></b>     } else {
+<b><a name="88">   88</a></b>         dst-&gt;data = d = (unsigned char*) <a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(dst-&gt;len);
+<b><a name="89">   89</a></b>     }
+<b><a name="90">   90</a></b>     dst-&gt;type = siUTCTime;
+<b><a name="91">   91</a></b>     if (!d) {
+<b><a name="92">   92</a></b>         return SECFailure;
+<b><a name="93">   93</a></b>     }
+<b><a name="94">   94</a></b> 
+<b><a name="95">   95</a></b>     /* Convert an int64 time to a printable format.  */
+<b><a name="96">   96</a></b>     PR_ExplodeTime(gmttime, PR_GMTParameters, &amp;printableTime);
+<b><a name="97">   97</a></b> 
+<b><a name="98">   98</a></b>     /* The month in UTC time is base one */
+<b><a name="99">   99</a></b>     printableTime.tm_month++;
+<b><a name="100">  100</a></b> 
+<b><a name="101">  101</a></b>     /* UTC time does not handle the years before 1950 */
+<b><a name="102">  102</a></b>     if (printableTime.tm_year &lt; 1950)
+<b><a name="103">  103</a></b>             return SECFailure;
+<b><a name="104">  104</a></b> 
+<b><a name="105">  105</a></b>     /* remove the century since it's added to the tm_year by the 
+<b><a name="106">  106</a></b>        PR_ExplodeTime routine, but is not needed for UTC time */
+<b><a name="107">  107</a></b>     printableTime.tm_year %= 100; 
+<b><a name="108">  108</a></b> 
+<b><a name="109">  109</a></b>     d[0] = <a href="../util/dertime.c.dep.html#HIDIGIT">HIDIGIT</a>(printableTime.tm_year);
+<b><a name="110">  110</a></b>     d[1] = <a href="../util/dertime.c.dep.html#LODIGIT">LODIGIT</a>(printableTime.tm_year);
+<b><a name="111">  111</a></b>     d[2] = <a href="../util/dertime.c.dep.html#HIDIGIT">HIDIGIT</a>(printableTime.tm_month);
+<b><a name="112">  112</a></b>     d[3] = <a href="../util/dertime.c.dep.html#LODIGIT">LODIGIT</a>(printableTime.tm_month);
+<b><a name="113">  113</a></b>     d[4] = <a href="../util/dertime.c.dep.html#HIDIGIT">HIDIGIT</a>(printableTime.tm_mday);
+<b><a name="114">  114</a></b>     d[5] = <a href="../util/dertime.c.dep.html#LODIGIT">LODIGIT</a>(printableTime.tm_mday);
+<b><a name="115">  115</a></b>     d[6] = <a href="../util/dertime.c.dep.html#HIDIGIT">HIDIGIT</a>(printableTime.tm_hour);
+<b><a name="116">  116</a></b>     d[7] = <a href="../util/dertime.c.dep.html#LODIGIT">LODIGIT</a>(printableTime.tm_hour);
+<b><a name="117">  117</a></b>     d[8] = <a href="../util/dertime.c.dep.html#HIDIGIT">HIDIGIT</a>(printableTime.tm_min);
+<b><a name="118">  118</a></b>     d[9] = <a href="../util/dertime.c.dep.html#LODIGIT">LODIGIT</a>(printableTime.tm_min);
+<b><a name="119">  119</a></b>     d[10] = <a href="../util/dertime.c.dep.html#HIDIGIT">HIDIGIT</a>(printableTime.tm_sec);
+<b><a name="120">  120</a></b>     d[11] = <a href="../util/dertime.c.dep.html#LODIGIT">LODIGIT</a>(printableTime.tm_sec);
+<b><a name="121">  121</a></b>     d[12] = 'Z';
+<b><a name="122">  122</a></b>     return SECSuccess;
+<b><a name="123">  123</a></b> }
+<b><a name="124">  124</a></b> 
+<b><a name="125">  125</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="126">  126</a></b> <a href="#126">DER_TimeToUTCTime</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dst, int64 gmttime)
+<b><a name="127">  127</a></b> {
+<b><a name="128">  128</a></b>     return <a href="../util/dertime.c.dep.html#DER_TimeToUTCTimeArena">DER_TimeToUTCTimeArena</a>(NULL, dst, gmttime);
+<b><a name="129">  129</a></b> }
+<b><a name="130">  130</a></b> 
+<b><a name="131">  131</a></b> /* The caller of DER_AsciiToItem MUST ENSURE that either
+<b><a name="132">  132</a></b> ** a) "string" points to a null-terminated ASCII string, or
+<b><a name="133">  133</a></b> ** b) "string" points to a buffer containing a valid UTCTime, 
+<b><a name="134">  134</a></b> **     whether null terminated or not.
+<b><a name="135">  135</a></b> ** otherwise, this function may UMR and/or crash.
+<b><a name="136">  136</a></b> ** It suffices to ensure that the input "string" is at least 17 bytes long.
+<b><a name="137">  137</a></b> */
+<b><a name="138">  138</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="139">  139</a></b> <a href="#139">DER_AsciiToTime</a>(int64 *dst, const char *string)
+<b><a name="140">  140</a></b> {
+<b><a name="141">  141</a></b>     long year, month, mday, hour, minute, second, hourOff, minOff, days;
+<b><a name="142">  142</a></b>     int64 result, tmp1, tmp2;
+<b><a name="143">  143</a></b> 
+<b><a name="144">  144</a></b>     if (string == NULL) {
+<b><a name="145">  145</a></b>         goto loser;
+<b><a name="146">  146</a></b>     }
+<b><a name="147">  147</a></b>     
+<b><a name="148">  148</a></b>     /* Verify time is formatted properly and capture information */
+<b><a name="149">  149</a></b>     second = 0;
+<b><a name="150">  150</a></b>     hourOff = 0;
+<b><a name="151">  151</a></b>     minOff = 0;
+<b><a name="152">  152</a></b>     <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(year,string+0,loser);
+<b><a name="153">  153</a></b>     if (year &lt; 50) {
+<b><a name="154">  154</a></b>         /* ASSUME that year # is in the 2000's, not the 1900's */
+<b><a name="155">  155</a></b>         year += 100;
+<b><a name="156">  156</a></b>     }
+<b><a name="157">  157</a></b>     <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(month,string+2,loser);
+<b><a name="158">  158</a></b>     if ((month == 0) || (month &gt; 12)) goto loser;
+<b><a name="159">  159</a></b>     <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(mday,string+4,loser);
+<b><a name="160">  160</a></b>     if ((mday == 0) || (mday &gt; 31)) goto loser;
+<b><a name="161">  161</a></b>     <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(hour,string+6,loser);
+<b><a name="162">  162</a></b>     if (hour &gt; 23) goto loser;
+<b><a name="163">  163</a></b>     <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(minute,string+8,loser);
+<b><a name="164">  164</a></b>     if (minute &gt; 59) goto loser;
+<b><a name="165">  165</a></b>     if (<a href="../util/dertime.c.dep.html#ISDIGIT">ISDIGIT</a>(string[10])) {
+<b><a name="166">  166</a></b>         <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(second,string+10,loser);
+<b><a name="167">  167</a></b>         if (second &gt; 59) goto loser;
+<b><a name="168">  168</a></b>         string += 2;
+<b><a name="169">  169</a></b>     }
+<b><a name="170">  170</a></b>     if (string[10] == '+') {
+<b><a name="171">  171</a></b>         <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(hourOff,string+11,loser);
+<b><a name="172">  172</a></b>         if (hourOff &gt; 23) goto loser;
+<b><a name="173">  173</a></b>         <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(minOff,string+13,loser);
+<b><a name="174">  174</a></b>         if (minOff &gt; 59) goto loser;
+<b><a name="175">  175</a></b>     } else if (string[10] == '-') {
+<b><a name="176">  176</a></b>         <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(hourOff,string+11,loser);
+<b><a name="177">  177</a></b>         if (hourOff &gt; 23) goto loser;
+<b><a name="178">  178</a></b>         hourOff = -hourOff;
+<b><a name="179">  179</a></b>         <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(minOff,string+13,loser);
+<b><a name="180">  180</a></b>         if (minOff &gt; 59) goto loser;
+<b><a name="181">  181</a></b>         minOff = -minOff;
+<b><a name="182">  182</a></b>     } else if (string[10] != 'Z') {
+<b><a name="183">  183</a></b>         goto loser;
+<b><a name="184">  184</a></b>     }
+<b><a name="185">  185</a></b>     
+<b><a name="186">  186</a></b>     
+<b><a name="187">  187</a></b>     /* Convert pieces back into a single value year  */
+<b><a name="188">  188</a></b>     LL_I2L(tmp1, (year-70L));
+<b><a name="189">  189</a></b>     LL_I2L(tmp2, <a href="../util/dertime.c.dep.html#SECYEAR">SECYEAR</a>);
+<b><a name="190">  190</a></b>     LL_MUL(result, tmp1, tmp2);
+<b><a name="191">  191</a></b>     
+<b><a name="192">  192</a></b>     LL_I2L(tmp1, ( (mday-1L)*<a href="../util/dertime.c.dep.html#SECDAY">SECDAY</a> + hour*<a href="../util/dertime.c.dep.html#SECHOUR">SECHOUR</a> + minute*<a href="../util/dertime.c.dep.html#SECMIN">SECMIN</a> -
+<b><a name="193">  193</a></b>                   hourOff*<a href="../util/dertime.c.dep.html#SECHOUR">SECHOUR</a> - minOff*<a href="../util/dertime.c.dep.html#SECMIN">SECMIN</a> + second ) );
+<b><a name="194">  194</a></b>     LL_ADD(result, result, tmp1);
+<b><a name="195">  195</a></b> 
+<b><a name="196">  196</a></b>     /*
+<b><a name="197">  197</a></b>     ** Have to specially handle the day in the month and the year, to
+<b><a name="198">  198</a></b>     ** take into account leap days. The return time value is in
+<b><a name="199">  199</a></b>     ** seconds since January 1st, 12:00am 1970, so start examining
+<b><a name="200">  200</a></b>     ** the time after that. We can't represent a time before that.
+<b><a name="201">  201</a></b>     */
+<b><a name="202">  202</a></b> 
+<b><a name="203">  203</a></b>     /* Using two digit years, we can only represent dates from 1970
+<b><a name="204">  204</a></b>        to 2069. As a result, we cannot run into the leap year rule
+<b><a name="205">  205</a></b>        that states that 1700, 2100, etc. are not leap years (but 2000
+<b><a name="206">  206</a></b>        is). In other words, there are no years in the span of time
+<b><a name="207">  207</a></b>        that we can represent that are == 0 mod 4 but are not leap
+<b><a name="208">  208</a></b>        years. Whew.
+<b><a name="209">  209</a></b>        */
+<b><a name="210">  210</a></b> 
+<b><a name="211">  211</a></b>     days = <a href="../util/dertime.c.dep.html#monthToDayInYear">monthToDayInYear</a>[month-1];
+<b><a name="212">  212</a></b>     days += (year - 68)/4;
+<b><a name="213">  213</a></b> 
+<b><a name="214">  214</a></b>     if (((year % 4) == 0) &amp;&amp; (month &lt; 3)) {
+<b><a name="215">  215</a></b>         days--;
+<b><a name="216">  216</a></b>     }
+<b><a name="217">  217</a></b>    
+<b><a name="218">  218</a></b>     LL_I2L(tmp1, (days * <a href="../util/dertime.c.dep.html#SECDAY">SECDAY</a>) );
+<b><a name="219">  219</a></b>     LL_ADD(result, result, tmp1 );
+<b><a name="220">  220</a></b> 
+<b><a name="221">  221</a></b>     /* convert to micro seconds */
+<b><a name="222">  222</a></b>     LL_I2L(tmp1, PR_USEC_PER_SEC);
+<b><a name="223">  223</a></b>     LL_MUL(result, result, tmp1);
+<b><a name="224">  224</a></b> 
+<b><a name="225">  225</a></b>     *dst = result;
+<b><a name="226">  226</a></b>     return SECSuccess;
+<b><a name="227">  227</a></b> 
+<b><a name="228">  228</a></b>   loser:
+<b><a name="229">  229</a></b>     <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_TIME);
+<b><a name="230">  230</a></b>     return SECFailure;
+<b><a name="231">  231</a></b>         
+<b><a name="232">  232</a></b> }
+<b><a name="233">  233</a></b> 
+<b><a name="234">  234</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="235">  235</a></b> <a href="#235">DER_UTCTimeToTime</a>(int64 *dst, const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *time)
+<b><a name="236">  236</a></b> {
+<b><a name="237">  237</a></b>     const char * string;
+<b><a name="238">  238</a></b>     char localBuf[20]; 
+<b><a name="239">  239</a></b> 
+<b><a name="240">  240</a></b>     /* Minimum valid UTCTime is yymmddhhmmZ       which is 11 bytes. 
+<b><a name="241">  241</a></b>     ** Maximum valid UTCTime is yymmddhhmmss+0000 which is 17 bytes.
+<b><a name="242">  242</a></b>     ** 20 should be large enough for all valid encoded times. 
+<b><a name="243">  243</a></b>     */
+<b><a name="244">  244</a></b>     if (!time || !time-&gt;data || time-&gt;len &lt; 11) {
+<b><a name="245">  245</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_TIME);
+<b><a name="246">  246</a></b>         return SECFailure;
+<b><a name="247">  247</a></b>     }
+<b><a name="248">  248</a></b>     if (time-&gt;len &gt;= sizeof localBuf) { 
+<b><a name="249">  249</a></b>         string = (const char *)time-&gt;data;
+<b><a name="250">  250</a></b>     } else {
+<b><a name="251">  251</a></b>         memset(localBuf, 0, sizeof localBuf);
+<b><a name="252">  252</a></b>         memcpy(localBuf, time-&gt;data, time-&gt;len);
+<b><a name="253">  253</a></b>         string = (const char *)localBuf;
+<b><a name="254">  254</a></b>     }
+<b><a name="255">  255</a></b>     return <a href="../util/dertime.c.dep.html#DER_AsciiToTime">DER_AsciiToTime</a>(dst, string);
+<b><a name="256">  256</a></b> }
+<b><a name="257">  257</a></b> 
+<b><a name="258">  258</a></b> /*
+<b><a name="259">  259</a></b>    gmttime must contains UTC time in micro-seconds unit.
+<b><a name="260">  260</a></b>    Note: the caller should make sure that Generalized time
+<b><a name="261">  261</a></b>    should only be used for certifiate validities after the
+<b><a name="262">  262</a></b>    year 2049.  Otherwise, UTC time should be used.  This routine
+<b><a name="263">  263</a></b>    does not check this case, since it can be used to encode
+<b><a name="264">  264</a></b>    certificate extension, which does not have this restriction. 
+<b><a name="265">  265</a></b>  */
+<b><a name="266">  266</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="267">  267</a></b> <a href="#267">DER_TimeToGeneralizedTimeArena</a>(PRArenaPool* arenaOpt, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dst, int64 gmttime)
+<b><a name="268">  268</a></b> {
+<b><a name="269">  269</a></b>     PRExplodedTime printableTime;
+<b><a name="270">  270</a></b>     unsigned char *d;
+<b><a name="271">  271</a></b> 
+<b><a name="272">  272</a></b>     dst-&gt;len = 15;
+<b><a name="273">  273</a></b>     if (arenaOpt) {
+<b><a name="274">  274</a></b>         dst-&gt;data = d = (unsigned char*) <a href="../util/secport.c.dep.html#PORT_ArenaAlloc">PORT_ArenaAlloc</a>(arenaOpt, dst-&gt;len);
+<b><a name="275">  275</a></b>     } else {
+<b><a name="276">  276</a></b>         dst-&gt;data = d = (unsigned char*) <a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(dst-&gt;len);
+<b><a name="277">  277</a></b>     }
+<b><a name="278">  278</a></b>     dst-&gt;type = siGeneralizedTime;
+<b><a name="279">  279</a></b>     if (!d) {
+<b><a name="280">  280</a></b>         return SECFailure;
+<b><a name="281">  281</a></b>     }
+<b><a name="282">  282</a></b> 
+<b><a name="283">  283</a></b>     /*Convert a int64 time to a printable format. This is a temporary call
+<b><a name="284">  284</a></b>           until we change to NSPR 2.0
+<b><a name="285">  285</a></b>      */
+<b><a name="286">  286</a></b>     PR_ExplodeTime(gmttime, PR_GMTParameters, &amp;printableTime);
+<b><a name="287">  287</a></b> 
+<b><a name="288">  288</a></b>     /* The month in Generalized time is base one */
+<b><a name="289">  289</a></b>     printableTime.tm_month++;
+<b><a name="290">  290</a></b> 
+<b><a name="291">  291</a></b>     d[0] = (printableTime.tm_year /1000) + '0';
+<b><a name="292">  292</a></b>     d[1] = ((printableTime.tm_year % 1000) / 100) + '0';
+<b><a name="293">  293</a></b>     d[2] = ((printableTime.tm_year % 100) / 10) + '0';
+<b><a name="294">  294</a></b>     d[3] = (printableTime.tm_year % 10) + '0';
+<b><a name="295">  295</a></b>     d[4] = <a href="../util/dertime.c.dep.html#HIDIGIT">HIDIGIT</a>(printableTime.tm_month);
+<b><a name="296">  296</a></b>     d[5] = <a href="../util/dertime.c.dep.html#LODIGIT">LODIGIT</a>(printableTime.tm_month);
+<b><a name="297">  297</a></b>     d[6] = <a href="../util/dertime.c.dep.html#HIDIGIT">HIDIGIT</a>(printableTime.tm_mday);
+<b><a name="298">  298</a></b>     d[7] = <a href="../util/dertime.c.dep.html#LODIGIT">LODIGIT</a>(printableTime.tm_mday);
+<b><a name="299">  299</a></b>     d[8] = <a href="../util/dertime.c.dep.html#HIDIGIT">HIDIGIT</a>(printableTime.tm_hour);
+<b><a name="300">  300</a></b>     d[9] = <a href="../util/dertime.c.dep.html#LODIGIT">LODIGIT</a>(printableTime.tm_hour);
+<b><a name="301">  301</a></b>     d[10] = <a href="../util/dertime.c.dep.html#HIDIGIT">HIDIGIT</a>(printableTime.tm_min);
+<b><a name="302">  302</a></b>     d[11] = <a href="../util/dertime.c.dep.html#LODIGIT">LODIGIT</a>(printableTime.tm_min);
+<b><a name="303">  303</a></b>     d[12] = <a href="../util/dertime.c.dep.html#HIDIGIT">HIDIGIT</a>(printableTime.tm_sec);
+<b><a name="304">  304</a></b>     d[13] = <a href="../util/dertime.c.dep.html#LODIGIT">LODIGIT</a>(printableTime.tm_sec);
+<b><a name="305">  305</a></b>     d[14] = 'Z';
+<b><a name="306">  306</a></b>     return SECSuccess;
+<b><a name="307">  307</a></b> }
+<b><a name="308">  308</a></b> 
+<b><a name="309">  309</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="310">  310</a></b> <a href="#310">DER_TimeToGeneralizedTime</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dst, int64 gmttime)
+<b><a name="311">  311</a></b> {
+<b><a name="312">  312</a></b>     return <a href="../util/dertime.c.dep.html#DER_TimeToGeneralizedTimeArena">DER_TimeToGeneralizedTimeArena</a>(NULL, dst, gmttime);
+<b><a name="313">  313</a></b> }
+<b><a name="314">  314</a></b> 
+<b><a name="315">  315</a></b> 
+<b><a name="316">  316</a></b> /*
+<b><a name="317">  317</a></b>     The caller should make sure that the generalized time should only
+<b><a name="318">  318</a></b>     be used for the certificate validity after the year 2051; otherwise,
+<b><a name="319">  319</a></b>     the certificate should be consider invalid!?
+<b><a name="320">  320</a></b>  */
+<b><a name="321">  321</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="322">  322</a></b> <a href="#322">DER_GeneralizedTimeToTime</a>(int64 *dst, const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *time)
+<b><a name="323">  323</a></b> {
+<b><a name="324">  324</a></b>     PRExplodedTime genTime;
+<b><a name="325">  325</a></b>     const char *string;
+<b><a name="326">  326</a></b>     long hourOff, minOff;
+<b><a name="327">  327</a></b>     uint16 century;
+<b><a name="328">  328</a></b>     char localBuf[20];
+<b><a name="329">  329</a></b> 
+<b><a name="330">  330</a></b>     /* Minimum valid GeneralizedTime is ccyymmddhhmmZ       which is 13 bytes.
+<b><a name="331">  331</a></b>     ** Maximum valid GeneralizedTime is ccyymmddhhmmss+0000 which is 19 bytes.
+<b><a name="332">  332</a></b>     ** 20 should be large enough for all valid encoded times. 
+<b><a name="333">  333</a></b>     */
+<b><a name="334">  334</a></b>     if (!time || !time-&gt;data || time-&gt;len &lt; 13)
+<b><a name="335">  335</a></b>         goto loser;
+<b><a name="336">  336</a></b>     if (time-&gt;len &gt;= sizeof localBuf) {
+<b><a name="337">  337</a></b>         string = (const char *)time-&gt;data;
+<b><a name="338">  338</a></b>     } else {
+<b><a name="339">  339</a></b>         memset(localBuf, 0, sizeof localBuf);
+<b><a name="340">  340</a></b>         memcpy(localBuf, time-&gt;data, time-&gt;len);
+<b><a name="341">  341</a></b>         string = (const char *)localBuf;
+<b><a name="342">  342</a></b>     }
+<b><a name="343">  343</a></b> 
+<b><a name="344">  344</a></b>     memset(&amp;genTime, 0, sizeof genTime);
+<b><a name="345">  345</a></b> 
+<b><a name="346">  346</a></b>     /* Verify time is formatted properly and capture information */
+<b><a name="347">  347</a></b>     hourOff = 0;
+<b><a name="348">  348</a></b>     minOff = 0;
+<b><a name="349">  349</a></b> 
+<b><a name="350">  350</a></b>     <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(century, string+0, loser);
+<b><a name="351">  351</a></b>     century *= 100;
+<b><a name="352">  352</a></b>     <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(genTime.tm_year,string+2,loser);
+<b><a name="353">  353</a></b>     genTime.tm_year += century;
+<b><a name="354">  354</a></b> 
+<b><a name="355">  355</a></b>     <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(genTime.tm_month,string+4,loser);
+<b><a name="356">  356</a></b>     if ((genTime.tm_month == 0) || (genTime.tm_month &gt; 12)) goto loser;
+<b><a name="357">  357</a></b> 
+<b><a name="358">  358</a></b>     /* NSPR month base is 0 */
+<b><a name="359">  359</a></b>     --genTime.tm_month;
+<b><a name="360">  360</a></b>     
+<b><a name="361">  361</a></b>     <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(genTime.tm_mday,string+6,loser);
+<b><a name="362">  362</a></b>     if ((genTime.tm_mday == 0) || (genTime.tm_mday &gt; 31)) goto loser;
+<b><a name="363">  363</a></b>     
+<b><a name="364">  364</a></b>     <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(genTime.tm_hour,string+8,loser);
+<b><a name="365">  365</a></b>     if (genTime.tm_hour &gt; 23) goto loser;
+<b><a name="366">  366</a></b>     
+<b><a name="367">  367</a></b>     <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(genTime.tm_min,string+10,loser);
+<b><a name="368">  368</a></b>     if (genTime.tm_min &gt; 59) goto loser;
+<b><a name="369">  369</a></b>     
+<b><a name="370">  370</a></b>     if (<a href="../util/dertime.c.dep.html#ISDIGIT">ISDIGIT</a>(string[12])) {
+<b><a name="371">  371</a></b>         <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(genTime.tm_sec,string+12,loser);
+<b><a name="372">  372</a></b>         if (genTime.tm_sec &gt; 59) goto loser;
+<b><a name="373">  373</a></b>         string += 2;
+<b><a name="374">  374</a></b>     }
+<b><a name="375">  375</a></b>     if (string[12] == '+') {
+<b><a name="376">  376</a></b>         <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(hourOff,string+13,loser);
+<b><a name="377">  377</a></b>         if (hourOff &gt; 23) goto loser;
+<b><a name="378">  378</a></b>         <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(minOff,string+15,loser);
+<b><a name="379">  379</a></b>         if (minOff &gt; 59) goto loser;
+<b><a name="380">  380</a></b>     } else if (string[12] == '-') {
+<b><a name="381">  381</a></b>         <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(hourOff,string+13,loser);
+<b><a name="382">  382</a></b>         if (hourOff &gt; 23) goto loser;
+<b><a name="383">  383</a></b>         hourOff = -hourOff;
+<b><a name="384">  384</a></b>         <a href="../util/dertime.c.dep.html#CAPTURE">CAPTURE</a>(minOff,string+15,loser);
+<b><a name="385">  385</a></b>         if (minOff &gt; 59) goto loser;
+<b><a name="386">  386</a></b>         minOff = -minOff;
+<b><a name="387">  387</a></b>     } else if (string[12] != 'Z') {
+<b><a name="388">  388</a></b>         goto loser;
+<b><a name="389">  389</a></b>     }
+<b><a name="390">  390</a></b> 
+<b><a name="391">  391</a></b>     /* Since the values of hourOff and minOff are small, there will
+<b><a name="392">  392</a></b>        be no loss of data by the conversion to int8 */
+<b><a name="393">  393</a></b>     /* Convert the GMT offset to seconds and save it it genTime
+<b><a name="394">  394</a></b>        for the implode time process */
+<b><a name="395">  395</a></b>     genTime.tm_params.tp_gmt_offset = (PRInt32)((hourOff * 60L + minOff) * 60L);
+<b><a name="396">  396</a></b>     *dst = PR_ImplodeTime (&amp;genTime);
+<b><a name="397">  397</a></b>     return SECSuccess;
+<b><a name="398">  398</a></b> 
+<b><a name="399">  399</a></b>   loser:
+<b><a name="400">  400</a></b>     <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_TIME);
+<b><a name="401">  401</a></b>     return SECFailure;
+<b><a name="402">  402</a></b>         
+<b><a name="403">  403</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

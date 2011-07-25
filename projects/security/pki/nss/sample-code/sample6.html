@@ -1,0 +1,179 @@
+<?php
+
+$html_title = 'sample6';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="author" content="Tej Arora">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+ <tt><br>
+/* Example code to illustrate generation of a secret symmetric key ring<br>
+&nbsp;* that PERSISTS in the NSS database. The symmetric keys can then be
+used<br>
+&nbsp;* without ever exposing them in the clear.<br>
+&nbsp;*<br>
+&nbsp;* To encrypt, you need the id of the key to use.<br>
+&nbsp;* To decrypt, you need the ciphertext and the id of the key that was
+used <br>
+&nbsp;* to encrypt<br>
+&nbsp;*<br>
+&nbsp;* Before running this example, create the NSS database<br>
+&nbsp;*&nbsp;&nbsp;&nbsp;&nbsp; certutil -N -d .<br>
+&nbsp;* (enter "test" when prompted for password)<br>
+&nbsp;*/<br>
+<br>
+<br>
+#include "nss.h"<br>
+#include "pk11pub.h"<br>
+<br>
+/* the key id can be any sequence of bytes. this example happens to use an<br>
+&nbsp;* integer */<br>
+void genkey(int id);<br>
+<br>
+/* this callback is responsible for returning the password to the NSS<br>
+&nbsp;* key database. for example purposes, this function hardcodes the password.<br>
+&nbsp;* In a real app, this function should obtain the password using secure
+means<br>
+&nbsp;* such as prompting an operator, or retrieving it over a secure communication<br>
+&nbsp;* channel<br>
+&nbsp;*/<br>
+char *passwdcb(PK11SlotInfo *info, PRBool retry, void *arg);<br>
+<br>
+<br>
+int main(int argc, char **argv)<br>
+{<br>
+&nbsp; SECStatus rv;<br>
+<br>
+&nbsp; /* Initialize NSS */<br>
+&nbsp; PK11_SetPasswordFunc(passwdcb);<br>
+<br>
+&nbsp; /* The NSS db must be initialized read-write since we'll be creating<br>
+&nbsp;&nbsp; * keys in it. Once keys are generated, it can be opened without
+read-write<br>
+&nbsp;&nbsp; * subsequently (NSS_Init).<br>
+&nbsp;&nbsp; */<br>
+&nbsp; rv = NSS_InitReadWrite(".");<br>
+&nbsp; if (rv != SECSuccess)<br>
+&nbsp; {<br>
+&nbsp;&nbsp;&nbsp; fprintf(stderr, "NSS initialization failed (err %d)\n",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_GetError());<br>
+&nbsp;&nbsp;&nbsp; exit(1);<br>
+&nbsp; } <br>
+<br>
+&nbsp; /* generate a key with id 1. should succeed on first run on a fresh
+db,<br>
+&nbsp;&nbsp; * should fail on successive runs because key with that id already
+exists */<br>
+&nbsp; genkey(1);<br>
+<br>
+&nbsp; /* generate a key with id 2. should succeed on first run on a fresh
+db,<br>
+&nbsp;&nbsp; * should fail on successive runs because key with that id already
+exists */<br>
+&nbsp; genkey(2);<br>
+<br>
+&nbsp; /* generate a key with id 1 - this will fail because key with that
+id<br>
+&nbsp;&nbsp; * already exists */<br>
+&nbsp; genkey(1);<br>
+}<br>
+<br>
+<br>
+void genkey(int id)<br>
+{<br>
+&nbsp; PK11SlotInfo*&nbsp; slot = NULL;<br>
+&nbsp; PK11SymKey*&nbsp;&nbsp;&nbsp; key = NULL;<br>
+&nbsp; SECItem&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; keyiditem;<br>
+&nbsp; int&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+keyid[1];<br>
+&nbsp; CK_MECHANISM_TYPE cipherMech;<br>
+&nbsp; <br>
+&nbsp; /* using CKM_AES_CBC_PAD mechanism for example */<br>
+&nbsp; cipherMech = CKM_AES_CBC_PAD;<br>
+&nbsp; <br>
+&nbsp;&nbsp; slot = PK11_GetInternalKeySlot();<br>
+&nbsp; /* slot = PK11_GetBestSlot(cipherMech, NULL); didn't work.<br>
+&nbsp;&nbsp; * Error code: token is read-only. ??<br>
+&nbsp;&nbsp; */<br>
+&nbsp; if (slot == NULL)<br>
+&nbsp; {<br>
+&nbsp;&nbsp;&nbsp; fprintf(stderr, "Unable to find security device (err %d)\n",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_GetError());<br>
+&nbsp;&nbsp;&nbsp; return;<br>
+&nbsp; }<br>
+<br>
+&nbsp; keyid[0] = id;<br>
+&nbsp; keyiditem.type = siBuffer;<br>
+&nbsp; keyiditem.data = (void *)keyid;<br>
+&nbsp; keyiditem.len = sizeof(keyid[0]);<br>
+<br>
+&nbsp; /* Note: keysize must be 0 for fixed key-length algorithms like DES.<br>
+&nbsp;&nbsp; *&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Since we're using AES
+in this example, we're specifying<br>
+&nbsp;&nbsp; *&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; one of the valid keysizes
+(16, 24, 32)<br>
+&nbsp;&nbsp; */<br>
+&nbsp; key = PK11_TokenKeyGen(slot, cipherMech, 0, 32 /*keysize*/,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&amp;keyiditem, PR_TRUE, 0);<br>
+&nbsp; if (key == NULL)<br>
+&nbsp; {<br>
+&nbsp;&nbsp;&nbsp; fprintf(stderr, "PK11_TokenKeyGen failed (err %d)\n",
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_GetError());<br>
+&nbsp;&nbsp;&nbsp; PK11_FreeSlot(slot);<br>
+&nbsp;&nbsp;&nbsp; return;<br>
+&nbsp; }<br>
+<br>
+&nbsp; fprintf(stderr, "key length of generated key is %d\n", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PK11_GetKeyLength(key));<br>
+&nbsp; fprintf(stderr, "mechanism of key is %d (asked for %d)\n", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PK11_GetMechanism(key),
+cipherMech);<br>
+<br>
+&nbsp; PK11_FreeSymKey(key);<br>
+<br>
+<br>
+&nbsp; key = PK11_FindFixedKey(slot, cipherMech, &amp;keyiditem, 0);<br>
+&nbsp; if (key == NULL)<br>
+&nbsp; {<br>
+&nbsp;&nbsp;&nbsp; fprintf(stderr, "PK11_FindFixedKey failed (err %d)\n",
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_GetError());<br>
+&nbsp;&nbsp;&nbsp; PK11_FreeSlot(slot);<br>
+&nbsp;&nbsp;&nbsp; return;<br>
+&nbsp; }<br>
+<br>
+&nbsp; fprintf(stderr, "Found key!\n");<br>
+&nbsp; fprintf(stderr, "key length of generated key is %d\n", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PK11_GetKeyLength(key));<br>
+&nbsp; fprintf(stderr, "mechanism of key is %d (asked for %d)\n", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PK11_GetMechanism(key),
+cipherMech);<br>
+<br>
+&nbsp; PK11_FreeSymKey(key);<br>
+<br>
+&nbsp; PK11_FreeSlot(slot);<br>
+}<br>
+<br>
+char *passwdcb(PK11SlotInfo *info, PRBool retry, void *arg)<br>
+{<br>
+&nbsp; if (!retry)<br>
+&nbsp;&nbsp;&nbsp; return PL_strdup("test");<br>
+&nbsp; else<br>
+&nbsp;&nbsp;&nbsp; return NULL;<br>
+}<br>
+</tt><br>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

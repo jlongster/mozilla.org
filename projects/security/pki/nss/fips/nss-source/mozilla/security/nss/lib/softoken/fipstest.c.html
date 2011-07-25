@@ -1,0 +1,2016 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /*
+<b><a name="2">    2</a></b>  * PKCS #11 FIPS Power-Up Self Test.
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="5">    5</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="6">    6</a></b>  *
+<b><a name="7">    7</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="8">    8</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="9">    9</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="10">   10</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="11">   11</a></b>  *
+<b><a name="12">   12</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="13">   13</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="14">   14</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="15">   15</a></b>  * License.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="18">   18</a></b>  *
+<b><a name="19">   19</a></b>  * The Initial Developer of the Original Code is
+<b><a name="20">   20</a></b>  * Netscape Communications Corporation.
+<b><a name="21">   21</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="22">   22</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="23">   23</a></b>  *
+<b><a name="24">   24</a></b>  * Contributor(s):
+<b><a name="25">   25</a></b>  *
+<b><a name="26">   26</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="27">   27</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="28">   28</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="29">   29</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="30">   30</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="31">   31</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="32">   32</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="33">   33</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="34">   34</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="35">   35</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="36">   36</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="37">   37</a></b>  *
+<b><a name="38">   38</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="39">   39</a></b> /* $Id$ */
+<b><a name="40">   40</a></b> 
+<b><a name="41">   41</a></b> #include "softoken.h"   /* Required for RC2-ECB, RC2-CBC, RC4, DES-ECB,  */
+<b><a name="42">   42</a></b>                         /*              DES-CBC, DES3-ECB, DES3-CBC, RSA */
+<b><a name="43">   43</a></b>                         /*              and DSA.                         */
+<b><a name="44">   44</a></b> #include "seccomon.h"   /* Required for RSA and DSA. */
+<b><a name="45">   45</a></b> #include "lowkeyi.h"    /* Required for RSA and DSA. */
+<b><a name="46">   46</a></b> #include "pkcs11.h"     /* Required for PKCS #11. */
+<b><a name="47">   47</a></b> #include "secerr.h"
+<b><a name="48">   48</a></b> 
+<b><a name="49">   49</a></b> #ifdef NSS_ENABLE_ECC
+<b><a name="50">   50</a></b> #include "secdert.h"    /* Required for ECDSA */
+<b><a name="51">   51</a></b> #include "ec.h"         /* Required for ECDSA */
+<b><a name="52">   52</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="53">   53</a></b> <a href="#53">EC_DecodeParams</a>(const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *encodedParams, <a href="../freebl/blapit.h.dep.html#ECParams">ECParams</a> **ecparams);
+<b><a name="54">   54</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="55">   55</a></b> <a href="#55">EC_CopyParams</a>(PRArenaPool *arena, <a href="../freebl/blapit.h.dep.html#ECParams">ECParams</a> *dstParams,
+<b><a name="56">   56</a></b>               const <a href="../freebl/blapit.h.dep.html#ECParams">ECParams</a> *srcParams);
+<b><a name="57">   57</a></b> #endif
+<b><a name="58">   58</a></b> 
+<b><a name="59">   59</a></b> 
+<b><a name="60">   60</a></b> /* FIPS preprocessor directives for RC2-ECB and RC2-CBC.        */
+<b><a name="61">   61</a></b> #define <a href="#61">FIPS_RC2_KEY_LENGTH</a>                      5  /*  40-bits */
+<b><a name="62">   62</a></b> #define <a href="#62">FIPS_RC2_ENCRYPT_LENGTH</a>                  8  /*  64-bits */
+<b><a name="63">   63</a></b> #define <a href="#63">FIPS_RC2_DECRYPT_LENGTH</a>                  8  /*  64-bits */
+<b><a name="64">   64</a></b> 
+<b><a name="65">   65</a></b> 
+<b><a name="66">   66</a></b> /* FIPS preprocessor directives for RC4.                        */
+<b><a name="67">   67</a></b> #define <a href="#67">FIPS_RC4_KEY_LENGTH</a>                      5  /*  40-bits */
+<b><a name="68">   68</a></b> #define <a href="#68">FIPS_RC4_ENCRYPT_LENGTH</a>                  8  /*  64-bits */
+<b><a name="69">   69</a></b> #define <a href="#69">FIPS_RC4_DECRYPT_LENGTH</a>                  8  /*  64-bits */
+<b><a name="70">   70</a></b> 
+<b><a name="71">   71</a></b> 
+<b><a name="72">   72</a></b> /* FIPS preprocessor directives for DES-ECB and DES-CBC.        */
+<b><a name="73">   73</a></b> #define <a href="#73">FIPS_DES_ENCRYPT_LENGTH</a>                  8  /*  64-bits */
+<b><a name="74">   74</a></b> #define <a href="#74">FIPS_DES_DECRYPT_LENGTH</a>                  8  /*  64-bits */
+<b><a name="75">   75</a></b> 
+<b><a name="76">   76</a></b> 
+<b><a name="77">   77</a></b> /* FIPS preprocessor directives for DES3-CBC and DES3-ECB.      */
+<b><a name="78">   78</a></b> #define <a href="#78">FIPS_DES3_ENCRYPT_LENGTH</a>                 8  /*  64-bits */
+<b><a name="79">   79</a></b> #define <a href="#79">FIPS_DES3_DECRYPT_LENGTH</a>                 8  /*  64-bits */
+<b><a name="80">   80</a></b> 
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b> /* FIPS preprocessor directives for AES-ECB and AES-CBC.        */
+<b><a name="83">   83</a></b> #define <a href="#83">FIPS_AES_BLOCK_SIZE</a>                     16  /* 128-bits */
+<b><a name="84">   84</a></b> #define <a href="#84">FIPS_AES_ENCRYPT_LENGTH</a>                 16  /* 128-bits */
+<b><a name="85">   85</a></b> #define <a href="#85">FIPS_AES_DECRYPT_LENGTH</a>                 16  /* 128-bits */
+<b><a name="86">   86</a></b> #define <a href="#86">FIPS_AES_128_KEY_SIZE</a>                   16  /* 128-bits */
+<b><a name="87">   87</a></b> #define <a href="#87">FIPS_AES_192_KEY_SIZE</a>                   24  /* 192-bits */
+<b><a name="88">   88</a></b> #define <a href="#88">FIPS_AES_256_KEY_SIZE</a>                   32  /* 256-bits */
+<b><a name="89">   89</a></b> 
+<b><a name="90">   90</a></b> 
+<b><a name="91">   91</a></b> /* FIPS preprocessor directives for message digests             */
+<b><a name="92">   92</a></b> #define <a href="#92">FIPS_KNOWN_HASH_MESSAGE_LENGTH</a>          64  /* 512-bits */
+<b><a name="93">   93</a></b> 
+<b><a name="94">   94</a></b> 
+<b><a name="95">   95</a></b> /* FIPS preprocessor directives for RSA.                         */
+<b><a name="96">   96</a></b> #define <a href="#96">FIPS_RSA_TYPE</a>                           siBuffer
+<b><a name="97">   97</a></b> #define <a href="#97">FIPS_RSA_PUBLIC_EXPONENT_LENGTH</a>           3 /*   24-bits */
+<b><a name="98">   98</a></b> #define <a href="#98">FIPS_RSA_PRIVATE_VERSION_LENGTH</a>           1 /*    8-bits */
+<b><a name="99">   99</a></b> #define <a href="#99">FIPS_RSA_MESSAGE_LENGTH</a>                 128 /* 1024-bits */
+<b><a name="100">  100</a></b> #define <a href="#100">FIPS_RSA_COEFFICIENT_LENGTH</a>              64 /*  512-bits */
+<b><a name="101">  101</a></b> #define <a href="#101">FIPS_RSA_PRIME0_LENGTH</a>                   64 /*  512-bits */
+<b><a name="102">  102</a></b> #define <a href="#102">FIPS_RSA_PRIME1_LENGTH</a>                   64 /*  512-bits */
+<b><a name="103">  103</a></b> #define <a href="#103">FIPS_RSA_EXPONENT0_LENGTH</a>                64 /*  512-bits */
+<b><a name="104">  104</a></b> #define <a href="#104">FIPS_RSA_EXPONENT1_LENGTH</a>                64 /*  512-bits */
+<b><a name="105">  105</a></b> #define <a href="#105">FIPS_RSA_PRIVATE_EXPONENT_LENGTH</a>        128 /* 1024-bits */
+<b><a name="106">  106</a></b> #define <a href="#106">FIPS_RSA_ENCRYPT_LENGTH</a>                 128 /* 1024-bits */
+<b><a name="107">  107</a></b> #define <a href="#107">FIPS_RSA_DECRYPT_LENGTH</a>                 128 /* 1024-bits */
+<b><a name="108">  108</a></b> #define <a href="#108">FIPS_RSA_SIGNATURE_LENGTH</a>               128 /* 1024-bits */
+<b><a name="109">  109</a></b> #define <a href="#109">FIPS_RSA_MODULUS_LENGTH</a>                 128 /* 1024-bits */
+<b><a name="110">  110</a></b> 
+<b><a name="111">  111</a></b> 
+<b><a name="112">  112</a></b> /* FIPS preprocessor directives for DSA.                        */
+<b><a name="113">  113</a></b> #define <a href="#113">FIPS_DSA_TYPE</a>                           siBuffer
+<b><a name="114">  114</a></b> #define <a href="#114">FIPS_DSA_DIGEST_LENGTH</a>                  20 /*  160-bits */
+<b><a name="115">  115</a></b> #define <a href="#115">FIPS_DSA_SUBPRIME_LENGTH</a>                20 /*  160-bits */
+<b><a name="116">  116</a></b> #define <a href="#116">FIPS_DSA_SIGNATURE_LENGTH</a>               40 /*  320-bits */
+<b><a name="117">  117</a></b> #define <a href="#117">FIPS_DSA_PRIME_LENGTH</a>                  128 /* 1024-bits */
+<b><a name="118">  118</a></b> #define <a href="#118">FIPS_DSA_BASE_LENGTH</a>                   128 /* 1024-bits */
+<b><a name="119">  119</a></b> 
+<b><a name="120">  120</a></b> /* FIPS preprocessor directives for RNG.                        */
+<b><a name="121">  121</a></b> #define <a href="#121">FIPS_RNG_XKEY_LENGTH</a>                    32  /* 256-bits */
+<b><a name="122">  122</a></b> 
+<b><a name="123">  123</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="124">  124</a></b> <a href="#124">sftk_fips_RC2_PowerUpSelfTest</a>( void )
+<b><a name="125">  125</a></b> {
+<b><a name="126">  126</a></b>     /* RC2 Known Key (40-bits). */
+<b><a name="127">  127</a></b>     static const PRUint8 rc2_known_key[] = { "RSARC" };
+<b><a name="128">  128</a></b> 
+<b><a name="129">  129</a></b>     /* RC2-CBC Known Initialization Vector (64-bits). */
+<b><a name="130">  130</a></b>     static const PRUint8 rc2_cbc_known_initialization_vector[] = {"Security"};
+<b><a name="131">  131</a></b> 
+<b><a name="132">  132</a></b>     /* RC2 Known Plaintext (64-bits). */
+<b><a name="133">  133</a></b>     static const PRUint8 rc2_ecb_known_plaintext[] = {"Netscape"};
+<b><a name="134">  134</a></b>     static const PRUint8 rc2_cbc_known_plaintext[] = {"Netscape"};
+<b><a name="135">  135</a></b> 
+<b><a name="136">  136</a></b>     /* RC2 Known Ciphertext (64-bits). */
+<b><a name="137">  137</a></b>     static const PRUint8 rc2_ecb_known_ciphertext[] = {
+<b><a name="138">  138</a></b>                                   0x1a,0x71,0x33,0x54,0x8d,0x5c,0xd2,0x30};
+<b><a name="139">  139</a></b>     static const PRUint8 rc2_cbc_known_ciphertext[] = {
+<b><a name="140">  140</a></b>                                   0xff,0x41,0xdb,0x94,0x8a,0x4c,0x33,0xb3};
+<b><a name="141">  141</a></b> 
+<b><a name="142">  142</a></b>     /* RC2 variables. */
+<b><a name="143">  143</a></b>     PRUint8        rc2_computed_ciphertext[<a href="../softoken/fipstest.c.dep.html#FIPS_RC2_ENCRYPT_LENGTH">FIPS_RC2_ENCRYPT_LENGTH</a>];
+<b><a name="144">  144</a></b>     PRUint8        rc2_computed_plaintext[<a href="../softoken/fipstest.c.dep.html#FIPS_RC2_DECRYPT_LENGTH">FIPS_RC2_DECRYPT_LENGTH</a>];
+<b><a name="145">  145</a></b>     <a href="../freebl/blapit.h.dep.html#RC2Context">RC2Context</a> *   rc2_context;
+<b><a name="146">  146</a></b>     unsigned int   rc2_bytes_encrypted;
+<b><a name="147">  147</a></b>     unsigned int   rc2_bytes_decrypted;
+<b><a name="148">  148</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>      rc2_status;
+<b><a name="149">  149</a></b> 
+<b><a name="150">  150</a></b> 
+<b><a name="151">  151</a></b>     /******************************************************/
+<b><a name="152">  152</a></b>     /* RC2-ECB Single-Round Known Answer Encryption Test: */
+<b><a name="153">  153</a></b>     /******************************************************/
+<b><a name="154">  154</a></b> 
+<b><a name="155">  155</a></b>     rc2_context = <a href="../freebl/alg2268.c.dep.html#RC2_CreateContext">RC2_CreateContext</a>( rc2_known_key, <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_KEY_LENGTH">FIPS_RC2_KEY_LENGTH</a>,
+<b><a name="156">  156</a></b>                                      NULL, <a href="../freebl/blapit.h.dep.html#NSS_RC2">NSS_RC2</a>,
+<b><a name="157">  157</a></b>                                      <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_KEY_LENGTH">FIPS_RC2_KEY_LENGTH</a> );
+<b><a name="158">  158</a></b> 
+<b><a name="159">  159</a></b>     if( rc2_context == NULL )
+<b><a name="160">  160</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="161">  161</a></b> 
+<b><a name="162">  162</a></b>     rc2_status = <a href="../freebl/alg2268.c.dep.html#RC2_Encrypt">RC2_Encrypt</a>( rc2_context, rc2_computed_ciphertext,
+<b><a name="163">  163</a></b>                               &amp;rc2_bytes_encrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_ENCRYPT_LENGTH">FIPS_RC2_ENCRYPT_LENGTH</a>,
+<b><a name="164">  164</a></b>                               rc2_ecb_known_plaintext,
+<b><a name="165">  165</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_DECRYPT_LENGTH">FIPS_RC2_DECRYPT_LENGTH</a> );
+<b><a name="166">  166</a></b> 
+<b><a name="167">  167</a></b>     <a href="../freebl/alg2268.c.dep.html#RC2_DestroyContext">RC2_DestroyContext</a>( rc2_context, PR_TRUE );
+<b><a name="168">  168</a></b> 
+<b><a name="169">  169</a></b>     if( ( rc2_status != SECSuccess ) ||
+<b><a name="170">  170</a></b>         ( rc2_bytes_encrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_ENCRYPT_LENGTH">FIPS_RC2_ENCRYPT_LENGTH</a> ) ||
+<b><a name="171">  171</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( rc2_computed_ciphertext, rc2_ecb_known_ciphertext,
+<b><a name="172">  172</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_ENCRYPT_LENGTH">FIPS_RC2_ENCRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="173">  173</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="174">  174</a></b> 
+<b><a name="175">  175</a></b> 
+<b><a name="176">  176</a></b>     /******************************************************/
+<b><a name="177">  177</a></b>     /* RC2-ECB Single-Round Known Answer Decryption Test: */
+<b><a name="178">  178</a></b>     /******************************************************/
+<b><a name="179">  179</a></b> 
+<b><a name="180">  180</a></b>     rc2_context = <a href="../freebl/alg2268.c.dep.html#RC2_CreateContext">RC2_CreateContext</a>( rc2_known_key, <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_KEY_LENGTH">FIPS_RC2_KEY_LENGTH</a>,
+<b><a name="181">  181</a></b>                                      NULL, <a href="../freebl/blapit.h.dep.html#NSS_RC2">NSS_RC2</a>,
+<b><a name="182">  182</a></b>                                      <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_KEY_LENGTH">FIPS_RC2_KEY_LENGTH</a> );
+<b><a name="183">  183</a></b> 
+<b><a name="184">  184</a></b>     if( rc2_context == NULL )
+<b><a name="185">  185</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="186">  186</a></b> 
+<b><a name="187">  187</a></b>     rc2_status = <a href="../freebl/alg2268.c.dep.html#RC2_Decrypt">RC2_Decrypt</a>( rc2_context, rc2_computed_plaintext,
+<b><a name="188">  188</a></b>                               &amp;rc2_bytes_decrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_DECRYPT_LENGTH">FIPS_RC2_DECRYPT_LENGTH</a>,
+<b><a name="189">  189</a></b>                               rc2_ecb_known_ciphertext,
+<b><a name="190">  190</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_ENCRYPT_LENGTH">FIPS_RC2_ENCRYPT_LENGTH</a> );
+<b><a name="191">  191</a></b> 
+<b><a name="192">  192</a></b>     <a href="../freebl/alg2268.c.dep.html#RC2_DestroyContext">RC2_DestroyContext</a>( rc2_context, PR_TRUE );
+<b><a name="193">  193</a></b> 
+<b><a name="194">  194</a></b>     if( ( rc2_status != SECSuccess ) ||
+<b><a name="195">  195</a></b>         ( rc2_bytes_decrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_DECRYPT_LENGTH">FIPS_RC2_DECRYPT_LENGTH</a> ) ||
+<b><a name="196">  196</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( rc2_computed_plaintext, rc2_ecb_known_plaintext,
+<b><a name="197">  197</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_DECRYPT_LENGTH">FIPS_RC2_DECRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="198">  198</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="199">  199</a></b> 
+<b><a name="200">  200</a></b> 
+<b><a name="201">  201</a></b>     /******************************************************/
+<b><a name="202">  202</a></b>     /* RC2-CBC Single-Round Known Answer Encryption Test: */
+<b><a name="203">  203</a></b>     /******************************************************/
+<b><a name="204">  204</a></b> 
+<b><a name="205">  205</a></b>     rc2_context = <a href="../freebl/alg2268.c.dep.html#RC2_CreateContext">RC2_CreateContext</a>( rc2_known_key, <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_KEY_LENGTH">FIPS_RC2_KEY_LENGTH</a>,
+<b><a name="206">  206</a></b>                                      rc2_cbc_known_initialization_vector,
+<b><a name="207">  207</a></b>                                      <a href="../freebl/blapit.h.dep.html#NSS_RC2_CBC">NSS_RC2_CBC</a>, <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_KEY_LENGTH">FIPS_RC2_KEY_LENGTH</a> );
+<b><a name="208">  208</a></b> 
+<b><a name="209">  209</a></b>     if( rc2_context == NULL )
+<b><a name="210">  210</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="211">  211</a></b> 
+<b><a name="212">  212</a></b>     rc2_status = <a href="../freebl/alg2268.c.dep.html#RC2_Encrypt">RC2_Encrypt</a>( rc2_context, rc2_computed_ciphertext,
+<b><a name="213">  213</a></b>                               &amp;rc2_bytes_encrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_ENCRYPT_LENGTH">FIPS_RC2_ENCRYPT_LENGTH</a>,
+<b><a name="214">  214</a></b>                               rc2_cbc_known_plaintext,
+<b><a name="215">  215</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_DECRYPT_LENGTH">FIPS_RC2_DECRYPT_LENGTH</a> );
+<b><a name="216">  216</a></b> 
+<b><a name="217">  217</a></b>     <a href="../freebl/alg2268.c.dep.html#RC2_DestroyContext">RC2_DestroyContext</a>( rc2_context, PR_TRUE );
+<b><a name="218">  218</a></b> 
+<b><a name="219">  219</a></b>     if( ( rc2_status != SECSuccess ) ||
+<b><a name="220">  220</a></b>         ( rc2_bytes_encrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_ENCRYPT_LENGTH">FIPS_RC2_ENCRYPT_LENGTH</a> ) ||
+<b><a name="221">  221</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( rc2_computed_ciphertext, rc2_cbc_known_ciphertext,
+<b><a name="222">  222</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_ENCRYPT_LENGTH">FIPS_RC2_ENCRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="223">  223</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="224">  224</a></b> 
+<b><a name="225">  225</a></b> 
+<b><a name="226">  226</a></b>     /******************************************************/
+<b><a name="227">  227</a></b>     /* RC2-CBC Single-Round Known Answer Decryption Test: */
+<b><a name="228">  228</a></b>     /******************************************************/
+<b><a name="229">  229</a></b> 
+<b><a name="230">  230</a></b>     rc2_context = <a href="../freebl/alg2268.c.dep.html#RC2_CreateContext">RC2_CreateContext</a>( rc2_known_key, <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_KEY_LENGTH">FIPS_RC2_KEY_LENGTH</a>,
+<b><a name="231">  231</a></b>                                      rc2_cbc_known_initialization_vector,
+<b><a name="232">  232</a></b>                                      <a href="../freebl/blapit.h.dep.html#NSS_RC2_CBC">NSS_RC2_CBC</a>, <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_KEY_LENGTH">FIPS_RC2_KEY_LENGTH</a> );
+<b><a name="233">  233</a></b> 
+<b><a name="234">  234</a></b>     if( rc2_context == NULL )
+<b><a name="235">  235</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="236">  236</a></b> 
+<b><a name="237">  237</a></b>     rc2_status = <a href="../freebl/alg2268.c.dep.html#RC2_Decrypt">RC2_Decrypt</a>( rc2_context, rc2_computed_plaintext,
+<b><a name="238">  238</a></b>                               &amp;rc2_bytes_decrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_DECRYPT_LENGTH">FIPS_RC2_DECRYPT_LENGTH</a>,
+<b><a name="239">  239</a></b>                               rc2_cbc_known_ciphertext,
+<b><a name="240">  240</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_ENCRYPT_LENGTH">FIPS_RC2_ENCRYPT_LENGTH</a> );
+<b><a name="241">  241</a></b> 
+<b><a name="242">  242</a></b>     <a href="../freebl/alg2268.c.dep.html#RC2_DestroyContext">RC2_DestroyContext</a>( rc2_context, PR_TRUE );
+<b><a name="243">  243</a></b> 
+<b><a name="244">  244</a></b>     if( ( rc2_status != SECSuccess ) ||
+<b><a name="245">  245</a></b>         ( rc2_bytes_decrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_DECRYPT_LENGTH">FIPS_RC2_DECRYPT_LENGTH</a> ) ||
+<b><a name="246">  246</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( rc2_computed_plaintext, rc2_ecb_known_plaintext,
+<b><a name="247">  247</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_RC2_DECRYPT_LENGTH">FIPS_RC2_DECRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="248">  248</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="249">  249</a></b> 
+<b><a name="250">  250</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="251">  251</a></b> }
+<b><a name="252">  252</a></b> 
+<b><a name="253">  253</a></b> 
+<b><a name="254">  254</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="255">  255</a></b> <a href="#255">sftk_fips_RC4_PowerUpSelfTest</a>( void )
+<b><a name="256">  256</a></b> {
+<b><a name="257">  257</a></b>     /* RC4 Known Key (40-bits). */
+<b><a name="258">  258</a></b>     static const PRUint8 rc4_known_key[] = { "RSARC" };
+<b><a name="259">  259</a></b> 
+<b><a name="260">  260</a></b>     /* RC4 Known Plaintext (64-bits). */
+<b><a name="261">  261</a></b>     static const PRUint8 rc4_known_plaintext[] = { "Netscape" };
+<b><a name="262">  262</a></b> 
+<b><a name="263">  263</a></b>     /* RC4 Known Ciphertext (64-bits). */
+<b><a name="264">  264</a></b>     static const PRUint8 rc4_known_ciphertext[] = {
+<b><a name="265">  265</a></b>                                 0x29,0x33,0xc7,0x9a,0x9d,0x6c,0x09,0xdd};
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b>     /* RC4 variables. */
+<b><a name="268">  268</a></b>     PRUint8        rc4_computed_ciphertext[<a href="../softoken/fipstest.c.dep.html#FIPS_RC4_ENCRYPT_LENGTH">FIPS_RC4_ENCRYPT_LENGTH</a>];
+<b><a name="269">  269</a></b>     PRUint8        rc4_computed_plaintext[<a href="../softoken/fipstest.c.dep.html#FIPS_RC4_DECRYPT_LENGTH">FIPS_RC4_DECRYPT_LENGTH</a>];
+<b><a name="270">  270</a></b>     <a href="../freebl/blapit.h.dep.html#RC4Context">RC4Context</a> *   rc4_context;
+<b><a name="271">  271</a></b>     unsigned int   rc4_bytes_encrypted;
+<b><a name="272">  272</a></b>     unsigned int   rc4_bytes_decrypted;
+<b><a name="273">  273</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>      rc4_status;
+<b><a name="274">  274</a></b> 
+<b><a name="275">  275</a></b> 
+<b><a name="276">  276</a></b>     /**************************************************/
+<b><a name="277">  277</a></b>     /* RC4 Single-Round Known Answer Encryption Test: */
+<b><a name="278">  278</a></b>     /**************************************************/
+<b><a name="279">  279</a></b> 
+<b><a name="280">  280</a></b>     rc4_context = <a href="../freebl/arcfour.c.dep.html#RC4_CreateContext">RC4_CreateContext</a>( rc4_known_key, <a href="../softoken/fipstest.c.dep.html#FIPS_RC4_KEY_LENGTH">FIPS_RC4_KEY_LENGTH</a> );
+<b><a name="281">  281</a></b> 
+<b><a name="282">  282</a></b>     if( rc4_context == NULL )
+<b><a name="283">  283</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="284">  284</a></b> 
+<b><a name="285">  285</a></b>     rc4_status = <a href="../freebl/arcfour.c.dep.html#RC4_Encrypt">RC4_Encrypt</a>( rc4_context, rc4_computed_ciphertext,
+<b><a name="286">  286</a></b>                               &amp;rc4_bytes_encrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_RC4_ENCRYPT_LENGTH">FIPS_RC4_ENCRYPT_LENGTH</a>,
+<b><a name="287">  287</a></b>                               rc4_known_plaintext, <a href="../softoken/fipstest.c.dep.html#FIPS_RC4_DECRYPT_LENGTH">FIPS_RC4_DECRYPT_LENGTH</a> );
+<b><a name="288">  288</a></b> 
+<b><a name="289">  289</a></b>     <a href="../freebl/arcfour.c.dep.html#RC4_DestroyContext">RC4_DestroyContext</a>( rc4_context, PR_TRUE );
+<b><a name="290">  290</a></b> 
+<b><a name="291">  291</a></b>     if( ( rc4_status != SECSuccess ) ||
+<b><a name="292">  292</a></b>         ( rc4_bytes_encrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_RC4_ENCRYPT_LENGTH">FIPS_RC4_ENCRYPT_LENGTH</a> ) ||
+<b><a name="293">  293</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( rc4_computed_ciphertext, rc4_known_ciphertext,
+<b><a name="294">  294</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_RC4_ENCRYPT_LENGTH">FIPS_RC4_ENCRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="295">  295</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="296">  296</a></b> 
+<b><a name="297">  297</a></b> 
+<b><a name="298">  298</a></b>     /**************************************************/
+<b><a name="299">  299</a></b>     /* RC4 Single-Round Known Answer Decryption Test: */
+<b><a name="300">  300</a></b>     /**************************************************/
+<b><a name="301">  301</a></b> 
+<b><a name="302">  302</a></b>     rc4_context = <a href="../freebl/arcfour.c.dep.html#RC4_CreateContext">RC4_CreateContext</a>( rc4_known_key, <a href="../softoken/fipstest.c.dep.html#FIPS_RC4_KEY_LENGTH">FIPS_RC4_KEY_LENGTH</a> );
+<b><a name="303">  303</a></b> 
+<b><a name="304">  304</a></b>     if( rc4_context == NULL )
+<b><a name="305">  305</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="306">  306</a></b> 
+<b><a name="307">  307</a></b>     rc4_status = <a href="../freebl/arcfour.c.dep.html#RC4_Decrypt">RC4_Decrypt</a>( rc4_context, rc4_computed_plaintext,
+<b><a name="308">  308</a></b>                               &amp;rc4_bytes_decrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_RC4_DECRYPT_LENGTH">FIPS_RC4_DECRYPT_LENGTH</a>,
+<b><a name="309">  309</a></b>                               rc4_known_ciphertext, <a href="../softoken/fipstest.c.dep.html#FIPS_RC4_ENCRYPT_LENGTH">FIPS_RC4_ENCRYPT_LENGTH</a> );
+<b><a name="310">  310</a></b> 
+<b><a name="311">  311</a></b>     <a href="../freebl/arcfour.c.dep.html#RC4_DestroyContext">RC4_DestroyContext</a>( rc4_context, PR_TRUE );
+<b><a name="312">  312</a></b> 
+<b><a name="313">  313</a></b>     if( ( rc4_status != SECSuccess ) ||
+<b><a name="314">  314</a></b>         ( rc4_bytes_decrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_RC4_DECRYPT_LENGTH">FIPS_RC4_DECRYPT_LENGTH</a> ) ||
+<b><a name="315">  315</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( rc4_computed_plaintext, rc4_known_plaintext,
+<b><a name="316">  316</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_RC4_DECRYPT_LENGTH">FIPS_RC4_DECRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="317">  317</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="318">  318</a></b> 
+<b><a name="319">  319</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="320">  320</a></b> }
+<b><a name="321">  321</a></b> 
+<b><a name="322">  322</a></b> 
+<b><a name="323">  323</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="324">  324</a></b> <a href="#324">sftk_fips_DES_PowerUpSelfTest</a>( void )
+<b><a name="325">  325</a></b> {
+<b><a name="326">  326</a></b>     /* DES Known Key (56-bits). */
+<b><a name="327">  327</a></b>     static const PRUint8 des_known_key[] = { "ANSI DES" };
+<b><a name="328">  328</a></b> 
+<b><a name="329">  329</a></b>     /* DES-CBC Known Initialization Vector (64-bits). */
+<b><a name="330">  330</a></b>     static const PRUint8 des_cbc_known_initialization_vector[] = { "Security" };
+<b><a name="331">  331</a></b> 
+<b><a name="332">  332</a></b>     /* DES Known Plaintext (64-bits). */
+<b><a name="333">  333</a></b>     static const PRUint8 des_ecb_known_plaintext[] = { "Netscape" };
+<b><a name="334">  334</a></b>     static const PRUint8 des_cbc_known_plaintext[] = { "Netscape" };
+<b><a name="335">  335</a></b> 
+<b><a name="336">  336</a></b>     /* DES Known Ciphertext (64-bits). */
+<b><a name="337">  337</a></b>     static const PRUint8 des_ecb_known_ciphertext[] = {
+<b><a name="338">  338</a></b>                                0x26,0x14,0xe9,0xc3,0x28,0x80,0x50,0xb0};
+<b><a name="339">  339</a></b>     static const PRUint8 des_cbc_known_ciphertext[]  = {
+<b><a name="340">  340</a></b>                                0x5e,0x95,0x94,0x5d,0x76,0xa2,0xd3,0x7d};
+<b><a name="341">  341</a></b> 
+<b><a name="342">  342</a></b>     /* DES variables. */
+<b><a name="343">  343</a></b>     PRUint8        des_computed_ciphertext[<a href="../softoken/fipstest.c.dep.html#FIPS_DES_ENCRYPT_LENGTH">FIPS_DES_ENCRYPT_LENGTH</a>];
+<b><a name="344">  344</a></b>     PRUint8        des_computed_plaintext[<a href="../softoken/fipstest.c.dep.html#FIPS_DES_DECRYPT_LENGTH">FIPS_DES_DECRYPT_LENGTH</a>];
+<b><a name="345">  345</a></b>     <a href="../freebl/blapit.h.dep.html#DESContext">DESContext</a> *   des_context;
+<b><a name="346">  346</a></b>     unsigned int   des_bytes_encrypted;
+<b><a name="347">  347</a></b>     unsigned int   des_bytes_decrypted;
+<b><a name="348">  348</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>      des_status;
+<b><a name="349">  349</a></b> 
+<b><a name="350">  350</a></b> 
+<b><a name="351">  351</a></b>     /******************************************************/
+<b><a name="352">  352</a></b>     /* DES-ECB Single-Round Known Answer Encryption Test: */
+<b><a name="353">  353</a></b>     /******************************************************/
+<b><a name="354">  354</a></b> 
+<b><a name="355">  355</a></b>     des_context = <a href="../freebl/desblapi.c.dep.html#DES_CreateContext">DES_CreateContext</a>( des_known_key, NULL, <a href="../freebl/blapit.h.dep.html#NSS_DES">NSS_DES</a>, PR_TRUE );
+<b><a name="356">  356</a></b> 
+<b><a name="357">  357</a></b>     if( des_context == NULL )
+<b><a name="358">  358</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="359">  359</a></b> 
+<b><a name="360">  360</a></b>     des_status = <a href="../freebl/desblapi.c.dep.html#DES_Encrypt">DES_Encrypt</a>( des_context, des_computed_ciphertext,
+<b><a name="361">  361</a></b>                               &amp;des_bytes_encrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_DES_ENCRYPT_LENGTH">FIPS_DES_ENCRYPT_LENGTH</a>,
+<b><a name="362">  362</a></b>                               des_ecb_known_plaintext,
+<b><a name="363">  363</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_DES_DECRYPT_LENGTH">FIPS_DES_DECRYPT_LENGTH</a> );
+<b><a name="364">  364</a></b> 
+<b><a name="365">  365</a></b>     <a href="../freebl/desblapi.c.dep.html#DES_DestroyContext">DES_DestroyContext</a>( des_context, PR_TRUE );
+<b><a name="366">  366</a></b> 
+<b><a name="367">  367</a></b>     if( ( des_status != SECSuccess ) ||
+<b><a name="368">  368</a></b>         ( des_bytes_encrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_DES_ENCRYPT_LENGTH">FIPS_DES_ENCRYPT_LENGTH</a> ) ||
+<b><a name="369">  369</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( des_computed_ciphertext, des_ecb_known_ciphertext,
+<b><a name="370">  370</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_DES_ENCRYPT_LENGTH">FIPS_DES_ENCRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="371">  371</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="372">  372</a></b> 
+<b><a name="373">  373</a></b> 
+<b><a name="374">  374</a></b>     /******************************************************/
+<b><a name="375">  375</a></b>     /* DES-ECB Single-Round Known Answer Decryption Test: */
+<b><a name="376">  376</a></b>     /******************************************************/
+<b><a name="377">  377</a></b> 
+<b><a name="378">  378</a></b>     des_context = <a href="../freebl/desblapi.c.dep.html#DES_CreateContext">DES_CreateContext</a>( des_known_key, NULL, <a href="../freebl/blapit.h.dep.html#NSS_DES">NSS_DES</a>, PR_FALSE );
+<b><a name="379">  379</a></b> 
+<b><a name="380">  380</a></b>     if( des_context == NULL )
+<b><a name="381">  381</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="382">  382</a></b> 
+<b><a name="383">  383</a></b>     des_status = <a href="../freebl/desblapi.c.dep.html#DES_Decrypt">DES_Decrypt</a>( des_context, des_computed_plaintext,
+<b><a name="384">  384</a></b>                               &amp;des_bytes_decrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_DES_DECRYPT_LENGTH">FIPS_DES_DECRYPT_LENGTH</a>,
+<b><a name="385">  385</a></b>                               des_ecb_known_ciphertext,
+<b><a name="386">  386</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_DES_ENCRYPT_LENGTH">FIPS_DES_ENCRYPT_LENGTH</a> );
+<b><a name="387">  387</a></b> 
+<b><a name="388">  388</a></b>     <a href="../freebl/desblapi.c.dep.html#DES_DestroyContext">DES_DestroyContext</a>( des_context, PR_TRUE );
+<b><a name="389">  389</a></b> 
+<b><a name="390">  390</a></b>     if( ( des_status != SECSuccess ) ||
+<b><a name="391">  391</a></b>         ( des_bytes_decrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_DES_DECRYPT_LENGTH">FIPS_DES_DECRYPT_LENGTH</a> ) ||
+<b><a name="392">  392</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( des_computed_plaintext, des_ecb_known_plaintext,
+<b><a name="393">  393</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_DES_DECRYPT_LENGTH">FIPS_DES_DECRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="394">  394</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="395">  395</a></b> 
+<b><a name="396">  396</a></b> 
+<b><a name="397">  397</a></b>     /******************************************************/
+<b><a name="398">  398</a></b>     /* DES-CBC Single-Round Known Answer Encryption Test. */
+<b><a name="399">  399</a></b>     /******************************************************/
+<b><a name="400">  400</a></b> 
+<b><a name="401">  401</a></b>     des_context = <a href="../freebl/desblapi.c.dep.html#DES_CreateContext">DES_CreateContext</a>( des_known_key,
+<b><a name="402">  402</a></b>                                      des_cbc_known_initialization_vector,
+<b><a name="403">  403</a></b>                                      <a href="../freebl/blapit.h.dep.html#NSS_DES_CBC">NSS_DES_CBC</a>, PR_TRUE );
+<b><a name="404">  404</a></b> 
+<b><a name="405">  405</a></b>     if( des_context == NULL )
+<b><a name="406">  406</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="407">  407</a></b> 
+<b><a name="408">  408</a></b>     des_status = <a href="../freebl/desblapi.c.dep.html#DES_Encrypt">DES_Encrypt</a>( des_context, des_computed_ciphertext,
+<b><a name="409">  409</a></b>                               &amp;des_bytes_encrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_DES_ENCRYPT_LENGTH">FIPS_DES_ENCRYPT_LENGTH</a>,
+<b><a name="410">  410</a></b>                               des_cbc_known_plaintext,
+<b><a name="411">  411</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_DES_DECRYPT_LENGTH">FIPS_DES_DECRYPT_LENGTH</a> );
+<b><a name="412">  412</a></b> 
+<b><a name="413">  413</a></b>     <a href="../freebl/desblapi.c.dep.html#DES_DestroyContext">DES_DestroyContext</a>( des_context, PR_TRUE );
+<b><a name="414">  414</a></b> 
+<b><a name="415">  415</a></b>     if( ( des_status != SECSuccess ) ||
+<b><a name="416">  416</a></b>         ( des_bytes_encrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_DES_ENCRYPT_LENGTH">FIPS_DES_ENCRYPT_LENGTH</a> ) ||
+<b><a name="417">  417</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( des_computed_ciphertext, des_cbc_known_ciphertext,
+<b><a name="418">  418</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_DES_ENCRYPT_LENGTH">FIPS_DES_ENCRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="419">  419</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="420">  420</a></b> 
+<b><a name="421">  421</a></b> 
+<b><a name="422">  422</a></b>     /******************************************************/
+<b><a name="423">  423</a></b>     /* DES-CBC Single-Round Known Answer Decryption Test. */
+<b><a name="424">  424</a></b>     /******************************************************/
+<b><a name="425">  425</a></b> 
+<b><a name="426">  426</a></b>     des_context = <a href="../freebl/desblapi.c.dep.html#DES_CreateContext">DES_CreateContext</a>( des_known_key,
+<b><a name="427">  427</a></b>                                      des_cbc_known_initialization_vector,
+<b><a name="428">  428</a></b>                                      <a href="../freebl/blapit.h.dep.html#NSS_DES_CBC">NSS_DES_CBC</a>, PR_FALSE );
+<b><a name="429">  429</a></b> 
+<b><a name="430">  430</a></b>     if( des_context == NULL )
+<b><a name="431">  431</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="432">  432</a></b> 
+<b><a name="433">  433</a></b>     des_status = <a href="../freebl/desblapi.c.dep.html#DES_Decrypt">DES_Decrypt</a>( des_context, des_computed_plaintext,
+<b><a name="434">  434</a></b>                               &amp;des_bytes_decrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_DES_DECRYPT_LENGTH">FIPS_DES_DECRYPT_LENGTH</a>,
+<b><a name="435">  435</a></b>                               des_cbc_known_ciphertext,
+<b><a name="436">  436</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_DES_ENCRYPT_LENGTH">FIPS_DES_ENCRYPT_LENGTH</a> );
+<b><a name="437">  437</a></b> 
+<b><a name="438">  438</a></b>     <a href="../freebl/desblapi.c.dep.html#DES_DestroyContext">DES_DestroyContext</a>( des_context, PR_TRUE );
+<b><a name="439">  439</a></b> 
+<b><a name="440">  440</a></b>     if( ( des_status != SECSuccess ) ||
+<b><a name="441">  441</a></b>         ( des_bytes_decrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_DES_DECRYPT_LENGTH">FIPS_DES_DECRYPT_LENGTH</a> ) ||
+<b><a name="442">  442</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( des_computed_plaintext, des_cbc_known_plaintext,
+<b><a name="443">  443</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_DES_DECRYPT_LENGTH">FIPS_DES_DECRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="444">  444</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="445">  445</a></b> 
+<b><a name="446">  446</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="447">  447</a></b> }
+<b><a name="448">  448</a></b> 
+<b><a name="449">  449</a></b> 
+<b><a name="450">  450</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="451">  451</a></b> <a href="#451">sftk_fips_DES3_PowerUpSelfTest</a>( void )
+<b><a name="452">  452</a></b> {
+<b><a name="453">  453</a></b>     /* DES3 Known Key (56-bits). */
+<b><a name="454">  454</a></b>     static const PRUint8 des3_known_key[] = { "ANSI Triple-DES Key Data" };
+<b><a name="455">  455</a></b> 
+<b><a name="456">  456</a></b>     /* DES3-CBC Known Initialization Vector (64-bits). */
+<b><a name="457">  457</a></b>     static const PRUint8 des3_cbc_known_initialization_vector[] = { "Security" };
+<b><a name="458">  458</a></b> 
+<b><a name="459">  459</a></b>     /* DES3 Known Plaintext (64-bits). */
+<b><a name="460">  460</a></b>     static const PRUint8 des3_ecb_known_plaintext[] = { "Netscape" };
+<b><a name="461">  461</a></b>     static const PRUint8 des3_cbc_known_plaintext[] = { "Netscape" };
+<b><a name="462">  462</a></b> 
+<b><a name="463">  463</a></b>     /* DES3 Known Ciphertext (64-bits). */
+<b><a name="464">  464</a></b>     static const PRUint8 des3_ecb_known_ciphertext[] = {
+<b><a name="465">  465</a></b>                            0x55,0x8e,0xad,0x3c,0xee,0x49,0x69,0xbe};
+<b><a name="466">  466</a></b>     static const PRUint8 des3_cbc_known_ciphertext[] = {
+<b><a name="467">  467</a></b>                            0x43,0xdc,0x6a,0xc1,0xaf,0xa6,0x32,0xf5};
+<b><a name="468">  468</a></b> 
+<b><a name="469">  469</a></b>     /* DES3 variables. */
+<b><a name="470">  470</a></b>     PRUint8        des3_computed_ciphertext[<a href="../softoken/fipstest.c.dep.html#FIPS_DES3_ENCRYPT_LENGTH">FIPS_DES3_ENCRYPT_LENGTH</a>];
+<b><a name="471">  471</a></b>     PRUint8        des3_computed_plaintext[<a href="../softoken/fipstest.c.dep.html#FIPS_DES3_DECRYPT_LENGTH">FIPS_DES3_DECRYPT_LENGTH</a>];
+<b><a name="472">  472</a></b>     <a href="../freebl/blapit.h.dep.html#DESContext">DESContext</a> *   des3_context;
+<b><a name="473">  473</a></b>     unsigned int   des3_bytes_encrypted;
+<b><a name="474">  474</a></b>     unsigned int   des3_bytes_decrypted;
+<b><a name="475">  475</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>      des3_status;
+<b><a name="476">  476</a></b> 
+<b><a name="477">  477</a></b> 
+<b><a name="478">  478</a></b>     /*******************************************************/
+<b><a name="479">  479</a></b>     /* DES3-ECB Single-Round Known Answer Encryption Test. */
+<b><a name="480">  480</a></b>     /*******************************************************/
+<b><a name="481">  481</a></b> 
+<b><a name="482">  482</a></b>     des3_context = <a href="../freebl/desblapi.c.dep.html#DES_CreateContext">DES_CreateContext</a>( des3_known_key, NULL,
+<b><a name="483">  483</a></b>                                      <a href="../freebl/blapit.h.dep.html#NSS_DES_EDE3">NSS_DES_EDE3</a>, PR_TRUE );
+<b><a name="484">  484</a></b> 
+<b><a name="485">  485</a></b>     if( des3_context == NULL )
+<b><a name="486">  486</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="487">  487</a></b> 
+<b><a name="488">  488</a></b>     des3_status = <a href="../freebl/desblapi.c.dep.html#DES_Encrypt">DES_Encrypt</a>( des3_context, des3_computed_ciphertext,
+<b><a name="489">  489</a></b>                                &amp;des3_bytes_encrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_ENCRYPT_LENGTH">FIPS_DES3_ENCRYPT_LENGTH</a>,
+<b><a name="490">  490</a></b>                                des3_ecb_known_plaintext,
+<b><a name="491">  491</a></b>                                <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_DECRYPT_LENGTH">FIPS_DES3_DECRYPT_LENGTH</a> );
+<b><a name="492">  492</a></b> 
+<b><a name="493">  493</a></b>     <a href="../freebl/desblapi.c.dep.html#DES_DestroyContext">DES_DestroyContext</a>( des3_context, PR_TRUE );
+<b><a name="494">  494</a></b> 
+<b><a name="495">  495</a></b>     if( ( des3_status != SECSuccess ) ||
+<b><a name="496">  496</a></b>         ( des3_bytes_encrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_ENCRYPT_LENGTH">FIPS_DES3_ENCRYPT_LENGTH</a> ) ||
+<b><a name="497">  497</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( des3_computed_ciphertext, des3_ecb_known_ciphertext,
+<b><a name="498">  498</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_ENCRYPT_LENGTH">FIPS_DES3_ENCRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="499">  499</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="500">  500</a></b> 
+<b><a name="501">  501</a></b> 
+<b><a name="502">  502</a></b>     /*******************************************************/
+<b><a name="503">  503</a></b>     /* DES3-ECB Single-Round Known Answer Decryption Test. */
+<b><a name="504">  504</a></b>     /*******************************************************/
+<b><a name="505">  505</a></b> 
+<b><a name="506">  506</a></b>     des3_context = <a href="../freebl/desblapi.c.dep.html#DES_CreateContext">DES_CreateContext</a>( des3_known_key, NULL,
+<b><a name="507">  507</a></b>                                      <a href="../freebl/blapit.h.dep.html#NSS_DES_EDE3">NSS_DES_EDE3</a>, PR_FALSE );
+<b><a name="508">  508</a></b> 
+<b><a name="509">  509</a></b>     if( des3_context == NULL )
+<b><a name="510">  510</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="511">  511</a></b> 
+<b><a name="512">  512</a></b>     des3_status = <a href="../freebl/desblapi.c.dep.html#DES_Decrypt">DES_Decrypt</a>( des3_context, des3_computed_plaintext,
+<b><a name="513">  513</a></b>                                &amp;des3_bytes_decrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_DECRYPT_LENGTH">FIPS_DES3_DECRYPT_LENGTH</a>,
+<b><a name="514">  514</a></b>                                des3_ecb_known_ciphertext,
+<b><a name="515">  515</a></b>                                <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_ENCRYPT_LENGTH">FIPS_DES3_ENCRYPT_LENGTH</a> );
+<b><a name="516">  516</a></b> 
+<b><a name="517">  517</a></b>     <a href="../freebl/desblapi.c.dep.html#DES_DestroyContext">DES_DestroyContext</a>( des3_context, PR_TRUE );
+<b><a name="518">  518</a></b> 
+<b><a name="519">  519</a></b>     if( ( des3_status != SECSuccess ) ||
+<b><a name="520">  520</a></b>         ( des3_bytes_decrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_DECRYPT_LENGTH">FIPS_DES3_DECRYPT_LENGTH</a> ) ||
+<b><a name="521">  521</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( des3_computed_plaintext, des3_ecb_known_plaintext,
+<b><a name="522">  522</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_DECRYPT_LENGTH">FIPS_DES3_DECRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="523">  523</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="524">  524</a></b> 
+<b><a name="525">  525</a></b> 
+<b><a name="526">  526</a></b>     /*******************************************************/
+<b><a name="527">  527</a></b>     /* DES3-CBC Single-Round Known Answer Encryption Test. */
+<b><a name="528">  528</a></b>     /*******************************************************/
+<b><a name="529">  529</a></b> 
+<b><a name="530">  530</a></b>     des3_context = <a href="../freebl/desblapi.c.dep.html#DES_CreateContext">DES_CreateContext</a>( des3_known_key,
+<b><a name="531">  531</a></b>                                       des3_cbc_known_initialization_vector,
+<b><a name="532">  532</a></b>                                       <a href="../freebl/blapit.h.dep.html#NSS_DES_EDE3_CBC">NSS_DES_EDE3_CBC</a>, PR_TRUE );
+<b><a name="533">  533</a></b> 
+<b><a name="534">  534</a></b>     if( des3_context == NULL )
+<b><a name="535">  535</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="536">  536</a></b> 
+<b><a name="537">  537</a></b>     des3_status = <a href="../freebl/desblapi.c.dep.html#DES_Encrypt">DES_Encrypt</a>( des3_context, des3_computed_ciphertext,
+<b><a name="538">  538</a></b>                                &amp;des3_bytes_encrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_ENCRYPT_LENGTH">FIPS_DES3_ENCRYPT_LENGTH</a>,
+<b><a name="539">  539</a></b>                                des3_cbc_known_plaintext,
+<b><a name="540">  540</a></b>                                <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_DECRYPT_LENGTH">FIPS_DES3_DECRYPT_LENGTH</a> );
+<b><a name="541">  541</a></b> 
+<b><a name="542">  542</a></b>     <a href="../freebl/desblapi.c.dep.html#DES_DestroyContext">DES_DestroyContext</a>( des3_context, PR_TRUE );
+<b><a name="543">  543</a></b> 
+<b><a name="544">  544</a></b>     if( ( des3_status != SECSuccess ) ||
+<b><a name="545">  545</a></b>         ( des3_bytes_encrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_ENCRYPT_LENGTH">FIPS_DES3_ENCRYPT_LENGTH</a> ) ||
+<b><a name="546">  546</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( des3_computed_ciphertext, des3_cbc_known_ciphertext,
+<b><a name="547">  547</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_ENCRYPT_LENGTH">FIPS_DES3_ENCRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="548">  548</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="549">  549</a></b> 
+<b><a name="550">  550</a></b> 
+<b><a name="551">  551</a></b>     /*******************************************************/
+<b><a name="552">  552</a></b>     /* DES3-CBC Single-Round Known Answer Decryption Test. */
+<b><a name="553">  553</a></b>     /*******************************************************/
+<b><a name="554">  554</a></b> 
+<b><a name="555">  555</a></b>     des3_context = <a href="../freebl/desblapi.c.dep.html#DES_CreateContext">DES_CreateContext</a>( des3_known_key,
+<b><a name="556">  556</a></b>                                       des3_cbc_known_initialization_vector,
+<b><a name="557">  557</a></b>                                       <a href="../freebl/blapit.h.dep.html#NSS_DES_EDE3_CBC">NSS_DES_EDE3_CBC</a>, PR_FALSE );
+<b><a name="558">  558</a></b> 
+<b><a name="559">  559</a></b>     if( des3_context == NULL )
+<b><a name="560">  560</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="561">  561</a></b> 
+<b><a name="562">  562</a></b>     des3_status = <a href="../freebl/desblapi.c.dep.html#DES_Decrypt">DES_Decrypt</a>( des3_context, des3_computed_plaintext,
+<b><a name="563">  563</a></b>                                &amp;des3_bytes_decrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_DECRYPT_LENGTH">FIPS_DES3_DECRYPT_LENGTH</a>,
+<b><a name="564">  564</a></b>                                des3_cbc_known_ciphertext,
+<b><a name="565">  565</a></b>                                <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_ENCRYPT_LENGTH">FIPS_DES3_ENCRYPT_LENGTH</a> );
+<b><a name="566">  566</a></b> 
+<b><a name="567">  567</a></b>     <a href="../freebl/desblapi.c.dep.html#DES_DestroyContext">DES_DestroyContext</a>( des3_context, PR_TRUE );
+<b><a name="568">  568</a></b> 
+<b><a name="569">  569</a></b>     if( ( des3_status != SECSuccess ) ||
+<b><a name="570">  570</a></b>         ( des3_bytes_decrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_DECRYPT_LENGTH">FIPS_DES3_DECRYPT_LENGTH</a> ) ||
+<b><a name="571">  571</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( des3_computed_plaintext, des3_cbc_known_plaintext,
+<b><a name="572">  572</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_DES3_DECRYPT_LENGTH">FIPS_DES3_DECRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="573">  573</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="574">  574</a></b> 
+<b><a name="575">  575</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="576">  576</a></b> }
+<b><a name="577">  577</a></b> 
+<b><a name="578">  578</a></b> 
+<b><a name="579">  579</a></b> /* AES self-test for 128-bit, 192-bit, or 256-bit key sizes*/
+<b><a name="580">  580</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="581">  581</a></b> <a href="#581">sftk_fips_AES_PowerUpSelfTest</a>( int aes_key_size )
+<b><a name="582">  582</a></b> {
+<b><a name="583">  583</a></b>     /* AES Known Key (up to 256-bits). */
+<b><a name="584">  584</a></b>     static const PRUint8 aes_known_key[] = 
+<b><a name="585">  585</a></b>         { "<a href="../util/secoid.c.dep.html#AES">AES</a>-128 RIJNDAELLEADNJIR 821-SEA" };
+<b><a name="586">  586</a></b> 
+<b><a name="587">  587</a></b>     /* AES-CBC Known Initialization Vector (128-bits). */
+<b><a name="588">  588</a></b>     static const PRUint8 aes_cbc_known_initialization_vector[] = 
+<b><a name="589">  589</a></b>         { "SecurityytiruceS" };
+<b><a name="590">  590</a></b> 
+<b><a name="591">  591</a></b>     /* AES Known Plaintext (128-bits). (blocksize is 128-bits) */
+<b><a name="592">  592</a></b>     static const PRUint8 aes_known_plaintext[] = { "NetscapeepacsteN" };
+<b><a name="593">  593</a></b> 
+<b><a name="594">  594</a></b>     /* AES Known Ciphertext (128-bit key). */
+<b><a name="595">  595</a></b>     static const PRUint8 aes_ecb128_known_ciphertext[] = {
+<b><a name="596">  596</a></b>         0x3c,0xa5,0x96,0xf3,0x34,0x6a,0x96,0xc1,
+<b><a name="597">  597</a></b>         0x03,0x88,0x16,0x7b,0x20,0xbf,0x35,0x47 };
+<b><a name="598">  598</a></b> 
+<b><a name="599">  599</a></b>     static const PRUint8 aes_cbc128_known_ciphertext[]  = {
+<b><a name="600">  600</a></b>         0xcf,0x15,0x1d,0x4f,0x96,0xe4,0x4f,0x63,
+<b><a name="601">  601</a></b>         0x15,0x54,0x14,0x1d,0x4e,0xd8,0xd5,0xea };
+<b><a name="602">  602</a></b> 
+<b><a name="603">  603</a></b>     /* AES Known Ciphertext (192-bit key). */
+<b><a name="604">  604</a></b>     static const PRUint8 aes_ecb192_known_ciphertext[] = { 
+<b><a name="605">  605</a></b>         0xa0,0x18,0x62,0xed,0x88,0x19,0xcb,0x62,
+<b><a name="606">  606</a></b>         0x88,0x1d,0x4d,0xfe,0x84,0x02,0x89,0x0e };
+<b><a name="607">  607</a></b> 
+<b><a name="608">  608</a></b>     static const PRUint8 aes_cbc192_known_ciphertext[]  = { 
+<b><a name="609">  609</a></b>         0x83,0xf7,0xa4,0x76,0xd1,0x6f,0x07,0xbe,
+<b><a name="610">  610</a></b>         0x07,0xbc,0x43,0x2f,0x6d,0xad,0x29,0xe1 };
+<b><a name="611">  611</a></b> 
+<b><a name="612">  612</a></b>     /* AES Known Ciphertext (256-bit key). */
+<b><a name="613">  613</a></b>     static const PRUint8 aes_ecb256_known_ciphertext[] = { 
+<b><a name="614">  614</a></b>         0xdb,0xa6,0x52,0x01,0x8a,0x70,0xae,0x66,
+<b><a name="615">  615</a></b>         0x3a,0x99,0xd8,0x95,0x7f,0xfb,0x01,0x67 };
+<b><a name="616">  616</a></b>     
+<b><a name="617">  617</a></b>     static const PRUint8 aes_cbc256_known_ciphertext[]  = { 
+<b><a name="618">  618</a></b>         0x37,0xea,0x07,0x06,0x31,0x1c,0x59,0x27,
+<b><a name="619">  619</a></b>         0xc5,0xc5,0x68,0x71,0x6e,0x34,0x40,0x16 };
+<b><a name="620">  620</a></b> 
+<b><a name="621">  621</a></b>     const PRUint8 *aes_ecb_known_ciphertext =
+<b><a name="622">  622</a></b>         ( aes_key_size == <a href="../softoken/fipstest.c.dep.html#FIPS_AES_128_KEY_SIZE">FIPS_AES_128_KEY_SIZE</a>) ? aes_ecb128_known_ciphertext :
+<b><a name="623">  623</a></b>         ( aes_key_size == <a href="../softoken/fipstest.c.dep.html#FIPS_AES_192_KEY_SIZE">FIPS_AES_192_KEY_SIZE</a>) ? aes_ecb192_known_ciphertext :
+<b><a name="624">  624</a></b>                                 aes_ecb256_known_ciphertext;
+<b><a name="625">  625</a></b> 
+<b><a name="626">  626</a></b>     const PRUint8 *aes_cbc_known_ciphertext =
+<b><a name="627">  627</a></b>         ( aes_key_size == <a href="../softoken/fipstest.c.dep.html#FIPS_AES_128_KEY_SIZE">FIPS_AES_128_KEY_SIZE</a>) ? aes_cbc128_known_ciphertext :
+<b><a name="628">  628</a></b>         ( aes_key_size == <a href="../softoken/fipstest.c.dep.html#FIPS_AES_192_KEY_SIZE">FIPS_AES_192_KEY_SIZE</a>) ? aes_cbc192_known_ciphertext :
+<b><a name="629">  629</a></b>                                 aes_cbc256_known_ciphertext;
+<b><a name="630">  630</a></b> 
+<b><a name="631">  631</a></b>     /* AES variables. */
+<b><a name="632">  632</a></b>     PRUint8        aes_computed_ciphertext[<a href="../softoken/fipstest.c.dep.html#FIPS_AES_ENCRYPT_LENGTH">FIPS_AES_ENCRYPT_LENGTH</a>];
+<b><a name="633">  633</a></b>     PRUint8        aes_computed_plaintext[<a href="../softoken/fipstest.c.dep.html#FIPS_AES_DECRYPT_LENGTH">FIPS_AES_DECRYPT_LENGTH</a>];
+<b><a name="634">  634</a></b>     <a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *   aes_context;
+<b><a name="635">  635</a></b>     unsigned int   aes_bytes_encrypted;
+<b><a name="636">  636</a></b>     unsigned int   aes_bytes_decrypted;
+<b><a name="637">  637</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>      aes_status;
+<b><a name="638">  638</a></b> 
+<b><a name="639">  639</a></b>     /*check if aes_key_size is 128, 192, or 256 bits */
+<b><a name="640">  640</a></b>     if ((aes_key_size != <a href="../softoken/fipstest.c.dep.html#FIPS_AES_128_KEY_SIZE">FIPS_AES_128_KEY_SIZE</a>) &amp;&amp; 
+<b><a name="641">  641</a></b>         (aes_key_size != <a href="../softoken/fipstest.c.dep.html#FIPS_AES_192_KEY_SIZE">FIPS_AES_192_KEY_SIZE</a>) &amp;&amp; 
+<b><a name="642">  642</a></b>         (aes_key_size != <a href="../softoken/fipstest.c.dep.html#FIPS_AES_256_KEY_SIZE">FIPS_AES_256_KEY_SIZE</a>)) 
+<b><a name="643">  643</a></b>             return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="644">  644</a></b> 
+<b><a name="645">  645</a></b>     /******************************************************/
+<b><a name="646">  646</a></b>     /* AES-ECB Single-Round Known Answer Encryption Test: */
+<b><a name="647">  647</a></b>     /******************************************************/
+<b><a name="648">  648</a></b> 
+<b><a name="649">  649</a></b>     aes_context = <a href="../freebl/rijndael.c.dep.html#AES_CreateContext">AES_CreateContext</a>( aes_known_key, NULL, <a href="../freebl/blapit.h.dep.html#NSS_AES">NSS_AES</a>, PR_TRUE,
+<b><a name="650">  650</a></b>                                      aes_key_size, <a href="../softoken/fipstest.c.dep.html#FIPS_AES_BLOCK_SIZE">FIPS_AES_BLOCK_SIZE</a> );
+<b><a name="651">  651</a></b> 
+<b><a name="652">  652</a></b>     if( aes_context == NULL )
+<b><a name="653">  653</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="654">  654</a></b> 
+<b><a name="655">  655</a></b>     aes_status = <a href="../freebl/rijndael.c.dep.html#AES_Encrypt">AES_Encrypt</a>( aes_context, aes_computed_ciphertext,
+<b><a name="656">  656</a></b>                               &amp;aes_bytes_encrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_AES_ENCRYPT_LENGTH">FIPS_AES_ENCRYPT_LENGTH</a>,
+<b><a name="657">  657</a></b>                               aes_known_plaintext,
+<b><a name="658">  658</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_AES_DECRYPT_LENGTH">FIPS_AES_DECRYPT_LENGTH</a> );
+<b><a name="659">  659</a></b>     
+<b><a name="660">  660</a></b>     <a href="../freebl/rijndael.c.dep.html#AES_DestroyContext">AES_DestroyContext</a>( aes_context, PR_TRUE );
+<b><a name="661">  661</a></b> 
+<b><a name="662">  662</a></b>     if( ( aes_status != SECSuccess ) ||
+<b><a name="663">  663</a></b>         ( aes_bytes_encrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_AES_ENCRYPT_LENGTH">FIPS_AES_ENCRYPT_LENGTH</a> ) ||
+<b><a name="664">  664</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( aes_computed_ciphertext, aes_ecb_known_ciphertext,
+<b><a name="665">  665</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_AES_ENCRYPT_LENGTH">FIPS_AES_ENCRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="666">  666</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="667">  667</a></b> 
+<b><a name="668">  668</a></b> 
+<b><a name="669">  669</a></b>     /******************************************************/
+<b><a name="670">  670</a></b>     /* AES-ECB Single-Round Known Answer Decryption Test: */
+<b><a name="671">  671</a></b>     /******************************************************/
+<b><a name="672">  672</a></b> 
+<b><a name="673">  673</a></b>     aes_context = <a href="../freebl/rijndael.c.dep.html#AES_CreateContext">AES_CreateContext</a>( aes_known_key, NULL, <a href="../freebl/blapit.h.dep.html#NSS_AES">NSS_AES</a>, PR_FALSE,
+<b><a name="674">  674</a></b>                                      aes_key_size, <a href="../softoken/fipstest.c.dep.html#FIPS_AES_BLOCK_SIZE">FIPS_AES_BLOCK_SIZE</a> );
+<b><a name="675">  675</a></b> 
+<b><a name="676">  676</a></b>     if( aes_context == NULL )
+<b><a name="677">  677</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="678">  678</a></b> 
+<b><a name="679">  679</a></b>     aes_status = <a href="../freebl/rijndael.c.dep.html#AES_Decrypt">AES_Decrypt</a>( aes_context, aes_computed_plaintext,
+<b><a name="680">  680</a></b>                               &amp;aes_bytes_decrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_AES_DECRYPT_LENGTH">FIPS_AES_DECRYPT_LENGTH</a>,
+<b><a name="681">  681</a></b>                               aes_ecb_known_ciphertext,
+<b><a name="682">  682</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_AES_ENCRYPT_LENGTH">FIPS_AES_ENCRYPT_LENGTH</a> );
+<b><a name="683">  683</a></b> 
+<b><a name="684">  684</a></b>     <a href="../freebl/rijndael.c.dep.html#AES_DestroyContext">AES_DestroyContext</a>( aes_context, PR_TRUE );
+<b><a name="685">  685</a></b> 
+<b><a name="686">  686</a></b>     if( ( aes_status != SECSuccess ) ||         
+<b><a name="687">  687</a></b>         ( aes_bytes_decrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_AES_DECRYPT_LENGTH">FIPS_AES_DECRYPT_LENGTH</a> ) ||
+<b><a name="688">  688</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( aes_computed_plaintext, aes_known_plaintext,
+<b><a name="689">  689</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_AES_DECRYPT_LENGTH">FIPS_AES_DECRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="690">  690</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="691">  691</a></b> 
+<b><a name="692">  692</a></b> 
+<b><a name="693">  693</a></b>     /******************************************************/
+<b><a name="694">  694</a></b>     /* AES-CBC Single-Round Known Answer Encryption Test. */
+<b><a name="695">  695</a></b>     /******************************************************/
+<b><a name="696">  696</a></b> 
+<b><a name="697">  697</a></b>     aes_context = <a href="../freebl/rijndael.c.dep.html#AES_CreateContext">AES_CreateContext</a>( aes_known_key,
+<b><a name="698">  698</a></b>                                      aes_cbc_known_initialization_vector,
+<b><a name="699">  699</a></b>                                      <a href="../freebl/blapit.h.dep.html#NSS_AES_CBC">NSS_AES_CBC</a>, PR_TRUE, aes_key_size, 
+<b><a name="700">  700</a></b>                                      <a href="../softoken/fipstest.c.dep.html#FIPS_AES_BLOCK_SIZE">FIPS_AES_BLOCK_SIZE</a> );
+<b><a name="701">  701</a></b> 
+<b><a name="702">  702</a></b>     if( aes_context == NULL )
+<b><a name="703">  703</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="704">  704</a></b> 
+<b><a name="705">  705</a></b>     aes_status = <a href="../freebl/rijndael.c.dep.html#AES_Encrypt">AES_Encrypt</a>( aes_context, aes_computed_ciphertext,
+<b><a name="706">  706</a></b>                               &amp;aes_bytes_encrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_AES_ENCRYPT_LENGTH">FIPS_AES_ENCRYPT_LENGTH</a>,
+<b><a name="707">  707</a></b>                               aes_known_plaintext,
+<b><a name="708">  708</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_AES_DECRYPT_LENGTH">FIPS_AES_DECRYPT_LENGTH</a> );
+<b><a name="709">  709</a></b> 
+<b><a name="710">  710</a></b>     <a href="../freebl/rijndael.c.dep.html#AES_DestroyContext">AES_DestroyContext</a>( aes_context, PR_TRUE );
+<b><a name="711">  711</a></b> 
+<b><a name="712">  712</a></b>     if( ( aes_status != SECSuccess ) ||
+<b><a name="713">  713</a></b>         ( aes_bytes_encrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_AES_ENCRYPT_LENGTH">FIPS_AES_ENCRYPT_LENGTH</a> ) ||
+<b><a name="714">  714</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( aes_computed_ciphertext, aes_cbc_known_ciphertext,
+<b><a name="715">  715</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_AES_ENCRYPT_LENGTH">FIPS_AES_ENCRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="716">  716</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="717">  717</a></b> 
+<b><a name="718">  718</a></b> 
+<b><a name="719">  719</a></b>     /******************************************************/
+<b><a name="720">  720</a></b>     /* AES-CBC Single-Round Known Answer Decryption Test. */
+<b><a name="721">  721</a></b>     /******************************************************/
+<b><a name="722">  722</a></b> 
+<b><a name="723">  723</a></b>     aes_context = <a href="../freebl/rijndael.c.dep.html#AES_CreateContext">AES_CreateContext</a>( aes_known_key,
+<b><a name="724">  724</a></b>                                      aes_cbc_known_initialization_vector,
+<b><a name="725">  725</a></b>                                      <a href="../freebl/blapit.h.dep.html#NSS_AES_CBC">NSS_AES_CBC</a>, PR_FALSE, aes_key_size, 
+<b><a name="726">  726</a></b>                                      <a href="../softoken/fipstest.c.dep.html#FIPS_AES_BLOCK_SIZE">FIPS_AES_BLOCK_SIZE</a> );
+<b><a name="727">  727</a></b> 
+<b><a name="728">  728</a></b>     if( aes_context == NULL )
+<b><a name="729">  729</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="730">  730</a></b> 
+<b><a name="731">  731</a></b>     aes_status = <a href="../freebl/rijndael.c.dep.html#AES_Decrypt">AES_Decrypt</a>( aes_context, aes_computed_plaintext,
+<b><a name="732">  732</a></b>                               &amp;aes_bytes_decrypted, <a href="../softoken/fipstest.c.dep.html#FIPS_AES_DECRYPT_LENGTH">FIPS_AES_DECRYPT_LENGTH</a>,
+<b><a name="733">  733</a></b>                               aes_cbc_known_ciphertext,
+<b><a name="734">  734</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_AES_ENCRYPT_LENGTH">FIPS_AES_ENCRYPT_LENGTH</a> );
+<b><a name="735">  735</a></b> 
+<b><a name="736">  736</a></b>     <a href="../freebl/rijndael.c.dep.html#AES_DestroyContext">AES_DestroyContext</a>( aes_context, PR_TRUE );
+<b><a name="737">  737</a></b> 
+<b><a name="738">  738</a></b>     if( ( aes_status != SECSuccess ) ||
+<b><a name="739">  739</a></b>         ( aes_bytes_decrypted != <a href="../softoken/fipstest.c.dep.html#FIPS_AES_DECRYPT_LENGTH">FIPS_AES_DECRYPT_LENGTH</a> ) ||
+<b><a name="740">  740</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( aes_computed_plaintext, aes_known_plaintext,
+<b><a name="741">  741</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_AES_DECRYPT_LENGTH">FIPS_AES_DECRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="742">  742</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="743">  743</a></b> 
+<b><a name="744">  744</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="745">  745</a></b> }
+<b><a name="746">  746</a></b> 
+<b><a name="747">  747</a></b> /* Known Hash Message (512-bits).  Used for all hashes (incl. SHA-N [N&gt;1]). */
+<b><a name="748">  748</a></b> static const PRUint8 <a href="#748">known_hash_message</a>[] = {
+<b><a name="749">  749</a></b>   "The test message for the MD2, MD5, and SHA-1 hashing algorithms." };
+<b><a name="750">  750</a></b> 
+<b><a name="751">  751</a></b> 
+<b><a name="752">  752</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="753">  753</a></b> <a href="#753">sftk_fips_MD2_PowerUpSelfTest</a>( void )
+<b><a name="754">  754</a></b> {
+<b><a name="755">  755</a></b>     /* MD2 Known Digest Message (128-bits). */
+<b><a name="756">  756</a></b>     static const PRUint8 md2_known_digest[]  = {
+<b><a name="757">  757</a></b>                                    0x41,0x5a,0x12,0xb2,0x3f,0x28,0x97,0x17,
+<b><a name="758">  758</a></b>                                    0x0c,0x71,0x4e,0xcc,0x40,0xc8,0x1d,0x1b};
+<b><a name="759">  759</a></b> 
+<b><a name="760">  760</a></b>     /* MD2 variables. */
+<b><a name="761">  761</a></b>     <a href="../freebl/blapit.h.dep.html#MD2Context">MD2Context</a> * md2_context;
+<b><a name="762">  762</a></b>     unsigned int md2_bytes_hashed;
+<b><a name="763">  763</a></b>     PRUint8      md2_computed_digest[<a href="../freebl/blapit.h.dep.html#MD2_LENGTH">MD2_LENGTH</a>];
+<b><a name="764">  764</a></b> 
+<b><a name="765">  765</a></b> 
+<b><a name="766">  766</a></b>     /***********************************************/
+<b><a name="767">  767</a></b>     /* MD2 Single-Round Known Answer Hashing Test. */
+<b><a name="768">  768</a></b>     /***********************************************/
+<b><a name="769">  769</a></b> 
+<b><a name="770">  770</a></b>     md2_context = <a href="../freebl/md2.c.dep.html#MD2_NewContext">MD2_NewContext</a>();
+<b><a name="771">  771</a></b> 
+<b><a name="772">  772</a></b>     if( md2_context == NULL )
+<b><a name="773">  773</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="774">  774</a></b> 
+<b><a name="775">  775</a></b>     <a href="../freebl/md2.c.dep.html#MD2_Begin">MD2_Begin</a>( md2_context );
+<b><a name="776">  776</a></b> 
+<b><a name="777">  777</a></b>     <a href="../freebl/md2.c.dep.html#MD2_Update">MD2_Update</a>( md2_context, <a href="../softoken/fipstest.c.dep.html#known_hash_message">known_hash_message</a>,
+<b><a name="778">  778</a></b>                 <a href="../softoken/fipstest.c.dep.html#FIPS_KNOWN_HASH_MESSAGE_LENGTH">FIPS_KNOWN_HASH_MESSAGE_LENGTH</a> );
+<b><a name="779">  779</a></b> 
+<b><a name="780">  780</a></b>     <a href="../freebl/md2.c.dep.html#MD2_End">MD2_End</a>( md2_context, md2_computed_digest, &amp;md2_bytes_hashed, <a href="../freebl/blapit.h.dep.html#MD2_LENGTH">MD2_LENGTH</a> );
+<b><a name="781">  781</a></b> 
+<b><a name="782">  782</a></b>     <a href="../freebl/md2.c.dep.html#MD2_DestroyContext">MD2_DestroyContext</a>( md2_context , PR_TRUE );
+<b><a name="783">  783</a></b>     
+<b><a name="784">  784</a></b>     if( ( md2_bytes_hashed != <a href="../freebl/blapit.h.dep.html#MD2_LENGTH">MD2_LENGTH</a> ) ||
+<b><a name="785">  785</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( md2_computed_digest, md2_known_digest,
+<b><a name="786">  786</a></b>                        <a href="../freebl/blapit.h.dep.html#MD2_LENGTH">MD2_LENGTH</a> ) != 0 ) )
+<b><a name="787">  787</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="788">  788</a></b> 
+<b><a name="789">  789</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="790">  790</a></b> }
+<b><a name="791">  791</a></b> 
+<b><a name="792">  792</a></b> 
+<b><a name="793">  793</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="794">  794</a></b> <a href="#794">sftk_fips_MD5_PowerUpSelfTest</a>( void )
+<b><a name="795">  795</a></b> {
+<b><a name="796">  796</a></b>     /* MD5 Known Digest Message (128-bits). */
+<b><a name="797">  797</a></b>     static const PRUint8 md5_known_digest[]  = {
+<b><a name="798">  798</a></b>                                    0x25,0xc8,0xc0,0x10,0xc5,0x6e,0x68,0x28,
+<b><a name="799">  799</a></b>                                    0x28,0xa4,0xa5,0xd2,0x98,0x9a,0xea,0x2d};
+<b><a name="800">  800</a></b> 
+<b><a name="801">  801</a></b>     /* MD5 variables. */
+<b><a name="802">  802</a></b>     PRUint8        md5_computed_digest[<a href="../freebl/blapit.h.dep.html#MD5_LENGTH">MD5_LENGTH</a>];
+<b><a name="803">  803</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>      md5_status;
+<b><a name="804">  804</a></b> 
+<b><a name="805">  805</a></b> 
+<b><a name="806">  806</a></b>     /***********************************************/
+<b><a name="807">  807</a></b>     /* MD5 Single-Round Known Answer Hashing Test. */
+<b><a name="808">  808</a></b>     /***********************************************/
+<b><a name="809">  809</a></b> 
+<b><a name="810">  810</a></b>     md5_status = <a href="../freebl/md5.c.dep.html#MD5_HashBuf">MD5_HashBuf</a>( md5_computed_digest, <a href="../softoken/fipstest.c.dep.html#known_hash_message">known_hash_message</a>,
+<b><a name="811">  811</a></b>                               <a href="../softoken/fipstest.c.dep.html#FIPS_KNOWN_HASH_MESSAGE_LENGTH">FIPS_KNOWN_HASH_MESSAGE_LENGTH</a> );
+<b><a name="812">  812</a></b> 
+<b><a name="813">  813</a></b>     if( ( md5_status != SECSuccess ) ||
+<b><a name="814">  814</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( md5_computed_digest, md5_known_digest,
+<b><a name="815">  815</a></b>                        <a href="../freebl/blapit.h.dep.html#MD5_LENGTH">MD5_LENGTH</a> ) != 0 ) )
+<b><a name="816">  816</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="817">  817</a></b> 
+<b><a name="818">  818</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="819">  819</a></b> }
+<b><a name="820">  820</a></b> 
+<b><a name="821">  821</a></b> /****************************************************/
+<b><a name="822">  822</a></b> /* Single Round HMAC SHA-X test                     */
+<b><a name="823">  823</a></b> /****************************************************/
+<b><a name="824">  824</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="825">  825</a></b> <a href="#825">sftk_fips_HMAC</a>(unsigned char *hmac_computed,
+<b><a name="826">  826</a></b>                const PRUint8 *secret_key,
+<b><a name="827">  827</a></b>                unsigned int secret_key_length,
+<b><a name="828">  828</a></b>                const PRUint8 *message,
+<b><a name="829">  829</a></b>                unsigned int message_length,
+<b><a name="830">  830</a></b>                HASH_HashType hashAlg )
+<b><a name="831">  831</a></b> {
+<b><a name="832">  832</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> hmac_status = SECFailure;
+<b><a name="833">  833</a></b>     <a href="../freebl/alghmac.h.dep.html#HMACContext">HMACContext</a> *cx = NULL;
+<b><a name="834">  834</a></b>     SECHashObject *hashObj = NULL;
+<b><a name="835">  835</a></b>     unsigned int bytes_hashed = 0;
+<b><a name="836">  836</a></b> 
+<b><a name="837">  837</a></b>     hashObj = (SECHashObject *) <a href="../freebl/rawhash.c.dep.html#HASH_GetRawHashObject">HASH_GetRawHashObject</a>(hashAlg);
+<b><a name="838">  838</a></b>  
+<b><a name="839">  839</a></b>     if (!hashObj) 
+<b><a name="840">  840</a></b>         return( SECFailure );
+<b><a name="841">  841</a></b> 
+<b><a name="842">  842</a></b>     cx = <a href="../freebl/alghmac.c.dep.html#HMAC_Create">HMAC_Create</a>(hashObj, secret_key, 
+<b><a name="843">  843</a></b>                      secret_key_length, 
+<b><a name="844">  844</a></b>                      PR_TRUE);  /* PR_TRUE for in FIPS mode */
+<b><a name="845">  845</a></b> 
+<b><a name="846">  846</a></b>     if (cx == NULL) 
+<b><a name="847">  847</a></b>         return( SECFailure );
+<b><a name="848">  848</a></b> 
+<b><a name="849">  849</a></b>     <a href="../freebl/alghmac.c.dep.html#HMAC_Begin">HMAC_Begin</a>(cx);
+<b><a name="850">  850</a></b>     <a href="../freebl/alghmac.c.dep.html#HMAC_Update">HMAC_Update</a>(cx, message, message_length);
+<b><a name="851">  851</a></b>     hmac_status = <a href="../freebl/alghmac.c.dep.html#HMAC_Finish">HMAC_Finish</a>(cx, hmac_computed, &amp;bytes_hashed, 
+<b><a name="852">  852</a></b>                               hashObj-&gt;length);
+<b><a name="853">  853</a></b> 
+<b><a name="854">  854</a></b>     <a href="../freebl/alghmac.c.dep.html#HMAC_Destroy">HMAC_Destroy</a>(cx, PR_TRUE);
+<b><a name="855">  855</a></b> 
+<b><a name="856">  856</a></b>     return( hmac_status );
+<b><a name="857">  857</a></b> }
+<b><a name="858">  858</a></b> 
+<b><a name="859">  859</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="860">  860</a></b> <a href="#860">sftk_fips_HMAC_PowerUpSelfTest</a>( void )
+<b><a name="861">  861</a></b> {
+<b><a name="862">  862</a></b>     static const PRUint8 HMAC_known_secret_key[] = {
+<b><a name="863">  863</a></b>                          "Firefox and ThunderBird are awesome!"};
+<b><a name="864">  864</a></b> 
+<b><a name="865">  865</a></b>     static const PRUint8 HMAC_known_secret_key_length 
+<b><a name="866">  866</a></b>                          = sizeof HMAC_known_secret_key;
+<b><a name="867">  867</a></b> 
+<b><a name="868">  868</a></b>     /* known SHA1 hmac (20 bytes) */
+<b><a name="869">  869</a></b>     static const PRUint8 known_SHA1_hmac[] = {
+<b><a name="870">  870</a></b>         0xd5, 0x85, 0xf6, 0x5b, 0x39, 0xfa, 0xb9, 0x05, 
+<b><a name="871">  871</a></b>         0x3b, 0x57, 0x1d, 0x61, 0xe7, 0xb8, 0x84, 0x1e, 
+<b><a name="872">  872</a></b>         0x5d, 0x0e, 0x1e, 0x11};
+<b><a name="873">  873</a></b> 
+<b><a name="874">  874</a></b>     /* known SHA256 hmac (32 bytes) */
+<b><a name="875">  875</a></b>     static const PRUint8 known_SHA256_hmac[] = {
+<b><a name="876">  876</a></b>         0x05, 0x75, 0x9a, 0x9e, 0x70, 0x5e, 0xe7, 0x44, 
+<b><a name="877">  877</a></b>         0xe2, 0x46, 0x4b, 0x92, 0x22, 0x14, 0x22, 0xe0, 
+<b><a name="878">  878</a></b>         0x1b, 0x92, 0x8a, 0x0c, 0xfe, 0xf5, 0x49, 0xe9, 
+<b><a name="879">  879</a></b>         0xa7, 0x1b, 0x56, 0x7d, 0x1d, 0x29, 0x40, 0x48};        
+<b><a name="880">  880</a></b> 
+<b><a name="881">  881</a></b>     /* known SHA384 hmac (48 bytes) */
+<b><a name="882">  882</a></b>     static const PRUint8 known_SHA384_hmac[] = {
+<b><a name="883">  883</a></b>         0xcd, 0x56, 0x14, 0xec, 0x05, 0x53, 0x06, 0x2b,
+<b><a name="884">  884</a></b>         0x7e, 0x9c, 0x8a, 0x18, 0x5e, 0xea, 0xf3, 0x91,
+<b><a name="885">  885</a></b>         0x33, 0xfb, 0x64, 0xf6, 0xe3, 0x9f, 0x89, 0x0b,
+<b><a name="886">  886</a></b>         0xaf, 0xbe, 0x83, 0x4d, 0x3f, 0x3c, 0x43, 0x4d,
+<b><a name="887">  887</a></b>         0x4a, 0x0c, 0x56, 0x98, 0xf8, 0xca, 0xb4, 0xaa,
+<b><a name="888">  888</a></b>         0x9a, 0xf4, 0x0a, 0xaf, 0x4f, 0x69, 0xca, 0x87};
+<b><a name="889">  889</a></b> 
+<b><a name="890">  890</a></b>     /* known SHA512 hmac (64 bytes) */
+<b><a name="891">  891</a></b>     static const PRUint8 known_SHA512_hmac[] = {
+<b><a name="892">  892</a></b>         0xf6, 0x0e, 0x97, 0x12, 0x00, 0x67, 0x6e, 0xb9,
+<b><a name="893">  893</a></b>         0x0c, 0xb2, 0x63, 0xf0, 0x60, 0xac, 0x75, 0x62,
+<b><a name="894">  894</a></b>         0x70, 0x95, 0x2a, 0x52, 0x22, 0xee, 0xdd, 0xd2,
+<b><a name="895">  895</a></b>         0x71, 0xb1, 0xe8, 0x26, 0x33, 0xd3, 0x13, 0x27,
+<b><a name="896">  896</a></b>         0xcb, 0xff, 0x44, 0xef, 0x87, 0x97, 0x16, 0xfb,
+<b><a name="897">  897</a></b>         0xd3, 0x0b, 0x48, 0xbe, 0x12, 0x4e, 0xda, 0xb1,
+<b><a name="898">  898</a></b>         0x89, 0x90, 0xfb, 0x06, 0x0c, 0xbe, 0xe5, 0xc4,
+<b><a name="899">  899</a></b>         0xff, 0x24, 0x37, 0x3d, 0xc7, 0xe4, 0xe4, 0x37};
+<b><a name="900">  900</a></b> 
+<b><a name="901">  901</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>    hmac_status;
+<b><a name="902">  902</a></b>     PRUint8      hmac_computed[<a href="../freebl/blapit.h.dep.html#HASH_LENGTH_MAX">HASH_LENGTH_MAX</a>]; 
+<b><a name="903">  903</a></b> 
+<b><a name="904">  904</a></b>     /***************************************************/
+<b><a name="905">  905</a></b>     /* HMAC SHA-1 Single-Round Known Answer HMAC Test. */
+<b><a name="906">  906</a></b>     /***************************************************/
+<b><a name="907">  907</a></b> 
+<b><a name="908">  908</a></b>     hmac_status = <a href="../softoken/fipstest.c.dep.html#sftk_fips_HMAC">sftk_fips_HMAC</a>(hmac_computed, 
+<b><a name="909">  909</a></b>                                  HMAC_known_secret_key,
+<b><a name="910">  910</a></b>                                  HMAC_known_secret_key_length,
+<b><a name="911">  911</a></b>                                  <a href="../softoken/fipstest.c.dep.html#known_hash_message">known_hash_message</a>,
+<b><a name="912">  912</a></b>                                  <a href="../softoken/fipstest.c.dep.html#FIPS_KNOWN_HASH_MESSAGE_LENGTH">FIPS_KNOWN_HASH_MESSAGE_LENGTH</a>,
+<b><a name="913">  913</a></b>                                  HASH_AlgSHA1); 
+<b><a name="914">  914</a></b> 
+<b><a name="915">  915</a></b>     if( ( hmac_status != SECSuccess ) || 
+<b><a name="916">  916</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( hmac_computed, known_SHA1_hmac,
+<b><a name="917">  917</a></b>                        <a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a> ) != 0 ) )
+<b><a name="918">  918</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="919">  919</a></b> 
+<b><a name="920">  920</a></b>     /***************************************************/
+<b><a name="921">  921</a></b>     /* HMAC SHA-256 Single-Round Known Answer Test.    */
+<b><a name="922">  922</a></b>     /***************************************************/
+<b><a name="923">  923</a></b> 
+<b><a name="924">  924</a></b>     hmac_status = <a href="../softoken/fipstest.c.dep.html#sftk_fips_HMAC">sftk_fips_HMAC</a>(hmac_computed, 
+<b><a name="925">  925</a></b>                                  HMAC_known_secret_key,
+<b><a name="926">  926</a></b>                                  HMAC_known_secret_key_length,
+<b><a name="927">  927</a></b>                                  <a href="../softoken/fipstest.c.dep.html#known_hash_message">known_hash_message</a>,
+<b><a name="928">  928</a></b>                                  <a href="../softoken/fipstest.c.dep.html#FIPS_KNOWN_HASH_MESSAGE_LENGTH">FIPS_KNOWN_HASH_MESSAGE_LENGTH</a>,
+<b><a name="929">  929</a></b>                                  HASH_AlgSHA256); 
+<b><a name="930">  930</a></b> 
+<b><a name="931">  931</a></b>     if( ( hmac_status != SECSuccess ) || 
+<b><a name="932">  932</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( hmac_computed, known_SHA256_hmac,
+<b><a name="933">  933</a></b>                        <a href="../freebl/blapit.h.dep.html#SHA256_LENGTH">SHA256_LENGTH</a> ) != 0 ) )
+<b><a name="934">  934</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="935">  935</a></b> 
+<b><a name="936">  936</a></b>     /***************************************************/
+<b><a name="937">  937</a></b>     /* HMAC SHA-384 Single-Round Known Answer Test.    */
+<b><a name="938">  938</a></b>     /***************************************************/
+<b><a name="939">  939</a></b> 
+<b><a name="940">  940</a></b>     hmac_status = <a href="../softoken/fipstest.c.dep.html#sftk_fips_HMAC">sftk_fips_HMAC</a>(hmac_computed,
+<b><a name="941">  941</a></b>                                  HMAC_known_secret_key,
+<b><a name="942">  942</a></b>                                  HMAC_known_secret_key_length,
+<b><a name="943">  943</a></b>                                  <a href="../softoken/fipstest.c.dep.html#known_hash_message">known_hash_message</a>,
+<b><a name="944">  944</a></b>                                  <a href="../softoken/fipstest.c.dep.html#FIPS_KNOWN_HASH_MESSAGE_LENGTH">FIPS_KNOWN_HASH_MESSAGE_LENGTH</a>,
+<b><a name="945">  945</a></b>                                  HASH_AlgSHA384);
+<b><a name="946">  946</a></b> 
+<b><a name="947">  947</a></b>     if( ( hmac_status != SECSuccess ) ||
+<b><a name="948">  948</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( hmac_computed, known_SHA384_hmac,
+<b><a name="949">  949</a></b>                        <a href="../freebl/blapit.h.dep.html#SHA384_LENGTH">SHA384_LENGTH</a> ) != 0 ) )
+<b><a name="950">  950</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="951">  951</a></b> 
+<b><a name="952">  952</a></b>     /***************************************************/
+<b><a name="953">  953</a></b>     /* HMAC SHA-512 Single-Round Known Answer Test.    */
+<b><a name="954">  954</a></b>     /***************************************************/
+<b><a name="955">  955</a></b> 
+<b><a name="956">  956</a></b>     hmac_status = <a href="../softoken/fipstest.c.dep.html#sftk_fips_HMAC">sftk_fips_HMAC</a>(hmac_computed,
+<b><a name="957">  957</a></b>                                  HMAC_known_secret_key,
+<b><a name="958">  958</a></b>                                  HMAC_known_secret_key_length,
+<b><a name="959">  959</a></b>                                  <a href="../softoken/fipstest.c.dep.html#known_hash_message">known_hash_message</a>,
+<b><a name="960">  960</a></b>                                  <a href="../softoken/fipstest.c.dep.html#FIPS_KNOWN_HASH_MESSAGE_LENGTH">FIPS_KNOWN_HASH_MESSAGE_LENGTH</a>,
+<b><a name="961">  961</a></b>                                  HASH_AlgSHA512);
+<b><a name="962">  962</a></b> 
+<b><a name="963">  963</a></b>     if( ( hmac_status != SECSuccess ) ||
+<b><a name="964">  964</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( hmac_computed, known_SHA512_hmac,
+<b><a name="965">  965</a></b>                        <a href="../freebl/blapit.h.dep.html#SHA512_LENGTH">SHA512_LENGTH</a> ) != 0 ) )
+<b><a name="966">  966</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="967">  967</a></b> 
+<b><a name="968">  968</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="969">  969</a></b> }
+<b><a name="970">  970</a></b> 
+<b><a name="971">  971</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="972">  972</a></b> <a href="#972">sftk_fips_SHA_PowerUpSelfTest</a>( void )
+<b><a name="973">  973</a></b> {
+<b><a name="974">  974</a></b>     /* SHA-1 Known Digest Message (160-bits). */
+<b><a name="975">  975</a></b>     static const PRUint8 sha1_known_digest[] = {
+<b><a name="976">  976</a></b>                                0x0a,0x6d,0x07,0xba,0x1e,0xbd,0x8a,0x1b,
+<b><a name="977">  977</a></b>                                0x72,0xf6,0xc7,0x22,0xf1,0x27,0x9f,0xf0,
+<b><a name="978">  978</a></b>                                0xe0,0x68,0x47,0x7a};
+<b><a name="979">  979</a></b> 
+<b><a name="980">  980</a></b>     /* SHA-256 Known Digest Message (256-bits). */
+<b><a name="981">  981</a></b>     static const PRUint8 sha256_known_digest[] = {
+<b><a name="982">  982</a></b>         0x38,0xa9,0xc1,0xf0,0x35,0xf6,0x5d,0x61,
+<b><a name="983">  983</a></b>         0x11,0xd4,0x0b,0xdc,0xce,0x35,0x14,0x8d,
+<b><a name="984">  984</a></b>         0xf2,0xdd,0xaf,0xaf,0xcf,0xb7,0x87,0xe9,
+<b><a name="985">  985</a></b>         0x96,0xa5,0xd2,0x83,0x62,0x46,0x56,0x79};
+<b><a name="986">  986</a></b>  
+<b><a name="987">  987</a></b>     /* SHA-384 Known Digest Message (384-bits). */
+<b><a name="988">  988</a></b>     static const PRUint8 sha384_known_digest[] = {
+<b><a name="989">  989</a></b>         0x11,0xfe,0x1c,0x00,0x89,0x48,0xde,0xb3,
+<b><a name="990">  990</a></b>         0x99,0xee,0x1c,0x18,0xb4,0x10,0xfb,0xfe,
+<b><a name="991">  991</a></b>         0xe3,0xa8,0x2c,0xf3,0x04,0xb0,0x2f,0xc8,
+<b><a name="992">  992</a></b>         0xa3,0xc4,0x5e,0xea,0x7e,0x60,0x48,0x7b,
+<b><a name="993">  993</a></b>         0xce,0x2c,0x62,0xf7,0xbc,0xa7,0xe8,0xa3,
+<b><a name="994">  994</a></b>         0xcf,0x24,0xce,0x9c,0xe2,0x8b,0x09,0x72};
+<b><a name="995">  995</a></b> 
+<b><a name="996">  996</a></b>     /* SHA-512 Known Digest Message (512-bits). */
+<b><a name="997">  997</a></b>     static const PRUint8 sha512_known_digest[] = {
+<b><a name="998">  998</a></b>         0xc8,0xb3,0x27,0xf9,0x0b,0x24,0xc8,0xbf,
+<b><a name="999">  999</a></b>         0x4c,0xba,0x33,0x54,0xf2,0x31,0xbf,0xdb,
+<b><a name="1000"> 1000</a></b>         0xab,0xfd,0xb3,0x15,0xd7,0xfa,0x48,0x99,
+<b><a name="1001"> 1001</a></b>         0x07,0x60,0x0f,0x57,0x41,0x1a,0xdd,0x28,
+<b><a name="1002"> 1002</a></b>         0x12,0x55,0x25,0xac,0xba,0x3a,0x99,0x12,
+<b><a name="1003"> 1003</a></b>         0x2c,0x7a,0x8f,0x75,0x3a,0xe1,0x06,0x6f,
+<b><a name="1004"> 1004</a></b>         0x30,0x31,0xc9,0x33,0xc6,0x1b,0x90,0x1a,
+<b><a name="1005"> 1005</a></b>         0x6c,0x98,0x9a,0x87,0xd0,0xb2,0xf8,0x07};
+<b><a name="1006"> 1006</a></b> 
+<b><a name="1007"> 1007</a></b>     /* SHA-X variables. */
+<b><a name="1008"> 1008</a></b>     PRUint8        sha_computed_digest[<a href="../freebl/blapit.h.dep.html#HASH_LENGTH_MAX">HASH_LENGTH_MAX</a>];
+<b><a name="1009"> 1009</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>      sha_status;
+<b><a name="1010"> 1010</a></b> 
+<b><a name="1011"> 1011</a></b>     /*************************************************/
+<b><a name="1012"> 1012</a></b>     /* SHA-1 Single-Round Known Answer Hashing Test. */
+<b><a name="1013"> 1013</a></b>     /*************************************************/
+<b><a name="1014"> 1014</a></b> 
+<b><a name="1015"> 1015</a></b>     sha_status = <a href="../freebl/sha_fast.c.dep.html#SHA1_HashBuf">SHA1_HashBuf</a>( sha_computed_digest, <a href="../softoken/fipstest.c.dep.html#known_hash_message">known_hash_message</a>,
+<b><a name="1016"> 1016</a></b>                                 <a href="../softoken/fipstest.c.dep.html#FIPS_KNOWN_HASH_MESSAGE_LENGTH">FIPS_KNOWN_HASH_MESSAGE_LENGTH</a> );
+<b><a name="1017"> 1017</a></b>  
+<b><a name="1018"> 1018</a></b>     if( ( sha_status != SECSuccess ) ||
+<b><a name="1019"> 1019</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( sha_computed_digest, sha1_known_digest,
+<b><a name="1020"> 1020</a></b>                        <a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a> ) != 0 ) )
+<b><a name="1021"> 1021</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="1022"> 1022</a></b> 
+<b><a name="1023"> 1023</a></b>     /***************************************************/
+<b><a name="1024"> 1024</a></b>     /* SHA-256 Single-Round Known Answer Hashing Test. */
+<b><a name="1025"> 1025</a></b>     /***************************************************/
+<b><a name="1026"> 1026</a></b> 
+<b><a name="1027"> 1027</a></b>     sha_status = <a href="../freebl/sha512.c.dep.html#SHA256_HashBuf">SHA256_HashBuf</a>( sha_computed_digest, <a href="../softoken/fipstest.c.dep.html#known_hash_message">known_hash_message</a>,
+<b><a name="1028"> 1028</a></b>                                 <a href="../softoken/fipstest.c.dep.html#FIPS_KNOWN_HASH_MESSAGE_LENGTH">FIPS_KNOWN_HASH_MESSAGE_LENGTH</a> );
+<b><a name="1029"> 1029</a></b> 
+<b><a name="1030"> 1030</a></b>     if( ( sha_status != SECSuccess ) ||
+<b><a name="1031"> 1031</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( sha_computed_digest, sha256_known_digest,
+<b><a name="1032"> 1032</a></b>                        <a href="../freebl/blapit.h.dep.html#SHA256_LENGTH">SHA256_LENGTH</a> ) != 0 ) )
+<b><a name="1033"> 1033</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="1034"> 1034</a></b> 
+<b><a name="1035"> 1035</a></b>     /***************************************************/
+<b><a name="1036"> 1036</a></b>     /* SHA-384 Single-Round Known Answer Hashing Test. */
+<b><a name="1037"> 1037</a></b>     /***************************************************/
+<b><a name="1038"> 1038</a></b> 
+<b><a name="1039"> 1039</a></b>     sha_status = <a href="../freebl/sha512.c.dep.html#SHA384_HashBuf">SHA384_HashBuf</a>( sha_computed_digest, <a href="../softoken/fipstest.c.dep.html#known_hash_message">known_hash_message</a>,
+<b><a name="1040"> 1040</a></b>                                 <a href="../softoken/fipstest.c.dep.html#FIPS_KNOWN_HASH_MESSAGE_LENGTH">FIPS_KNOWN_HASH_MESSAGE_LENGTH</a> );
+<b><a name="1041"> 1041</a></b> 
+<b><a name="1042"> 1042</a></b>     if( ( sha_status != SECSuccess ) ||
+<b><a name="1043"> 1043</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( sha_computed_digest, sha384_known_digest,
+<b><a name="1044"> 1044</a></b>                        <a href="../freebl/blapit.h.dep.html#SHA384_LENGTH">SHA384_LENGTH</a> ) != 0 ) )
+<b><a name="1045"> 1045</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="1046"> 1046</a></b> 
+<b><a name="1047"> 1047</a></b>     /***************************************************/
+<b><a name="1048"> 1048</a></b>     /* SHA-512 Single-Round Known Answer Hashing Test. */
+<b><a name="1049"> 1049</a></b>     /***************************************************/
+<b><a name="1050"> 1050</a></b> 
+<b><a name="1051"> 1051</a></b>     sha_status = <a href="../freebl/sha512.c.dep.html#SHA512_HashBuf">SHA512_HashBuf</a>( sha_computed_digest, <a href="../softoken/fipstest.c.dep.html#known_hash_message">known_hash_message</a>,
+<b><a name="1052"> 1052</a></b>                                 <a href="../softoken/fipstest.c.dep.html#FIPS_KNOWN_HASH_MESSAGE_LENGTH">FIPS_KNOWN_HASH_MESSAGE_LENGTH</a> );
+<b><a name="1053"> 1053</a></b> 
+<b><a name="1054"> 1054</a></b>     if( ( sha_status != SECSuccess ) ||
+<b><a name="1055"> 1055</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( sha_computed_digest, sha512_known_digest,
+<b><a name="1056"> 1056</a></b>                        <a href="../freebl/blapit.h.dep.html#SHA512_LENGTH">SHA512_LENGTH</a> ) != 0 ) )
+<b><a name="1057"> 1057</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="1058"> 1058</a></b> 
+<b><a name="1059"> 1059</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="1060"> 1060</a></b> }
+<b><a name="1061"> 1061</a></b> 
+<b><a name="1062"> 1062</a></b> /*
+<b><a name="1063"> 1063</a></b> * Single round RSA Signature Known Answer Test
+<b><a name="1064"> 1064</a></b> */
+<b><a name="1065"> 1065</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="1066"> 1066</a></b> <a href="#1066">sftk_fips_RSA_PowerUpSigSelfTest</a> (HASH_HashType  shaAlg,
+<b><a name="1067"> 1067</a></b>                                   <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYPublicKey">NSSLOWKEYPublicKey</a> *rsa_public_key,
+<b><a name="1068"> 1068</a></b>                                   <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYPrivateKey">NSSLOWKEYPrivateKey</a> *rsa_private_key,
+<b><a name="1069"> 1069</a></b>                                   const unsigned char *rsa_known_msg,
+<b><a name="1070"> 1070</a></b>                                   const unsigned int rsa_kmsg_length,
+<b><a name="1071"> 1071</a></b>                                   const unsigned char *rsa_known_signature)
+<b><a name="1072"> 1072</a></b> {
+<b><a name="1073"> 1073</a></b>     <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a>      shaOid;   /* SHA OID */
+<b><a name="1074"> 1074</a></b>     unsigned char  sha[<a href="../freebl/blapit.h.dep.html#HASH_LENGTH_MAX">HASH_LENGTH_MAX</a>];    /* SHA digest */
+<b><a name="1075"> 1075</a></b>     unsigned int   shaLength = 0;           /* length of SHA */
+<b><a name="1076"> 1076</a></b>     unsigned int   rsa_bytes_signed;
+<b><a name="1077"> 1077</a></b>     unsigned char  rsa_computed_signature[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_SIGNATURE_LENGTH">FIPS_RSA_SIGNATURE_LENGTH</a>];
+<b><a name="1078"> 1078</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>      rv;
+<b><a name="1079"> 1079</a></b> 
+<b><a name="1080"> 1080</a></b>     if (shaAlg == HASH_AlgSHA1) {
+<b><a name="1081"> 1081</a></b>         if (<a href="../freebl/sha_fast.c.dep.html#SHA1_HashBuf">SHA1_HashBuf</a>(sha, rsa_known_msg, rsa_kmsg_length)
+<b><a name="1082"> 1082</a></b>                             != SECSuccess) {
+<b><a name="1083"> 1083</a></b>              goto loser;
+<b><a name="1084"> 1084</a></b>         }
+<b><a name="1085"> 1085</a></b>         shaLength = <a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>;
+<b><a name="1086"> 1086</a></b>         shaOid = SEC_OID_SHA1;
+<b><a name="1087"> 1087</a></b>     } else if (shaAlg == HASH_AlgSHA256) {
+<b><a name="1088"> 1088</a></b>         if (<a href="../freebl/sha512.c.dep.html#SHA256_HashBuf">SHA256_HashBuf</a>(sha, rsa_known_msg, rsa_kmsg_length)
+<b><a name="1089"> 1089</a></b>                             != SECSuccess) {
+<b><a name="1090"> 1090</a></b>              goto loser;
+<b><a name="1091"> 1091</a></b>         }
+<b><a name="1092"> 1092</a></b>         shaLength = <a href="../freebl/blapit.h.dep.html#SHA256_LENGTH">SHA256_LENGTH</a>;
+<b><a name="1093"> 1093</a></b>         shaOid = SEC_OID_SHA256;
+<b><a name="1094"> 1094</a></b>     } else if (shaAlg == HASH_AlgSHA384) {
+<b><a name="1095"> 1095</a></b>         if (<a href="../freebl/sha512.c.dep.html#SHA384_HashBuf">SHA384_HashBuf</a>(sha, rsa_known_msg, rsa_kmsg_length)
+<b><a name="1096"> 1096</a></b>                             != SECSuccess) {
+<b><a name="1097"> 1097</a></b>              goto loser;
+<b><a name="1098"> 1098</a></b>         }
+<b><a name="1099"> 1099</a></b>         shaLength = <a href="../freebl/blapit.h.dep.html#SHA384_LENGTH">SHA384_LENGTH</a>;
+<b><a name="1100"> 1100</a></b>         shaOid = SEC_OID_SHA384;
+<b><a name="1101"> 1101</a></b>     } else if (shaAlg == HASH_AlgSHA512) {
+<b><a name="1102"> 1102</a></b>         if (<a href="../freebl/sha512.c.dep.html#SHA512_HashBuf">SHA512_HashBuf</a>(sha, rsa_known_msg, rsa_kmsg_length)
+<b><a name="1103"> 1103</a></b>                             != SECSuccess) {
+<b><a name="1104"> 1104</a></b>              goto loser;
+<b><a name="1105"> 1105</a></b>         }
+<b><a name="1106"> 1106</a></b>         shaLength = <a href="../freebl/blapit.h.dep.html#SHA512_LENGTH">SHA512_LENGTH</a>;
+<b><a name="1107"> 1107</a></b>         shaOid = SEC_OID_SHA512;
+<b><a name="1108"> 1108</a></b>     } else {
+<b><a name="1109"> 1109</a></b>         goto loser;
+<b><a name="1110"> 1110</a></b>     }
+<b><a name="1111"> 1111</a></b> 
+<b><a name="1112"> 1112</a></b>     /*************************************************/
+<b><a name="1113"> 1113</a></b>     /* RSA Single-Round Known Answer Signature Test. */
+<b><a name="1114"> 1114</a></b>     /*************************************************/
+<b><a name="1115"> 1115</a></b> 
+<b><a name="1116"> 1116</a></b>     /* Perform RSA signature with the RSA private key. */
+<b><a name="1117"> 1117</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#RSA_HashSign">RSA_HashSign</a>( shaOid,
+<b><a name="1118"> 1118</a></b>                        rsa_private_key,
+<b><a name="1119"> 1119</a></b>                        rsa_computed_signature,
+<b><a name="1120"> 1120</a></b>                        &amp;rsa_bytes_signed,
+<b><a name="1121"> 1121</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_SIGNATURE_LENGTH">FIPS_RSA_SIGNATURE_LENGTH</a>,
+<b><a name="1122"> 1122</a></b>                        sha,
+<b><a name="1123"> 1123</a></b>                        shaLength);
+<b><a name="1124"> 1124</a></b> 
+<b><a name="1125"> 1125</a></b>     if( ( rv != SECSuccess ) ||
+<b><a name="1126"> 1126</a></b>         ( rsa_bytes_signed != <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_SIGNATURE_LENGTH">FIPS_RSA_SIGNATURE_LENGTH</a> ) ||
+<b><a name="1127"> 1127</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( rsa_computed_signature, rsa_known_signature,
+<b><a name="1128"> 1128</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_SIGNATURE_LENGTH">FIPS_RSA_SIGNATURE_LENGTH</a> ) != 0 ) ) {
+<b><a name="1129"> 1129</a></b>         goto loser;
+<b><a name="1130"> 1130</a></b>     }
+<b><a name="1131"> 1131</a></b> 
+<b><a name="1132"> 1132</a></b>     /****************************************************/
+<b><a name="1133"> 1133</a></b>     /* RSA Single-Round Known Answer Verification Test. */
+<b><a name="1134"> 1134</a></b>     /****************************************************/
+<b><a name="1135"> 1135</a></b> 
+<b><a name="1136"> 1136</a></b>     /* Perform RSA verification with the RSA public key. */
+<b><a name="1137"> 1137</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#RSA_HashCheckSign">RSA_HashCheckSign</a>( shaOid,
+<b><a name="1138"> 1138</a></b>                             rsa_public_key,
+<b><a name="1139"> 1139</a></b>                             rsa_computed_signature,
+<b><a name="1140"> 1140</a></b>                             rsa_bytes_signed,
+<b><a name="1141"> 1141</a></b>                             sha,
+<b><a name="1142"> 1142</a></b>                             shaLength);
+<b><a name="1143"> 1143</a></b> 
+<b><a name="1144"> 1144</a></b>     if( rv != SECSuccess ) {
+<b><a name="1145"> 1145</a></b>          goto loser;
+<b><a name="1146"> 1146</a></b>     }
+<b><a name="1147"> 1147</a></b>     return( SECSuccess );
+<b><a name="1148"> 1148</a></b> 
+<b><a name="1149"> 1149</a></b> loser:
+<b><a name="1150"> 1150</a></b> 
+<b><a name="1151"> 1151</a></b>     return( SECFailure );
+<b><a name="1152"> 1152</a></b> 
+<b><a name="1153"> 1153</a></b> }
+<b><a name="1154"> 1154</a></b> 
+<b><a name="1155"> 1155</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="1156"> 1156</a></b> <a href="#1156">sftk_fips_RSA_PowerUpSelfTest</a>( void )
+<b><a name="1157"> 1157</a></b> {
+<b><a name="1158"> 1158</a></b>     /* RSA Known Modulus used in both Public/Private Key Values (1024-bits). */
+<b><a name="1159"> 1159</a></b>     static const PRUint8 rsa_modulus[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_MODULUS_LENGTH">FIPS_RSA_MODULUS_LENGTH</a>] = {
+<b><a name="1160"> 1160</a></b>                                0xd5, 0x84, 0x95, 0x07, 0xf4, 0xd0, 0x1f, 0x82,
+<b><a name="1161"> 1161</a></b>                                0xf3, 0x79, 0xf4, 0x99, 0x48, 0x10, 0xe1, 0x71,
+<b><a name="1162"> 1162</a></b>                                0xa5, 0x62, 0x22, 0xa3, 0x4b, 0x00, 0xe3, 0x5b,
+<b><a name="1163"> 1163</a></b>                                0x3a, 0xcc, 0x10, 0x83, 0xe0, 0xaf, 0x61, 0x13,
+<b><a name="1164"> 1164</a></b>                                0x54, 0x6a, 0xa2, 0x6a, 0x2c, 0x5e, 0xb3, 0xcc,
+<b><a name="1165"> 1165</a></b>                                0xa3, 0x71, 0x9a, 0xb2, 0x3e, 0x78, 0xec, 0xb5,
+<b><a name="1166"> 1166</a></b>                                0x0e, 0x6e, 0x31, 0x3b, 0x77, 0x1f, 0x6e, 0x94,
+<b><a name="1167"> 1167</a></b>                                0x41, 0x60, 0xd5, 0x6e, 0xd9, 0xc6, 0xf9, 0x29,
+<b><a name="1168"> 1168</a></b>                                0xc3, 0x40, 0x36, 0x25, 0xdb, 0xea, 0x0b, 0x07,
+<b><a name="1169"> 1169</a></b>                                0xae, 0x76, 0xfd, 0x99, 0x29, 0xf4, 0x22, 0xc1,
+<b><a name="1170"> 1170</a></b>                                0x1a, 0x8f, 0x05, 0xfe, 0x98, 0x09, 0x07, 0x05,
+<b><a name="1171"> 1171</a></b>                                0xc2, 0x0f, 0x0b, 0x11, 0x83, 0x39, 0xca, 0xc7,
+<b><a name="1172"> 1172</a></b>                                0x43, 0x63, 0xff, 0x33, 0x80, 0xe7, 0xc3, 0x78,
+<b><a name="1173"> 1173</a></b>                                0xae, 0xf1, 0x73, 0x52, 0x98, 0x1d, 0xde, 0x5c,
+<b><a name="1174"> 1174</a></b>                                0x53, 0x6e, 0x01, 0x73, 0x0d, 0x12, 0x7e, 0x77,
+<b><a name="1175"> 1175</a></b>                                0x03, 0xf1, 0xef, 0x1b, 0xc8, 0xa8, 0x0f, 0x97};
+<b><a name="1176"> 1176</a></b> 
+<b><a name="1177"> 1177</a></b>     /* RSA Known Public Key Values (24-bits). */
+<b><a name="1178"> 1178</a></b>     static const PRUint8 rsa_public_exponent[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_PUBLIC_EXPONENT_LENGTH">FIPS_RSA_PUBLIC_EXPONENT_LENGTH</a>] 
+<b><a name="1179"> 1179</a></b>                                                        = { 0x01, 0x00, 0x01 };
+<b><a name="1180"> 1180</a></b>     /* RSA Known Private Key Values (version                 is    8-bits), */
+<b><a name="1181"> 1181</a></b>     /*                              (private exponent        is 1024-bits), */
+<b><a name="1182"> 1182</a></b>     /*                              (private prime0          is  512-bits), */
+<b><a name="1183"> 1183</a></b>     /*                              (private prime1          is  512-bits), */
+<b><a name="1184"> 1184</a></b>     /*                              (private prime exponent0 is  512-bits), */
+<b><a name="1185"> 1185</a></b>     /*                              (private prime exponent1 is  512-bits), */
+<b><a name="1186"> 1186</a></b>     /*                          and (private coefficient     is  512-bits). */
+<b><a name="1187"> 1187</a></b>     static const PRUint8 rsa_version[] = { 0x00 };
+<b><a name="1188"> 1188</a></b> 
+<b><a name="1189"> 1189</a></b>     static const PRUint8 rsa_private_exponent[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_PRIVATE_EXPONENT_LENGTH">FIPS_RSA_PRIVATE_EXPONENT_LENGTH</a>]
+<b><a name="1190"> 1190</a></b>                            = { 0x85, 0x27, 0x47, 0x61, 0x4c, 0xd4, 0xb5, 0xb2,
+<b><a name="1191"> 1191</a></b>                                0x0e, 0x70, 0x91, 0x8f, 0x3d, 0x97, 0xf9, 0x5f,
+<b><a name="1192"> 1192</a></b>                                0xcc, 0x09, 0x65, 0x1c, 0x7c, 0x5b, 0xb3, 0x6d,
+<b><a name="1193"> 1193</a></b>                                0x63, 0x3f, 0x7b, 0x55, 0x22, 0xbb, 0x7c, 0x48,
+<b><a name="1194"> 1194</a></b>                                0x77, 0xae, 0x80, 0x56, 0xc2, 0x10, 0xd5, 0x03,
+<b><a name="1195"> 1195</a></b>                                0xdb, 0x31, 0xaf, 0x8d, 0x54, 0xd4, 0x48, 0x99,
+<b><a name="1196"> 1196</a></b>                                0xa8, 0xc4, 0x23, 0x43, 0xb8, 0x48, 0x0b, 0xc7,
+<b><a name="1197"> 1197</a></b>                                0xbc, 0xf5, 0xcc, 0x64, 0x72, 0xbf, 0x59, 0x06,
+<b><a name="1198"> 1198</a></b>                                0x04, 0x1c, 0x32, 0xf5, 0x14, 0x2e, 0x6e, 0xe2,
+<b><a name="1199"> 1199</a></b>                                0x0f, 0x5c, 0xde, 0x36, 0x3c, 0x6e, 0x7c, 0x4d,
+<b><a name="1200"> 1200</a></b>                                0xcc, 0xd3, 0x00, 0x6e, 0xe5, 0x45, 0x46, 0xef,
+<b><a name="1201"> 1201</a></b>                                0x4d, 0x25, 0x46, 0x6d, 0x7f, 0xed, 0xbb, 0x4f,
+<b><a name="1202"> 1202</a></b>                                0x4d, 0x9f, 0xda, 0x87, 0x47, 0x8f, 0x74, 0x44,
+<b><a name="1203"> 1203</a></b>                                0xb7, 0xbe, 0x9d, 0xf5, 0xdd, 0xd2, 0x4c, 0xa5,
+<b><a name="1204"> 1204</a></b>                                0xab, 0x74, 0xe5, 0x29, 0xa1, 0xd2, 0x45, 0x3b,
+<b><a name="1205"> 1205</a></b>                                0x33, 0xde, 0xd5, 0xae, 0xf7, 0x03, 0x10, 0x21};
+<b><a name="1206"> 1206</a></b> 
+<b><a name="1207"> 1207</a></b>     static const PRUint8 rsa_prime0[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_PRIME0_LENGTH">FIPS_RSA_PRIME0_LENGTH</a>]   = {
+<b><a name="1208"> 1208</a></b>                                0xf9, 0x74, 0x8f, 0x16, 0x02, 0x6b, 0xa0, 0xee,
+<b><a name="1209"> 1209</a></b>                                0x7f, 0x28, 0x97, 0x91, 0xdc, 0xec, 0xc0, 0x7c,
+<b><a name="1210"> 1210</a></b>                                0x49, 0xc2, 0x85, 0x76, 0xee, 0x66, 0x74, 0x2d,
+<b><a name="1211"> 1211</a></b>                                0x1a, 0xb8, 0xf7, 0x2f, 0x11, 0x5b, 0x36, 0xd8,
+<b><a name="1212"> 1212</a></b>                                0x46, 0x33, 0x3b, 0xd8, 0xf3, 0x2d, 0xa1, 0x03,
+<b><a name="1213"> 1213</a></b>                                0x83, 0x2b, 0xec, 0x35, 0x43, 0x32, 0xff, 0xdd,
+<b><a name="1214"> 1214</a></b>                                0x81, 0x7c, 0xfd, 0x65, 0x13, 0x04, 0x7c, 0xfc,
+<b><a name="1215"> 1215</a></b>                                0x03, 0x97, 0xf0, 0xd5, 0x62, 0xdc, 0x0d, 0xbf};
+<b><a name="1216"> 1216</a></b>     static const PRUint8 rsa_prime1[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_PRIME1_LENGTH">FIPS_RSA_PRIME1_LENGTH</a>]   = {
+<b><a name="1217"> 1217</a></b>                                0xdb, 0x1e, 0xa7, 0x3d, 0xe7, 0xfa, 0x8b, 0x04,
+<b><a name="1218"> 1218</a></b>                                0x83, 0x48, 0xf3, 0xa5, 0x31, 0x9d, 0x35, 0x5e,
+<b><a name="1219"> 1219</a></b>                                0x4d, 0x54, 0x77, 0xcc, 0x84, 0x09, 0xf3, 0x11,
+<b><a name="1220"> 1220</a></b>                                0x0d, 0x54, 0xed, 0x85, 0x39, 0xa9, 0xca, 0xa8,
+<b><a name="1221"> 1221</a></b>                                0xea, 0xae, 0x19, 0x9c, 0x75, 0xdb, 0x88, 0xb8,
+<b><a name="1222"> 1222</a></b>                                0x04, 0x8d, 0x54, 0xc6, 0xa4, 0x80, 0xf8, 0x93,
+<b><a name="1223"> 1223</a></b>                                0xf0, 0xdb, 0x19, 0xef, 0xd7, 0x87, 0x8a, 0x8f,
+<b><a name="1224"> 1224</a></b>                                0x5a, 0x09, 0x2e, 0x54, 0xf3, 0x45, 0x24, 0x29};
+<b><a name="1225"> 1225</a></b>     static const PRUint8 rsa_exponent0[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_EXPONENT0_LENGTH">FIPS_RSA_EXPONENT0_LENGTH</a>] = {
+<b><a name="1226"> 1226</a></b>                                0x6a, 0xd1, 0x25, 0x80, 0x18, 0x33, 0x3c, 0x2b,
+<b><a name="1227"> 1227</a></b>                                0x44, 0x19, 0xfe, 0xa5, 0x40, 0x03, 0xc4, 0xfc,
+<b><a name="1228"> 1228</a></b>                                0xb3, 0x9c, 0xef, 0x07, 0x99, 0x58, 0x17, 0xc1,
+<b><a name="1229"> 1229</a></b>                                0x44, 0xa3, 0x15, 0x7d, 0x7b, 0x22, 0x22, 0xdf,
+<b><a name="1230"> 1230</a></b>                                0x03, 0x58, 0x66, 0xf5, 0x24, 0x54, 0x52, 0x91,
+<b><a name="1231"> 1231</a></b>                                0x2d, 0x76, 0xfe, 0x63, 0x64, 0x4e, 0x0f, 0x50,
+<b><a name="1232"> 1232</a></b>                                0x2b, 0x65, 0x79, 0x1f, 0xf1, 0xbf, 0xc7, 0x41,
+<b><a name="1233"> 1233</a></b>                                0x26, 0xcc, 0xc6, 0x1c, 0xa9, 0x83, 0x6f, 0x03};
+<b><a name="1234"> 1234</a></b>     static const PRUint8 rsa_exponent1[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_EXPONENT1_LENGTH">FIPS_RSA_EXPONENT1_LENGTH</a>] = {
+<b><a name="1235"> 1235</a></b>                                0x12, 0x84, 0x1a, 0x99, 0xce, 0x9a, 0x8b, 0x58,
+<b><a name="1236"> 1236</a></b>                                0xcc, 0x47, 0x43, 0xdf, 0x77, 0xbb, 0xd3, 0x20,
+<b><a name="1237"> 1237</a></b>                                0xae, 0xe4, 0x2e, 0x63, 0x67, 0xdc, 0xf7, 0x5f,
+<b><a name="1238"> 1238</a></b>                                0x3f, 0x83, 0x27, 0xb7, 0x14, 0x52, 0x56, 0xbf,
+<b><a name="1239"> 1239</a></b>                                0xc3, 0x65, 0x06, 0xe1, 0x03, 0xcc, 0x93, 0x57,
+<b><a name="1240"> 1240</a></b>                                0x09, 0x7b, 0x6f, 0xe8, 0x81, 0x4a, 0x2c, 0xb7,
+<b><a name="1241"> 1241</a></b>                                0x43, 0xa9, 0x20, 0x1d, 0xf6, 0x56, 0x8b, 0xcc,
+<b><a name="1242"> 1242</a></b>                                0xe5, 0x4c, 0xd5, 0x4f, 0x74, 0x67, 0x29, 0x51};
+<b><a name="1243"> 1243</a></b>     static const PRUint8 rsa_coefficient[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_COEFFICIENT_LENGTH">FIPS_RSA_COEFFICIENT_LENGTH</a>] = {
+<b><a name="1244"> 1244</a></b>                                0x23, 0xab, 0xf4, 0x03, 0x2f, 0x29, 0x95, 0x74,
+<b><a name="1245"> 1245</a></b>                                0xac, 0x1a, 0x33, 0x96, 0x62, 0xed, 0xf7, 0xf6,
+<b><a name="1246"> 1246</a></b>                                0xae, 0x07, 0x2a, 0x2e, 0xe8, 0xab, 0xfb, 0x1e,
+<b><a name="1247"> 1247</a></b>                                0xb9, 0xb2, 0x88, 0x1e, 0x85, 0x05, 0x42, 0x64,
+<b><a name="1248"> 1248</a></b>                                0x03, 0xb2, 0x8b, 0xc1, 0x81, 0x75, 0xd7, 0xba,
+<b><a name="1249"> 1249</a></b>                                0xaa, 0xd4, 0x31, 0x3c, 0x8a, 0x96, 0x23, 0x9d,
+<b><a name="1250"> 1250</a></b>                                0x3f, 0x06, 0x3e, 0x44, 0xa9, 0x62, 0x2f, 0x61,
+<b><a name="1251"> 1251</a></b>                                0x5a, 0x51, 0x82, 0x2c, 0x04, 0x85, 0x73, 0xd1};
+<b><a name="1252"> 1252</a></b> 
+<b><a name="1253"> 1253</a></b>     /* RSA Known Plaintext Message (1024-bits). */
+<b><a name="1254"> 1254</a></b>     static const PRUint8 rsa_known_plaintext_msg[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_MESSAGE_LENGTH">FIPS_RSA_MESSAGE_LENGTH</a>] = {
+<b><a name="1255"> 1255</a></b>                                          "Known plaintext message utilized" 
+<b><a name="1256"> 1256</a></b>                                          "for RSA Encryption &amp;  Decryption"
+<b><a name="1257"> 1257</a></b>                                          "block, SHA1, SHA256, SHA384  and"
+<b><a name="1258"> 1258</a></b>                                          "SHA512 RSA Signature KAT tests."};
+<b><a name="1259"> 1259</a></b> 
+<b><a name="1260"> 1260</a></b>     /* RSA Known Ciphertext (1024-bits). */
+<b><a name="1261"> 1261</a></b>     static const PRUint8 rsa_known_ciphertext[] = {
+<b><a name="1262"> 1262</a></b>                                0x1e, 0x7e, 0x12, 0xbb, 0x15, 0x62, 0xd0, 0x23,
+<b><a name="1263"> 1263</a></b>                                0x53, 0x4c, 0x51, 0x97, 0x77, 0x06, 0xa0, 0xbb,
+<b><a name="1264"> 1264</a></b>                                0x26, 0x99, 0x9a, 0x8f, 0x39, 0xad, 0x88, 0x5c,
+<b><a name="1265"> 1265</a></b>                                0xc4, 0xce, 0x33, 0x40, 0x94, 0x92, 0xb4, 0x0e,
+<b><a name="1266"> 1266</a></b>                                0xab, 0x71, 0xa9, 0x5d, 0x9a, 0x37, 0xe3, 0x9a,
+<b><a name="1267"> 1267</a></b>                                0x24, 0x95, 0x13, 0xea, 0x0f, 0xbb, 0xf7, 0xff,
+<b><a name="1268"> 1268</a></b>                                0xdf, 0x31, 0x33, 0x23, 0x1d, 0xce, 0x26, 0x9e,
+<b><a name="1269"> 1269</a></b>                                0xd1, 0xde, 0x98, 0x40, 0xde, 0x57, 0x86, 0x12,
+<b><a name="1270"> 1270</a></b>                                0xf1, 0xe6, 0x5a, 0x3f, 0x08, 0x02, 0x81, 0x85,
+<b><a name="1271"> 1271</a></b>                                0xe0, 0xd9, 0xad, 0x3c, 0x8c, 0x71, 0xf8, 0xcf,
+<b><a name="1272"> 1272</a></b>                                0x0a, 0x98, 0xc5, 0x08, 0xdc, 0xc4, 0xca, 0x8c,
+<b><a name="1273"> 1273</a></b>                                0x23, 0x1b, 0x4d, 0x9b, 0xb5, 0x13, 0x44, 0xe1,
+<b><a name="1274"> 1274</a></b>                                0x5f, 0xf9, 0x30, 0x80, 0x25, 0xe0, 0x1e, 0x94,
+<b><a name="1275"> 1275</a></b>                                0xa3, 0x0c, 0xdc, 0x82, 0x2e, 0xfb, 0x30, 0xbe,
+<b><a name="1276"> 1276</a></b>                                0x89, 0xba, 0x76, 0xb6, 0x23, 0xf7, 0xda, 0x7c,
+<b><a name="1277"> 1277</a></b>                                0xca, 0xe6, 0x02, 0xbd, 0x92, 0xce, 0x64, 0xfc};
+<b><a name="1278"> 1278</a></b> 
+<b><a name="1279"> 1279</a></b>     /* RSA Known Signed Hash (1024-bits). */
+<b><a name="1280"> 1280</a></b>     static const PRUint8 rsa_known_sha1_signature[] = {
+<b><a name="1281"> 1281</a></b>                                0xd2, 0xa4, 0xe0, 0x2b, 0xc7, 0x03, 0x7f, 0xc6,
+<b><a name="1282"> 1282</a></b>                                0x06, 0x9e, 0xa2, 0x82, 0x19, 0xe9, 0x2b, 0xaf,
+<b><a name="1283"> 1283</a></b>                                0xe3, 0x48, 0x88, 0xc1, 0xf3, 0xb5, 0x0d, 0xe4,
+<b><a name="1284"> 1284</a></b>                                0x52, 0x9e, 0xad, 0xd5, 0x58, 0xb5, 0x9f, 0xe8,
+<b><a name="1285"> 1285</a></b>                                0x40, 0xe9, 0xb7, 0x2e, 0xc6, 0x71, 0x58, 0x56,
+<b><a name="1286"> 1286</a></b>                                0x04, 0xac, 0xb0, 0xf3, 0x3a, 0x42, 0x38, 0x08,
+<b><a name="1287"> 1287</a></b>                                0xc4, 0x43, 0x39, 0xba, 0x19, 0xce, 0xb1, 0x99,
+<b><a name="1288"> 1288</a></b>                                0xf1, 0x8d, 0x89, 0xd8, 0x50, 0x07, 0x14, 0x3d,
+<b><a name="1289"> 1289</a></b>                                0xcf, 0xd0, 0xb6, 0x79, 0xde, 0x9c, 0x89, 0x32,
+<b><a name="1290"> 1290</a></b>                                0xb0, 0x73, 0x3f, 0xed, 0x03, 0x0b, 0xdf, 0x6d,
+<b><a name="1291"> 1291</a></b>                                0x7e, 0xc9, 0x1c, 0x39, 0xe8, 0x2b, 0x16, 0x09,
+<b><a name="1292"> 1292</a></b>                                0xbb, 0x5f, 0x99, 0x2f, 0xeb, 0xf3, 0x37, 0x73,
+<b><a name="1293"> 1293</a></b>                                0x0d, 0x0e, 0xcc, 0x95, 0xad, 0x90, 0x80, 0x03,
+<b><a name="1294"> 1294</a></b>                                0x1d, 0x80, 0x55, 0x37, 0xa1, 0x2a, 0x71, 0x76,
+<b><a name="1295"> 1295</a></b>                                0x23, 0x87, 0x8c, 0x9b, 0x41, 0x07, 0xc6, 0x3d,
+<b><a name="1296"> 1296</a></b>                                0xc6, 0xa3, 0x7d, 0x1b, 0xff, 0x4e, 0x11, 0x19};
+<b><a name="1297"> 1297</a></b> 
+<b><a name="1298"> 1298</a></b>     /* RSA Known Signed Hash (1024-bits). */
+<b><a name="1299"> 1299</a></b>     static const PRUint8 rsa_known_sha256_signature[] = {
+<b><a name="1300"> 1300</a></b>                                0x27, 0x35, 0xdd, 0xc4, 0xf8, 0xe2, 0x0b, 0xa3,
+<b><a name="1301"> 1301</a></b>                                0xef, 0x63, 0x57, 0x3b, 0xe1, 0x58, 0x9a, 0xbc,
+<b><a name="1302"> 1302</a></b>                                0x20, 0x9c, 0x25, 0x12, 0x01, 0xbf, 0xbb, 0x29,
+<b><a name="1303"> 1303</a></b>                                0x80, 0x1a, 0xb1, 0x37, 0x9c, 0xcd, 0x67, 0xc7,
+<b><a name="1304"> 1304</a></b>                                0x0d, 0xf8, 0x64, 0x10, 0x9f, 0xe2, 0xa1, 0x9b,
+<b><a name="1305"> 1305</a></b>                                0x21, 0x90, 0xcc, 0xda, 0x8b, 0x76, 0x5e, 0x79,
+<b><a name="1306"> 1306</a></b>                                0x00, 0x9d, 0x58, 0x8b, 0x8a, 0xb3, 0xc3, 0xb5,
+<b><a name="1307"> 1307</a></b>                                0xf1, 0x54, 0xc5, 0x8c, 0x72, 0xba, 0xde, 0x51,
+<b><a name="1308"> 1308</a></b>                                0x3c, 0x6b, 0x94, 0xd6, 0xf3, 0x1b, 0xa2, 0x53,
+<b><a name="1309"> 1309</a></b>                                0xe6, 0x1a, 0x46, 0x1d, 0x7f, 0x14, 0x86, 0xcc,
+<b><a name="1310"> 1310</a></b>                                0xa6, 0x30, 0x92, 0x96, 0xc0, 0x96, 0x24, 0xf0,
+<b><a name="1311"> 1311</a></b>                                0x42, 0x53, 0x4c, 0xdd, 0x27, 0xdf, 0x1d, 0x2e,
+<b><a name="1312"> 1312</a></b>                                0x8b, 0x83, 0xbe, 0xed, 0x85, 0x1d, 0x50, 0x46,
+<b><a name="1313"> 1313</a></b>                                0xa3, 0x7d, 0x20, 0xea, 0x3e, 0x91, 0xfb, 0xf6,
+<b><a name="1314"> 1314</a></b>                                0x86, 0x51, 0xfd, 0x8c, 0xe5, 0x31, 0xe6, 0x7e,
+<b><a name="1315"> 1315</a></b>                                0x60, 0x08, 0x0e, 0xec, 0xa6, 0xea, 0x24, 0x8d};
+<b><a name="1316"> 1316</a></b> 
+<b><a name="1317"> 1317</a></b>     /* RSA Known Signed Hash (1024-bits). */
+<b><a name="1318"> 1318</a></b>     static const PRUint8 rsa_known_sha384_signature[] = {
+<b><a name="1319"> 1319</a></b>                                0x0b, 0x03, 0x94, 0x4f, 0x94, 0x78, 0x9b, 0x96,
+<b><a name="1320"> 1320</a></b>                                0x76, 0xeb, 0x72, 0x58, 0xe1, 0xc5, 0xc7, 0x5f,
+<b><a name="1321"> 1321</a></b>                                0x85, 0x01, 0xa8, 0xc4, 0xf6, 0x1a, 0xb5, 0x2c,
+<b><a name="1322"> 1322</a></b>                                0xd1, 0xd8, 0x87, 0xde, 0x3a, 0x9c, 0x9f, 0x57,
+<b><a name="1323"> 1323</a></b>                                0x81, 0x2a, 0x1e, 0x23, 0x07, 0x70, 0xb0, 0xf9,
+<b><a name="1324"> 1324</a></b>                                0x28, 0x3d, 0xfa, 0xe5, 0x2e, 0x1b, 0x9a, 0x72,
+<b><a name="1325"> 1325</a></b>                                0xc3, 0x74, 0xb3, 0x42, 0x1c, 0x9a, 0x13, 0xdc,
+<b><a name="1326"> 1326</a></b>                                0xc9, 0xd6, 0xd5, 0x88, 0xc9, 0x9c, 0x46, 0xf1,
+<b><a name="1327"> 1327</a></b>                                0x0c, 0xa6, 0xf7, 0xd8, 0x06, 0xa3, 0x1b, 0xdf,
+<b><a name="1328"> 1328</a></b>                                0x55, 0xb3, 0x1b, 0x7b, 0x58, 0x1d, 0xff, 0x19,
+<b><a name="1329"> 1329</a></b>                                0xc7, 0xe0, 0xdd, 0x59, 0xac, 0x2f, 0x78, 0x71,
+<b><a name="1330"> 1330</a></b>                                0xe7, 0xe0, 0x17, 0xa3, 0x1c, 0x5c, 0x92, 0xef,
+<b><a name="1331"> 1331</a></b>                                0xb6, 0x75, 0xed, 0xbe, 0x18, 0x39, 0x6b, 0xd7,
+<b><a name="1332"> 1332</a></b>                                0xc9, 0x08, 0x62, 0x55, 0x62, 0xac, 0x5d, 0xa1,
+<b><a name="1333"> 1333</a></b>                                0x9b, 0xd5, 0xb8, 0x98, 0x15, 0xc0, 0xf5, 0x41,
+<b><a name="1334"> 1334</a></b>                                0x85, 0x44, 0x96, 0xca, 0x10, 0xdc, 0x57, 0x21};
+<b><a name="1335"> 1335</a></b> 
+<b><a name="1336"> 1336</a></b>     /* RSA Known Signed Hash (1024-bits). */
+<b><a name="1337"> 1337</a></b>     static const PRUint8 rsa_known_sha512_signature[] = {
+<b><a name="1338"> 1338</a></b>                                0xa5, 0xd0, 0x80, 0x04, 0x22, 0xfc, 0x80, 0x73,
+<b><a name="1339"> 1339</a></b>                                0x7d, 0x46, 0xc8, 0x7b, 0xac, 0x44, 0x7b, 0xe6,
+<b><a name="1340"> 1340</a></b>                                0x07, 0xe5, 0x61, 0x4c, 0x33, 0x7f, 0x6f, 0x46,
+<b><a name="1341"> 1341</a></b>                                0x7c, 0x30, 0xe3, 0x75, 0x59, 0x4b, 0x42, 0xf3,
+<b><a name="1342"> 1342</a></b>                                0x9f, 0x35, 0x3c, 0x10, 0x56, 0xdb, 0xd2, 0x69,
+<b><a name="1343"> 1343</a></b>                                0x43, 0xcb, 0x77, 0xe9, 0x7d, 0xcd, 0x07, 0x43,
+<b><a name="1344"> 1344</a></b>                                0xc5, 0xd4, 0x0c, 0x9d, 0xf5, 0x92, 0xbd, 0x0e,
+<b><a name="1345"> 1345</a></b>                                0x3b, 0xb7, 0x68, 0x88, 0x84, 0xca, 0xae, 0x0d,
+<b><a name="1346"> 1346</a></b>                                0xab, 0x71, 0x10, 0xad, 0xab, 0x27, 0xe4, 0xa3,
+<b><a name="1347"> 1347</a></b>                                0x24, 0x41, 0xeb, 0x1c, 0xa6, 0x5f, 0xf1, 0x85,
+<b><a name="1348"> 1348</a></b>                                0xd0, 0xf6, 0x22, 0x74, 0x3d, 0x81, 0xbe, 0xdd,
+<b><a name="1349"> 1349</a></b>                                0x1b, 0x2a, 0x4c, 0xd1, 0x6c, 0xb5, 0x6d, 0x7a,
+<b><a name="1350"> 1350</a></b>                                0xbb, 0x99, 0x69, 0x01, 0xa6, 0xc0, 0x98, 0xfa,
+<b><a name="1351"> 1351</a></b>                                0x97, 0xa3, 0xd1, 0xb0, 0xdf, 0x09, 0xe3, 0x3d,
+<b><a name="1352"> 1352</a></b>                                0x88, 0xee, 0x90, 0xf3, 0x10, 0x41, 0x0f, 0x06,
+<b><a name="1353"> 1353</a></b>                                0x31, 0xe9, 0x60, 0x2d, 0xbf, 0x63, 0x7b, 0xf8};
+<b><a name="1354"> 1354</a></b> 
+<b><a name="1355"> 1355</a></b>     static const <a href="../freebl/blapit.h.dep.html#RSAPublicKey">RSAPublicKey</a>    bl_public_key = { NULL,
+<b><a name="1356"> 1356</a></b>       { <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_TYPE">FIPS_RSA_TYPE</a>, (unsigned char *)rsa_modulus,         
+<b><a name="1357"> 1357</a></b>                                         <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_MODULUS_LENGTH">FIPS_RSA_MODULUS_LENGTH</a> },
+<b><a name="1358"> 1358</a></b>       { <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_TYPE">FIPS_RSA_TYPE</a>, (unsigned char *)rsa_public_exponent, 
+<b><a name="1359"> 1359</a></b>                                         <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_PUBLIC_EXPONENT_LENGTH">FIPS_RSA_PUBLIC_EXPONENT_LENGTH</a> }
+<b><a name="1360"> 1360</a></b>     };
+<b><a name="1361"> 1361</a></b>     static const <a href="../freebl/blapit.h.dep.html#RSAPrivateKey">RSAPrivateKey</a>   bl_private_key = { NULL,
+<b><a name="1362"> 1362</a></b>       { <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_TYPE">FIPS_RSA_TYPE</a>, (unsigned char *)rsa_version,          
+<b><a name="1363"> 1363</a></b>                                         <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_PRIVATE_VERSION_LENGTH">FIPS_RSA_PRIVATE_VERSION_LENGTH</a> },
+<b><a name="1364"> 1364</a></b>       { <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_TYPE">FIPS_RSA_TYPE</a>, (unsigned char *)rsa_modulus,          
+<b><a name="1365"> 1365</a></b>                                         <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_MODULUS_LENGTH">FIPS_RSA_MODULUS_LENGTH</a> },
+<b><a name="1366"> 1366</a></b>       { <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_TYPE">FIPS_RSA_TYPE</a>, (unsigned char *)rsa_public_exponent,  
+<b><a name="1367"> 1367</a></b>                                         <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_PUBLIC_EXPONENT_LENGTH">FIPS_RSA_PUBLIC_EXPONENT_LENGTH</a> },
+<b><a name="1368"> 1368</a></b>       { <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_TYPE">FIPS_RSA_TYPE</a>, (unsigned char *)rsa_private_exponent, 
+<b><a name="1369"> 1369</a></b>                                         <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_PRIVATE_EXPONENT_LENGTH">FIPS_RSA_PRIVATE_EXPONENT_LENGTH</a> },
+<b><a name="1370"> 1370</a></b>       { <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_TYPE">FIPS_RSA_TYPE</a>, (unsigned char *)rsa_prime0,           
+<b><a name="1371"> 1371</a></b>                                         <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_PRIME0_LENGTH">FIPS_RSA_PRIME0_LENGTH</a> },
+<b><a name="1372"> 1372</a></b>       { <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_TYPE">FIPS_RSA_TYPE</a>, (unsigned char *)rsa_prime1,           
+<b><a name="1373"> 1373</a></b>                                         <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_PRIME1_LENGTH">FIPS_RSA_PRIME1_LENGTH</a> },
+<b><a name="1374"> 1374</a></b>       { <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_TYPE">FIPS_RSA_TYPE</a>, (unsigned char *)rsa_exponent0,        
+<b><a name="1375"> 1375</a></b>                                         <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_EXPONENT0_LENGTH">FIPS_RSA_EXPONENT0_LENGTH</a> },
+<b><a name="1376"> 1376</a></b>       { <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_TYPE">FIPS_RSA_TYPE</a>, (unsigned char *)rsa_exponent1,        
+<b><a name="1377"> 1377</a></b>                                         <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_EXPONENT1_LENGTH">FIPS_RSA_EXPONENT1_LENGTH</a> },
+<b><a name="1378"> 1378</a></b>       { <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_TYPE">FIPS_RSA_TYPE</a>, (unsigned char *)rsa_coefficient,      
+<b><a name="1379"> 1379</a></b>                                         <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_COEFFICIENT_LENGTH">FIPS_RSA_COEFFICIENT_LENGTH</a> }
+<b><a name="1380"> 1380</a></b>     };
+<b><a name="1381"> 1381</a></b> 
+<b><a name="1382"> 1382</a></b>     /* RSA variables. */
+<b><a name="1383"> 1383</a></b> #ifdef CREATE_TEMP_ARENAS
+<b><a name="1384"> 1384</a></b>     PLArenaPool *         rsa_public_arena;
+<b><a name="1385"> 1385</a></b>     PLArenaPool *         rsa_private_arena;
+<b><a name="1386"> 1386</a></b> #endif
+<b><a name="1387"> 1387</a></b>     <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYPublicKey">NSSLOWKEYPublicKey</a> *  rsa_public_key;
+<b><a name="1388"> 1388</a></b>     <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYPrivateKey">NSSLOWKEYPrivateKey</a> * rsa_private_key;
+<b><a name="1389"> 1389</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>             rsa_status;
+<b><a name="1390"> 1390</a></b> 
+<b><a name="1391"> 1391</a></b>     <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYPublicKey">NSSLOWKEYPublicKey</a>    low_public_key   = { NULL, NSSLOWKEYRSAKey, };
+<b><a name="1392"> 1392</a></b>     <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYPrivateKey">NSSLOWKEYPrivateKey</a>   low_private_key  = { NULL, NSSLOWKEYRSAKey, };
+<b><a name="1393"> 1393</a></b>     PRUint8               rsa_computed_ciphertext[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_ENCRYPT_LENGTH">FIPS_RSA_ENCRYPT_LENGTH</a>];
+<b><a name="1394"> 1394</a></b>     PRUint8               rsa_computed_plaintext[<a href="../softoken/fipstest.c.dep.html#FIPS_RSA_DECRYPT_LENGTH">FIPS_RSA_DECRYPT_LENGTH</a>];
+<b><a name="1395"> 1395</a></b> 
+<b><a name="1396"> 1396</a></b>     /****************************************/
+<b><a name="1397"> 1397</a></b>     /* Compose RSA Public/Private Key Pair. */
+<b><a name="1398"> 1398</a></b>     /****************************************/
+<b><a name="1399"> 1399</a></b> 
+<b><a name="1400"> 1400</a></b>     low_public_key.u.rsa  = bl_public_key;
+<b><a name="1401"> 1401</a></b>     low_private_key.u.rsa = bl_private_key;
+<b><a name="1402"> 1402</a></b> 
+<b><a name="1403"> 1403</a></b>     rsa_public_key  = &amp;low_public_key;
+<b><a name="1404"> 1404</a></b>     rsa_private_key = &amp;low_private_key;
+<b><a name="1405"> 1405</a></b> 
+<b><a name="1406"> 1406</a></b> #ifdef CREATE_TEMP_ARENAS
+<b><a name="1407"> 1407</a></b>     /* Create some space for the RSA public key. */
+<b><a name="1408"> 1408</a></b>     rsa_public_arena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>( <a href="../softoken/softoknt.h.dep.html#NSS_SOFTOKEN_DEFAULT_CHUNKSIZE">NSS_SOFTOKEN_DEFAULT_CHUNKSIZE</a> );
+<b><a name="1409"> 1409</a></b> 
+<b><a name="1410"> 1410</a></b>     if( rsa_public_arena == NULL ) {
+<b><a name="1411"> 1411</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>( SEC_ERROR_NO_MEMORY );
+<b><a name="1412"> 1412</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="1413"> 1413</a></b>     }
+<b><a name="1414"> 1414</a></b> 
+<b><a name="1415"> 1415</a></b>     /* Create some space for the RSA private key. */
+<b><a name="1416"> 1416</a></b>     rsa_private_arena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>( <a href="../softoken/softoknt.h.dep.html#NSS_SOFTOKEN_DEFAULT_CHUNKSIZE">NSS_SOFTOKEN_DEFAULT_CHUNKSIZE</a> );
+<b><a name="1417"> 1417</a></b> 
+<b><a name="1418"> 1418</a></b>     if( rsa_private_arena == NULL ) {
+<b><a name="1419"> 1419</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>( rsa_public_arena, PR_TRUE );
+<b><a name="1420"> 1420</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>( SEC_ERROR_NO_MEMORY );
+<b><a name="1421"> 1421</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="1422"> 1422</a></b>     }
+<b><a name="1423"> 1423</a></b> 
+<b><a name="1424"> 1424</a></b>     rsa_public_key-&gt;arena = rsa_public_arena;
+<b><a name="1425"> 1425</a></b>     rsa_private_key-&gt;arena = rsa_private_arena;
+<b><a name="1426"> 1426</a></b> #endif
+<b><a name="1427"> 1427</a></b> 
+<b><a name="1428"> 1428</a></b>     /**************************************************/
+<b><a name="1429"> 1429</a></b>     /* RSA Single-Round Known Answer Encryption Test. */
+<b><a name="1430"> 1430</a></b>     /**************************************************/
+<b><a name="1431"> 1431</a></b> 
+<b><a name="1432"> 1432</a></b>     /* Perform RSA Public Key Encryption. */
+<b><a name="1433"> 1433</a></b>     rsa_status = <a href="../freebl/rsa.c.dep.html#RSA_PublicKeyOp">RSA_PublicKeyOp</a>(&amp;rsa_public_key-&gt;u.rsa,
+<b><a name="1434"> 1434</a></b>                                  rsa_computed_ciphertext,
+<b><a name="1435"> 1435</a></b>                                  rsa_known_plaintext_msg);
+<b><a name="1436"> 1436</a></b> 
+<b><a name="1437"> 1437</a></b>     if( ( rsa_status != SECSuccess ) ||
+<b><a name="1438"> 1438</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( rsa_computed_ciphertext, rsa_known_ciphertext,
+<b><a name="1439"> 1439</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_ENCRYPT_LENGTH">FIPS_RSA_ENCRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="1440"> 1440</a></b>         goto rsa_loser;
+<b><a name="1441"> 1441</a></b> 
+<b><a name="1442"> 1442</a></b>     /**************************************************/
+<b><a name="1443"> 1443</a></b>     /* RSA Single-Round Known Answer Decryption Test. */
+<b><a name="1444"> 1444</a></b>     /**************************************************/
+<b><a name="1445"> 1445</a></b> 
+<b><a name="1446"> 1446</a></b>     /* Perform RSA Private Key Decryption. */
+<b><a name="1447"> 1447</a></b>     rsa_status = <a href="../freebl/rsa.c.dep.html#RSA_PrivateKeyOp">RSA_PrivateKeyOp</a>(&amp;rsa_private_key-&gt;u.rsa,
+<b><a name="1448"> 1448</a></b>                                   rsa_computed_plaintext,
+<b><a name="1449"> 1449</a></b>                                   rsa_known_ciphertext);
+<b><a name="1450"> 1450</a></b> 
+<b><a name="1451"> 1451</a></b>     if( ( rsa_status != SECSuccess ) ||
+<b><a name="1452"> 1452</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( rsa_computed_plaintext, rsa_known_plaintext_msg,
+<b><a name="1453"> 1453</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_DECRYPT_LENGTH">FIPS_RSA_DECRYPT_LENGTH</a> ) != 0 ) )
+<b><a name="1454"> 1454</a></b>         goto rsa_loser;
+<b><a name="1455"> 1455</a></b> 
+<b><a name="1456"> 1456</a></b>     rsa_status = <a href="../softoken/fipstest.c.dep.html#sftk_fips_RSA_PowerUpSigSelfTest">sftk_fips_RSA_PowerUpSigSelfTest</a> (HASH_AlgSHA1,
+<b><a name="1457"> 1457</a></b>                            rsa_public_key, rsa_private_key,
+<b><a name="1458"> 1458</a></b>                            rsa_known_plaintext_msg, <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_MESSAGE_LENGTH">FIPS_RSA_MESSAGE_LENGTH</a>, 
+<b><a name="1459"> 1459</a></b>                            rsa_known_sha1_signature);
+<b><a name="1460"> 1460</a></b>     if( rsa_status != SECSuccess )
+<b><a name="1461"> 1461</a></b>         goto rsa_loser;
+<b><a name="1462"> 1462</a></b> 
+<b><a name="1463"> 1463</a></b>     rsa_status = <a href="../softoken/fipstest.c.dep.html#sftk_fips_RSA_PowerUpSigSelfTest">sftk_fips_RSA_PowerUpSigSelfTest</a> (HASH_AlgSHA256,
+<b><a name="1464"> 1464</a></b>                            rsa_public_key, rsa_private_key,
+<b><a name="1465"> 1465</a></b>                            rsa_known_plaintext_msg, <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_MESSAGE_LENGTH">FIPS_RSA_MESSAGE_LENGTH</a>,
+<b><a name="1466"> 1466</a></b>                            rsa_known_sha256_signature);
+<b><a name="1467"> 1467</a></b>     if( rsa_status != SECSuccess )
+<b><a name="1468"> 1468</a></b>         goto rsa_loser;
+<b><a name="1469"> 1469</a></b> 
+<b><a name="1470"> 1470</a></b>     rsa_status = <a href="../softoken/fipstest.c.dep.html#sftk_fips_RSA_PowerUpSigSelfTest">sftk_fips_RSA_PowerUpSigSelfTest</a> (HASH_AlgSHA384,
+<b><a name="1471"> 1471</a></b>                            rsa_public_key, rsa_private_key,
+<b><a name="1472"> 1472</a></b>                            rsa_known_plaintext_msg, <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_MESSAGE_LENGTH">FIPS_RSA_MESSAGE_LENGTH</a>,
+<b><a name="1473"> 1473</a></b>                            rsa_known_sha384_signature);
+<b><a name="1474"> 1474</a></b>     if( rsa_status != SECSuccess )
+<b><a name="1475"> 1475</a></b>         goto rsa_loser;
+<b><a name="1476"> 1476</a></b> 
+<b><a name="1477"> 1477</a></b>     rsa_status = <a href="../softoken/fipstest.c.dep.html#sftk_fips_RSA_PowerUpSigSelfTest">sftk_fips_RSA_PowerUpSigSelfTest</a> (HASH_AlgSHA512,
+<b><a name="1478"> 1478</a></b>                            rsa_public_key, rsa_private_key,
+<b><a name="1479"> 1479</a></b>                            rsa_known_plaintext_msg, <a href="../softoken/fipstest.c.dep.html#FIPS_RSA_MESSAGE_LENGTH">FIPS_RSA_MESSAGE_LENGTH</a>,
+<b><a name="1480"> 1480</a></b>                            rsa_known_sha512_signature);
+<b><a name="1481"> 1481</a></b>     if( rsa_status != SECSuccess )
+<b><a name="1482"> 1482</a></b>         goto rsa_loser;
+<b><a name="1483"> 1483</a></b> 
+<b><a name="1484"> 1484</a></b>     /* Dispose of all RSA key material. */
+<b><a name="1485"> 1485</a></b>     <a href="../softoken/lowkey.c.dep.html#nsslowkey_DestroyPublicKey">nsslowkey_DestroyPublicKey</a>( rsa_public_key );
+<b><a name="1486"> 1486</a></b>     <a href="../softoken/lowkey.c.dep.html#nsslowkey_DestroyPrivateKey">nsslowkey_DestroyPrivateKey</a>( rsa_private_key );
+<b><a name="1487"> 1487</a></b> 
+<b><a name="1488"> 1488</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="1489"> 1489</a></b> 
+<b><a name="1490"> 1490</a></b> rsa_loser:
+<b><a name="1491"> 1491</a></b> 
+<b><a name="1492"> 1492</a></b>     <a href="../softoken/lowkey.c.dep.html#nsslowkey_DestroyPublicKey">nsslowkey_DestroyPublicKey</a>( rsa_public_key );
+<b><a name="1493"> 1493</a></b>     <a href="../softoken/lowkey.c.dep.html#nsslowkey_DestroyPrivateKey">nsslowkey_DestroyPrivateKey</a>( rsa_private_key );
+<b><a name="1494"> 1494</a></b> 
+<b><a name="1495"> 1495</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="1496"> 1496</a></b> }
+<b><a name="1497"> 1497</a></b> 
+<b><a name="1498"> 1498</a></b> #ifdef NSS_ENABLE_ECC
+<b><a name="1499"> 1499</a></b> 
+<b><a name="1500"> 1500</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="1501"> 1501</a></b> <a href="#1501">sftk_fips_ECDSA_Test</a>(const PRUint8 *encodedParams, 
+<b><a name="1502"> 1502</a></b>                      unsigned int encodedParamsLen,
+<b><a name="1503"> 1503</a></b>                      const PRUint8 *knownSignature, 
+<b><a name="1504"> 1504</a></b>                      unsigned int knownSignatureLen) {
+<b><a name="1505"> 1505</a></b> 
+<b><a name="1506"> 1506</a></b>     /* ECDSA Known Seed info for curves nistp256 and nistk283  */
+<b><a name="1507"> 1507</a></b>     static const PRUint8 ecdsa_Known_Seed[] = {
+<b><a name="1508"> 1508</a></b>                             0x6a, 0x9b, 0xf6, 0xf7, 0xce, 0xed, 0x79, 0x11,
+<b><a name="1509"> 1509</a></b>                             0xf0, 0xc7, 0xc8, 0x9a, 0xa5, 0xd1, 0x57, 0xb1,
+<b><a name="1510"> 1510</a></b>                             0x7b, 0x5a, 0x3b, 0x76, 0x4e, 0x7b, 0x7c, 0xbc,
+<b><a name="1511"> 1511</a></b>                             0xf2, 0x76, 0x1c, 0x1c, 0x7f, 0xc5, 0x53, 0x2f};
+<b><a name="1512"> 1512</a></b> 
+<b><a name="1513"> 1513</a></b>     static const PRUint8 msg[] = {
+<b><a name="1514"> 1514</a></b>                             "Firefox and ThunderBird are awesome!"};
+<b><a name="1515"> 1515</a></b> 
+<b><a name="1516"> 1516</a></b>     unsigned char <a href="../util/secoid.c.dep.html#sha1">sha1</a>[<a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>];  /* SHA-1 hash (160 bits) */
+<b><a name="1517"> 1517</a></b>     unsigned char sig[2*<a href="../freebl/blapit.h.dep.html#MAX_ECKEY_LEN">MAX_ECKEY_LEN</a>];
+<b><a name="1518"> 1518</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> signature, digest;
+<b><a name="1519"> 1519</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> encodedparams;
+<b><a name="1520"> 1520</a></b>     <a href="../freebl/blapit.h.dep.html#ECParams">ECParams</a> *ecparams = NULL;
+<b><a name="1521"> 1521</a></b>     <a href="../freebl/blapit.h.dep.html#ECPrivateKey">ECPrivateKey</a> *ecdsa_private_key = NULL;
+<b><a name="1522"> 1522</a></b>     <a href="../freebl/blapit.h.dep.html#ECPublicKey">ECPublicKey</a> ecdsa_public_key;
+<b><a name="1523"> 1523</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> ecdsaStatus = SECSuccess;
+<b><a name="1524"> 1524</a></b> 
+<b><a name="1525"> 1525</a></b>     /* construct the ECDSA private/public key pair */
+<b><a name="1526"> 1526</a></b>     encodedparams.type = siBuffer;
+<b><a name="1527"> 1527</a></b>     encodedparams.data = (unsigned char *) encodedParams;
+<b><a name="1528"> 1528</a></b>     encodedparams.len = encodedParamsLen;
+<b><a name="1529"> 1529</a></b>     
+<b><a name="1530"> 1530</a></b>     if (<a href="../softoken/ecdecode.c.dep.html#EC_DecodeParams">EC_DecodeParams</a>(&amp;encodedparams, &amp;ecparams) != SECSuccess) {
+<b><a name="1531"> 1531</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="1532"> 1532</a></b>     }
+<b><a name="1533"> 1533</a></b> 
+<b><a name="1534"> 1534</a></b>     /* Generates a new EC key pair. The private key is a supplied
+<b><a name="1535"> 1535</a></b>      * random value (in seed) and the public key is the result of 
+<b><a name="1536"> 1536</a></b>      * performing a scalar point multiplication of that value with 
+<b><a name="1537"> 1537</a></b>      * the curve's base point.
+<b><a name="1538"> 1538</a></b>      */
+<b><a name="1539"> 1539</a></b>     ecdsaStatus = <a href="../freebl/ec.c.dep.html#EC_NewKeyFromSeed">EC_NewKeyFromSeed</a>(ecparams, &amp;ecdsa_private_key, 
+<b><a name="1540"> 1540</a></b>                                    ecdsa_Known_Seed, 
+<b><a name="1541"> 1541</a></b>                                    sizeof(ecdsa_Known_Seed));
+<b><a name="1542"> 1542</a></b>     /* free the ecparams they are no longer needed */
+<b><a name="1543"> 1543</a></b>     <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(ecparams-&gt;arena, PR_FALSE);
+<b><a name="1544"> 1544</a></b>     ecparams = NULL;
+<b><a name="1545"> 1545</a></b>     if (ecdsaStatus != SECSuccess) {
+<b><a name="1546"> 1546</a></b>         return ( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );    
+<b><a name="1547"> 1547</a></b>     }
+<b><a name="1548"> 1548</a></b> 
+<b><a name="1549"> 1549</a></b>     /* construct public key from private key. */
+<b><a name="1550"> 1550</a></b>     ecdsaStatus = <a href="../softoken/ecdecode.c.dep.html#EC_CopyParams">EC_CopyParams</a>(ecdsa_private_key-&gt;ecParams.arena, 
+<b><a name="1551"> 1551</a></b>                                 &amp;ecdsa_public_key.ecParams,
+<b><a name="1552"> 1552</a></b>                                 &amp;ecdsa_private_key-&gt;ecParams);
+<b><a name="1553"> 1553</a></b>     if (ecdsaStatus != SECSuccess) {
+<b><a name="1554"> 1554</a></b>         goto loser;
+<b><a name="1555"> 1555</a></b>     }
+<b><a name="1556"> 1556</a></b>     ecdsa_public_key.publicValue = ecdsa_private_key-&gt;publicValue;
+<b><a name="1557"> 1557</a></b> 
+<b><a name="1558"> 1558</a></b>     /* validate public key value */
+<b><a name="1559"> 1559</a></b>     ecdsaStatus = <a href="../freebl/ec.c.dep.html#EC_ValidatePublicKey">EC_ValidatePublicKey</a>(&amp;ecdsa_public_key.ecParams, 
+<b><a name="1560"> 1560</a></b>                                        &amp;ecdsa_public_key.publicValue);
+<b><a name="1561"> 1561</a></b>     if (ecdsaStatus != SECSuccess) {
+<b><a name="1562"> 1562</a></b>         goto loser;
+<b><a name="1563"> 1563</a></b>     }
+<b><a name="1564"> 1564</a></b> 
+<b><a name="1565"> 1565</a></b>     /* validate public key value */
+<b><a name="1566"> 1566</a></b>     ecdsaStatus = <a href="../freebl/ec.c.dep.html#EC_ValidatePublicKey">EC_ValidatePublicKey</a>(&amp;ecdsa_private_key-&gt;ecParams, 
+<b><a name="1567"> 1567</a></b>                                        &amp;ecdsa_private_key-&gt;publicValue);
+<b><a name="1568"> 1568</a></b>     if (ecdsaStatus != SECSuccess) {
+<b><a name="1569"> 1569</a></b>         goto loser;
+<b><a name="1570"> 1570</a></b>     }
+<b><a name="1571"> 1571</a></b> 
+<b><a name="1572"> 1572</a></b>     /***************************************************/
+<b><a name="1573"> 1573</a></b>     /* ECDSA Single-Round Known Answer Signature Test. */
+<b><a name="1574"> 1574</a></b>     /***************************************************/
+<b><a name="1575"> 1575</a></b>     
+<b><a name="1576"> 1576</a></b>     ecdsaStatus = <a href="../freebl/sha_fast.c.dep.html#SHA1_HashBuf">SHA1_HashBuf</a>(<a href="../util/secoid.c.dep.html#sha1">sha1</a>, msg, sizeof msg);
+<b><a name="1577"> 1577</a></b>     if (ecdsaStatus != SECSuccess) {
+<b><a name="1578"> 1578</a></b>         goto loser;
+<b><a name="1579"> 1579</a></b>     }
+<b><a name="1580"> 1580</a></b>     digest.type = siBuffer;
+<b><a name="1581"> 1581</a></b>     digest.data = <a href="../util/secoid.c.dep.html#sha1">sha1</a>;
+<b><a name="1582"> 1582</a></b>     digest.len = <a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>;
+<b><a name="1583"> 1583</a></b>     
+<b><a name="1584"> 1584</a></b>     memset(sig, 0, sizeof sig);
+<b><a name="1585"> 1585</a></b>     signature.type = siBuffer;
+<b><a name="1586"> 1586</a></b>     signature.data = sig;
+<b><a name="1587"> 1587</a></b>     signature.len = sizeof sig;
+<b><a name="1588"> 1588</a></b>     
+<b><a name="1589"> 1589</a></b>     ecdsaStatus = <a href="../freebl/ec.c.dep.html#ECDSA_SignDigestWithSeed">ECDSA_SignDigestWithSeed</a>(ecdsa_private_key, &amp;signature, 
+<b><a name="1590"> 1590</a></b>                          &amp;digest, ecdsa_Known_Seed, sizeof ecdsa_Known_Seed);
+<b><a name="1591"> 1591</a></b>     if (ecdsaStatus != SECSuccess) {
+<b><a name="1592"> 1592</a></b>         goto loser;
+<b><a name="1593"> 1593</a></b>     }
+<b><a name="1594"> 1594</a></b> 
+<b><a name="1595"> 1595</a></b>     if( ( signature.len != knownSignatureLen ) ||
+<b><a name="1596"> 1596</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( signature.data, knownSignature,
+<b><a name="1597"> 1597</a></b>                     knownSignatureLen ) != 0 ) ) {
+<b><a name="1598"> 1598</a></b>         ecdsaStatus = SECFailure;
+<b><a name="1599"> 1599</a></b>         goto loser;
+<b><a name="1600"> 1600</a></b>     }
+<b><a name="1601"> 1601</a></b>     
+<b><a name="1602"> 1602</a></b>     /******************************************************/
+<b><a name="1603"> 1603</a></b>     /* ECDSA Single-Round Known Answer Verification Test. */
+<b><a name="1604"> 1604</a></b>     /******************************************************/
+<b><a name="1605"> 1605</a></b> 
+<b><a name="1606"> 1606</a></b>     /* Perform ECDSA verification process. */
+<b><a name="1607"> 1607</a></b>     ecdsaStatus = <a href="../freebl/ec.c.dep.html#ECDSA_VerifyDigest">ECDSA_VerifyDigest</a>(&amp;ecdsa_public_key, &amp;signature, &amp;digest);
+<b><a name="1608"> 1608</a></b> 
+<b><a name="1609"> 1609</a></b> loser:
+<b><a name="1610"> 1610</a></b>     /* free the memory for the private key arena*/
+<b><a name="1611"> 1611</a></b>     if (ecdsa_private_key != NULL) {
+<b><a name="1612"> 1612</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(ecdsa_private_key-&gt;ecParams.arena, PR_FALSE);
+<b><a name="1613"> 1613</a></b>     }
+<b><a name="1614"> 1614</a></b> 
+<b><a name="1615"> 1615</a></b>     if (ecdsaStatus != SECSuccess) {
+<b><a name="1616"> 1616</a></b>         return <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> ;
+<b><a name="1617"> 1617</a></b>     }
+<b><a name="1618"> 1618</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="1619"> 1619</a></b> }
+<b><a name="1620"> 1620</a></b> 
+<b><a name="1621"> 1621</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="1622"> 1622</a></b> <a href="#1622">sftk_fips_ECDSA_PowerUpSelfTest</a>() {
+<b><a name="1623"> 1623</a></b> 
+<b><a name="1624"> 1624</a></b>    /* ECDSA Known curve nistp256 == SEC_OID_SECG_EC_SECP256R1 params */
+<b><a name="1625"> 1625</a></b>     static const PRUint8 ecdsa_known_P256_EncodedParams[] = {
+<b><a name="1626"> 1626</a></b>                             0x06,0x08,0x2a,0x86,0x48,0xce,0x3d,0x03,
+<b><a name="1627"> 1627</a></b>                             0x01,0x07};
+<b><a name="1628"> 1628</a></b> 
+<b><a name="1629"> 1629</a></b>     static const PRUint8 ecdsa_known_P256_signature[] = {
+<b><a name="1630"> 1630</a></b>                             0x07,0xb1,0xcb,0x57,0x20,0xa7,0x10,0xd6, 
+<b><a name="1631"> 1631</a></b>                             0x9d,0x37,0x4b,0x1c,0xdc,0x35,0x90,0xff, 
+<b><a name="1632"> 1632</a></b>                             0x1a,0x2d,0x98,0x95,0x1b,0x2f,0xeb,0x7f, 
+<b><a name="1633"> 1633</a></b>                             0xbb,0x81,0xca,0xc0,0x69,0x75,0xea,0xc5,
+<b><a name="1634"> 1634</a></b>                             0x59,0x6a,0x62,0x49,0x3d,0x50,0xc9,0xe1, 
+<b><a name="1635"> 1635</a></b>                             0x27,0x3b,0xff,0x9b,0x13,0x66,0x67,0xdd, 
+<b><a name="1636"> 1636</a></b>                             0x7d,0xd1,0x0d,0x2d,0x7c,0x44,0x04,0x1b, 
+<b><a name="1637"> 1637</a></b>                             0x16,0x21,0x12,0xc5,0xcb,0xbd,0x9e,0x75};
+<b><a name="1638"> 1638</a></b> 
+<b><a name="1639"> 1639</a></b> #ifdef NSS_ECC_MORE_THAN_SUITE_B
+<b><a name="1640"> 1640</a></b>     /* ECDSA Known curve nistk283 == SEC_OID_SECG_EC_SECT283K1 params */
+<b><a name="1641"> 1641</a></b>     static const PRUint8 ecdsa_known_K283_EncodedParams[] = {
+<b><a name="1642"> 1642</a></b>                             0x06,0x05,0x2b,0x81,0x04,0x00,0x10};
+<b><a name="1643"> 1643</a></b>                          
+<b><a name="1644"> 1644</a></b>     static const PRUint8 ecdsa_known_K283_signature[] = {
+<b><a name="1645"> 1645</a></b>                             0x00,0x45,0x88,0xc0,0x79,0x09,0x07,0xd1, 
+<b><a name="1646"> 1646</a></b>                             0x4e,0x88,0xe6,0xd5,0x2f,0x22,0x04,0x74, 
+<b><a name="1647"> 1647</a></b>                             0x35,0x24,0x65,0xe8,0x15,0xde,0x90,0x66, 
+<b><a name="1648"> 1648</a></b>                             0x94,0x70,0xdd,0x3a,0x14,0x70,0x02,0xd1,
+<b><a name="1649"> 1649</a></b>                             0xef,0x86,0xbd,0x15,0x00,0xd9,0xdc,0xfc, 
+<b><a name="1650"> 1650</a></b>                             0x87,0x2e,0x7c,0x99,0xe2,0xe3,0x79,0xb8, 
+<b><a name="1651"> 1651</a></b>                             0xd9,0x10,0x49,0x78,0x4b,0x59,0x8b,0x05, 
+<b><a name="1652"> 1652</a></b>                             0x77,0xec,0x6c,0xe8,0x35,0xe6,0x2e,0xa9,
+<b><a name="1653"> 1653</a></b>                             0xf9,0x77,0x1f,0x71,0x86,0xa5,0x4a,0xd0};
+<b><a name="1654"> 1654</a></b> #endif
+<b><a name="1655"> 1655</a></b> 
+<b><a name="1656"> 1656</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="1657"> 1657</a></b> 
+<b><a name="1658"> 1658</a></b>     /* ECDSA GF(p) prime field curve test */
+<b><a name="1659"> 1659</a></b>     crv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_ECDSA_Test">sftk_fips_ECDSA_Test</a>(ecdsa_known_P256_EncodedParams,
+<b><a name="1660"> 1660</a></b>                                sizeof ecdsa_known_P256_EncodedParams,
+<b><a name="1661"> 1661</a></b>                                ecdsa_known_P256_signature,
+<b><a name="1662"> 1662</a></b>                                sizeof ecdsa_known_P256_signature );
+<b><a name="1663"> 1663</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="1664"> 1664</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="1665"> 1665</a></b>     }
+<b><a name="1666"> 1666</a></b> 
+<b><a name="1667"> 1667</a></b> #ifdef NSS_ECC_MORE_THAN_SUITE_B
+<b><a name="1668"> 1668</a></b>     /* ECDSA GF(2m) binary field curve test */
+<b><a name="1669"> 1669</a></b>     crv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_ECDSA_Test">sftk_fips_ECDSA_Test</a>(ecdsa_known_K283_EncodedParams,
+<b><a name="1670"> 1670</a></b>                                sizeof ecdsa_known_K283_EncodedParams,
+<b><a name="1671"> 1671</a></b>                                ecdsa_known_K283_signature,
+<b><a name="1672"> 1672</a></b>                                sizeof ecdsa_known_K283_signature );
+<b><a name="1673"> 1673</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="1674"> 1674</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="1675"> 1675</a></b>     }
+<b><a name="1676"> 1676</a></b> #endif
+<b><a name="1677"> 1677</a></b> 
+<b><a name="1678"> 1678</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="1679"> 1679</a></b> }
+<b><a name="1680"> 1680</a></b> 
+<b><a name="1681"> 1681</a></b> #endif    /* NSS_ENABLE_ECC */
+<b><a name="1682"> 1682</a></b> 
+<b><a name="1683"> 1683</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="1684"> 1684</a></b> <a href="#1684">sftk_fips_DSA_PowerUpSelfTest</a>( void )
+<b><a name="1685"> 1685</a></b> {
+<b><a name="1686"> 1686</a></b>     /* DSA Known P (1024-bits), Q (160-bits), and G (1024-bits) Values. */
+<b><a name="1687"> 1687</a></b>     static const PRUint8 dsa_P[] = {
+<b><a name="1688"> 1688</a></b>          0x80,0xb0,0xd1,0x9d,0x6e,0xa4,0xf3,0x28, 
+<b><a name="1689"> 1689</a></b>          0x9f,0x24,0xa9,0x8a,0x49,0xd0,0x0c,0x63, 
+<b><a name="1690"> 1690</a></b>          0xe8,0x59,0x04,0xf9,0x89,0x4a,0x5e,0xc0, 
+<b><a name="1691"> 1691</a></b>          0x6d,0xd2,0x67,0x6b,0x37,0x81,0x83,0x0c,
+<b><a name="1692"> 1692</a></b>          0xfe,0x3a,0x8a,0xfd,0xa0,0x3b,0x08,0x91, 
+<b><a name="1693"> 1693</a></b>          0x1c,0xcb,0xb5,0x63,0xb0,0x1c,0x70,0xd0, 
+<b><a name="1694"> 1694</a></b>          0xae,0xe1,0x60,0x2e,0x12,0xeb,0x54,0xc7, 
+<b><a name="1695"> 1695</a></b>          0xcf,0xc6,0xcc,0xae,0x97,0x52,0x32,0x63,
+<b><a name="1696"> 1696</a></b>          0xd3,0xeb,0x55,0xea,0x2f,0x4c,0xd5,0xd7, 
+<b><a name="1697"> 1697</a></b>          0x3f,0xda,0xec,0x49,0x27,0x0b,0x14,0x56, 
+<b><a name="1698"> 1698</a></b>          0xc5,0x09,0xbe,0x4d,0x09,0x15,0x75,0x2b, 
+<b><a name="1699"> 1699</a></b>          0xa3,0x42,0x0d,0x03,0x71,0xdf,0x0f,0xf4,
+<b><a name="1700"> 1700</a></b>          0x0e,0xe9,0x0c,0x46,0x93,0x3d,0x3f,0xa6, 
+<b><a name="1701"> 1701</a></b>          0x6c,0xdb,0xca,0xe5,0xac,0x96,0xc8,0x64, 
+<b><a name="1702"> 1702</a></b>          0x5c,0xec,0x4b,0x35,0x65,0xfc,0xfb,0x5a, 
+<b><a name="1703"> 1703</a></b>          0x1b,0x04,0x1b,0xa1,0x0e,0xfd,0x88,0x15};
+<b><a name="1704"> 1704</a></b>         
+<b><a name="1705"> 1705</a></b>     static const PRUint8 dsa_Q[] = {
+<b><a name="1706"> 1706</a></b>          0xad,0x22,0x59,0xdf,0xe5,0xec,0x4c,0x6e, 
+<b><a name="1707"> 1707</a></b>          0xf9,0x43,0xf0,0x4b,0x2d,0x50,0x51,0xc6, 
+<b><a name="1708"> 1708</a></b>          0x91,0x99,0x8b,0xcf};
+<b><a name="1709"> 1709</a></b>         
+<b><a name="1710"> 1710</a></b>     static const PRUint8 dsa_G[] = {
+<b><a name="1711"> 1711</a></b>          0x78,0x6e,0xa9,0xd8,0xcd,0x4a,0x85,0xa4, 
+<b><a name="1712"> 1712</a></b>          0x45,0xb6,0x6e,0x5d,0x21,0x50,0x61,0xf6, 
+<b><a name="1713"> 1713</a></b>          0x5f,0xdf,0x5c,0x7a,0xde,0x0d,0x19,0xd3, 
+<b><a name="1714"> 1714</a></b>          0xc1,0x3b,0x14,0xcc,0x8e,0xed,0xdb,0x17,
+<b><a name="1715"> 1715</a></b>          0xb6,0xca,0xba,0x86,0xa9,0xea,0x51,0x2d, 
+<b><a name="1716"> 1716</a></b>          0xc1,0xa9,0x16,0xda,0xf8,0x7b,0x59,0x8a, 
+<b><a name="1717"> 1717</a></b>          0xdf,0xcb,0xa4,0x67,0x00,0x44,0xea,0x24, 
+<b><a name="1718"> 1718</a></b>          0x73,0xe5,0xcb,0x4b,0xaf,0x2a,0x31,0x25,
+<b><a name="1719"> 1719</a></b>          0x22,0x28,0x3f,0x16,0x10,0x82,0xf7,0xeb, 
+<b><a name="1720"> 1720</a></b>          0x94,0x0d,0xdd,0x09,0x22,0x14,0x08,0x79, 
+<b><a name="1721"> 1721</a></b>          0xba,0x11,0x0b,0xf1,0xff,0x2d,0x67,0xac, 
+<b><a name="1722"> 1722</a></b>          0xeb,0xb6,0x55,0x51,0x69,0x97,0xa7,0x25,
+<b><a name="1723"> 1723</a></b>          0x6b,0x9c,0xa0,0x9b,0xd5,0x08,0x9b,0x27, 
+<b><a name="1724"> 1724</a></b>          0x42,0x1c,0x7a,0x69,0x57,0xe6,0x2e,0xed, 
+<b><a name="1725"> 1725</a></b>          0xa9,0x5b,0x25,0xe8,0x1f,0xd2,0xed,0x1f, 
+<b><a name="1726"> 1726</a></b>          0xdf,0xe7,0x80,0x17,0xba,0x0d,0x4d,0x38};
+<b><a name="1727"> 1727</a></b> 
+<b><a name="1728"> 1728</a></b>     /* DSA Known Random Values (known random key block       is 160-bits)  */
+<b><a name="1729"> 1729</a></b>     /*                     and (known random signature block is 160-bits). */
+<b><a name="1730"> 1730</a></b>     static const PRUint8 dsa_known_random_key_block[] = {
+<b><a name="1731"> 1731</a></b>                                                       "Mozilla Rules World!"};
+<b><a name="1732"> 1732</a></b>     static const PRUint8 dsa_known_random_signature_block[] = {
+<b><a name="1733"> 1733</a></b>                                                       "Random DSA Signature"};
+<b><a name="1734"> 1734</a></b> 
+<b><a name="1735"> 1735</a></b>     /* DSA Known Digest (160-bits) */
+<b><a name="1736"> 1736</a></b>     static const PRUint8 dsa_known_digest[] = { "DSA Signature Digest" };
+<b><a name="1737"> 1737</a></b> 
+<b><a name="1738"> 1738</a></b>     /* DSA Known Signature (320-bits). */
+<b><a name="1739"> 1739</a></b>     static const PRUint8 dsa_known_signature[] = {
+<b><a name="1740"> 1740</a></b>         0x25,0x7c,0x3a,0x79,0x32,0x45,0xb7,0x32, 
+<b><a name="1741"> 1741</a></b>         0x70,0xca,0x62,0x63,0x2b,0xf6,0x29,0x2c, 
+<b><a name="1742"> 1742</a></b>         0x22,0x2a,0x03,0xce,0x48,0x15,0x11,0x72, 
+<b><a name="1743"> 1743</a></b>         0x7b,0x7e,0xf5,0x7a,0xf3,0x10,0x3b,0xde,
+<b><a name="1744"> 1744</a></b>         0x34,0xc1,0x9e,0xd7,0x27,0x9e,0x77,0x38};
+<b><a name="1745"> 1745</a></b> 
+<b><a name="1746"> 1746</a></b>     /* DSA variables. */
+<b><a name="1747"> 1747</a></b>     <a href="../freebl/blapit.h.dep.html#DSAPrivateKey">DSAPrivateKey</a> *        dsa_private_key;
+<b><a name="1748"> 1748</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>              dsa_status;
+<b><a name="1749"> 1749</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>                dsa_signature_item;
+<b><a name="1750"> 1750</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>                dsa_digest_item;
+<b><a name="1751"> 1751</a></b>     <a href="../freebl/blapit.h.dep.html#DSAPublicKey">DSAPublicKey</a>           dsa_public_key;
+<b><a name="1752"> 1752</a></b>     PRUint8                dsa_computed_signature[<a href="../softoken/fipstest.c.dep.html#FIPS_DSA_SIGNATURE_LENGTH">FIPS_DSA_SIGNATURE_LENGTH</a>];
+<b><a name="1753"> 1753</a></b>     static const <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> dsa_pqg = { NULL,
+<b><a name="1754"> 1754</a></b>                             { <a href="../softoken/fipstest.c.dep.html#FIPS_DSA_TYPE">FIPS_DSA_TYPE</a>, (unsigned char *)dsa_P, <a href="../softoken/fipstest.c.dep.html#FIPS_DSA_PRIME_LENGTH">FIPS_DSA_PRIME_LENGTH</a> },
+<b><a name="1755"> 1755</a></b>                             { <a href="../softoken/fipstest.c.dep.html#FIPS_DSA_TYPE">FIPS_DSA_TYPE</a>, (unsigned char *)dsa_Q, <a href="../softoken/fipstest.c.dep.html#FIPS_DSA_SUBPRIME_LENGTH">FIPS_DSA_SUBPRIME_LENGTH</a> },
+<b><a name="1756"> 1756</a></b>                             { <a href="../softoken/fipstest.c.dep.html#FIPS_DSA_TYPE">FIPS_DSA_TYPE</a>, (unsigned char *)dsa_G, <a href="../softoken/fipstest.c.dep.html#FIPS_DSA_BASE_LENGTH">FIPS_DSA_BASE_LENGTH</a> }};
+<b><a name="1757"> 1757</a></b> 
+<b><a name="1758"> 1758</a></b>     /*******************************************/
+<b><a name="1759"> 1759</a></b>     /* Generate a DSA public/private key pair. */
+<b><a name="1760"> 1760</a></b>     /*******************************************/
+<b><a name="1761"> 1761</a></b> 
+<b><a name="1762"> 1762</a></b>     /* Generate a DSA public/private key pair. */
+<b><a name="1763"> 1763</a></b>     dsa_status = <a href="../freebl/dsa.c.dep.html#DSA_NewKeyFromSeed">DSA_NewKeyFromSeed</a>(&amp;dsa_pqg, dsa_known_random_key_block,
+<b><a name="1764"> 1764</a></b>                                     &amp;dsa_private_key);
+<b><a name="1765"> 1765</a></b> 
+<b><a name="1766"> 1766</a></b>     if( dsa_status != SECSuccess )
+<b><a name="1767"> 1767</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_HOST_MEMORY">CKR_HOST_MEMORY</a> );
+<b><a name="1768"> 1768</a></b> 
+<b><a name="1769"> 1769</a></b>     /* construct public key from private key. */
+<b><a name="1770"> 1770</a></b>     dsa_public_key.params      = dsa_private_key-&gt;params;
+<b><a name="1771"> 1771</a></b>     dsa_public_key.publicValue = dsa_private_key-&gt;publicValue;
+<b><a name="1772"> 1772</a></b> 
+<b><a name="1773"> 1773</a></b>     /*************************************************/
+<b><a name="1774"> 1774</a></b>     /* DSA Single-Round Known Answer Signature Test. */
+<b><a name="1775"> 1775</a></b>     /*************************************************/
+<b><a name="1776"> 1776</a></b> 
+<b><a name="1777"> 1777</a></b>     dsa_signature_item.data = dsa_computed_signature;
+<b><a name="1778"> 1778</a></b>     dsa_signature_item.len  = sizeof dsa_computed_signature;
+<b><a name="1779"> 1779</a></b> 
+<b><a name="1780"> 1780</a></b>     dsa_digest_item.data    = (unsigned char *)dsa_known_digest;
+<b><a name="1781"> 1781</a></b>     dsa_digest_item.len     = <a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>;
+<b><a name="1782"> 1782</a></b> 
+<b><a name="1783"> 1783</a></b>     /* Perform DSA signature process. */
+<b><a name="1784"> 1784</a></b>     dsa_status = <a href="../freebl/dsa.c.dep.html#DSA_SignDigestWithSeed">DSA_SignDigestWithSeed</a>( dsa_private_key, 
+<b><a name="1785"> 1785</a></b>                                          &amp;dsa_signature_item,
+<b><a name="1786"> 1786</a></b>                                          &amp;dsa_digest_item,
+<b><a name="1787"> 1787</a></b>                                          dsa_known_random_signature_block );
+<b><a name="1788"> 1788</a></b> 
+<b><a name="1789"> 1789</a></b>     if( ( dsa_status != SECSuccess ) ||
+<b><a name="1790"> 1790</a></b>         ( dsa_signature_item.len != <a href="../softoken/fipstest.c.dep.html#FIPS_DSA_SIGNATURE_LENGTH">FIPS_DSA_SIGNATURE_LENGTH</a> ) ||
+<b><a name="1791"> 1791</a></b>         ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( dsa_computed_signature, dsa_known_signature,
+<b><a name="1792"> 1792</a></b>                        <a href="../softoken/fipstest.c.dep.html#FIPS_DSA_SIGNATURE_LENGTH">FIPS_DSA_SIGNATURE_LENGTH</a> ) != 0 ) ) {
+<b><a name="1793"> 1793</a></b>         dsa_status = SECFailure;
+<b><a name="1794"> 1794</a></b>     } else {
+<b><a name="1795"> 1795</a></b> 
+<b><a name="1796"> 1796</a></b>     /****************************************************/
+<b><a name="1797"> 1797</a></b>     /* DSA Single-Round Known Answer Verification Test. */
+<b><a name="1798"> 1798</a></b>     /****************************************************/
+<b><a name="1799"> 1799</a></b> 
+<b><a name="1800"> 1800</a></b>     /* Perform DSA verification process. */
+<b><a name="1801"> 1801</a></b>     dsa_status = <a href="../freebl/dsa.c.dep.html#DSA_VerifyDigest">DSA_VerifyDigest</a>( &amp;dsa_public_key, 
+<b><a name="1802"> 1802</a></b>                                    &amp;dsa_signature_item,
+<b><a name="1803"> 1803</a></b>                                    &amp;dsa_digest_item);
+<b><a name="1804"> 1804</a></b>     }
+<b><a name="1805"> 1805</a></b> 
+<b><a name="1806"> 1806</a></b>     <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(dsa_private_key-&gt;params.arena, PR_TRUE);
+<b><a name="1807"> 1807</a></b>     /* Don't free public key, it uses same arena as private key */
+<b><a name="1808"> 1808</a></b> 
+<b><a name="1809"> 1809</a></b>     /* Verify DSA signature. */
+<b><a name="1810"> 1810</a></b>     if( dsa_status != SECSuccess )
+<b><a name="1811"> 1811</a></b>         return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="1812"> 1812</a></b> 
+<b><a name="1813"> 1813</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="1814"> 1814</a></b> 
+<b><a name="1815"> 1815</a></b> 
+<b><a name="1816"> 1816</a></b> }
+<b><a name="1817"> 1817</a></b> 
+<b><a name="1818"> 1818</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="1819"> 1819</a></b> <a href="#1819">sftk_fips_RNG_PowerUpSelfTest</a>( void )
+<b><a name="1820"> 1820</a></b> {
+<b><a name="1821"> 1821</a></b>    static const PRUint8 XKeyValue[] = {
+<b><a name="1822"> 1822</a></b>                      0x8d,0xf2,0xa4,0x94,0x49,0x22,0x76,0xaa,
+<b><a name="1823"> 1823</a></b>                      0x3d,0x25,0x75,0x9b,0xb0,0x68,0x69,0xcb,
+<b><a name="1824"> 1824</a></b>                      0xea,0xc0,0xd8,0x3a,0xfb,0x8d,0x0c,0xf7,
+<b><a name="1825"> 1825</a></b>                      0xcb,0xb8,0x32,0x4f,0x0d,0x78,0x82,0xe5};
+<b><a name="1826"> 1826</a></b>    static const PRUint8 XSeed[] = {
+<b><a name="1827"> 1827</a></b>                      0xea,0xc0,0xd8,0x3a,0xfb,0x8d,0x0c,0xf7,
+<b><a name="1828"> 1828</a></b>                      0xcb,0xb8,0x32,0x4f,0x0d,0x78,0x82,0xe5,
+<b><a name="1829"> 1829</a></b>                      0xd0,0x76,0x2f,0xc5,0xb7,0x21,0x0e,0xaf,
+<b><a name="1830"> 1830</a></b>                      0xc2,0xe9,0xad,0xac,0x32,0xab,0x7a,0xac};
+<b><a name="1831"> 1831</a></b>    static const PRUint8 Q[] = {   
+<b><a name="1832"> 1832</a></b>                      0x85,0x89,0x9c,0x77,0xa3,0x79,0xff,0x1a,
+<b><a name="1833"> 1833</a></b>                      0x86,0x6f,0x2f,0x3e,0x2e,0xf9,0x8c,0x9c,
+<b><a name="1834"> 1834</a></b>                      0x9d,0xef,0xeb,0xed};
+<b><a name="1835"> 1835</a></b>    static const PRUint8 rng_known_GENX[] = {
+<b><a name="1836"> 1836</a></b>                      0x65,0x48,0xe3,0xca,0xac,0x64,0x2d,0xf7,
+<b><a name="1837"> 1837</a></b>                      0x7b,0xd3,0x4e,0x79,0xc9,0x7d,0xa6,0xa8,
+<b><a name="1838"> 1838</a></b>                      0xa2,0xc2,0x1f,0x8f,0xe9,0xb9,0xd3,0xa1,
+<b><a name="1839"> 1839</a></b>                      0x3f,0xf7,0x0c,0xcd,0xa6,0xca,0xbf,0xce,
+<b><a name="1840"> 1840</a></b>                      0x84,0x0e,0xb6,0xf1,0x0d,0xbe,0xa9,0xa3};
+<b><a name="1841"> 1841</a></b>    static const PRUint8 rng_known_DSAX[] = {
+<b><a name="1842"> 1842</a></b>                      0x7a,0x86,0xf1,0x7f,0xbd,0x4e,0x6e,0xd9,
+<b><a name="1843"> 1843</a></b>                      0x0a,0x26,0x21,0xd0,0x19,0xcb,0x86,0x73,
+<b><a name="1844"> 1844</a></b>                      0x10,0x1f,0x60,0xd7};
+<b><a name="1845"> 1845</a></b> 
+<b><a name="1846"> 1846</a></b>    <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rng_status = SECSuccess;
+<b><a name="1847"> 1847</a></b>    PRUint8 GENX[2*<a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>];
+<b><a name="1848"> 1848</a></b>    PRUint8 DSAX[<a href="../softoken/fipstest.c.dep.html#FIPS_DSA_SUBPRIME_LENGTH">FIPS_DSA_SUBPRIME_LENGTH</a>];
+<b><a name="1849"> 1849</a></b>    PRUint8 XKey[<a href="../softoken/fipstest.c.dep.html#FIPS_RNG_XKEY_LENGTH">FIPS_RNG_XKEY_LENGTH</a>];
+<b><a name="1850"> 1850</a></b>   
+<b><a name="1851"> 1851</a></b>    <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a> (XKey, XKeyValue, <a href="../softoken/fipstest.c.dep.html#FIPS_RNG_XKEY_LENGTH">FIPS_RNG_XKEY_LENGTH</a>);
+<b><a name="1852"> 1852</a></b>    
+<b><a name="1853"> 1853</a></b>    /*******************************************/
+<b><a name="1854"> 1854</a></b>    /* Generate X with a known seed.           */
+<b><a name="1855"> 1855</a></b>    /*******************************************/
+<b><a name="1856"> 1856</a></b>    rng_status = <a href="../freebl/prng_fips1861.c.dep.html#FIPS186Change_GenerateX">FIPS186Change_GenerateX</a>(XKey, XSeed, GENX);
+<b><a name="1857"> 1857</a></b> 
+<b><a name="1858"> 1858</a></b>    /* Verify GENX to perform the RNG integrity check */
+<b><a name="1859"> 1859</a></b>    if( ( rng_status != SECSuccess ) ||
+<b><a name="1860"> 1860</a></b>        ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( GENX, rng_known_GENX,
+<b><a name="1861"> 1861</a></b>                       (2*<a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>) ) != 0 ) )
+<b><a name="1862"> 1862</a></b>        return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="1863"> 1863</a></b> 
+<b><a name="1864"> 1864</a></b>    /*******************************************/
+<b><a name="1865"> 1865</a></b>    /* Generate DSAX fow given Q.              */
+<b><a name="1866"> 1866</a></b>    /*******************************************/
+<b><a name="1867"> 1867</a></b> 
+<b><a name="1868"> 1868</a></b>    rng_status = <a href="../freebl/prng_fips1861.c.dep.html#FIPS186Change_ReduceModQForDSA">FIPS186Change_ReduceModQForDSA</a>(GENX, Q, DSAX);
+<b><a name="1869"> 1869</a></b> 
+<b><a name="1870"> 1870</a></b>    /* Verify DSAX to perform the RNG integrity check */
+<b><a name="1871"> 1871</a></b>    if( ( rng_status != SECSuccess ) ||
+<b><a name="1872"> 1872</a></b>        ( <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a>( DSAX, rng_known_DSAX,
+<b><a name="1873"> 1873</a></b>                       (<a href="../softoken/fipstest.c.dep.html#FIPS_DSA_SUBPRIME_LENGTH">FIPS_DSA_SUBPRIME_LENGTH</a>) ) != 0 ) )
+<b><a name="1874"> 1874</a></b>        return( <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a> );
+<b><a name="1875"> 1875</a></b>        
+<b><a name="1876"> 1876</a></b>    return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> ); 
+<b><a name="1877"> 1877</a></b> }
+<b><a name="1878"> 1878</a></b> 
+<b><a name="1879"> 1879</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="1880"> 1880</a></b> <a href="#1880">sftk_fipsSoftwareIntegrityTest</a>(void)
+<b><a name="1881"> 1881</a></b> {
+<b><a name="1882"> 1882</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv = <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>;
+<b><a name="1883"> 1883</a></b> 
+<b><a name="1884"> 1884</a></b>     /* make sure that our check file signatures are OK */
+<b><a name="1885"> 1885</a></b>     if( !<a href="../freebl/shvfy.c.dep.html#BLAPI_VerifySelf">BLAPI_VerifySelf</a>( NULL ) || 
+<b><a name="1886"> 1886</a></b>         !<a href="../freebl/shvfy.c.dep.html#BLAPI_SHVerify">BLAPI_SHVerify</a>( SOFTOKEN_LIB_NAME, (PRFuncPtr) <a href="../softoken/fipstest.c.dep.html#sftk_fips_HMAC">sftk_fips_HMAC</a> ) ) {
+<b><a name="1887"> 1887</a></b>         crv = <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a>; /* better error code? checksum error? */
+<b><a name="1888"> 1888</a></b>     }
+<b><a name="1889"> 1889</a></b>     return crv;
+<b><a name="1890"> 1890</a></b> }
+<b><a name="1891"> 1891</a></b> 
+<b><a name="1892"> 1892</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="1893"> 1893</a></b> <a href="#1893">sftk_fipsPowerUpSelfTest</a>( void )
+<b><a name="1894"> 1894</a></b> {
+<b><a name="1895"> 1895</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="1896"> 1896</a></b> 
+<b><a name="1897"> 1897</a></b>     /* RC2 Power-Up SelfTest(s). */
+<b><a name="1898"> 1898</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_RC2_PowerUpSelfTest">sftk_fips_RC2_PowerUpSelfTest</a>();
+<b><a name="1899"> 1899</a></b> 
+<b><a name="1900"> 1900</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1901"> 1901</a></b>         return rv;
+<b><a name="1902"> 1902</a></b> 
+<b><a name="1903"> 1903</a></b>     /* RC4 Power-Up SelfTest(s). */
+<b><a name="1904"> 1904</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_RC4_PowerUpSelfTest">sftk_fips_RC4_PowerUpSelfTest</a>();
+<b><a name="1905"> 1905</a></b> 
+<b><a name="1906"> 1906</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1907"> 1907</a></b>         return rv;
+<b><a name="1908"> 1908</a></b> 
+<b><a name="1909"> 1909</a></b>     /* DES Power-Up SelfTest(s). */
+<b><a name="1910"> 1910</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_DES_PowerUpSelfTest">sftk_fips_DES_PowerUpSelfTest</a>();
+<b><a name="1911"> 1911</a></b> 
+<b><a name="1912"> 1912</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1913"> 1913</a></b>         return rv;
+<b><a name="1914"> 1914</a></b> 
+<b><a name="1915"> 1915</a></b>     /* DES3 Power-Up SelfTest(s). */
+<b><a name="1916"> 1916</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_DES3_PowerUpSelfTest">sftk_fips_DES3_PowerUpSelfTest</a>();
+<b><a name="1917"> 1917</a></b> 
+<b><a name="1918"> 1918</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1919"> 1919</a></b>         return rv;
+<b><a name="1920"> 1920</a></b>  
+<b><a name="1921"> 1921</a></b>     /* AES Power-Up SelfTest(s) for 128-bit key. */
+<b><a name="1922"> 1922</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_AES_PowerUpSelfTest">sftk_fips_AES_PowerUpSelfTest</a>(<a href="../softoken/fipstest.c.dep.html#FIPS_AES_128_KEY_SIZE">FIPS_AES_128_KEY_SIZE</a>);
+<b><a name="1923"> 1923</a></b> 
+<b><a name="1924"> 1924</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1925"> 1925</a></b>         return rv;
+<b><a name="1926"> 1926</a></b> 
+<b><a name="1927"> 1927</a></b>     /* AES Power-Up SelfTest(s) for 192-bit key. */
+<b><a name="1928"> 1928</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_AES_PowerUpSelfTest">sftk_fips_AES_PowerUpSelfTest</a>(<a href="../softoken/fipstest.c.dep.html#FIPS_AES_192_KEY_SIZE">FIPS_AES_192_KEY_SIZE</a>);
+<b><a name="1929"> 1929</a></b> 
+<b><a name="1930"> 1930</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1931"> 1931</a></b>         return rv;
+<b><a name="1932"> 1932</a></b> 
+<b><a name="1933"> 1933</a></b>     /* AES Power-Up SelfTest(s) for 256-bit key. */
+<b><a name="1934"> 1934</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_AES_PowerUpSelfTest">sftk_fips_AES_PowerUpSelfTest</a>(<a href="../softoken/fipstest.c.dep.html#FIPS_AES_256_KEY_SIZE">FIPS_AES_256_KEY_SIZE</a>);
+<b><a name="1935"> 1935</a></b> 
+<b><a name="1936"> 1936</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1937"> 1937</a></b>         return rv;
+<b><a name="1938"> 1938</a></b> 
+<b><a name="1939"> 1939</a></b>     /* MD2 Power-Up SelfTest(s). */
+<b><a name="1940"> 1940</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_MD2_PowerUpSelfTest">sftk_fips_MD2_PowerUpSelfTest</a>();
+<b><a name="1941"> 1941</a></b> 
+<b><a name="1942"> 1942</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1943"> 1943</a></b>         return rv;
+<b><a name="1944"> 1944</a></b> 
+<b><a name="1945"> 1945</a></b>     /* MD5 Power-Up SelfTest(s). */
+<b><a name="1946"> 1946</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_MD5_PowerUpSelfTest">sftk_fips_MD5_PowerUpSelfTest</a>();
+<b><a name="1947"> 1947</a></b> 
+<b><a name="1948"> 1948</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1949"> 1949</a></b>         return rv;
+<b><a name="1950"> 1950</a></b> 
+<b><a name="1951"> 1951</a></b>     /* SHA-X Power-Up SelfTest(s). */
+<b><a name="1952"> 1952</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_SHA_PowerUpSelfTest">sftk_fips_SHA_PowerUpSelfTest</a>();
+<b><a name="1953"> 1953</a></b> 
+<b><a name="1954"> 1954</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1955"> 1955</a></b>         return rv;
+<b><a name="1956"> 1956</a></b> 
+<b><a name="1957"> 1957</a></b>     /* HMAC SHA-X Power-Up SelfTest(s). */
+<b><a name="1958"> 1958</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_HMAC_PowerUpSelfTest">sftk_fips_HMAC_PowerUpSelfTest</a>();
+<b><a name="1959"> 1959</a></b>  
+<b><a name="1960"> 1960</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1961"> 1961</a></b>         return rv;
+<b><a name="1962"> 1962</a></b> 
+<b><a name="1963"> 1963</a></b>     /* RSA Power-Up SelfTest(s). */
+<b><a name="1964"> 1964</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_RSA_PowerUpSelfTest">sftk_fips_RSA_PowerUpSelfTest</a>();
+<b><a name="1965"> 1965</a></b> 
+<b><a name="1966"> 1966</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1967"> 1967</a></b>         return rv;
+<b><a name="1968"> 1968</a></b> 
+<b><a name="1969"> 1969</a></b>     /* DSA Power-Up SelfTest(s). */
+<b><a name="1970"> 1970</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_DSA_PowerUpSelfTest">sftk_fips_DSA_PowerUpSelfTest</a>();
+<b><a name="1971"> 1971</a></b> 
+<b><a name="1972"> 1972</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1973"> 1973</a></b>         return rv;
+<b><a name="1974"> 1974</a></b> 
+<b><a name="1975"> 1975</a></b>     /* RNG Power-Up SelfTest(s). */
+<b><a name="1976"> 1976</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_RNG_PowerUpSelfTest">sftk_fips_RNG_PowerUpSelfTest</a>();
+<b><a name="1977"> 1977</a></b> 
+<b><a name="1978"> 1978</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1979"> 1979</a></b>         return rv;
+<b><a name="1980"> 1980</a></b>     
+<b><a name="1981"> 1981</a></b> #ifdef NSS_ENABLE_ECC
+<b><a name="1982"> 1982</a></b>     /* ECDSA Power-Up SelfTest(s). */
+<b><a name="1983"> 1983</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fips_ECDSA_PowerUpSelfTest">sftk_fips_ECDSA_PowerUpSelfTest</a>();
+<b><a name="1984"> 1984</a></b> 
+<b><a name="1985"> 1985</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1986"> 1986</a></b>         return rv;
+<b><a name="1987"> 1987</a></b> #endif
+<b><a name="1988"> 1988</a></b> 
+<b><a name="1989"> 1989</a></b>     /* Software/Firmware Integrity Test. */
+<b><a name="1990"> 1990</a></b>     rv = <a href="../softoken/fipstest.c.dep.html#sftk_fipsSoftwareIntegrityTest">sftk_fipsSoftwareIntegrityTest</a>();
+<b><a name="1991"> 1991</a></b> 
+<b><a name="1992"> 1992</a></b>     if( rv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> )
+<b><a name="1993"> 1993</a></b>         return rv;
+<b><a name="1994"> 1994</a></b> 
+<b><a name="1995"> 1995</a></b>     /* Passed Power-Up SelfTest(s). */
+<b><a name="1996"> 1996</a></b>     return( <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> );
+<b><a name="1997"> 1997</a></b> }
+<b><a name="1998"> 1998</a></b> 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

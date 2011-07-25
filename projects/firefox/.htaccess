@@ -1,0 +1,67 @@
+Options +FollowSymLinks
+Redirect permanent /projects/firefox/build.html http://developer.mozilla.org/en/Build_Documentation
+Redirect permanent /projects/firefox/extensions/index.html http://developer.mozilla.org/en/Extensions
+Redirect permanent /projects/firefox/extensions/web-api.html http://developer.mozilla.org/en/Installing_Extensions_and_Themes_From_Web_Pages
+Redirect permanent /projects/firefox/extensions/packaging/extensions.html http://developer.mozilla.org/en/Extension_Packaging
+Redirect permanent /projects/firefox/extensions/packaging/themes.html http://developer.mozilla.org/en/Theme_Packaging
+
+#The URL this redirects to gets a 403 response
+Redirect permanent /projects/firefox/3.0a8pre/ http://www.mozilla.org/projects/firefox/3.0a8/
+
+RewriteEngine on
+RewriteRule ^([2-]\.(?:\d\.){,2}\d{1,2}(?:b\d)?)(/.*)$ http://www.mozilla.com/firefox/$1$2 [R]
+
+# If specific redirects are required for firstrun, whatsnew, or releasenotes put them here
+# using the Redirect permanent syntax won't work since it processes after the rewrite rules
+# are applied
+RewriteRule ^3.0a8pre(?:/(?:index.html)?)?$ http://www.mozilla.org/projects/firefox/3.0a8/
+RewriteRule ^2.0b2/firstrun(?:/(?:index.html)?)?$ http://www.mozilla.org/projects/bonecho/
+RewriteRule ^2.0b2/whatsnew(?:/(?:index.html)?)?$ http://www.mozilla.org/projects/bonecho/
+RewriteRule ^2.0b2/releasenotes(?:/(?:index.html)?)?$ http://www.mozilla.org/projects/bonecho/releases/2.0b2.html
+
+# This condition will check if the URI is for whatsnew and if it does not exist,
+# but firstrun does exist on mozilla.org.  If this is the case, the request
+# redirects to the firstrun directory rather than whats new
+RewriteCond %{REQUEST_URI} ^/projects/firefox/([^/]+)/whatsnew.*
+RewriteCond %{DOCUMENT_ROOT}/projects/firefox/%1/whatsnew !-d
+RewriteCond %{DOCUMENT_ROOT}/projects/firefox/%1/firstrun/index.html -f
+RewriteRule ^([^/]+)/whatsnew    http://www.mozilla.org/projects/firefox/%1/firstrun/ [R]
+
+# This condition will redirect pre release firstrun to the standard
+# prerelase.html page on mozilla.org
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule   ^([^/]+)pre/firstrun  http://www.mozilla.org/projects/firefox/prerelease.html [R]
+
+# This condition will redirect pre release whatsnew to the standard
+# prerelase.html page on mozilla.org
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule   ^([^/]+)pre/whatsnew  http://www.mozilla.org/projects/firefox/prerelease.html [R]
+
+# This condition will redirect pre release releasenotes to the standard
+# prerelase.html page on mozilla.org
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule   ^([^/]+)pre/releasenotes  http://www.mozilla.org/projects/firefox/prerelease.html [R]
+
+# This condition will redirect alpha firstrun to the standard prerelease page
+# RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule   ^([^/]+)a[0-9]+/firstrun http://%{HTTP_HOST}/projects/firefox/prerelease.html [R]
+
+# This condition will redirect alpha whatsnew page to the standard prerelease page
+# RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule   ^([^/]+)a[0-9]+/whatsnew http://%{HTTP_HOST}/projects/firefox/prerelease.html [R]
+
+# This condition will redirect the alpha release notes to the common devpreview site
+# RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule   ^([^/]+)a[0-9]+/releasenotes http://%{HTTP_HOST}/projects/devpreview/releasenotes/ [R]
+
+# This condition will redirect whatsnew (if it's not found) to mozilla.com
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule   ^([^/]+)/whatsnew    http://www.mozilla.com/firefox/$1/whatsnew  [R]
+
+# This condition will redirect firstrun (if it's not found) to mozilla.com
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule   ^([^/]+)/firstrun    http://www.mozilla.com/firefox/$1/firstrun  [R]
+
+# This condition will redirect releasenotes (if it's not found) to mozilla.com
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule   ^([^/]+)/releasenotes    http://www.mozilla.com/firefox/$1/releasenotes  [R]

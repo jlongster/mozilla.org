@@ -1,0 +1,453 @@
+<?php
+
+$html_title = 'Mozilla Keyboard Planning FAQ and Cross Reference';
+$page_title = 'Mozilla Keyboard Planning FAQ and Cross Reference';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="DC.author" content="Aaron Leventhal and Sarah Liberman">
+<meta name="DC.creator" content="Aaron Leventhal and Sarah Liberman">
+<meta name="DC.title" content="Mozilla Keyboard Planning FAQ and Cross Reference">
+<meta name="DC.subject" content="Mozilla Keyboard Planning FAQ and Cross Reference">
+<meta name="DC.date.created" content="2004-09-08T20:16:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2006-05-01T09:54:03+11:00" scheme="W3CDTF">
+<link rel="up" href="../" title="Mozilla Access">
+<link rel="section" href="#xref" title="Cross Reference">
+<link rel="section" href="#definitions" title="Definitions">
+<link rel="section" href="#platforms" title="Four Major Platforms">
+<link rel="section" href="#modifiers" title="Modifier Key Policies">
+<link rel="section" href="#tab" title="Tab Behavior">
+<link rel="section" href="#userdefn" title="Avoiding Function Keys...">
+<link rel="section" href="#destructive" title="Potentially Destructive Keys">
+<link rel="section" href="#macintosh" title="Mac Keyboard Differences">
+<link rel="section" href="#accesskeyconflicts" title="Accesskey Conflicts">
+<link rel="section" href="#configurability" title="Keyboard Configurability">
+<link rel="section" href="#codersummary" title="Summary for Coders">
+<link rel="section" href="#links" title="Informational Links">
+<link rel="section" href="#mailinglist" title="Keyboard UI Mailing List">
+';
+
+$extra_style = '
+<style type="text/css">
+h3 {font-style: italic; font-size: larger; font-weight: normal;}
+table.keys {background-color: #F5F5DC;} /* beige */
+table.keys th {text-align: left; padding: 0.5em;}
+table.keys tr {border: thin solid black;}
+table.keys td {padding: 0.5em;}
+table.keys caption {padding: 0.5em; color: black; font-style: italic;}
+</style>
+
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<p>This FAQ and cross reference will help us find unused keystrokes, look
+for patterns, see what has or hasn't been implemented and have consistency in
+our UI. We want implementers to follow this spec, so if you wish for something
+other than what's here, please let us know where the spec falls short. Before
+suggesting changes, make sure to read this entire FAQ, as it spells out our current
+policies and our reasons for them.</p>
+
+<p>We realize it's a good idea to leave as many keystrokes open as possible, for
+future expandability. If you see keystroke commands in the spec that are superfluous,
+let us know so we can clear more space. Some hotkeys may end up being relegated
+to a special configuration file or preference, for the particular set of users
+that need them.</p>
+
+<h2>Contents</h2>
+<ol class="toc">
+  <li><a href="#xref">Cross Reference</a></li>
+  <li><a href="#definitions">Definitions</a></li>
+  <li><a href="#platforms">Four Major Platforms</a></li>
+  <li><a href="#modifiers">Modifier Key Policies</a></li>
+  <li><a href="#tab">Tab Behavior</a></li>
+  <li><a href="#userdefn">Avoiding Function Keys for Crucial Roles</a></li>
+  <li><a href="#destructive">Potentially Destructive Keys</a></li>
+  <li><a href="#macintosh">Macintosh Keyboard Differences</a></li>
+  <li><a href="#accesskeyconflicts">Accesskey Conflicts</a></li>
+  <li><a href="#configurability">Keyboard Configurability</a></li>
+  <li><a href="#codersummary">Summary for Coders</a></li>
+  <li><a href="#links">Informational Links</a></li>
+  <li><a href="#mailinglist">Keyboard UI Mailing List</a></li>
+</ol>
+
+<h2><a name="xref">Cross Reference</a></h2>
+<p>Here's an outline of all the global hot keys in Mozilla, for the browser,
+editor, mail-news and widgets. This document does not discuss underlined menu
+accelerators and the like, as those are part of i18n.</p>
+
+<table border="1" cellspacing="0" cellpadding="5">
+<tr><td><h4>Please read the entire FAQ before recommending changes</h4>
+<ul>
+  <li><a href="interactive">Interactive frames version</a> - only works
+in Gecko-based browsers. And yes, we know your keyboard looks different.
+Mac keyboards have don't have a Windows key, but they do have a Cmd key.
+Many UNIX keyboard have a Meta key.</li>
+  <li><a href="mozilla">No-frames version</a> - basic reference.</li>
+</ul>
+</td></tr></table>
+
+<h2><a name="definitions">Definitions</a></h2>
+<ul>
+  <li><i>Key binding</i>: a piece of data that defines the connect
+between a keystroke and a command.</li>
+  <li><i>Modifier</i>: a key that is used in combination with another, such
+as Alt, Ctrl, Shift or Cmd (a.k.a. the Apple key).</li>
+  <li><i>Hotkey</i>: a key with a binding that crosses widget boundaries,
+and can act globally in the current window.</li>
+  <li><i>Accelerator</i>: a key who's behavior is defined locally by the
+widget the focus is currently in.</li>
+  <li><i>Accel key</i>: the modifier used in conjunction with letter and number
+keys on a given platform for hotkey commands.</li>
+  <li><i>Shortcut</i>: ambiguous term, could mean any kind of keystroke command.
+Not used in the spec.</li>
+  <li><i>Accesskey</i>: an attribute in HTML or XUL for defining an accelator. A
+letter in the command name that corresponds to the accesskey is usually underline.</li>
+</ul>
+
+<h2><a name="platforms">Four Major Platforms</a></h2>
+<p>We define the keyboard combinations for 4 major platform groups. Our spec currently
+only deals with the first three - it doesn't talk about OS/2. At some point, we may
+fold in the OS/2 keyboard information.</p>
+
+<ul>
+  <li>Windows (includes BeOS)</li>
+  <li>UNIX (includes Linux)</li>
+  <li>Mac OS</li>
+  <li>OS/2 (these keybindings are set by IBM)</li>
+</ul>
+
+<h2><a name="modifiers">Modifier Key Policies</a></h2>
+<p>What's the modifier key situation? When is Ctrl/Shift/Alt/Cmd used?</p>
+<h3>One "Accel" Key per Platform</h3>
+<p>For hotkeys, we normally use only one accelerator key per letter. On Mac
+we default to Cmd and on everything else we default to Ctrl.
+The accel letter combination can also be used with shift for a related command.
+When defining keystrokes in XBL, modifier="accel" is mapped to the appropriate
+key for that platform.</p>
+<p>There are several reasons for this limitation of 1 accel key. First, Mac OS
+only offers the Cmd key for acceleration, since Alt+Letter combinations are reserved
+for entering special characters in text. Mac OS applications are not supposed to
+use the Ctrl key modifier for commands, and Mac users do a double-take when they
+are told to use such a key combo.</p>
+<p>UNIX systems provide a special challenge: the need to support legacy Emacs
+keybindings that may conflict with Mozilla keybindings. For example, in Emacs <kbd>Ctrl+A</kbd>
+moves the caret to the beginning of a line, but in Mozilla, Accel+A is the select
+all command. Which should win out? In 4.7, we worked around this by having Alt as
+the default accelator key. However, this goes against the expectations of many newer
+users, as well as the default behavior of the Gnome and KDE environments. If we
+consider a secondary accel key key for Unix systems, we have to consider it is possibly
+already taken up by an Emacs key binding.</p>
+<p>A final issue is that HTML defines the accesskey attribute, which allows page authors
+to define accelerators for webpages, usually indicated with underlined letters. Where
+possible, a modifier key should be reserved for accesskeys.</p>
+<p>Therefore, while it may be desirable to use Alt as a secondary accel key on the
+Windows platform, this would leave it as the sole beneficiary of those bindings, and
+we would still need to find another key combination for the other two platforms. So far,
+it's been simpler to try finding consistent key combinations that work for all platforms
+at once. This means that for hotkeys, we can only assume one modifier key per letter,
+with and without shift.</p>
+
+<h3>No Ctrl key combos on Mac OS</h3>
+<p>The Mac human interface guidelines ask developers to use Cmd, not Ctrl.
+Using Ctrl for hotkeys would confused many Mac users. We can, however, offer
+Ctrl combinations for user-defined keystrokes (once we start offering keyboard
+configurability).</p>
+
+<h3>Use "Accel" key with letter and number keys, specify exact modifier for
+other keys</h3>
+<p>In our spec, the Accel key is the key that can change between Ctrl, Alt or
+Cmd, thus changing what modifier is used with different letters. For all other
+keys (numbers, function keys, navigation keys and editing keys like Delete and
+backspace), our spec says exactly what modifier is used in each command combination.
+For example, <kbd>Alt+Left</kbd> always means "Go to previous page in history". For
+Ctrl+ combos, we general say Ctrl/Cmd(Mac), to show that Ctrl is used on Windows
+and UNIX for this command, and Cmd is used on the Mac.</p>
+
+<h3>No Ctrl+Alt combinations</h3>
+<p>On international keyboards Ctrl+Alt is used to access accents and other special
+characters. Even UK keyboards have 6 Ctrl+Alt keystrokes (11 if you count upper
+case): &aacute;, &eacute;, &iacute;, &oacute;, &uacute; (acute accentuated vowels)
+and EUR (Euro currency symbol <kbd>Ctrl+Alt+4</kbd>).</p>
+<p>In addition, Ctrl+Alt+Letter combos are traditionally reserved on Windows
+for defining user application startup hotkeys. This isn't set in stone, so if
+we really start running out of keys, perhaps we can change this policy.
+For now, consistency is a good thing, and we don't need them.</p>
+
+<h3>Try to group related functions together on the same key</h3>
+<p>For example, we try to reserve Accel+Shift+Letter for
+commands that are related to Accel+Letter, where possible.
+This makes our interface more elegant, and makes the hotkeys easier to
+remember.</p>
+
+<h3><a name="punctuation">Avoid modified punctuation keys</a></h3>
+<p>Many keyboards from around the world don't support the punctuation you
+might expect (some don't even have semicolon!). You also can't assume that
+two punctuation characters are on two different keys. For example,
+comma may be on a different key from period, or may be on the same key.
+Also, a punctuation key may be shifted on some keyboards and unshifted
+on others, and a binding which specifies an unshifted key won't work
+if shift is pressed (and vice versa). So, while some of our
+hotkeys can be reassigned by the i18n team, it's a good idea to use punctuation
+combos for non-essential things, so that we don't lose much if the key isn't
+available. Here's a set of
+<a href="http://www-306.ibm.com/software/globalization/topics/keyboards/registry_index.jsp" class="ex-ref">international
+keyboard layout diagrams</a>.</p>
+
+<h3>Emacs editor bindings always go on Ctrl</h3>
+<p>Emacs bindings are currently available only on the UNIX platform.
+On some letters, there is an accel binding, and a
+ctrl(unix) binding.
+When these two bindings conflict (as in Ctrl-A or Ctrl-H),
+the emacs binding wins. Most of the time, the bindings will follow
+focus, so e.g. if the focus is in an editing field, the editing
+binding will be used, if the focus is in the browser content area,
+the browser binding will be used. More information on this in the
+open issue below.</p>
+
+<h3>Open Issue: The default UNIX accel key is Ctrl</h3>
+<p>The default accel key was Alt in Netscape 4.7.
+A good reason for keeping Ctrl is to be consistent with Gnome and KDE.
+A good reason for making it Alt, is that more of the Emacs key bindings are
+then available for use. Reasonable people disagree on this issue.
+To learn how to switch your accel key, see
+<a href="../../unix/customizing.html#accelkey">the customizing document</a>.
+It may be desirable to build a pre-made keyboard configuration file for users
+who want pure-Emacs style control. Akkana Peck has reopened this issue. If
+you feel strongly either way, please email mozilla-accessibility@mozilla.org
+with your preference.</p>
+
+<h2><a name="macintosh">Macintosh Keyboard Differences</a></h2>
+<p>Not all Macintosh keyboards are the same.  For example, older macs may
+not have any  function keys at all, newer Macs have F1-F12, very few
+have F13-F15 (F13-F15 are usually labelled Print Screen,
+ Break etc on PCs). When function keys are present, Mac OS allow users
+to define their actions (macros). For these reasons we want to avoid
+the only key binding for a feature being on a function key. If the
+feature is important or common, it must have an alternative means
+of activation.</p>
+<p>Some Macs are missing keys like "insert" or "end" or "pageup" or
+"del". The Backspace key is labelled "delete" and represented in menus
+by an icon, "enter" is a key on the numeric keypad and the key PC users call
+"enter" is labelled "return". Some have separate "help" keys while others
+have "help" on the "insert" key. Some have a "clear" key. The layout of
+keys like Insert, Delete, Home, End, etc. may be different from keyboard
+to keyboard. That's just the US English keyboards: in other words, the fewer
+assumptions you make, the happier the users will be.</p>
+<p>Mac OS does not have a built in way of walking through the menubar with
+the keyboard. Mac OS reserves Alt (Option), and Alt+Shift letter combinations for
+inserting special characters and those required by non-English languages.</p>
+
+<h3>Open Issue: <i>Should keys that OS X has taken over be replaced?</i></h3>
+<p>As of OS X, <kbd>Cmd+M</kbd> and <kbd>Cmd+H</kbd> are taken over by the system for the "mimimize
+windows" and "hide window" commands. Mozilla and Netscape 4.7 used these for
+"new mail" and "history". We've even heard that <kbd>Cmd+M</kbd> now crashes Mozilla under
+Mac OS X. Are these commands now and forever relegated to using the mouse with pull
+down menus on Mac? Should we invent new keys for those commands in OS X? Should we
+make an exception in this case and use Ctrl? We need an avid Mac user who loves
+keyboard commands to step forward on issues like this.</p>
+<p>Another important fact is that we're already going against platform UI guidelines
+with our Accel+N behavior. The standard on Windows and Mac OS is for Accel+N to open
+a new document or window of the appropriate kind, depending on the application. For
+example, Accel+N should open a new browser window in Navigator, a new empty document
+in Composer, a new message composition in Mailnews and a new card in the address book.
+Users would use the Accel+digit hotkeys if they wanted a keyboard command to jump straight
+to a different application.</p>
+
+<ul>
+  <li>The argument against change, is that we'll be changing what people are already
+used to. Perhaps we should have done it this way from the start, but what happens if
+we change these common things right under our users' feet?</li>
+  <li>The argument for change, is that it's better to do the right thing now, than to
+assign some strange keystroke for new message compose for Mac users, onlu to
+possibly change it later. We should follow platform standards, and get
+rid of our strange use of Accel+N.</li>
+</ul>
+
+<h2><a name="tab">Current and future Tab key behavior in the content
+window</a></h2>
+<p>Currently, Tab navigates through all links and form elements in a page</p>
+
+<h2><a name="userdefn">Avoiding function keys for crucial roles</a></h2>
+<p>Avoid using function keys for important functionality, or provide other
+equivalents on Mac OS. This is because the Macintosh generally reserves function
+keys for user defined actions. Some Mac keyboards have no function keys at all.</p>
+
+<h2><a name="destructive">Potentially Destructive Keys</a></h2>
+
+<p>Certain keystroke combinations are reportedly often hit by mistake by users
+intending to type something else. Those keys should only invoke undoable or
+non-destructive actions</p>
+
+<p>Here's our current list of easy-to-mistype keystrokes:</p>
+
+<ul>
+  <li>Modified Enter</li>
+  <li>Modified Space</li>
+</ul>
+
+<p>Keys that are easily hit by accident should not invoke an immediate, undoable,
+destructive action. For example, if <kbd>Ctrl+Enter</kbd> was used for immediate mail send,
+someone might send a rude email before having the chance to edit it. To get
+around this, we will have <kbd>Ctrl+Enter</kbd> bring up a dialog "Send mail now?" with a
+checkbox that lets the user avoid the extra question in the future.</p>
+
+<h2><a name="accesskeyconflicts">Accesskey Conflicts</a></h2>
+<p>Web pages can use the accesskey attribute to define keyboard accelerators for
+their page. For example, on www.microsoft.com/enable, pressing <kbd>Alt+S</kbd> initiates a site
+search. However, <kbd>Alt+S</kbd> is also supposed to pull down the Search menu in Mozilla's menu
+bar.</p>
+<p>At this point in time, our solution will be the same as Internet Explorer's.
+If there is a conflict, the web page's accesskey will get the key.
+If a user specifically wants to go to the main menu, they will type the menu access
+key first (normally Alt by itself), then the letter corresponding to the accesskey
+(such as S for search).</p>
+<p>Right now we have disabled Alt as the menu access key in UNIX, because Alt+click can
+have meaning. To get around this, we need to fix the Alt menu access code to check for
+a click.</p>
+
+<h2><a name="configurability">Keyboard Configurability</a></h2>
+<p>It is now possible to build your own keyboard configuration.
+We still need to fix some places where Mozilla hard codes specific keys,
+for example the TAB key is hard coded for link and form navigation
+in nsEventStateManager.cpp. There are a number of other keys that are defined
+in the chrome, but are packed away in .jar files. We don't have a solution
+for changing those easily yet, either.</p>
+<p>At some point, we may get someone to build a keyboard configuration front-end.
+For now, our solution is to have the user edit text files. We can also provide
+some pre-build keyboard configuration files (any volunteers?). For example, someone
+may provide bindings for Emacs, Opera or Lynx users. Opera and Lynx have quite a
+few single keystroke commands in the browser. Single key bindings are great for
+users that have a great deal of difficulty typing. It also necessitates the use
+of a "leave form controls" key.</p>
+<p>It is possible to allow users to associate javascripts with a key. This would
+allow users to match a favorite URL to a specific key. We would especially love to see
+someone come up with an easy way for end-users to create macros in Mozilla.</p>
+
+<p>See
+<a href="../../unix/customizing.html#keys">the customizing document</a> to learn how
+to use keyboard configurability.</p>
+
+<h2><a name="codersummary">Summary for Coders</a></h2>
+<p>For key combos using letter and number keys, the
+<a href="interactive">main cross reference table</a> often lists accel as a
+modifier. If you use "accel" in XBL Mozilla will automatically choose the right
+key for you, even if the user changes it in their preferences. For other keys,
+(function keys, punctuation, etc.) we explicitly say "Ctrl(Win+Unix) or Cmd(Mac)"
+to indicate this will always be the key used, even if "accel" is otherwise
+redefined by the user. Even in this case, we still prefer "Command" over "Control"
+on the Mac because "Control" is used for context menus and very few end user
+programs use it as a modifier key.</p>
+
+<h3>Modifier Keys Demystified</h3>
+<table class="keys">
+<caption>Modifier key names in Mozilla and on major platforms</caption>
+  <tr><th>Mozilla XBL</th><th>Windows</th><th>Unix</th><th>Mac</th></tr>
+  <tr><td>shift</td><td>Shift</td><td>Shift</td><td>Shift</td></tr>
+  <tr><td>control</td><td>Ctrl</td><td>Ctrl</td><td>Control</td></tr>
+  <tr><td>alt</td><td>Alt</td><td>Alt</td><td>Option</td></tr>
+  <tr><td>meta</td><td><div>Windows Key</div><div>(unavailable)</div></td>
+<td>Meta</td><td><div>Command </div><div>(Apple Key)</div></td></tr>
+  <tr><td>accel</td><td>Ctrl</td><td>Ctrl or Alt</td><td>Command</td></tr>
+</table>
+
+<h3>Keyboard Coding Rules</h3>
+
+<ul>
+  <li>Never hardcode keynames. Use string bundles. This is also essential
+for localization, so there is no excuse.</li>
+  <li>Avoid making important features available only on non-alphanumeric
+keys (punctuation, numbers and
+function keys), these might not be present or easy to type on Mac or
+non-US keyboards.</li>
+  <li>For combos using letter or number keys, use "accel" or "shift,accel"
+in XBL.</li>
+  <li>For other key combos be explicit: use "ctrl", "alt" and "shift"
+on Windows and Unix; use "meta", "alt" and "shift" in the Mac keybindings file.</li>
+</ul>
+
+<h3>Key Bindings Files</h3>
+<p>Key bindings are defined in many places in Mozilla. Hopefully you'll be able
+to find what you want in the list below, or by using
+<a href="http://lxr.mozilla.org/seamonkey">LXR</a>. Be sure to read
+<a href="../../unix/customizing.html#keys">the customizing document</a>.</p>
+
+<h4>Content area bindings</h4>
+<ul>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/content/xbl/builtin/htmlBindings.xml">
+htmlBindings.xml</a> - general key bindings for content area</li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/content/xbl/builtin/mac/platformHTMLBindings.xml">
+mac/platformHTMLBindings.xml</a> - Mac OS platform specific bindings</li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/content/xbl/builtin/os2/platformHTMLBindings.xml">
+os2/platformHTMLBindings.xml</a> - OS/2 platform specific bindings</li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/content/xbl/builtin/unix/platformHTMLBindings.xml">
+unix/platformHTMLBindings.xml</a> - UNIX platform specific bindings</li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/content/xbl/builtin/win/platformHTMLBindings.xml">
+win/platformHTMLBindings.xml</a> - Windows platform specific bindings</li>
+</ul>
+
+<h4>Task-specific bindings</h4>
+<ul>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/xpfe/browser/resources/locale/en-US/navigator.dtd">
+navigator.dtd</a></li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/xpfe/communicator/resources/locale/en-US/tasksOverlay.dtd">
+tasksOverlay.dtd</a></li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/xpfe/communicator/resources/locale/en-US/contentAreaCommands.dtd">
+contentAreaCommands.dtd</a></li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/xpfe/communicator/resources/locale/en-US/viewZoomOverlay.dtd">
+viewZoomOverlay.dtd</a> - for zooming and shrinking text (<kbd>Ctrl+-</kbd> and <kbd>Ctrl+=</kbd> right now)</li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/mailnews/base/resources/locale/en-US/messenger.dtd">
+messenger.dtd</a> - this is where the mail commands are set.</li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/mailnews/base/resources/locale/en-US/mailTasksOverlay.dtd">
+mailTasksOverlay.dtd</a> - where <kbd>Ctrl+2</kbd> is set as the command to bring up Mail-news</li>
+</ul>
+
+<h4>Widget bindings</h4>
+<ul>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/xpfe/global/resources/content/treeBindings.xml">
+treeBindings.xml</a> - for tree widget</li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/xpfe/global/resources/content/tabBindings.xml">
+tabBindings.xml</a> - for tab widget</li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/xpfe/global/resources/content/radioBindings.xml">
+radioBindings.xml</a> - for radio buttons</li>
+  <li><a href="http://lxr.mozilla.org/seamonkey/source/xpfe/global/resources/content/xulBindings.xml">
+xulBindings.xml</a> - for simple widgets such as checkboxes, etc.</li>
+</ul>
+
+<h2><a name="links">Informational Links</a></h2>
+
+<ul>
+  <li>Keyboard navigation info for the Opera browser:
+  <ul>
+    <li><a href="http://www.opera.com/features/keyboard/" class="ex-ref">Map of Keyboard Shortcuts in Opera</a></li>
+  </ul>
+  </li>
+  <li><a href="http://www.microsoft.com/enable/products/keyboard/keyboardsearch.asp" class="ex-ref">
+    Microsoft keyboard UI</a> for all Microsoft products, and Windows in general</li>
+  <li><span style="border: 1px solid red;">(NB: this web.archive.org link must be updated/upgraded soon)</span><a href="http://web.archive.org/web/20050210084408/www.macromedia.com/cfusion/knowledgebase/index.cfm?id=tn_13228" class="ex-ref">Master list of International keyboard layout diagrams</a>. This is a great way to see the huge differences i18n has to deal with. You can't take too many keys for granted.</li>
+  <li><a href="https://bugzilla.mozilla.org/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;component=Keyboard+Navigation">
+ List of keyboard bugs in Bugzilla</a></li>
+ <li><a href="../../unix/customizing.html#keys">The customizing document</a> -
+ explains how to change Mozilla's key bindings globally or in your profile.</li>
+</ul>
+
+<h2><a name="mailinglist">Keyboard UI Mailing List</a></h2>
+<p>Please discuss general keyboard issues on the <a href="mailto:mozilla-accessibility-request@mozilla.org?subject=subscribe">
+Mozilla-Accessibility mailing list</a>. We really want people to follow the
+keyboard plan, so if you see Bugzilla bugs that differ from the plan, please
+point it out on the bug and in the mailing list.</p>
+
+<div class="author">Maintained by Aaron Leventhal and Sarah Liberman.</div>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

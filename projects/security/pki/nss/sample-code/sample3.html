@@ -1,0 +1,196 @@
+<?php
+
+$html_title = 'sample3';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+ <br>
+ <tt>/*<br>
+  &nbsp;* Demonstration program for hashing and MACs<br>
+  &nbsp;*/<br>
+ <br>
+  #include &lt;iostream.h&gt;<br>
+ <br>
+  #include "pk11pub.h"<br>
+  #include "nss.h"<br>
+ <br>
+  static void<br>
+  printDigest(unsigned char *digest, unsigned int len)<br>
+  {<br>
+  &nbsp; int i;<br>
+ <br>
+  &nbsp; cout &lt;&lt; "length: " &lt;&lt; len &lt;&lt; endl;<br>
+  &nbsp; for(i = 0;i &lt; len;i++) printf("%02x ", digest[i]);<br>
+  &nbsp; cout &lt;&lt; endl;<br>
+  }<br>
+ <br>
+  /*<br>
+  &nbsp;* main<br>
+  &nbsp;*/<br>
+  int<br>
+  main(int argc, const char *argv[])<br>
+  {<br>
+  &nbsp; int status = 0;<br>
+  &nbsp; PK11SlotInfo *slot = 0;<br>
+  &nbsp; PK11SymKey *key = 0;<br>
+  &nbsp; PK11Context *context = 0;<br>
+  &nbsp; unsigned char data[80];<br>
+  &nbsp; unsigned char digest[20]; /*Is there a way to tell how large the 
+output is?*/<br>
+  &nbsp; unsigned int len;<br>
+  &nbsp; SECStatus s;<br>
+ <br>
+  &nbsp; /* Initialize NSS<br>
+  &nbsp;&nbsp; * If your application code has already initialized NSS, you
+ can skip it<br>
+  &nbsp;&nbsp; * here.<br>
+  &nbsp;&nbsp; * This code uses the simplest of the Init functions, which 
+does not<br>
+  &nbsp;&nbsp; * require a NSS database to exist<br>
+  &nbsp;&nbsp; */<br>
+  &nbsp; NSS_NoDB_Init(".");<br>
+ <br>
+  &nbsp; /* Get a slot to use for the crypto operations */<br>
+  &nbsp; slot = PK11_GetInternalKeySlot();<br>
+  &nbsp; if (!slot)<br>
+  &nbsp; {<br>
+  &nbsp;&nbsp;&nbsp; cout &lt;&lt; "GetInternalKeySlot failed" &lt;&lt; endl;<br>
+  &nbsp;&nbsp;&nbsp; status = 1;<br>
+  &nbsp;&nbsp;&nbsp; goto done;<br>
+  &nbsp; }<br>
+ <br>
+  &nbsp; /*<br>
+  &nbsp;&nbsp; *&nbsp; Part 1 - Simple hashing<br>
+  &nbsp;&nbsp; */<br>
+  &nbsp; cout &lt;&lt; "Part 1 -- Simple hashing" &lt;&lt; endl;<br>
+ <br>
+  &nbsp; /* Initialize data */<br>
+  &nbsp; memset(data, 0xbc, sizeof data);<br>
+ <br>
+  &nbsp; /* Create a context for hashing (digesting) */<br>
+  &nbsp; context = PK11_CreateDigestContext(SEC_OID_MD5);<br>
+  &nbsp; if (!context) { cout &lt;&lt; "CreateDigestContext failed" &lt;&lt;
+ endl; goto done; }<br>
+ <br>
+  &nbsp; s = PK11_DigestBegin(context);<br>
+  &nbsp; if (s != SECSuccess) { cout &lt;&lt; "DigestBegin failed" &lt;&lt;
+ endl; goto done; }<br>
+ <br>
+  &nbsp; s = PK11_DigestOp(context, data, sizeof data);<br>
+  &nbsp; if (s != SECSuccess) { cout &lt;&lt; "DigestUpdate failed" &lt;&lt;
+ endl; goto done; }<br>
+ <br>
+  &nbsp; s = PK11_DigestFinal(context, digest, &amp;len, sizeof digest);<br>
+  &nbsp; if (s != SECSuccess) { cout &lt;&lt; "DigestFinal failed" &lt;&lt;
+ endl; goto done; }<br>
+ <br>
+  &nbsp; /* Print digest */<br>
+  &nbsp; printDigest(digest, len);<br>
+ <br>
+  &nbsp; PK11_DestroyContext(context, PR_TRUE);<br>
+  &nbsp; context = 0;<br>
+ <br>
+  &nbsp; /*<br>
+  &nbsp;&nbsp; *&nbsp; Part 2 - Hashing with included secret key<br>
+  &nbsp;&nbsp; */<br>
+  &nbsp; cout &lt;&lt; "Part 2 -- Hashing with included secret key" &lt;&lt;
+ endl;<br>
+ <br>
+  &nbsp; /* Initialize data */<br>
+  &nbsp; memset(data, 0xbc, sizeof data);<br>
+ <br>
+  &nbsp; /* Create a Key */<br>
+  &nbsp; key = PK11_KeyGen(slot, CKM_GENERIC_SECRET_KEY_GEN, 0, 128, 0);<br>
+  &nbsp; if (!key) { cout &lt;&lt; "Create key failed" &lt;&lt; endl; goto
+ done; }<br>
+ <br>
+  &nbsp; cout &lt;&lt; (void *)key &lt;&lt; endl;<br>
+ <br>
+  &nbsp; /* Create parameters for crypto context */<br>
+  &nbsp; /* NOTE: params must be provided, but may be empty */<br>
+  &nbsp; SECItem noParams;<br>
+  &nbsp; noParams.type = siBuffer;<br>
+  &nbsp; noParams.data = 0;<br>
+  &nbsp; noParams.len = 0;<br>
+ <br>
+  &nbsp; /* Create context using the same slot as the key */<br>
+  //&nbsp; context = PK11_CreateDigestContext(SEC_OID_MD5);<br>
+  &nbsp; context = PK11_CreateContextBySymKey(CKM_MD5, CKA_DIGEST, key, &amp;noParams);<br>
+  &nbsp; if (!context) { cout &lt;&lt; "CreateDigestContext failed" &lt;&lt;
+ endl; goto done; }<br>
+ <br>
+  &nbsp; s = PK11_DigestBegin(context);<br>
+  &nbsp; if (s != SECSuccess) { cout &lt;&lt; "DigestBegin failed" &lt;&lt;
+ endl; goto done; }<br>
+ <br>
+  &nbsp; s = PK11_DigestKey(context, key);<br>
+  &nbsp; if (s != SECSuccess) { cout &lt;&lt; "DigestKey failed" &lt;&lt; 
+endl; goto done; }<br>
+ <br>
+  &nbsp; s = PK11_DigestOp(context, data, sizeof data);<br>
+  &nbsp; if (s != SECSuccess) { cout &lt;&lt; "DigestUpdate failed" &lt;&lt;
+ endl; goto done; }<br>
+ <br>
+  &nbsp; s = PK11_DigestFinal(context, digest, &amp;len, sizeof digest);<br>
+  &nbsp; if (s != SECSuccess) { cout &lt;&lt; "DigestFinal failed" &lt;&lt;
+ endl; goto done; }<br>
+ <br>
+  &nbsp; /* Print digest */<br>
+  &nbsp; printDigest(digest, len);<br>
+ <br>
+  &nbsp; PK11_DestroyContext(context, PR_TRUE);<br>
+  &nbsp; context = 0;<br>
+ <br>
+  &nbsp; /*<br>
+  &nbsp;&nbsp; *&nbsp; Part 3 - MAC (with secret key)<br>
+  &nbsp;&nbsp; */<br>
+  &nbsp; cout &lt;&lt; "Part 3 -- MAC (with secret key)" &lt;&lt; endl;<br>
+ <br>
+  &nbsp; /* Initialize data */<br>
+  &nbsp; memset(data, 0xbc, sizeof data);<br>
+ <br>
+  &nbsp; context = PK11_CreateContextBySymKey(CKM_MD5_HMAC, CKA_SIGN, key,
+ &amp;noParams);<br>
+  &nbsp; if (!context) { cout &lt;&lt; "CreateContextBySymKey failed" &lt;&lt;
+ endl; goto done; }<br>
+ <br>
+  &nbsp; s = PK11_DigestBegin(context);<br>
+  &nbsp; if (s != SECSuccess) { cout &lt;&lt; "DigestBegin failed" &lt;&lt;
+ endl; goto done; }<br>
+ <br>
+  &nbsp; s = PK11_DigestOp(context, data, sizeof data);<br>
+  &nbsp; if (s != SECSuccess) { cout &lt;&lt; "DigestOp failed" &lt;&lt;
+endl;  goto done; }<br>
+ <br>
+  &nbsp; s = PK11_DigestFinal(context, digest, &amp;len, sizeof digest);<br>
+  &nbsp; if (s != SECSuccess) { cout &lt;&lt; "DigestFinal failed" &lt;&lt;
+ endl; goto done; }<br>
+ <br>
+  &nbsp; /* Print digest */<br>
+  &nbsp; printDigest(digest, len);<br>
+ <br>
+  &nbsp; PK11_DestroyContext(context, PR_TRUE);<br>
+  &nbsp; context = 0;<br>
+ <br>
+  done:<br>
+  &nbsp; if (context) PK11_DestroyContext(context, PR_TRUE);&nbsp; /* freeit
+ ?? */<br>
+  &nbsp; if (key) PK11_FreeSymKey(key);<br>
+  &nbsp; if (slot) PK11_FreeSlot(slot);<br>
+ <br>
+  &nbsp; return status;<br>
+  }<br>
+ <br>
+ </tt>                                       <br>
+ 
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

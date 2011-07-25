@@ -1,0 +1,1 @@
+redirect to http://lxr.mozilla.org/mozilla/source/webtools/mozbot/INSTALL

@@ -1,0 +1,479 @@
+<?php
+
+$html_title = 'NSS 3.7 Plan';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="GENERATOR"
+content="Mozilla/4.76 [en] (X11; U; SunOS 5.7 sun4u) [Netscape]">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>                            
+<h2> NSS 3.7 Plan</h2>
+                           </center>
+                                                        
+<center><i><font size="-1">Newsgroup: <a
+ href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a></font></i>
+              <br>
+                           <small><i>November 14, 2002</i></small><br>
+                           <br>
+                           <big><font color="#ff0000"><b>&lt;&lt; DRAFT &gt;&gt;</b></font></big><br>
+                           </center>
+                                                        
+<p> </p>
+                                                     
+<hr size="1" width="100%">                            
+<h3> Introduction</h3>
+                                                       
+<p>The goal of NSS 3.7 is to deliver critical features and bug fixes that
+   NSS customers need before NSS 4.0 (available in 2H 2003). The focus of
+NSS   development will gradually shift to NSS 4.0 but we will continue to
+fix bugs  and enhance the performance of NSS 3.x.</p>
+           
+<ol>
+                         
+</ol>
+                                                     
+<h3> <b><font size="+1">Features</font></b></h3>
+             The features are classified in three categories: <i>In</i>,
+<i>Highly      Desirable</i>,  and <i>Out</i>. By the time the PRD is approved,
+the items     on the Highly Desirable list should all be marked either In
+or Out.<br>
+                                                        
+<h4> In</h4>
+                                                        
+<ol>
+                                                  <li>Integrate Sun's  elliptic 
+     curve  cryptography (ECC) code with NSS. This consists of several  subitems. 
+   Some of these subitems may be dropped if they are not done by  the feature 
+   complete date.</li>
+                                       
+  <ul>
+                            <li>Crypto: Add ECC to freebl.</li>
+             <li>PKCS #11: Add ECC to PKCS #11 wrap and softoken.</li>
+             <li>Cert: Add support for certs with ECC keys and signatures.</li>
+             <li>SSL: Implement the <a
+ href="ftp://ftp.ietf.org/internet-drafts/draft-ietf-tls-ecc-02.txt">ECC
+cipher suites for TLS</a>.<br>
+             </li>
+                                                                        
+                                                        
+  </ul>
+                                  <li>Crypto:&nbsp;Implement FIPS 180-2 SHA-256, 
+ SHA-384, and SHA-512   (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=167605">bug 167605</a>).
+  SHA-256 is a recommended message digest algorithm for XML Digital Signature
+  (XMLDSIG). We should also implement HMAC-SHA256 and RSA with SHA256.</li>
+     <li>Crypto: Implement software integrity check of the softoken (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=177387">bug 177387</a>).</li>
+     <li>Crypto: Verify a signature with a public key not associated with 
+a  certificate (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=174193">bug 174193</a>).<br>
+     </li>
+                          <li>Crypto: Fix the bugs that prevent the use of
+ AES   in JSS 3.3's  SDR   (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=174468">bug 174468</a>,
+          <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=174806">bug
+ 174806</a>).</li>
+                     <li>Cert: Add a way to obtain the list of all email
+addresses   in  a  cert   (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=152986">bug  152986</a>).</li>
+                                  <li>Cert: Detect certificates with duplicate 
+ issuer name and serial number  (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=172247">bug 172247</a>).<br>
+        </li>
+                              <li>PKCS #11: CRL object needs to change PKCS
+#11 object ID upon modification       (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=162753">bug 162753</a>).</li>
+     <li>PKCS #11: CRL updates need to be atomic (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=162976">bug 162976</a>).<br>
+     </li>
+        <li>PKCS#11: Add a new function that blocks the calling thread until
+   a token is removed (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=177391">bug 177391</a>).<br>
+        </li>
+                        <li>SSL: NSS needs to poll for smartcard/hardware 
+token    removal  (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=167756">bug    167756</a>).<br>
+               </li>
+                <li>DB: Fix or find a workaround for <a
+ href="http://www.sleepycat.com/historic.html">Berkeley DB 1.85's known problem</a> 
+      with overwriting or deleting overflow hash key/data pairs (pairs with 
+  items    larger than the page size), which corrupts the cert database when 
+  we store    and delete CRLs (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=169573">bug 169573</a>).<br>
+               </li>
+                                  <li>DB: Investigate whether we can license
+  Sleepycat     DB for use solely within NSS by NSS users who use NSS under
+  the MPL. (NSS     users who use NSS under the GNU GPL can use Sleepycat
+DB  because     <a
+ href="http://www.gnu.org/licenses/license-list.html#GPLCompatibleLicenses">the 
+      Berkeley Database License is compatible with the GNU GPL</a>.)</li>
+                <li>Build: coreconf should allow CC (the C compiler) and
+CCC   (the   C++   compiler) to be overriden (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=107976">bug 107976</a>).</li>
+                <li>Test: All tests should call NSS_Shutdown and check the
+ return    value   (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=171263">bug    171263</a>).</li>
+        <li>Test: Add new certificate and CRL validation tests using the
+vfychain    test program (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=177398">bug 177398</a>).<br>
+        </li>
+               <li>Util: Add a function that maps NSS error codes to error
+ strings.     &nbsp;One  proposal is to use NSPR's error-code-translation
+interface (<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=172051">bug
+172051</a>, <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=66472">bug
+66472</a>).<br>
+               </li>
+                <li>PSM: Remove PSM's dependency on the private NSS header
+ file   crmfi.h    (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=118832">bug  118832</a>).</li>
+       <li>Doc: Document the ASN.1 templates and the classic and QuickDER 
+decoders (<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=177394">bug
+177394</a>).<br>
+       </li>
+                         
+</ol>
+                         
+<ol>
+                         
+</ol>
+                         
+<h4>Highly Desirable</h4>
+           
+<ol>
+             <li>Util: Convert the NSS code to use SEC_QuickDERDecodeItem
+(<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=160805">bug 160805</a>).</li>
+  <li>SDR: Support use of other tokens besides the built-in tokens.</li>
+  <li>Crypto: Implement RSAOAEP (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=158747">bug 158747</a>). 
+ RSAOAEP is required by XML Encryption (XMLENC).</li>
+     <li>Crypto: Implement AES key wrap algorithms (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=167818">bug 167818</a>). 
+ AES-128 key wrap and AES-256 key wrap are required by XML Encryption (XMLENC).<br>
+     </li>
+           
+</ol>
+           
+<h4>Out<br>
+      </h4>
+                                                                        
+             
+<ol>
+                            <li>Path validation for cross certification.</li>
+                    <li>Support for the "Issuing Distribution Point" CRL
+extension      (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=133191">bug 133191</a>).</li>
+                    <li>CMC support (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=53125">bug 53125</a>).</li>
+                    <li>Support for delta-CRLs (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=148214">bug 148214</a>).</li>
+                               <li>Support for the "Freshest CRL" CRL extension 
+   (<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=148200">bug 148200</a>).
+          &nbsp;(This requires support for delta-CRLs).</li>
+        <li>SSL: Implement the server-side DHE TLS ciphersuites (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=102794">bug 102794</a>).<br>
+        </li>
+                <li>Server Name Identification in TLS.</li>
+     <li>Crypto: Make softoken a cryptographic service and cert store  provider
+     on Windows.<br>
+     </li>
+        <li>Cert: Need ability to request and issue certs with SubjectAltName 
+     extension  (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=122863">bug  122863</a>).<br>
+        </li>
+                          <li> OCSP HTTP client may potentially block for 
+a  long   time.&nbsp;       Possible     solutions include a configurable 
+timeout  (<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=110166">bug 
+110166</a>)              or a callback supplied by the NSS client.</li>
+                <li>DB: Rev the NSS database schema to accomodate new requirements
+     (such   as multiple email addresses per email profile).</li>
+                <li>DB: Add checksums for objects (such as trust) stored
+in  the   NSS   databases  to detect file corruption.<br>
+                </li>
+                             <li> Multiple trust domains for virtual servers.</li>
+                             <li> Better error reporting, for example with
+ an  error    stack.</li>
+                             <li> Release the <tt>regress</tt> tool, which
+ is  required     by  the       <a
+ href="http://www.mozilla.org/projects/security/pki/pkcs11/netscape/">Netscape
+              PKCS #11 test suites</a>.</li>
+                                                       <li> Notification
+of  hardware accelerator failures.</li>
+                             <li> Tools: review and implement <tt>signtool</tt> 
+   enhancement       requests     (Bugzilla bugs <a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=66600">#66600</a>, <a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=66603">#66603</a>, <a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=66604">#66604</a>, <a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=66606">#66606</a>, and 
+                 <a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=66608">#66608</a>).</li>
+                               <li> Tools: <tt>dbck</tt> should work.</li>
+                             <li> AES support in S/MIME.</li>
+                             <li> Interpretation of the CRL nextUpdate timestamp.</li>
+                                                             <li> XML Key 
+Management      Specification  (XKMS).</li>
+                             <li> OCSP local caching (<a
+ href="http://bugzilla.mozilla.org/show_bug.cgi?id=91532">bug 91532</a>).</li>
+                                            <li> Resolve the remaining build
+  issues    with   Mozilla client.  Allow    tools (PERL, ZIP) to be  overridden
+  (<a href="http://bugzilla.mozilla.org/show_bug.cgi?id=82268">bug 82268</a>).</li>
+                             <li> Combine SVRCORE with NSS.</li>
+                                                                        
+                                     
+  <ul>
+                            <li> move the useful SVRCORE functions to NSS;
+ or</li>
+                             <li> help LDAP C SDK replace SVRCORE with existing 
+   public    NSS   functions.</li>
+                                                                        
+                                   
+  </ul>
+                             <li> NSS should process UTF-8 strings correctly.&nbsp; 
+     For   example,     when  a web server constructs a certificate request, 
+   it  passes   UTF-8 to   NSS  and  NSS converts UTF-8 to UCS4 for ASN.1 
+Universal     String   encoding.</li>
+                             <li> NSS should support certificate nicknames
+ in  multibyte      character      sets.</li>
+                             <li> Anything that uses certificates or refers 
+ to  certificates       (for   example,   CRLs) should be able to use Distinguished
+   Names (organization         name, common   name, etc.) in multibyte character
+   sets.&nbsp; This  applies       to not only the C API functions but also
+  the command-line tools  such  as       <tt>certutil</tt>.</li>
+                             <li> Command-line tools such as <tt>certutil</tt>
+   should    support     the   default  character set of the locale, which
+ is  often not   UTF-8.</li>
+                                                <li> NSS should support UTF-8 
+  in  certificate  extensions.</li>
+                             <li> <tt>CERT_NameToAscii()</tt> should return 
+ the   certificate       attributes     in UTF-8.</li>
+                             <li> The name of the built-in internal token 
+is  hardcoded      and   cannot    be  localized.</li>
+                                                       
+</ol>
+                                                        
+<ol>
+                                                       
+</ol>
+                                                        
+<h3> Bugs</h3>
+                            The complete list of bugs that will be fixed
+in  NSS   3.7   can   be  found    in  Bugzilla.                        
+   
+<h3> Components</h3>
+                                                        
+<blockquote> <li> NSPR 4.3.</li>
+                             <li> DBM 1.61.</li>
+                            </blockquote>
+                                                        
+<h3> Platforms Supported</h3>
+                            NSS is maintained on the platforms listed below.
+  "Certify"      means    the   NSS   team will build and run QA tests for
+ NSS on a machine      with the   specified    OS.<br>
+                                                     
+<table border="1">
+                            <caption><br>
+                             </caption><tbody>
+                                                                        
+                                   
+  </tbody>  <tbody>
+                               <tr>
+                            <td valign="CENTER"><b>Platform</b></td>
+                             <td valign="CENTER"><b>Build</b></td>
+                             <td valign="CENTER"><b>Certify</b></td>
+                             <td valign="CENTER"><b>Compiler(s)</b></td>
+                            </tr>
+                             <tr>
+                            <td valign="CENTER" rowspan="2" height="43">AIX</td>
+                             <td valign="CENTER" height="43">5.1 (32 bit)</td>
+                             <td valign="CENTER" height="43">5.1</td>
+                             <td valign="CENTER" height="43">C for AIX, Version 
+5.0</td>
+                            </tr>
+                             <tr>
+                            <td valign="CENTER" height="9"><br>
+                           5.1 (64 bit)<br>
+                                 <br>
+                                 </td>
+                             <td valign="CENTER" height="9">5.1</td>
+                             <td valign="CENTER" height="9">C for AIX, Version 
+5.0</td>
+                            </tr>
+                             <tr>
+                            <td valign="CENTER" height="61">Compaq Tru64</td>
+                             <td valign="CENTER" height="61">5.0A</td>
+                             <td valign="CENTER" height="61">5.0A&nbsp; <br>
+                           5.1</td>
+                             <td valign="CENTER" height="61">Compaq C V6.3-132 or Compaq C V6.4-214 (dtk)<br>
+                                 </td>
+                            </tr>
+                             <tr>
+                            <td valign="CENTER" rowspan="2" height="58">HP-UX</td>
+                             <td valign="CENTER" height="58">11.0 (32 bit)</td>
+                             <td valign="CENTER" height="58">11.0</td>
+                             <td valign="CENTER" height="58">HP92453-01 A.11.01.20
+     HP  C  Compiler<br>
+                                 </td>
+                            </tr>
+                             <tr>
+                            <td valign="CENTER" height="9"><br>
+                           11.0 (64 bit)<br>
+                                 <br>
+                                 </td>
+                             <td valign="CENTER" height="9">11.0</td>
+                             <td valign="CENTER" height="9">HP92453-01 A.11.01.20 
+    HP  C  Compiler<br>
+                                 </td>
+                            </tr>
+                             <tr>
+                            <td>Linux 2.4</td>
+                             <td>Red Hat 7.2</td>
+                             <td>Red Hat 7.2<br>
+           Red Hat 7.3<br>
+            Sun Linux 5.0<br>
+                  </td>
+                             <td>gcc 2.96-108</td>
+                            </tr>
+                             <tr>
+                            <td valign="CENTER">NT</td>
+                             <td valign="CENTER">Win2000 SP2</td>
+                             <td valign="CENTER">Win2000 SP2<br>
+                           WinXP</td>
+                             <td valign="CENTER">VC++ 6.0 Service Pack 4</td>
+                            </tr>
+                             <tr>
+                            <td>Windows</td>
+                             <td>Win2000 SP2</td>
+                             <td>Win2000 SP2<br>
+                           WinXP                                        
+                                                                        
+                                                                        
+  
+      <p>Win95 OSR2 *&nbsp; <br>
+                           Win98 SE *&nbsp; <br>
+                           Win Me *</p>
+                                 </td>
+                             <td>VC++ 6.0 Service Pack 4</td>
+                            </tr>
+                             <tr>
+                            <td valign="CENTER" rowspan="2" height="66">Solaris 
+   SPARC</td>
+                             <td valign="CENTER" height="66">8 (32 bit)</td>
+                             <td valign="CENTER" height="66">8 (32 bit) <br>
+                           8 (64 bit) <br>
+                           9</td>
+                             <td valign="CENTER" height="66">Forte 6 update 
+2                          </td>
+                            </tr>
+                             <tr>
+                            <td valign="CENTER" height="12">8 (64 bit)</td>
+                             <td valign="CENTER" height="12">8<br>
+                           9</td>
+                             <td valign="CENTER" height="12">Forte 6 update 
+ 2</td>
+                            </tr>
+                             <tr>
+                            <td>Solaris x86</td>
+                             <td>8</td>
+                             <td>8 <br>
+                           9</td>
+                             <td>Forte 6 update 2</td>
+                            </tr>
+                             <tr>
+                            <td>Mac OS X</td>
+                             <td>10.1.5<br>
+                     </td>
+                             <td>10.1.5<br>
+               10.2.1<br>
+                     </td>
+                             <td>Apple Computer, Inc. version gcc-934.3,
+based    on  gcc   version  2.95.2 19991024 (release)<br>
+                     </td>
+                            </tr>
+                                                                        
+                                   
+  </tbody>                           
+</table>
+                                                        
+<p>* Full QA certification will not be done on these platforms. We will only 
+             verify that <a
+ href="http://www.mozilla.org/projects/security/pki/psm/">PSM</a>   built 
+           with NSS 3.6 works on these platforms. </p>
+                                                     
+<p>** Optional. </p>
+                                                     
+<p>NSS has not yet been formally certified on any other platforms. If you
+              have successfully run NSS QA tests on other platforms, please
+  post     the    test  output logs and results to <a
+ href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a>.
+              If you are interested in taking responsibility for testing
+and    maintaining           NSS on a particular platform that's not listed
+above,    post a message      to   <a
+ href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a>.
+              </p>
+                                                     
+<p><b>Note regarding NT builds:</b> The build listed in the left column above 
+             as the "NT" build will run on NT (including Windows 2000) only 
+  and    hence      can potentially take advantage of some Win32 functions 
+ that are   only implemented      on NT, such as fibers and I/O completion 
+ ports. The   build listed above   as   the "Windows" build will run on all 
+ Windows flavors   -- 95, 98, Me, NT,  and   2000. </p>
+                                                     
+<p>Only NSPR makes use of this NT vs. Windows distinction and provides different 
+             NT and Windows builds. Many Netscape products, including NSS, 
+ have     NT   and    Windows builds that are essentially the same except 
+one difference:        one  is  linked with the NT version of NSPR and the 
+other is linked  with     the Windows    version of NSPR. </p>
+                                                       
+<h3> Schedule</h3>
+                            We have the following <b>tentative</b> target 
+dates.<br>
+                                                     
+<table border="1">
+                            <caption><br>
+                             </caption><tbody>
+                                                                        
+                                   
+  </tbody>  <tbody>
+                               <tr>
+                            <td><b>Milestone</b></td>
+                             <td><b>Date</b></td>
+                            </tr>
+                                        <tr>
+                            <td>Feature complete (FC)</td>
+                             <td>1/27/2003<br>
+                                 </td>
+                            </tr>
+                             <tr>
+                            <td>Beta</td>
+                             <td>2/10/2003 (FC + 2 weeks)<br>
+                                 </td>
+                            </tr>
+                             <tr>
+                            <td>Certification (RTM Candidate)</td>
+                             <td>2/24/2003 (Beta + 2 weeks)<br>
+                                 </td>
+                            </tr>
+                             <tr>
+                            <td><b>RTM</b></td>
+                             <td>3/3/2003 (Certification + 1 week)<br>
+                                 </td>
+                               </tr>
+                                                                        
+                                  
+  </tbody>                           
+</table>
+                           <br>
+ <br>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

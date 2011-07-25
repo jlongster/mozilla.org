@@ -1,0 +1,778 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> /*
+<b><a name="37">   37</a></b>  * This file deals with PKCS #11 passwords and authentication.
+<b><a name="38">   38</a></b>  */
+<b><a name="39">   39</a></b> #include "seccomon.h"
+<b><a name="40">   40</a></b> #include "secmod.h"
+<b><a name="41">   41</a></b> #include "secmodi.h"
+<b><a name="42">   42</a></b> #include "secmodti.h"
+<b><a name="43">   43</a></b> #include "pkcs11t.h"
+<b><a name="44">   44</a></b> #include "pk11func.h"
+<b><a name="45">   45</a></b> #include "secitem.h"
+<b><a name="46">   46</a></b> #include "secerr.h"
+<b><a name="47">   47</a></b> 
+<b><a name="48">   48</a></b> #include "pkim.h" 
+<b><a name="49">   49</a></b> 
+<b><a name="50">   50</a></b> 
+<b><a name="51">   51</a></b> /*************************************************************
+<b><a name="52">   52</a></b>  * local static and global data
+<b><a name="53">   53</a></b>  *************************************************************/
+<b><a name="54">   54</a></b> /*
+<b><a name="55">   55</a></b>  * This structure keeps track of status that spans all the Slots.
+<b><a name="56">   56</a></b>  * NOTE: This is a global data structure. It semantics expect thread crosstalk
+<b><a name="57">   57</a></b>  * be very careful when you see it used. 
+<b><a name="58">   58</a></b>  *  It's major purpose in life is to allow the user to log in one PER 
+<b><a name="59">   59</a></b>  * Tranaction, even if a transaction spans threads. The problem is the user
+<b><a name="60">   60</a></b>  * may have to enter a password one just to be able to look at the 
+<b><a name="61">   61</a></b>  * personalities/certificates (s)he can use. Then if Auth every is one, they
+<b><a name="62">   62</a></b>  * may have to enter the password again to use the card. See PK11_StartTransac
+<b><a name="63">   63</a></b>  * and PK11_EndTransaction.
+<b><a name="64">   64</a></b>  */
+<b><a name="65">   65</a></b> static struct <a href="#65">PK11GlobalStruct</a> {
+<b><a name="66">   66</a></b>    int transaction;
+<b><a name="67">   67</a></b>    <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> inTransaction;
+<b><a name="68">   68</a></b>    char *(<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_CALLBACK">PR_CALLBACK</a></a></a></a></a></a></a> *getPass)(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *,<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a>,void *);
+<b><a name="69">   69</a></b>    <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> (<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_CALLBACK">PR_CALLBACK</a></a></a></a></a></a></a> *verifyPass)(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *,void *);
+<b><a name="70">   70</a></b>    <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> (<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_CALLBACK">PR_CALLBACK</a></a></a></a></a></a></a> *<a href="../softoken/fipstokn.c.dep.html#isLoggedIn">isLoggedIn</a>)(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *,void *);
+<b><a name="71">   71</a></b> } <a href="#71">PK11_Global</a> = { 1, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> };
+<b><a name="72">   72</a></b>  
+<b><a name="73">   73</a></b> /***********************************************************
+<b><a name="74">   74</a></b>  * Password Utilities
+<b><a name="75">   75</a></b>  ***********************************************************/
+<b><a name="76">   76</a></b> /*
+<b><a name="77">   77</a></b>  * Check the user's password. Log into the card if it's correct.
+<b><a name="78">   78</a></b>  * succeed if the user is already logged in.
+<b><a name="79">   79</a></b>  */
+<b><a name="80">   80</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="81">   81</a></b> <a href="#81">pk11_CheckPassword</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,char *pw)
+<b><a name="82">   82</a></b> {
+<b><a name="83">   83</a></b>     int <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = 0;
+<b><a name="84">   84</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="85">   85</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="86">   86</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#int64">int64</a> currtime = <a href="../mozilla/nsprpub/pr/src/md/beos/beos.c.dep.html#PR_Now">PR_Now</a><a href="../mozilla/nsprpub/pr/src/md/mac/mactime.c.dep.html#PR_Now"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/src/md/os2/os2misc.c.dep.html#PR_Now"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/src/md/unix/unix.c.dep.html#PR_Now"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/src/md/windows/ntmisc.c.dep.html#PR_Now"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/src/md/windows/w16null.c.dep.html#PR_Now"><sup>[5]</sup></a>();
+<b><a name="87">   87</a></b> 
+<b><a name="88">   88</a></b>     if (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;protectedAuthPath) {
+<b><a name="89">   89</a></b>         <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = 0;
+<b><a name="90">   90</a></b>         pw = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="91">   91</a></b>     } else if (pw == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="92">   92</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="93">   93</a></b>         return SECFailure;
+<b><a name="94">   94</a></b>     } else {
+<b><a name="95">   95</a></b>         <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = PORT_Str<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>(pw);
+<b><a name="96">   96</a></b>     }
+<b><a name="97">   97</a></b> 
+<b><a name="98">   98</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_EnterSlotMonitor">PK11_EnterSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="99">   99</a></b>     crv = <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_Login(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;session,<a href="../softoken/pkcs11t.h.dep.html#CKU_USER">CKU_USER</a>,
+<b><a name="100">  100</a></b>                                                 (unsigned char *)pw,<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="101">  101</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = 0;
+<b><a name="102">  102</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_ExitSlotMonitor">PK11_ExitSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="103">  103</a></b>     switch (crv) {
+<b><a name="104">  104</a></b>     /* if we're already logged in, we're good to go */
+<b><a name="105">  105</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>:
+<b><a name="106">  106</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;authTransact = <a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.transaction;
+<b><a name="107">  107</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKR_USER_ALREADY_LOGGED_IN">CKR_USER_ALREADY_LOGGED_IN</a>:
+<b><a name="108">  108</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;authTime = currtime;
+<b><a name="109">  109</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="110">  110</a></b>         break;
+<b><a name="111">  111</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKR_PIN_INCORRECT">CKR_PIN_INCORRECT</a>:
+<b><a name="112">  112</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_PASSWORD);
+<b><a name="113">  113</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECWouldBlock; /* everything else is ok, only the pin is bad */
+<b><a name="114">  114</a></b>         break;
+<b><a name="115">  115</a></b>     default:
+<b><a name="116">  116</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(<a href="../pk11wrap/pk11err.c.dep.html#PK11_MapError">PK11_MapError</a>(crv));
+<b><a name="117">  117</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure; /* some failure we can't fix by retrying */
+<b><a name="118">  118</a></b>     }
+<b><a name="119">  119</a></b>     return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="120">  120</a></b> }
+<b><a name="121">  121</a></b> 
+<b><a name="122">  122</a></b> /*
+<b><a name="123">  123</a></b>  * Check the user's password. Logout before hand to make sure that
+<b><a name="124">  124</a></b>  * we are really checking the password.
+<b><a name="125">  125</a></b>  */
+<b><a name="126">  126</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="127">  127</a></b> <a href="#127">PK11_CheckUserPassword</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,char *pw)
+<b><a name="128">  128</a></b> {
+<b><a name="129">  129</a></b>     int <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = 0;
+<b><a name="130">  130</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="131">  131</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="132">  132</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#int64">int64</a> currtime = <a href="../mozilla/nsprpub/pr/src/md/beos/beos.c.dep.html#PR_Now">PR_Now</a><a href="../mozilla/nsprpub/pr/src/md/mac/mactime.c.dep.html#PR_Now"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/src/md/os2/os2misc.c.dep.html#PR_Now"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/src/md/unix/unix.c.dep.html#PR_Now"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/src/md/windows/ntmisc.c.dep.html#PR_Now"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/src/md/windows/w16null.c.dep.html#PR_Now"><sup>[5]</sup></a>();
+<b><a name="133">  133</a></b> 
+<b><a name="134">  134</a></b>     if (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;protectedAuthPath) {
+<b><a name="135">  135</a></b>         <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = 0;
+<b><a name="136">  136</a></b>         pw = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="137">  137</a></b>     } else if (pw == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="138">  138</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="139">  139</a></b>         return SECFailure;
+<b><a name="140">  140</a></b>     } else {
+<b><a name="141">  141</a></b>         <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = PORT_Str<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>(pw);
+<b><a name="142">  142</a></b>     }
+<b><a name="143">  143</a></b> 
+<b><a name="144">  144</a></b>     /* force a logout */
+<b><a name="145">  145</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_EnterSlotMonitor">PK11_EnterSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="146">  146</a></b>     <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_Logout(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;session);
+<b><a name="147">  147</a></b> 
+<b><a name="148">  148</a></b>     crv = <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_Login(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;session,<a href="../softoken/pkcs11t.h.dep.html#CKU_USER">CKU_USER</a>,
+<b><a name="149">  149</a></b>                                         (unsigned char *)pw,<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="150">  150</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = 0;
+<b><a name="151">  151</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_ExitSlotMonitor">PK11_ExitSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="152">  152</a></b>     switch (crv) {
+<b><a name="153">  153</a></b>     /* if we're already logged in, we're good to go */
+<b><a name="154">  154</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>:
+<b><a name="155">  155</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;authTransact = <a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.transaction;
+<b><a name="156">  156</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;authTime = currtime;
+<b><a name="157">  157</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="158">  158</a></b>         break;
+<b><a name="159">  159</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKR_PIN_INCORRECT">CKR_PIN_INCORRECT</a>:
+<b><a name="160">  160</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_PASSWORD);
+<b><a name="161">  161</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECWouldBlock; /* everything else is ok, only the pin is bad */
+<b><a name="162">  162</a></b>         break;
+<b><a name="163">  163</a></b>     default:
+<b><a name="164">  164</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(<a href="../pk11wrap/pk11err.c.dep.html#PK11_MapError">PK11_MapError</a>(crv));
+<b><a name="165">  165</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure; /* some failure we can't fix by retrying */
+<b><a name="166">  166</a></b>     }
+<b><a name="167">  167</a></b>     return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="168">  168</a></b> }
+<b><a name="169">  169</a></b> 
+<b><a name="170">  170</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="171">  171</a></b> <a href="#171">PK11_Logout</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)
+<b><a name="172">  172</a></b> {
+<b><a name="173">  173</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="174">  174</a></b> 
+<b><a name="175">  175</a></b>     /* force a logout */
+<b><a name="176">  176</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_EnterSlotMonitor">PK11_EnterSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="177">  177</a></b>     crv = <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_Logout(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;session);
+<b><a name="178">  178</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = 0;
+<b><a name="179">  179</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_ExitSlotMonitor">PK11_ExitSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="180">  180</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="181">  181</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(<a href="../pk11wrap/pk11err.c.dep.html#PK11_MapError">PK11_MapError</a>(crv));
+<b><a name="182">  182</a></b>         return SECFailure;
+<b><a name="183">  183</a></b>     }
+<b><a name="184">  184</a></b>     return  <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="185">  185</a></b> }
+<b><a name="186">  186</a></b> 
+<b><a name="187">  187</a></b> /*
+<b><a name="188">  188</a></b>  * transaction stuff is for when we test for the need to do every
+<b><a name="189">  189</a></b>  * time auth to see if we already did it for this slot/transaction
+<b><a name="190">  190</a></b>  */
+<b><a name="191">  191</a></b> void <a href="#191">PK11_StartAuthTransaction</a>(void)
+<b><a name="192">  192</a></b> {
+<b><a name="193">  193</a></b> <a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.transaction++;
+<b><a name="194">  194</a></b> <a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.inTransaction = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>;
+<b><a name="195">  195</a></b> }
+<b><a name="196">  196</a></b> 
+<b><a name="197">  197</a></b> void <a href="#197">PK11_EndAuthTransaction</a>(void)
+<b><a name="198">  198</a></b> {
+<b><a name="199">  199</a></b> <a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.transaction++;
+<b><a name="200">  200</a></b> <a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.inTransaction = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>;
+<b><a name="201">  201</a></b> }
+<b><a name="202">  202</a></b> 
+<b><a name="203">  203</a></b> /*
+<b><a name="204">  204</a></b>  * before we do a private key op, we check to see if we
+<b><a name="205">  205</a></b>  * need to reauthenticate.
+<b><a name="206">  206</a></b>  */
+<b><a name="207">  207</a></b> void
+<b><a name="208">  208</a></b> <a href="#208">PK11_HandlePasswordCheck</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,void *wincx)
+<b><a name="209">  209</a></b> {
+<b><a name="210">  210</a></b>     int askpw = <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;askpw;
+<b><a name="211">  211</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> NeedAuth = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>;
+<b><a name="212">  212</a></b> 
+<b><a name="213">  213</a></b>     if (!<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;needLogin) return;
+<b><a name="214">  214</a></b> 
+<b><a name="215">  215</a></b>     if ((<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;defaultFlags &amp; <a href="../pk11wrap/secmodt.h.dep.html#PK11_OWN_PW_DEFAULTS">PK11_OWN_PW_DEFAULTS</a>) == 0) {
+<b><a name="216">  216</a></b>         <a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *def_slot = <a href="../pk11wrap/pk11slot.c.dep.html#PK11_GetInternalKeySlot">PK11_GetInternalKeySlot</a>();
+<b><a name="217">  217</a></b> 
+<b><a name="218">  218</a></b>         if (def_slot) {
+<b><a name="219">  219</a></b>             askpw = def_slot-&gt;askpw;
+<b><a name="220">  220</a></b>             <a href="../pk11wrap/pk11slot.c.dep.html#PK11_FreeSlot">PK11_FreeSlot</a>(def_slot);
+<b><a name="221">  221</a></b>         }
+<b><a name="222">  222</a></b>     }
+<b><a name="223">  223</a></b> 
+<b><a name="224">  224</a></b>     /* timeouts are handled by isLoggedIn */
+<b><a name="225">  225</a></b>     if (!<a href="../pk11wrap/pk11auth.c.dep.html#PK11_IsLoggedIn">PK11_IsLoggedIn</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,wincx)) {
+<b><a name="226">  226</a></b>         NeedAuth = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>;
+<b><a name="227">  227</a></b>     } else if (askpw == -1) {
+<b><a name="228">  228</a></b>         if (!<a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.inTransaction        ||
+<b><a name="229">  229</a></b>                          (<a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.transaction != <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;authTransact)) {
+<b><a name="230">  230</a></b>                 <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_EnterSlotMonitor">PK11_EnterSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="231">  231</a></b>             <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_Logout(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;session);
+<b><a name="232">  232</a></b>             <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = 0;
+<b><a name="233">  233</a></b>                 <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_ExitSlotMonitor">PK11_ExitSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="234">  234</a></b>             NeedAuth = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>;
+<b><a name="235">  235</a></b>         }
+<b><a name="236">  236</a></b>     }
+<b><a name="237">  237</a></b>     if (NeedAuth) <a href="../pk11wrap/pk11auth.c.dep.html#PK11_DoPassword">PK11_DoPassword</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>,wincx);
+<b><a name="238">  238</a></b> }
+<b><a name="239">  239</a></b> 
+<b><a name="240">  240</a></b> void
+<b><a name="241">  241</a></b> <a href="#241">PK11_SlotDBUpdate</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)
+<b><a name="242">  242</a></b> {
+<b><a name="243">  243</a></b>     <a href="../pk11wrap/pk11util.c.dep.html#SECMOD_UpdateModule">SECMOD_UpdateModule</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;module);
+<b><a name="244">  244</a></b> }
+<b><a name="245">  245</a></b> 
+<b><a name="246">  246</a></b> /*
+<b><a name="247">  247</a></b>  * set new askpw and timeout values
+<b><a name="248">  248</a></b>  */
+<b><a name="249">  249</a></b> void
+<b><a name="250">  250</a></b> <a href="#250">PK11_SetSlotPWValues</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,int askpw, int <a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a>)
+<b><a name="251">  251</a></b> {
+<b><a name="252">  252</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;askpw = askpw;
+<b><a name="253">  253</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;<a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a> = <a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a>;
+<b><a name="254">  254</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;defaultFlags |= <a href="../pk11wrap/secmodt.h.dep.html#PK11_OWN_PW_DEFAULTS">PK11_OWN_PW_DEFAULTS</a>;
+<b><a name="255">  255</a></b>         <a href="../pk11wrap/pk11auth.c.dep.html#PK11_SlotDBUpdate">PK11_SlotDBUpdate</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="256">  256</a></b> }
+<b><a name="257">  257</a></b> 
+<b><a name="258">  258</a></b> /*
+<b><a name="259">  259</a></b>  * Get the askpw and timeout values for this slot
+<b><a name="260">  260</a></b>  */
+<b><a name="261">  261</a></b> void
+<b><a name="262">  262</a></b> <a href="#262">PK11_GetSlotPWValues</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,int *askpw, int *<a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a>)
+<b><a name="263">  263</a></b> {
+<b><a name="264">  264</a></b>     *askpw = <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;askpw;
+<b><a name="265">  265</a></b>     *<a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a> = <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;<a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a>;
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b>     if ((<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;defaultFlags &amp; <a href="../pk11wrap/secmodt.h.dep.html#PK11_OWN_PW_DEFAULTS">PK11_OWN_PW_DEFAULTS</a>) == 0) {
+<b><a name="268">  268</a></b>         <a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *def_slot = <a href="../pk11wrap/pk11slot.c.dep.html#PK11_GetInternalKeySlot">PK11_GetInternalKeySlot</a>();
+<b><a name="269">  269</a></b> 
+<b><a name="270">  270</a></b>         if (def_slot) {
+<b><a name="271">  271</a></b>             *askpw = def_slot-&gt;askpw;
+<b><a name="272">  272</a></b>             *<a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a> = def_slot-&gt;<a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a>;
+<b><a name="273">  273</a></b>             <a href="../pk11wrap/pk11slot.c.dep.html#PK11_FreeSlot">PK11_FreeSlot</a>(def_slot);
+<b><a name="274">  274</a></b>         }
+<b><a name="275">  275</a></b>     }
+<b><a name="276">  276</a></b> }
+<b><a name="277">  277</a></b> 
+<b><a name="278">  278</a></b> /*
+<b><a name="279">  279</a></b>  * Returns true if the token is needLogin and isn't logged in.
+<b><a name="280">  280</a></b>  * This function is used to determine if authentication is needed
+<b><a name="281">  281</a></b>  * before attempting a potentially privelleged operation.
+<b><a name="282">  282</a></b>  */
+<b><a name="283">  283</a></b> <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a>
+<b><a name="284">  284</a></b> <a href="#284">pk11_LoginStillRequired</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, void *wincx)
+<b><a name="285">  285</a></b> {
+<b><a name="286">  286</a></b>     return <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;needLogin &amp;&amp; !<a href="../pk11wrap/pk11auth.c.dep.html#PK11_IsLoggedIn">PK11_IsLoggedIn</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,wincx);
+<b><a name="287">  287</a></b> }
+<b><a name="288">  288</a></b> 
+<b><a name="289">  289</a></b> /*
+<b><a name="290">  290</a></b>  * make sure a slot is authenticated...
+<b><a name="291">  291</a></b>  * This function only does the authentication if it is needed.
+<b><a name="292">  292</a></b>  */
+<b><a name="293">  293</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="294">  294</a></b> <a href="#294">PK11_Authenticate</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> loadCerts, void *wincx) {
+<b><a name="295">  295</a></b>     if (<a href="../pk11wrap/pk11auth.c.dep.html#pk11_LoginStillRequired">pk11_LoginStillRequired</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,wincx)) {
+<b><a name="296">  296</a></b>         return <a href="../pk11wrap/pk11auth.c.dep.html#PK11_DoPassword">PK11_DoPassword</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,loadCerts,wincx);
+<b><a name="297">  297</a></b>     }
+<b><a name="298">  298</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="299">  299</a></b> }
+<b><a name="300">  300</a></b> 
+<b><a name="301">  301</a></b> /*
+<b><a name="302">  302</a></b>  * Authenticate to "unfriendly" tokens (tokens which need to be logged
+<b><a name="303">  303</a></b>  * in to find the certs.
+<b><a name="304">  304</a></b>  */
+<b><a name="305">  305</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="306">  306</a></b> <a href="#306">pk11_AuthenticateUnfriendly</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> loadCerts, void *wincx)
+<b><a name="307">  307</a></b> {
+<b><a name="308">  308</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="309">  309</a></b>     if (!<a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_IsFriendly">PK11_IsFriendly</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)) {
+<b><a name="310">  310</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../pk11wrap/pk11auth.c.dep.html#PK11_Authenticate">PK11_Authenticate</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, loadCerts, wincx);
+<b><a name="311">  311</a></b>     }
+<b><a name="312">  312</a></b>     return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="313">  313</a></b> }
+<b><a name="314">  314</a></b> 
+<b><a name="315">  315</a></b> 
+<b><a name="316">  316</a></b> /*
+<b><a name="317">  317</a></b>  * NOTE: this assumes that we are logged out of the card before hand
+<b><a name="318">  318</a></b>  */
+<b><a name="319">  319</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="320">  320</a></b> <a href="#320">PK11_CheckSSOPassword</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, char *ssopw)
+<b><a name="321">  321</a></b> {
+<b><a name="322">  322</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> rwsession;
+<b><a name="323">  323</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="324">  324</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="325">  325</a></b>     int <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = 0;
+<b><a name="326">  326</a></b> 
+<b><a name="327">  327</a></b>     /* get a rwsession */
+<b><a name="328">  328</a></b>     rwsession = <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_GetRWSession">PK11_GetRWSession</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="329">  329</a></b>     if (rwsession == <a href="../softoken/pkcs11t.h.dep.html#CK_INVALID_SESSION">CK_INVALID_SESSION</a>) {
+<b><a name="330">  330</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_DATA);
+<b><a name="331">  331</a></b>             return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="332">  332</a></b>     }
+<b><a name="333">  333</a></b> 
+<b><a name="334">  334</a></b>     if (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;protectedAuthPath) {
+<b><a name="335">  335</a></b>         <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = 0;
+<b><a name="336">  336</a></b>         ssopw = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="337">  337</a></b>     } else if (ssopw == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="338">  338</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="339">  339</a></b>         return SECFailure;
+<b><a name="340">  340</a></b>     } else {
+<b><a name="341">  341</a></b>         <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = PORT_Str<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>(ssopw);
+<b><a name="342">  342</a></b>     }
+<b><a name="343">  343</a></b> 
+<b><a name="344">  344</a></b>     /* check the password */
+<b><a name="345">  345</a></b>     crv = <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_Login(rwsession,<a href="../softoken/pkcs11t.h.dep.html#CKU_SO">CKU_SO</a>,
+<b><a name="346">  346</a></b>                                                 (unsigned char *)ssopw,<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="347">  347</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = 0;
+<b><a name="348">  348</a></b>     switch (crv) {
+<b><a name="349">  349</a></b>     /* if we're already logged in, we're good to go */
+<b><a name="350">  350</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>:
+<b><a name="351">  351</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="352">  352</a></b>         break;
+<b><a name="353">  353</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKR_PIN_INCORRECT">CKR_PIN_INCORRECT</a>:
+<b><a name="354">  354</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_PASSWORD);
+<b><a name="355">  355</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECWouldBlock; /* everything else is ok, only the pin is bad */
+<b><a name="356">  356</a></b>         break;
+<b><a name="357">  357</a></b>     default:
+<b><a name="358">  358</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(<a href="../pk11wrap/pk11err.c.dep.html#PK11_MapError">PK11_MapError</a>(crv));
+<b><a name="359">  359</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure; /* some failure we can't fix by retrying */
+<b><a name="360">  360</a></b>     }
+<b><a name="361">  361</a></b>     <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_Logout(rwsession);
+<b><a name="362">  362</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = 0;
+<b><a name="363">  363</a></b> 
+<b><a name="364">  364</a></b>     /* release rwsession */
+<b><a name="365">  365</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_RestoreROSession">PK11_RestoreROSession</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,rwsession);
+<b><a name="366">  366</a></b>     return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="367">  367</a></b> }
+<b><a name="368">  368</a></b> 
+<b><a name="369">  369</a></b> /*
+<b><a name="370">  370</a></b>  * make sure the password conforms to your token's requirements.
+<b><a name="371">  371</a></b>  */
+<b><a name="372">  372</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="373">  373</a></b> <a href="#373">PK11_VerifyPW</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,char *pw)
+<b><a name="374">  374</a></b> {
+<b><a name="375">  375</a></b>     int <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = PORT_Str<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>(pw);
+<b><a name="376">  376</a></b> 
+<b><a name="377">  377</a></b>     if ((<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;minPassword &gt; <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>) || (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;maxPassword &lt; <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>)) {
+<b><a name="378">  378</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_DATA);
+<b><a name="379">  379</a></b>         return SECFailure;
+<b><a name="380">  380</a></b>     }
+<b><a name="381">  381</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="382">  382</a></b> }
+<b><a name="383">  383</a></b> 
+<b><a name="384">  384</a></b> /*
+<b><a name="385">  385</a></b>  * initialize a user PIN Value
+<b><a name="386">  386</a></b>  */
+<b><a name="387">  387</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="388">  388</a></b> <a href="#388">PK11_InitPin</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,char *ssopw, char *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#userpw">userpw</a>)
+<b><a name="389">  389</a></b> {
+<b><a name="390">  390</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> rwsession = <a href="../softoken/pkcs11t.h.dep.html#CK_INVALID_SESSION">CK_INVALID_SESSION</a>;
+<b><a name="391">  391</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="392">  392</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="393">  393</a></b>     int <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>;
+<b><a name="394">  394</a></b>     int ssolen;
+<b><a name="395">  395</a></b> 
+<b><a name="396">  396</a></b>     if (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#userpw">userpw</a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#userpw">userpw</a> = "";
+<b><a name="397">  397</a></b>     if (ssopw == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) ssopw = "";
+<b><a name="398">  398</a></b> 
+<b><a name="399">  399</a></b>     <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = PORT_Str<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#userpw">userpw</a>);
+<b><a name="400">  400</a></b>     ssolen = <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a>(ssopw);
+<b><a name="401">  401</a></b> 
+<b><a name="402">  402</a></b>     /* get a rwsession */
+<b><a name="403">  403</a></b>     rwsession = <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_GetRWSession">PK11_GetRWSession</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="404">  404</a></b>     if (rwsession == <a href="../softoken/pkcs11t.h.dep.html#CK_INVALID_SESSION">CK_INVALID_SESSION</a>) {
+<b><a name="405">  405</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_DATA);
+<b><a name="406">  406</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = 0;
+<b><a name="407">  407</a></b>             return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="408">  408</a></b>     }
+<b><a name="409">  409</a></b> 
+<b><a name="410">  410</a></b>     if (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;protectedAuthPath) {
+<b><a name="411">  411</a></b>         <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = 0;
+<b><a name="412">  412</a></b>         ssolen = 0;
+<b><a name="413">  413</a></b>         ssopw = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="414">  414</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#userpw">userpw</a> = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="415">  415</a></b>     }
+<b><a name="416">  416</a></b> 
+<b><a name="417">  417</a></b>     /* check the password */
+<b><a name="418">  418</a></b>     crv = <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_Login(rwsession,<a href="../softoken/pkcs11t.h.dep.html#CKU_SO">CKU_SO</a>, 
+<b><a name="419">  419</a></b>                                           (unsigned char *)ssopw,ssolen);
+<b><a name="420">  420</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = 0;
+<b><a name="421">  421</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="422">  422</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(<a href="../pk11wrap/pk11err.c.dep.html#PK11_MapError">PK11_MapError</a>(crv));
+<b><a name="423">  423</a></b>         goto done;
+<b><a name="424">  424</a></b>     }
+<b><a name="425">  425</a></b> 
+<b><a name="426">  426</a></b>     crv = <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_InitPIN(rwsession,(unsigned char *)<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#userpw">userpw</a>,<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="427">  427</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="428">  428</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(<a href="../pk11wrap/pk11err.c.dep.html#PK11_MapError">PK11_MapError</a>(crv));
+<b><a name="429">  429</a></b>     } else {
+<b><a name="430">  430</a></b>             <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="431">  431</a></b>     }
+<b><a name="432">  432</a></b> 
+<b><a name="433">  433</a></b> done:
+<b><a name="434">  434</a></b>     <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_Logout(rwsession);
+<b><a name="435">  435</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = 0;
+<b><a name="436">  436</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_RestoreROSession">PK11_RestoreROSession</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,rwsession);
+<b><a name="437">  437</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> == <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="438">  438</a></b>         /* update our view of the world */
+<b><a name="439">  439</a></b>         <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_InitToken">PK11_InitToken</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="440">  440</a></b>         <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_EnterSlotMonitor">PK11_EnterSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="441">  441</a></b>             <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_Login(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;session,<a href="../softoken/pkcs11t.h.dep.html#CKU_USER">CKU_USER</a>,
+<b><a name="442">  442</a></b>                                                 (unsigned char *)<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#userpw">userpw</a>,<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="443">  443</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = 0;
+<b><a name="444">  444</a></b>         <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_ExitSlotMonitor">PK11_ExitSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="445">  445</a></b>     }
+<b><a name="446">  446</a></b>     return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="447">  447</a></b> }
+<b><a name="448">  448</a></b> 
+<b><a name="449">  449</a></b> /*
+<b><a name="450">  450</a></b>  * Change an existing user password
+<b><a name="451">  451</a></b>  */
+<b><a name="452">  452</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="453">  453</a></b> <a href="#453">PK11_ChangePW</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,char *oldpw, char *newpw)
+<b><a name="454">  454</a></b> {
+<b><a name="455">  455</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="456">  456</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="457">  457</a></b>     int newLen;
+<b><a name="458">  458</a></b>     int oldLen;
+<b><a name="459">  459</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> rwsession;
+<b><a name="460">  460</a></b> 
+<b><a name="461">  461</a></b>     if (newpw == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) newpw = "";
+<b><a name="462">  462</a></b>     if (oldpw == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) oldpw = "";
+<b><a name="463">  463</a></b>     newLen = <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a>(newpw);
+<b><a name="464">  464</a></b>     oldLen = <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a>(oldpw);
+<b><a name="465">  465</a></b> 
+<b><a name="466">  466</a></b>     /* get a rwsession */
+<b><a name="467">  467</a></b>     rwsession = <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_GetRWSession">PK11_GetRWSession</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="468">  468</a></b>     if (rwsession == <a href="../softoken/pkcs11t.h.dep.html#CK_INVALID_SESSION">CK_INVALID_SESSION</a>) {
+<b><a name="469">  469</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_DATA);
+<b><a name="470">  470</a></b>             return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="471">  471</a></b>     }
+<b><a name="472">  472</a></b> 
+<b><a name="473">  473</a></b>     crv = <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_SetPIN(rwsession,
+<b><a name="474">  474</a></b>                 (unsigned char *)oldpw,oldLen,(unsigned char *)newpw,newLen);
+<b><a name="475">  475</a></b>     if (crv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="476">  476</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="477">  477</a></b>     } else {
+<b><a name="478">  478</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(<a href="../pk11wrap/pk11err.c.dep.html#PK11_MapError">PK11_MapError</a>(crv));
+<b><a name="479">  479</a></b>     }
+<b><a name="480">  480</a></b> 
+<b><a name="481">  481</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_RestoreROSession">PK11_RestoreROSession</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,rwsession);
+<b><a name="482">  482</a></b> 
+<b><a name="483">  483</a></b>     /* update our view of the world */
+<b><a name="484">  484</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_InitToken">PK11_InitToken</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="485">  485</a></b>     return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="486">  486</a></b> }
+<b><a name="487">  487</a></b> 
+<b><a name="488">  488</a></b> static char *
+<b><a name="489">  489</a></b> <a href="#489">pk11_GetPassword</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> retry, void * wincx)
+<b><a name="490">  490</a></b> {
+<b><a name="491">  491</a></b>     if (<a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.getPass == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="492">  492</a></b>     return (*<a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.getPass)(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, retry, wincx);
+<b><a name="493">  493</a></b> }
+<b><a name="494">  494</a></b> 
+<b><a name="495">  495</a></b> void
+<b><a name="496">  496</a></b> <a href="#496">PK11_SetPasswordFunc</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11PasswordFunc">PK11PasswordFunc</a> func)
+<b><a name="497">  497</a></b> {
+<b><a name="498">  498</a></b>     <a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.getPass = func;
+<b><a name="499">  499</a></b> }
+<b><a name="500">  500</a></b> 
+<b><a name="501">  501</a></b> void
+<b><a name="502">  502</a></b> <a href="#502">PK11_SetVerifyPasswordFunc</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11VerifyPasswordFunc">PK11VerifyPasswordFunc</a> func)
+<b><a name="503">  503</a></b> {
+<b><a name="504">  504</a></b>     <a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.verifyPass = func;
+<b><a name="505">  505</a></b> }
+<b><a name="506">  506</a></b> 
+<b><a name="507">  507</a></b> void
+<b><a name="508">  508</a></b> <a href="#508">PK11_SetIsLoggedInFunc</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11IsLoggedInFunc">PK11IsLoggedInFunc</a> func)
+<b><a name="509">  509</a></b> {
+<b><a name="510">  510</a></b>     <a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.<a href="../softoken/fipstokn.c.dep.html#isLoggedIn">isLoggedIn</a> = func;
+<b><a name="511">  511</a></b> }
+<b><a name="512">  512</a></b> 
+<b><a name="513">  513</a></b> 
+<b><a name="514">  514</a></b> /*
+<b><a name="515">  515</a></b>  * authenticate to a slot. This loops until we can't recover, the user
+<b><a name="516">  516</a></b>  * gives up, or we succeed. If we're already logged in and this function
+<b><a name="517">  517</a></b>  * is called we will still prompt for a password, but we will probably
+<b><a name="518">  518</a></b>  * succeed no matter what the password was (depending on the implementation
+<b><a name="519">  519</a></b>  * of the PKCS 11 module.
+<b><a name="520">  520</a></b>  */
+<b><a name="521">  521</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="522">  522</a></b> <a href="#522">PK11_DoPassword</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> loadCerts, void *wincx)
+<b><a name="523">  523</a></b> {
+<b><a name="524">  524</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="525">  525</a></b>     char * <a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>;
+<b><a name="526">  526</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> attempt = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>;
+<b><a name="527">  527</a></b> 
+<b><a name="528">  528</a></b>     if (<a href="../pk11wrap/pk11slot.c.dep.html#PK11_NeedUserInit">PK11_NeedUserInit</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)) {
+<b><a name="529">  529</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(<a href="../pk11wrap/pk11err.c.dep.html#SEC_ERROR_IO">SEC_ERROR_IO</a>);
+<b><a name="530">  530</a></b>         return SECFailure;
+<b><a name="531">  531</a></b>     }
+<b><a name="532">  532</a></b> 
+<b><a name="533">  533</a></b> 
+<b><a name="534">  534</a></b>     /*
+<b><a name="535">  535</a></b>      * Central server type applications which control access to multiple
+<b><a name="536">  536</a></b>      * slave applications to single crypto devices need to virtuallize the
+<b><a name="537">  537</a></b>      * login state. This is done by a callback out of PK11_IsLoggedIn and
+<b><a name="538">  538</a></b>      * here. If we are actually logged in, then we got here because the
+<b><a name="539">  539</a></b>      * higher level code told us that the particular client application may
+<b><a name="540">  540</a></b>      * still need to be logged in. If that is the case, we simply tell the
+<b><a name="541">  541</a></b>      * server code that it should now verify the clients password and tell us
+<b><a name="542">  542</a></b>      * the results.
+<b><a name="543">  543</a></b>      */
+<b><a name="544">  544</a></b>     if (<a href="../pk11wrap/pk11auth.c.dep.html#PK11_IsLoggedIn">PK11_IsLoggedIn</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) &amp;&amp; 
+<b><a name="545">  545</a></b>                             (<a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.verifyPass != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)) {
+<b><a name="546">  546</a></b>         if (!<a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.verifyPass(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,wincx)) {
+<b><a name="547">  547</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_PASSWORD);
+<b><a name="548">  548</a></b>             return SECFailure;
+<b><a name="549">  549</a></b>         }
+<b><a name="550">  550</a></b>         return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="551">  551</a></b>     }
+<b><a name="552">  552</a></b> 
+<b><a name="553">  553</a></b>     /* get the password. This can drop out of the while loop
+<b><a name="554">  554</a></b>      * for the following reasons:
+<b><a name="555">  555</a></b>      *         (1) the user refused to enter a password. 
+<b><a name="556">  556</a></b>      *                        (return error to caller)
+<b><a name="557">  557</a></b>      *        (2) the token user password is disabled [usually due to
+<b><a name="558">  558</a></b>      *           too many failed authentication attempts].
+<b><a name="559">  559</a></b>      *                        (return error to caller)
+<b><a name="560">  560</a></b>      *        (3) the password was successful.
+<b><a name="561">  561</a></b>      */
+<b><a name="562">  562</a></b>     while ((<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a> = <a href="../pk11wrap/pk11auth.c.dep.html#pk11_GetPassword">pk11_GetPassword</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, attempt, wincx)) != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="563">  563</a></b>         /* if the token has a protectedAuthPath, the application may have
+<b><a name="564">  564</a></b>          * already issued the C_Login as part of it's pk11_GetPassword call.
+<b><a name="565">  565</a></b>          * In this case the application will tell us what the results were in 
+<b><a name="566">  566</a></b>          * the password value (retry or the authentication was successful) so
+<b><a name="567">  567</a></b>          * we can skip our own C_Login call (which would force the token to
+<b><a name="568">  568</a></b>          * try to login again).
+<b><a name="569">  569</a></b>          * 
+<b><a name="570">  570</a></b>          * Applications that don't know about protectedAuthPath will return a 
+<b><a name="571">  571</a></b>          * password, which we will ignore and trigger the token to 
+<b><a name="572">  572</a></b>          * 'authenticate' itself anyway. Hopefully the blinking display on 
+<b><a name="573">  573</a></b>          * the reader, or the flashing light under the thumbprint reader will 
+<b><a name="574">  574</a></b>          * attract the user's attention */
+<b><a name="575">  575</a></b>         attempt = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>;
+<b><a name="576">  576</a></b>         if (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;protectedAuthPath) {
+<b><a name="577">  577</a></b>             /* application tried to authenticate and failed. it wants to try
+<b><a name="578">  578</a></b>              * again, continue looping */
+<b><a name="579">  579</a></b>             if (strcmp(<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>, <a href="../pk11wrap/secmodt.h.dep.html#PK11_PW_RETRY">PK11_PW_RETRY</a>) == 0) {
+<b><a name="580">  580</a></b>                 <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECWouldBlock;
+<b><a name="581">  581</a></b>                 <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>);
+<b><a name="582">  582</a></b>                 continue;
+<b><a name="583">  583</a></b>             }
+<b><a name="584">  584</a></b>             /* applicaton tried to authenticate and succeeded we're done */
+<b><a name="585">  585</a></b>             if (strcmp(<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>, <a href="../pk11wrap/secmodt.h.dep.html#PK11_PW_AUTHENTICATED">PK11_PW_AUTHENTICATED</a>) == 0) {
+<b><a name="586">  586</a></b>                 <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="587">  587</a></b>                 <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>);
+<b><a name="588">  588</a></b>                 break;
+<b><a name="589">  589</a></b>             }
+<b><a name="590">  590</a></b>         }
+<b><a name="591">  591</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../pk11wrap/pk11auth.c.dep.html#pk11_CheckPassword">pk11_CheckPassword</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/se<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>er.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/vfyse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>);
+<b><a name="592">  592</a></b>         <a href="../util/secport.h.dep.html#PORT_Memset">PORT_Memset</a>(<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>, 0, <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a>(<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>));
+<b><a name="593">  593</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>);
+<b><a name="594">  594</a></b>         if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != SECWouldBlock) break;
+<b><a name="595">  595</a></b>     }
+<b><a name="596">  596</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> == <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="597">  597</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#pk11_CheckVerifyTest">pk11_CheckVerifyTest</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="598">  598</a></b>         if (!<a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_IsFriendly">PK11_IsFriendly</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)) {
+<b><a name="599">  599</a></b>             <a href="../pki/tdcache.c.dep.html#nssTrustDomain_UpdateCachedTokenCerts">nssTrustDomain_UpdateCachedTokenCerts</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;nssToken-&gt;trustDomain,
+<b><a name="600">  600</a></b>                                               <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;nssToken);
+<b><a name="601">  601</a></b>         }
+<b><a name="602">  602</a></b>     } else if (!attempt) <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_PASSWORD);
+<b><a name="603">  603</a></b>     return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="604">  604</a></b> }
+<b><a name="605">  605</a></b> 
+<b><a name="606">  606</a></b> void <a href="#606">PK11_LogoutAll</a>(void)
+<b><a name="607">  607</a></b> {
+<b><a name="608">  608</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#SECMODListLock">SECMODListLock</a> *<a href="../mozilla/nsprpub/pr/tests/intrio.c.dep.html#lock">lock</a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#lock"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#lock"><sup>[2]</sup></a> = <a href="../pk11wrap/pk11util.c.dep.html#SECMOD_GetDefaultModuleListLock">SECMOD_GetDefaultModuleListLock</a>();
+<b><a name="609">  609</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#SECMODModuleList">SECMODModuleList</a> *modList = <a href="../pk11wrap/pk11util.c.dep.html#SECMOD_GetDefaultModuleList">SECMOD_GetDefaultModuleList</a>();
+<b><a name="610">  610</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#SECMODModuleList">SECMODModuleList</a> *mlp = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="611">  611</a></b>     <a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#i">i</a></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#i"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/testbit.c.dep.html#i"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#i"><sup>[4]</sup></a></a></a></a></a></a><a href="../softoken/pk11pars.h.dep.html#i"><sup>[10]</sup></a></a></a>nt <a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#i">i</a></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#i"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/testbit.c.dep.html#i"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#i"><sup>[4]</sup></a></a></a></a></a></a><a href="../softoken/pk11pars.h.dep.html#i"><sup>[10]</sup></a></a></a>;
+<b><a name="612">  612</a></b> 
+<b><a name="613">  613</a></b>     /* NSS is not initialized, there are not tokens to log out */
+<b><a name="614">  614</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/intrio.c.dep.html#lock">lock</a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#lock"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#lock"><sup>[2]</sup></a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="615">  615</a></b>         return;
+<b><a name="616">  616</a></b>     }
+<b><a name="617">  617</a></b> 
+<b><a name="618">  618</a></b>     <a href="../pk11wrap/pk11list.c.dep.html#SECMOD_GetReadLock">SECMOD_GetReadLock</a>(<a href="../mozilla/nsprpub/pr/tests/intrio.c.dep.html#lock">lock</a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#lock"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#lock"><sup>[2]</sup></a>);
+<b><a name="619">  619</a></b>     /* find the number of entries */
+<b><a name="620">  620</a></b>     for (mlp = modList; mlp != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>; mlp = mlp-&gt;<a href="../mozilla/nsprpub/pr/src/misc/prtrace.c.dep.html#next">next</a>) {
+<b><a name="621">  621</a></b>         for (<a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#i">i</a></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#i"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/testbit.c.dep.html#i"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#i"><sup>[4]</sup></a></a></a></a></a></a><a href="../softoken/pk11pars.h.dep.html#i"><sup>[10]</sup></a></a></a>=0; <a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#i">i</a></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#i"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/testbit.c.dep.html#i"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#i"><sup>[4]</sup></a></a></a></a></a></a><a href="../softoken/pk11pars.h.dep.html#i"><sup>[10]</sup></a></a></a> &lt; mlp-&gt;module-&gt;<a href="../softoken/pk11pars.h.dep.html#slotCount">slotCount</a></a>; <a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#i">i</a></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#i"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/testbit.c.dep.html#i"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#i"><sup>[4]</sup></a></a></a></a></a></a><a href="../softoken/pk11pars.h.dep.html#i"><sup>[10]</sup></a></a></a>++) {
+<b><a name="622">  622</a></b>             <a href="../pk11wrap/pk11auth.c.dep.html#PK11_Logout">PK11_Logout</a>(mlp-&gt;module-&gt;slots[<a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#i">i</a></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#i"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/testbit.c.dep.html#i"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#i"><sup>[4]</sup></a></a></a></a></a></a><a href="../softoken/pk11pars.h.dep.html#i"><sup>[10]</sup></a></a></a>]);
+<b><a name="623">  623</a></b>         }
+<b><a name="624">  624</a></b>     }
+<b><a name="625">  625</a></b> 
+<b><a name="626">  626</a></b>     <a href="../pk11wrap/pk11list.c.dep.html#SECMOD_ReleaseReadLock">SECMOD_ReleaseReadLock</a>(<a href="../mozilla/nsprpub/pr/tests/intrio.c.dep.html#lock">lock</a><a href="../mozilla/nsprpub/pr/tests/perf.c.dep.html#lock"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/testfile.c.dep.html#lock"><sup>[2]</sup></a>);
+<b><a name="627">  627</a></b> }
+<b><a name="628">  628</a></b> 
+<b><a name="629">  629</a></b> int
+<b><a name="630">  630</a></b> <a href="#630">PK11_GetMinimumPwdLength</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)
+<b><a name="631">  631</a></b> {
+<b><a name="632">  632</a></b>     return ((int)<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;minPassword);
+<b><a name="633">  633</a></b> }
+<b><a name="634">  634</a></b> 
+<b><a name="635">  635</a></b> /* Does this slot have a protected pin path? */
+<b><a name="636">  636</a></b> <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a>
+<b><a name="637">  637</a></b> <a href="#637">PK11_ProtectedAuthenticationPath</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)
+<b><a name="638">  638</a></b> {
+<b><a name="639">  639</a></b>         return <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;protectedAuthPath;
+<b><a name="640">  640</a></b> }
+<b><a name="641">  641</a></b> 
+<b><a name="642">  642</a></b> /*
+<b><a name="643">  643</a></b>  * we can initialize the password if 1) The toke is not inited 
+<b><a name="644">  644</a></b>  * (need login == true and see need UserInit) or 2) the token has
+<b><a name="645">  645</a></b>  * a NULL password. (slot-&gt;needLogin = false &amp; need user Init = false).
+<b><a name="646">  646</a></b>  */
+<b><a name="647">  647</a></b> <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> <a href="#647">PK11_NeedPWInitForSlot</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)
+<b><a name="648">  648</a></b> {
+<b><a name="649">  649</a></b>     if (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;needLogin &amp;&amp; <a href="../pk11wrap/pk11slot.c.dep.html#PK11_NeedUserInit">PK11_NeedUserInit</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)) {
+<b><a name="650">  650</a></b>         return <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>;
+<b><a name="651">  651</a></b>     }
+<b><a name="652">  652</a></b>     if (!<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;needLogin &amp;&amp; !<a href="../pk11wrap/pk11slot.c.dep.html#PK11_NeedUserInit">PK11_NeedUserInit</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)) {
+<b><a name="653">  653</a></b>         return <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>;
+<b><a name="654">  654</a></b>     }
+<b><a name="655">  655</a></b>     return <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>;
+<b><a name="656">  656</a></b> }
+<b><a name="657">  657</a></b> 
+<b><a name="658">  658</a></b> <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> <a href="#658">PK11_NeedPWInit</a>()
+<b><a name="659">  659</a></b> {
+<b><a name="660">  660</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a> = <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_GetInternalKeySlot">PK11_GetInternalKeySlot</a>();
+<b><a name="661">  661</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> ret = <a href="../pk11wrap/pk11auth.c.dep.html#PK11_NeedPWInitForSlot">PK11_NeedPWInitForSlot</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="662">  662</a></b> 
+<b><a name="663">  663</a></b>     <a href="../pk11wrap/pk11slot.c.dep.html#PK11_FreeSlot">PK11_FreeSlot</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="664">  664</a></b>     return ret;
+<b><a name="665">  665</a></b> }
+<b><a name="666">  666</a></b> 
+<b><a name="667">  667</a></b> <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> 
+<b><a name="668">  668</a></b> <a href="#668">pk11_InDelayPeriod</a>(<a href="../mozilla/nsprpub/pr/include/prinrval.h.dep.html#PRIntervalTime">PRIntervalTime</a> lastTime, <a href="../mozilla/nsprpub/pr/include/prinrval.h.dep.html#PRIntervalTime">PRIntervalTime</a> delayTime, 
+<b><a name="669">  669</a></b>                                                 <a href="../mozilla/nsprpub/pr/include/prinrval.h.dep.html#PRIntervalTime">PRIntervalTime</a> *retTime)
+<b><a name="670">  670</a></b> {
+<b><a name="671">  671</a></b>     <a href="../mozilla/nsprpub/pr/include/prinrval.h.dep.html#PRIntervalTime">PRIntervalTime</a> time;
+<b><a name="672">  672</a></b> 
+<b><a name="673">  673</a></b>     *retTime = time = <a href="../mozilla/nsprpub/pr/src/misc/prinrval.c.dep.html#PR_IntervalNow">PR_IntervalNow</a>();
+<b><a name="674">  674</a></b>     return (<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a>) (lastTime) &amp;&amp; ((time-lastTime) &lt; delayTime);
+<b><a name="675">  675</a></b> }
+<b><a name="676">  676</a></b> 
+<b><a name="677">  677</a></b> /*
+<b><a name="678">  678</a></b>  * Determine if the token is logged in. We have to actually query the token,
+<b><a name="679">  679</a></b>  * because it's state can change without intervention from us.
+<b><a name="680">  680</a></b>  */
+<b><a name="681">  681</a></b> <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a>
+<b><a name="682">  682</a></b> <a href="#682">PK11_IsLoggedIn</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,void *wincx)
+<b><a name="683">  683</a></b> {
+<b><a name="684">  684</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_INFO">CK_SESSION_INFO</a></a> sessionInfo;
+<b><a name="685">  685</a></b>     int askpw = <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;askpw;
+<b><a name="686">  686</a></b>     int <a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a> = <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;<a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a>;
+<b><a name="687">  687</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="688">  688</a></b>     <a href="../mozilla/nsprpub/pr/include/prinrval.h.dep.html#PRIntervalTime">PRIntervalTime</a> curTime;
+<b><a name="689">  689</a></b>     static <a href="../mozilla/nsprpub/pr/include/prinrval.h.dep.html#PRIntervalTime">PRIntervalTime</a> login_delay_time = 0;
+<b><a name="690">  690</a></b> 
+<b><a name="691">  691</a></b>     if (login_delay_time == 0) {
+<b><a name="692">  692</a></b>         login_delay_time = <a href="../mozilla/nsprpub/pr/src/misc/prinrval.c.dep.html#PR_SecondsToInterval">PR_SecondsToInterval</a>(1);
+<b><a name="693">  693</a></b>     }
+<b><a name="694">  694</a></b> 
+<b><a name="695">  695</a></b>     /* If we don't have our own password default values, use the system
+<b><a name="696">  696</a></b>      * ones */
+<b><a name="697">  697</a></b>     if ((<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;defaultFlags &amp; <a href="../pk11wrap/secmodt.h.dep.html#PK11_OWN_PW_DEFAULTS">PK11_OWN_PW_DEFAULTS</a>) == 0) {
+<b><a name="698">  698</a></b>         <a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *def_slot = <a href="../pk11wrap/pk11slot.c.dep.html#PK11_GetInternalKeySlot">PK11_GetInternalKeySlot</a>();
+<b><a name="699">  699</a></b> 
+<b><a name="700">  700</a></b>         if (def_slot) {
+<b><a name="701">  701</a></b>             askpw = def_slot-&gt;askpw;
+<b><a name="702">  702</a></b>             <a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a> = def_slot-&gt;<a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a>;
+<b><a name="703">  703</a></b>             <a href="../pk11wrap/pk11slot.c.dep.html#PK11_FreeSlot">PK11_FreeSlot</a>(def_slot);
+<b><a name="704">  704</a></b>         }
+<b><a name="705">  705</a></b>     }
+<b><a name="706">  706</a></b> 
+<b><a name="707">  707</a></b>     if ((wincx != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) &amp;&amp; (<a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.<a href="../softoken/fipstokn.c.dep.html#isLoggedIn">isLoggedIn</a> != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) &amp;&amp;
+<b><a name="708">  708</a></b>         (*<a href="../pk11wrap/pk11auth.c.dep.html#PK11_Global">PK11_Global</a>.<a href="../softoken/fipstokn.c.dep.html#isLoggedIn">isLoggedIn</a>)(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, wincx) == <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>) { return <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>; }
+<b><a name="709">  709</a></b> 
+<b><a name="710">  710</a></b> 
+<b><a name="711">  711</a></b>     /* forget the password if we've been inactive too long */
+<b><a name="712">  712</a></b>     if (askpw == 1) {
+<b><a name="713">  713</a></b>         <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#int64">int64</a> currtime = <a href="../mozilla/nsprpub/pr/src/md/beos/beos.c.dep.html#PR_Now">PR_Now</a><a href="../mozilla/nsprpub/pr/src/md/mac/mactime.c.dep.html#PR_Now"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/src/md/os2/os2misc.c.dep.html#PR_Now"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/src/md/unix/unix.c.dep.html#PR_Now"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/src/md/windows/ntmisc.c.dep.html#PR_Now"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/src/md/windows/w16null.c.dep.html#PR_Now"><sup>[5]</sup></a>();
+<b><a name="714">  714</a></b>         <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#int64">int64</a> result;
+<b><a name="715">  715</a></b>         <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#int64">int64</a> mult;
+<b><a name="716">  716</a></b>         
+<b><a name="717">  717</a></b>         <a href="../mozilla/nsprpub/pr/include/prlong.h.dep.html#LL_I2L">LL_I2L</a></a>(result, <a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#timeout">timeout</a>);
+<b><a name="718">  718</a></b>         <a href="../mozilla/nsprpub/pr/include/prlong.h.dep.html#LL_I2L">LL_I2L</a></a>(mult, 60*1000*1000);
+<b><a name="719">  719</a></b>         <a href="../mozilla/nsprpub/pr/include/prlong.h.dep.html#LL_MUL">LL_MUL</a></a>(result,result,mult);
+<b><a name="720">  720</a></b>         <a href="../mozilla/nsprpub/pr/include/prlong.h.dep.html#LL_ADD">LL_ADD</a></a>(result, result, <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;authTime);
+<b><a name="721">  721</a></b>         if (<a href="../mozilla/nsprpub/pr/include/prlong.h.dep.html#LL_CMP">LL_CMP</a></a>(result, &lt;, currtime) ) {
+<b><a name="722">  722</a></b>             <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_EnterSlotMonitor">PK11_EnterSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="723">  723</a></b>             <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_Logout(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;session);
+<b><a name="724">  724</a></b>             <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = 0;
+<b><a name="725">  725</a></b>             <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_ExitSlotMonitor">PK11_ExitSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="726">  726</a></b>         } else {
+<b><a name="727">  727</a></b>             <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;authTime = currtime;
+<b><a name="728">  728</a></b>         }
+<b><a name="729">  729</a></b>     }
+<b><a name="730">  730</a></b> 
+<b><a name="731">  731</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_EnterSlotMonitor">PK11_EnterSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="732">  732</a></b>     if (<a href="../pk11wrap/pk11auth.c.dep.html#pk11_InDelayPeriod">pk11_InDelayPeriod</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck,login_delay_time, &amp;curTime)) {
+<b><a name="733">  733</a></b>         sessionInfo.<a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#state">state</a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#state"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#state"><sup>[2]</sup></a> = <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastState;
+<b><a name="734">  734</a></b>         crv = <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>;
+<b><a name="735">  735</a></b>     } else {
+<b><a name="736">  736</a></b>         crv = <a href="../pk11wrap/secmodi.h.dep.html#PK11_GETTAB">PK11_GETTAB</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>)-&gt;C_GetSessionInfo(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;session,&amp;sessionInfo);
+<b><a name="737">  737</a></b>         if (crv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="738">  738</a></b>             <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastState = sessionInfo.<a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#state">state</a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#state"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#state"><sup>[2]</sup></a>;
+<b><a name="739">  739</a></b>             <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;lastLoginCheck = curTime;
+<b><a name="740">  740</a></b>         }
+<b><a name="741">  741</a></b>     }
+<b><a name="742">  742</a></b>     <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_ExitSlotMonitor">PK11_ExitSlotMonitor</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="743">  743</a></b>     /* if we can't get session info, something is really wrong */
+<b><a name="744">  744</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="745">  745</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>-&gt;session = <a href="../softoken/pkcs11t.h.dep.html#CK_INVALID_SESSION">CK_INVALID_SESSION</a>;
+<b><a name="746">  746</a></b>         return <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>;
+<b><a name="747">  747</a></b>     }
+<b><a name="748">  748</a></b> 
+<b><a name="749">  749</a></b>     switch (sessionInfo.<a href="../mozilla/nsprpub/pr/tests/ntioto.c.dep.html#state">state</a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#state"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#state"><sup>[2]</sup></a>) {
+<b><a name="750">  750</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKS_RW_PUBLIC_SESSION">CKS_RW_PUBLIC_SESSION</a>:
+<b><a name="751">  751</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKS_RO_PUBLIC_SESSION">CKS_RO_PUBLIC_SESSION</a>:
+<b><a name="752">  752</a></b>     default:
+<b><a name="753">  753</a></b>         break; /* fail */
+<b><a name="754">  754</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKS_RW_USER_FUNCTIONS">CKS_RW_USER_FUNCTIONS</a>:
+<b><a name="755">  755</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKS_RW_SO_FUNCTIONS">CKS_RW_SO_FUNCTIONS</a>:
+<b><a name="756">  756</a></b>     case <a href="../softoken/pkcs11t.h.dep.html#CKS_RO_USER_FUNCTIONS">CKS_RO_USER_FUNCTIONS</a>:
+<b><a name="757">  757</a></b>         return <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>;
+<b><a name="758">  758</a></b>     }
+<b><a name="759">  759</a></b>     return <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>; 
+<b><a name="760">  760</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

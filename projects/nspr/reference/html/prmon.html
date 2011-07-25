@@ -1,0 +1,799 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;7 Monitors';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:04:48">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="prcvar.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prcmon.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="16285"> </A><A NAME=""> </A><h2>
+Chapter&#32;7 
+&nbsp;
+
+
+
+<A NAME="16286"> </A><A NAME="Monitors"> </A>Monitors
+</h2>
+</center>
+<A NAME="16290"> </A>In addition to the mutex type <A HREF="prlock.html#15996"  ><CODE>PRLock</CODE></A>, NSPR provides a special type, <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>, 
+for use in Java programming. This chapter describes the NSPR API for creation and 
+manipulation of a mutex of type <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>. 
+
+<P>
+
+<A NAME="16300"> </A><A HREF="prmon.html#16316"  >Monitor Type</A><br>
+<A HREF="prmon.html#16331"  >Monitor Functions</A>
+
+<P>
+
+<A NAME="16304"> </A>With a mutex of type <CODE>PRLock</CODE>, a single thread may enter the monitor only once 
+before it exits, and the mutex can have multiple associated condition variables. 
+
+<P>
+
+<A NAME="16308"> </A>With a mutex of type <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>, a single thread may re-enter a monitor as many 
+times as it sees fit. The first time the thread enters a monitor, it acquires the 
+monitor's lock and the thread's entry count is incremented to 1. Each subsequent 
+time the thread successfully enters the same monitor, the thread's entry count is 
+incremented again, and each time the thread exits the monitor, the thread's entry 
+count is decremented. When the entry count for a thread reaches zero, the thread 
+releases the monitor's lock, and other threads that were blocked while trying to 
+enter the monitor will be rescheduled.
+
+<P>
+
+<A NAME="16309"> </A>A call to <CODE>PR_Wait</CODE> temporarily returns the entry count to zero. When the calling 
+thread resumes, it has the same entry count it had before the wait operation.
+
+<P>
+
+<A NAME="16310"> </A>Unlike a mutex of type <CODE>PRLock</CODE>, a mutex of type <CODE>PRMonitor</CODE> has a single, implicitly 
+associated condition variable that may be used to facilitate synchronization of 
+threads with the change in state of monitored data.
+
+<P>
+
+<A NAME="16311"> </A>For an introduction to NSPR thread synchronization, including locks and 
+condition variables, see <A HREF="printro.html#13314"  >Chapter&#32;1 "Introduction to NSPR</A>"
+
+<P>
+
+
+
+<A NAME="16316"> </A>
+<A NAME="Monitor Type"> </A>
+<h2>
+Monitor Type
+</h2>
+
+
+<A NAME="16320"> </A>With the exception of <A HREF="prmon.html#16362"  ><CODE>PR_NewMonitor</CODE></A>, which creates a new monitor object, all 
+monitor functions require a pointer to an opaque object of type <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>. 
+
+<P>
+
+<A NAME="16325"> </A><A NAME="PRMonitor"> </A><h4>
+PRMonitor
+</h4>
+
+<A NAME="16326"> </A>A <CODE>PRMonitor</CODE> object is an opaque structure managed entirely by the client. Clients 
+create them when needed and must destroy them when no longer needed. 
+
+<P>
+
+<BR>
+<A NAME="16327"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16328"></A>#include &lt;prmon.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="16329"></A>typedef struct PRMonitor PRMonitor;
+</PRE>
+<P>
+
+
+<A NAME="16331"> </A>
+<A NAME="Monitor Functions"> </A>
+<h2>
+Monitor Functions
+</h2>
+
+
+<A NAME="16332"> </A>All monitor functions are thread-safe. However, this safety does not extend to 
+protecting the monitor object from deletion.
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16336"> </A><A HREF="prmon.html#16362"  ><CODE>PR_NewMonitor</CODE></A> creates a new monitor. 
+
+<P><B>  <li></B>
+<A NAME="16340"> </A><A HREF="prmon.html#16374"  ><CODE>PR_DestroyMonitor</CODE></A> destroys a monitor object.
+
+<P><B>  <li></B>
+<A NAME="16344"> </A><A HREF="prmon.html#16393"  ><CODE>PR_EnterMonitor</CODE></A> enters the lock associated with a specified monitor. 
+
+<P><B>  <li></B>
+<A NAME="16348"> </A><A HREF="prmon.html#16413"  ><CODE>PR_ExitMonitor</CODE></A> decrements the entry count associated with a specified 
+monitor.
+
+<P><B>  <li></B>
+<A NAME="16352"> </A><A HREF="prmon.html#16436"  ><CODE>PR_Wait</CODE></A> waits for a notify on a specified monitor's condition variable.
+
+<P><B>  <li></B>
+<A NAME="16356"> </A><A HREF="prmon.html#16477"  ><CODE>PR_Notify</CODE></A> notifies a thread waiting on a specified monitor's condition 
+variable. 
+
+<P><B>  <li></B>
+<A NAME="16360"> </A><A HREF="prmon.html#16500"  ><CODE>PR_NotifyAll</CODE></A> notifies all threads waiting on a specified monitor's condition 
+variable.
+
+<P></ul>
+
+<A NAME="16362"> </A><A NAME="PR_NewMonitor"> </A><h4>
+PR_NewMonitor
+</h4>
+
+<A NAME="16363"> </A>Creates a new monitor object. The caller is responsible for the object and is 
+expected to destroy it when appropriate.
+
+<P>
+
+<BR>
+<A NAME="16364"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16365"></A>#include &lt;prmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16366"></A>PRMonitor* PR_NewMonitor(void);
+</PRE>
+<P>
+<BR>
+<A NAME="16367"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16368"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16369"> </A>If successful, a pointer to a <CODE>PRMonitor</CODE> object. This pointer is required for all 
+subsequent monitor function calls.
+
+<P><B>  <li></B>
+<A NAME="16370"> </A>If unsuccessful (for example, if some operating system resource is unavailable), 
+<CODE>NULL</CODE>. 
+
+<P></ul>
+
+<BR>
+<A NAME="16371"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16372"> </A>A newly created monitor has an entry count of zero.
+
+<P>
+
+<A NAME="16374"> </A><A NAME="PR_DestroyMonitor"> </A><h4>
+PR_DestroyMonitor
+</h4>
+
+<A NAME="16375"> </A>Destroys a monitor object.
+
+<P>
+
+<BR>
+<A NAME="16376"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16377"></A>#include &lt;prmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16378"></A>void PR_DestroyMonitor(PRMonitor *mon);
+</PRE>
+<P>
+<BR>
+<A NAME="16379"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="16380"> </A>The function has the following parameter:
+
+<P>
+
+<P>
+<A NAME="16389"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16383"></A>mon
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16388"> </A>A reference to an existing structure of type <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16390"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16391"> </A>The caller is responsible for guaranteeing that the monitor is no longer in use 
+before calling <CODE>PR_DestroyMonitor</CODE>. There must be no thread (including the calling 
+thread) in the monitor or waiting on the monitor.
+
+<P>
+
+<A NAME="16393"> </A><A NAME="PR_EnterMonitor"> </A><h4>
+PR_EnterMonitor
+</h4>
+
+<A NAME="16394"> </A>Enters the lock associated with a specified monitor.
+
+<P>
+
+<BR>
+<A NAME="16395"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16396"></A>#include &lt;prmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16397"></A>void PR_EnterMonitor(PRMonitor *mon);
+</PRE>
+<P>
+<BR>
+<A NAME="16398"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="16399"> </A>The function has the following parameter:
+
+<P>
+
+<P>
+<A NAME="16408"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16402"></A>mon
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16407"> </A>A reference to an existing structure of type <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16409"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16410"> </A>When the calling thread returns, it will have acquired the monitor's lock. Attempts 
+to acquire the lock for a monitor that is held by some other thread will result in the 
+caller blocking. The operation is neither timed nor interruptible. 
+
+<P>
+
+<A NAME="16411"> </A>If the monitor's entry count is greater than zero and the calling thread is recognized 
+as the holder of the lock, <CODE>PR_EnterMonitor</CODE> increments the entry count by one and 
+returns. If the entry count is greater than zero and the calling thread is not 
+recognized as the holder of the lock, the thread is blocked until the entry count 
+reaches zero. When the entry count reaches zero (or if it is already zero), the entry 
+count is incremented by one and the calling thread is recorded as the lock's holder.
+
+<P>
+
+<A NAME="16413"> </A><A NAME="PR_ExitMonitor"> </A><h4>
+PR_ExitMonitor
+</h4>
+
+<A NAME="16414"> </A>Decrements the entry count associated with a specified monitor and, if the entry 
+count reaches zero, releases the monitor's lock.
+
+<P>
+
+<BR>
+<A NAME="16415"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16416"></A>#include &lt;prmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16417"></A>PRStatus PR_ExitMonitor(PRMonitor *mon);
+</PRE>
+<P>
+<BR>
+<A NAME="16418"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="16419"> </A>The function has the following parameter:
+
+<P>
+
+<P>
+<A NAME="16428"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16422"></A>mon
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16427"> </A>A reference to an existing structure of type <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>. The monitor 
+object referenced must be one for which the calling thread currently 
+holds the lock.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16429"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16430"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16431"> </A>If successful, <CODE>PR_Success</CODE>.
+
+<P><B>  <li></B>
+<A NAME="16432"> </A>If unsuccessful (the calling thread has not entered the monitor), <CODE>PR_FAILURE</CODE>.
+
+<P></ul>
+
+<BR>
+<A NAME="16433"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16434"> </A>If the decremented entry count is zero, <CODE>PR_ExitMonitor</CODE> releases the monitor's 
+lock. Threads that were blocked trying to enter the monitor will be rescheduled. 
+
+<P>
+
+<A NAME="16436"> </A><A NAME="PR_Wait"> </A><h4>
+PR_Wait
+</h4>
+
+<A NAME="16437"> </A>Waits for an application-defined state of the monitored data to exist.
+
+<P>
+
+<BR>
+<A NAME="16438"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16439"></A>#include &lt;prmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16440"></A>PRStatus PR_Wait(<br>&nbsp;&nbsp;&nbsp;PRMonitor *mon, <br>&nbsp;&nbsp;&nbsp;PRIntervalTime ticks);
+</PRE>
+<P>
+<BR>
+<A NAME="16441"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="16442"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="16458"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16445"></A>mon
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16450"> </A>A reference to an existing structure of type <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16452"></A>ticks
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16457"> </A>The amount of time (in <A HREF="prinrvl.html#20947"  ><CODE>PRIntervalTime</CODE></A> units) that the thread is 
+willing to wait for an explicit notification before being rescheduled. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16459"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16460"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16461"> </A><CODE>PR_SUCCESS</CODE> means the thread is being resumed from the <CODE>PR_Wait</CODE> call either 
+because it was explicitly notified or because the time specified by the 
+parameter <CODE>ticks</CODE> has expired.
+
+<P><B>  <li></B>
+<A NAME="16462"> </A><CODE>PR_FAILURE</CODE> means <CODE>PR_Wait</CODE> encountered a system error (such as an invalid 
+monitor reference) or the thread was interrupted by another thread.
+
+<P></ul>
+
+<BR>
+<A NAME="16463"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16464"> </A>A call to <CODE>PR_Wait</CODE> causes the thread to release the monitor's lock, just as if it had 
+called <A HREF="prmon.html#16413"  ><CODE>PR_ExitMonitor</CODE></A> as many times as it had called <A HREF="prmon.html#16393"  ><CODE>PR_EnterMonitor</CODE></A>. This has 
+the effect of making the monitor available to other threads. When the wait is over, 
+the thread regains control of the monitor's lock with the same entry count it had 
+before the wait began.
+
+<P>
+
+<A NAME="16471"> </A>A thread waiting on the monitor resumes when the monitor is notified or when the 
+timeout specified by the <CODE>ticks</CODE> parameter elapses. The resumption from the wait is 
+merely a hint that a change of state has occurred. It is the responsibility of the 
+programmer to evaluate the data and act accordingly. This is usually done by 
+evaluating a Boolean expression involving the monitored data. While the Boolean 
+expression is false, the thread should wait. The thread should act on the data only 
+when the expression is true. The boolean expression must be evaluated while in the 
+monitor and within a loop. 
+
+<P>
+
+<A NAME="16472"> </A>In pseudo-code, the sequence is as follows: 
+
+<P>
+
+<PRE>
+<A NAME="16473"></A>PR_EnterMonitor(&amp;ml);<br>while (!expression) wait;<br>... act on the state change ... <br>PR_ExitMonitor(&amp;ml);
+</PRE>
+<P>
+<A NAME="16474"> </A>A thread can be resumed from a wait for a variety of reasons. The most obvious is 
+that it was notified by another thread. If the value of timeout is not 
+<CODE>PR_INTERVAL_NO_TIMEOUT</CODE>, <CODE>PR_Wait</CODE> resumes execution after the specified interval 
+has expired. If a timeout value is used, the Boolean expression must include 
+elapsed time as part of the monitored data. 
+
+<P>
+
+<A NAME="16475"> </A>Resuming from the wait is merely an opportunity to evaluate the expression, not 
+an assertion that the expression is true. 
+
+<P>
+
+<A NAME="16477"> </A><A NAME="PR_Notify"> </A><h4>
+PR_Notify
+</h4>
+
+<A NAME="16478"> </A>Notifies a monitor that a change in state of the monitored data has occurred.
+
+<P>
+
+<BR>
+<A NAME="16479"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16480"></A>#include &lt;prmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16481"></A>PRStatus PR_Notify(PRMonitor *mon);
+</PRE>
+<P>
+<BR>
+<A NAME="16482"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="16483"> </A>The function has the following parameter:
+
+<P>
+
+<P>
+<A NAME="16492"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16486"></A>mon
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16491"> </A>A reference to an existing structure of type <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16493"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16494"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16495"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="16496"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>.
+
+<P></ul>
+
+<BR>
+<A NAME="16497"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16498"> </A>Notification of a monitor signals the change of state of some monitored data. The 
+changing of that data and the notification must all be performed while in the 
+monitor. When the notification occurs, the runtime promotes a thread that is 
+waiting on the monitor to a ready state. If more than one thread is waiting, the 
+selection of which thread gets promoted cannot be determined in advance. This 
+implies that all threads waiting on a single monitor must have the same semantics. 
+If no thread is waiting on the monitor, the notify operation is a no-op. 
+
+<P>
+
+<A NAME="16500"> </A><A NAME="PR_NotifyAll"> </A><h4>
+PR_NotifyAll
+</h4>
+
+<A NAME="16501"> </A>Promotes all threads waiting on a specified monitor to a ready state. 
+
+<P>
+
+<BR>
+<A NAME="16502"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16503"></A>#include &lt;prmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16504"></A>PRStatus PR_NotifyAll(PRMonitor *mon);
+</PRE>
+<P>
+<BR>
+<A NAME="16505"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="16506"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="16515"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16509"></A>mon
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16514"> </A>A reference to an existing structure of type <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16516"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16517"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16518"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="16519"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>.
+
+<P></ul>
+
+<BR>
+<A NAME="16520"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16521"> </A>A call to <CODE>PR_NotifyAll</CODE> causes all of the threads waiting on the monitor to be 
+scheduled to be promoted to a ready state. If no threads are waiting, the operation 
+is no-op. 
+
+<P>
+
+<A NAME="16522"> </A><CODE>PR_NotifyAll</CODE> should be used with some care. The expense of scheduling multiple 
+threads increases dramatically as the number of threads increases.
+
+<P>
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="prcvar.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prcmon.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

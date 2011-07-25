@@ -1,0 +1,334 @@
+<?php
+
+$html_title = 'State of Stan, 6/2002';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<br>
+<img src="objects.gif" alt="stan objects" width="448" height="261"
+ align="right"><br>
+The diagram to the right shows how objects are structured in Stan. &nbsp;Currently,
+the two sources of objects are tokens and crypto contexts. &nbsp;A certificate
+is constructed by looking in the trust domain for all tokens containing the
+cert. &nbsp;For each token, an nssCryptokiObject is created. &nbsp;This struct
+contains the information needed to reference the token's cert instance.<br>
+<br>
+A set of nssCryptokiObjects constitutes an nssPKIObject. &nbsp;Since the
+functionality for managing instances of a PKI object is the same for all
+types, this code is implemented in a common location, under the object nssPKIObject.
+&nbsp;See<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/pki/pkim.h">pkim.h</a>
+and <a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/pki/pkibase.c">pkibase.c</a>.
+&nbsp;Think of it as being OO, and NSSCert, NSSPrivateKey, etc., all
+inherit from nssPKIObject.<br>
+<br>
+Here are the structure definitions for the object classes:<br>
+<pre>struct nssCryptokiObjectStr<br>{<br>  CK_OBJECT_HANDLE handle;<br>  NSSToken *token;<br>  nssSession *session;<br>  PRBool isTokenObject;<br>  NSSUTF8 *label;<br>};<br></pre>
+<pre>struct nssPKIObjectStr <br>{<br>    /* The arena for all object memory */<br>    NSSArena *arena;<br>    /* Atomically incremented/decremented reference counting */<br>    PRInt32 refCount;<br>    /* lock protects the array of nssCryptokiInstance's of the object */<br>    PZLock *lock;<br>    /* XXX with LRU cache, this cannot be guaranteed up-to-date.  It cannot<br>     * be compared against the update level of the trust domain, since it is<br>     * also affected by import/export.  Where is this array needed?<br>     */<br>    nssCryptokiObject **instances;<br>    PRUint32 numInstances;<br>    /* The object must live in a trust domain */<br>    NSSTrustDomain *trustDomain;<br>    /* The object may live in a crypto context */<br>    NSSCryptoContext *cryptoContext;<br>    /* XXX added so temp certs can have nickname, think more ... */<br>    NSSUTF8 *tempName;<br>};<br></pre>
+<pre>struct NSSCertStr<br>{<br>  nssPKIObject object;<br>  ...<br>};<br></pre>
+<br>
+<h2>Base</h2>
+   
+<ul>
+    <li>Public (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/base/nssbase.h">nssbase.h</a>)</li>
+                
+  <ol>
+      <li>Fairly simple, applications should be able to create and destroy
+       <b>NSSArena</b>s, <b>NSSItem</b>s, and <b>NSSUTF8</b>s (wrapper for
+ various strings).</li>
+      <li>Obtaining error stacks from <code>NSS_GetError</code>.<br>
+      </li>
+                
+  </ol>
+    <li>Internal (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/base/base.h">base.h</a>)</li>
+                
+  <ol>
+      <li>The memory management facility is designed to eliminate the occasional
+ arena/non-arena memory bugs we encountered in the past. &nbsp;This is accomplished
+ by adding a header to all allocated memory with arena information.</li>
+      <li>How should the error space be divided?<br>
+      </li>
+      <li>Pointer tracking?</li>
+                
+  </ol>
+   
+</ul>
+  <br>
+   
+<h2>ASN1</h2>
+   
+<ul>
+    <li>Public (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/asn1/nssasn1.h">nssasn1.h</a>)</li>
+                
+  <ol>
+      <li>Same as SEC_ASN1XXX, just uses Stan conventions.</li>
+                
+  </ol>
+    <li>Internal (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/asn1/asn1.h">asn1.h</a>)</li>
+                
+  <ol>
+      <li>Wraps old ASN.1 implementation. &nbsp;In order to make this work,
+ I had to modify the secasn1?.c files to use Stan memory facilities. &nbsp;Might
+ have to live with conditional compiles for a while.</li>
+                
+  </ol>
+   
+</ul>
+  <br>
+   
+<h2>Dev</h2>
+   
+<ul>
+    <li>Public (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/dev/nssdev.h">nssdev.h</a>)</li>
+                
+  <ol>
+      <li>Should be able to access information about devices. &nbsp;Instead
+ of a plethora of accessors (<code>NSSToken_GetName</code>, <code>NSSToken_GetIsRemovable</code>,
+ ...), I would prefer to have publicly available types with a complete set
+ of information about the device. &nbsp;This would look like <code>NSSModule_GetInfo</code>,
+       <code>NSSSlot_GetInfo</code>, and <code>NSSToken_GetInfo</code>.</li>
+      <li><b>NSSAlgNParam</b> - should be able to create from
+ OID (includes templates for decoding parameters? or does that belong at a
+ higher level?), and also directly (<code>NSSAlgNParam_CreateRC2Encryption</code>).</li>
+      <li><b>NSSCallback</b> - handler for high-level slot login<br>
+      </li>
+      <li>What else?</li>
+                
+  </ol>
+    <li>Internal (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/dev/dev.h">dev.h</a>,
+    <a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/dev/devm.h">devm.h</a>)</li>
+                
+  <ol>
+      <li><b>NSSModule</b> - load from spec, load from file, find slots, ordering*</li>
+      <li><b>NSSSlot</b> - initialize, login/out, change password, detect
+token*</li>
+      <li><b>NSSToken</b> - initialize, import object, find objects*</li>
+                          
+    <ul>
+        <li>key generation</li>
+        <li>crypto - digesting*, encryption, signing, random numbers</li>
+        <li>low-level object cache for slow tokens*</li>
+                          
+    </ul>
+      <li><b>nssSession</b> - create and destroy*</li>
+                          
+    <ul>
+        <li>save and restore state</li>
+        <li>virtual sessions</li>
+                          
+    </ul>
+      <li><b>nssCryptokiObject</b> - low-level wrapper around cryptoki objects.
+ &nbsp;Includes handle, label, id, anything else object-specific and generic*</li>
+      <li><b>nssSlotList</b> - threadsafe list of slots, used by trust domains<br>
+      </li>
+                
+  </ol>
+   
+</ul>
+  <br>
+   
+<h2>PKI</h2>
+   
+<ul>
+    <li>Public (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/pki/nsspki.h">nsspki.h</a>)</li>
+                
+  <ol>
+      <li><b>NSSCert</b></li>
+                          
+    <ul>
+        <li>delete stored object*</li>
+        <li>build chain, verify<br>
+        </li>
+        <li>crypto routines - encrypt, verify, wrap</li>
+        <li>create crypto context</li>
+        <li>get public/private key</li>
+        <li>obtain trust information - should be <code>NSSCert_GetIsTrustedForXXX</code>
+ (trust objects not publicly available)</li>
+        <li>relationship to <b>NSSUserCert</b></li>
+        <li>relationship to <b>NSSPKIXCert</b><br>
+        </li>
+                          
+    </ul>
+      <li><b>NSSPrivateKey</b> / <b>NSSPublicKey</b> / <b>NSSSymKey</b></li>
+                          
+    <ul>
+        <li>delete stored object*</li>
+        <li>crypto routines - encrypt, decrypt, sign, verify, wrap, unwrap</li>
+        <li>create crypto context</li>
+        <li>get info about key?<br>
+        </li>
+                          
+    </ul>
+      <li><b>NSSCRL</b></li>
+                          
+    <ul>
+        <li>delete stored object</li>
+        <li>find certificate in CRL<br>
+        </li>
+                          
+    </ul>
+      <li><b>NSSTrustDomain</b></li>
+                          
+    <ul>
+        <li>multiple trust domains</li>
+        <li>selecting modules/slots to initialize with, enable/disable tokens</li>
+        <li>import objects (certs, CRL's, keys) - always have destination
+token?</li>
+        <li>find objects*</li>
+        <li>key generation &nbsp;(parameters for fallback to other tokens)</li>
+        <li>create crypto context for algorithm<br>
+        </li>
+                          
+    </ul>
+      <li><b>NSSCryptoContext</b></li>
+                          
+    <ul>
+        <li>import objects*</li>
+        <li>find objects*</li>
+        <li>generate keys</li>
+        <li>crypto operations - need to be clear on how "distinguished" objects
+ are used</li>
+                          
+    </ul>
+      <li><b>NSSUsage</b></li>
+                          
+    <ol>
+        <li>bitmask or OID? &nbsp;The problem with OIDs is that many extensions
+mean the same thing (nsCertType and keyUsage).<br>
+        </li>
+                          
+    </ol>
+      <li><b>NSSTime</b></li>
+                          
+    <ol>
+        <li>separate type, or wraps PRTime?<br>
+        </li>
+                          
+    </ol>
+      <li><b>NSSPolicies</b></li>
+      <li><b>NSSSMIMEProfile</b><br>
+      </li>
+                
+  </ol>
+    <li>Internal (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/pki/pki.h">pki.h</a>,
+    <a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/pki/pkim.h">pkim.h</a>)</li>
+                
+  <ol>
+      <li><b>NSSCert</b></li>
+                          
+    <ul>
+        <li>management of trust<br>
+        </li>
+                          
+    </ul>
+      <li><b>NSSTrustDomain</b></li>
+                          
+    <ul>
+        <li><a href="certificate_cache_proposal.html">certificate cache</a></li>
+        <li>use local slot list*</li>
+        <li>find token for algorithm, get session for token</li>
+                          
+    </ul>
+      <li><b>NSSCryptoContext</b></li>
+                          
+    <ul>
+        <li>local store of objects</li>
+                          
+    </ul>
+      <li><b>nssTrust</b> - separate object, or property of cert? &nbsp;What
+trust values are defined? &nbsp;I have some <a href="trust_in_stan.html">notes</a>.</li>
+      <li><b>nssPKIObject</b> - base from which all PKI objects inherit. &nbsp;Implements
+ common functionality like deletion and managing multiple token instances.*</li>
+      <li><b>nssPKIObjectCollection</b> - a set of above, used when traversing
+ tokens to locate objects. &nbsp;Sorts multiple instances together, separates
+ objects.<br>
+      </li>
+                
+  </ol>
+   
+</ul>
+  <br>
+   
+<h2>PKI1</h2>
+   
+<ul>
+    <li>Public (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/pki1/nsspki1.h">nsspki1.h</a>)</li>
+                
+  <ol>
+      <li>PKIX part-1 types, <b>NSSOID</b> (including OID table), <b>NSSATAV</b>,
+       <b>NSSRDN</b>, etc.*<br>
+      </li>
+                
+  </ol>
+    <li>Internal (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/pki1/pki1.h">pki1.h</a>)</li>
+                
+  <ol>
+      <li>relationship between <b>NSSOID</b> and <b>NSSAlgNParam</b>
+ - decode the OID at this level (note the OID table has <b>CK_MECHANISM</b>s)?<br>
+      </li>
+                
+  </ol>
+   
+</ul>
+  <br>
+   
+<h2>PKIX</h2>
+   
+<ul>
+    <li>Public (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/pkix/include/nsspkix.h">nsspkix.h</a>)</li>
+            
+  <ol>
+     <li>All of the RFC 2459 types, and how to move up and down the hierarchy
+[e.g., <code>NSSPKIXCert_GetTBSCert</code>, <code>NSSPKIXCert_Create(NSSPKIXTBSCert,
+...)</code>]*</li>
+     <li>How does this hook into the PKI layer? &nbsp;What is the relationship
+between <b>NSSPKIXCert</b> and <b>NSSCert</b>? &nbsp;I have
+one <a href="pkix_to_pki_relationship.html">proposal</a>.<br>
+     </li>
+            
+  </ol>
+    <li>Internal (<a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/pkix/include/pkix.h">pkix.h</a>)</li>
+                
+  <ol>
+      <li>see my <a href="pkix_implementation.html">notes</a> on what implementation
+there is<br>
+      </li>
+                
+  </ol>
+   
+</ul>
+  <br>
+   
+<h2>SSL and S/MIME</h2>
+  Does the above specification meet the needs of these libraries, at the public
+API level? &nbsp;How will the new design of the SSL library look after incorporating
+crypto contexts and trust domains, and do we anticipate this to be an improvement
+(in terms of performance and flexibility)?<br>
+ <br>
+<br>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,288 @@
+<?php
+
+$html_title = 'FAQ of Accessible Mozilla';
+$page_title = 'FAQ of Accessible Mozilla on Linux/UNIX';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="DC.author" content="Jay Yan and Kyle Yuan">
+<meta name="DC.creator" content="Kyle Yuan">
+<meta name="DC.title" content="FAQ of Accessible Mozilla">
+<meta name="DC.subject" content="FAQ of Accessible Mozilla">
+<meta name="DC.description" content="Frequently asked questions about accessibility
+of Mozilla under the Linux/UNIX platform">
+<meta name="DC.date.created" content="2005-02-06T19:57:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2005-08-10T09:54:03+11:00" scheme="W3CDTF">
+<meta name="Description" content="Mozilla\'s Web Browser Accessibility Project Page">
+<meta name="KEYWORDS" content="web browser accessibility, Mozilla accessibility, MSAA, Active Accessibility, open source accessibility, Section 508, ATK, Accessibility Tool Kit, Netscape accessibility, Gecko accessibility, XUL accessibility">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<address class="author">
+  <a href="mailto:jay.yan@sun.com">Jay Yan</a>
+</address>
+<p>Answer frequent asked questions about the accessible mozilla on UNIX/Linux, 
+which will come soon......</p>
+<p>Questions: </p>
+<ul>
+  <li><a href="#q10">What is accessibility?</a></li>
+  <li><a href="#q20">How to make mozilla accessible (in all the platforms)?</a></li>
+  <li><a href="#q30">What is the mozilla's accessibility architecture in 
+  Unix/Linux?</a></li>
+  <li><a href="#q40">What have we done to make mozilla have accessibility 
+  feature in Unix/Linux?</a></li>
+  <li><a href="#q50">What features does the coming Unix/Linux's accessible 
+  mozilla have?</a></li>
+  <li><a href="#q60">What major components are effected if we release 
+  accessiblility feature on Unix/Linux?</a></li>
+  <li><a href="#q70">Is there any new component?</a></li>
+  <li><a href="#q80">Is there any UI modification?</a></li>
+  <li><a href="#q90">What platforms are affected after accessibility on 
+  Unix/Linux is implementated?</a></li>
+  <li><a href="#q100">What is the difference of accessibility feature of mozilla 
+  on Windows and Unix/Linux?</a></li>
+  <li><a href="#q110">Which bugs track the development of this project?</a></li>
+  <li><a href="#q120">What are next milestones and what are the potential risks 
+  to achieve the goals?</a></li>
+  <li><a href="#q130">If we want to release Netscape7.0A as an accessible 
+  browser, from where should we branch the source code?</a></li>
+</ul>
+
+<p><b><big><a name="q10">What is accessibility?</a></big></b></p>
+
+  <p>Accessibility is &quot;Accessing Ability&quot;, that means to add the end-user's 
+  ability to access an software.<br>
+  Accessibility is not only for disable people, but also for all the &quot;normal&quot; 
+  end-users, &nbsp;to enhance the usability of an software for all &quot;normal&quot; end-users 
+  also belongs to accessibility project.<br>
+  If not noted explicitly, this documentation is only talking about 
+  accessibility for disable people, whom accessibility project is mandatory to.</p>
+
+<p><b><big><a name="q20">How to make mozilla accessible (in all platforms)?</a></big></b>
+</p>
+  <p>To make an application accessible in a platform is a complicated process 
+  which a lot of layers get involved in. Althought different platforms have 
+  different methods to make an application accessible, they can be summerized 
+  into three layers in genreal:</p>
+  <ol>
+    <li>OS/Desktop offers an accessibility architecture. &nbsp;Windows and Gnome are 
+    in OS/Desktop layer.</li>
+    <li>Application resides inside the architecture which OS/Desktop offers, the 
+    application's task is to expose its information (content and event) to 
+    OS/Desktop. Mozilla is in this layer.</li>
+    <li>Accessibility Technology applications (AT application, usually from the 
+    3rd party) get the information (the content and event) from OS/Desktop, 
+    end-user can get the information via these AT-applications. Some examples in 
+    this layer are screen reader, screen magnifer, onscreen keyboard, etc.</li>
+  </ol>
+
+<p><b><big><a name="q30">What is the mozilla's accessibility architecture in 
+Unix/Linux?</a></big></b></p>
+  <p>For detailed info, please see:
+  <a href="architecture">
+  http://www.mozilla.org/access/unix/architecture</a></p>
+
+<p><b><big>
+<a name="q40">What have we done to make mozilla have accessibility feature 
+in Unix/Linux?</a></big></b></p>
+
+  <p>Before this project started, mozilla was already accessible in Windows, and 
+  the implementation of accessibility of mozilla on windows is divided into two 
+  parts:</p>
+  <ol>
+    <li>Crossplatform code, please see the IDL file:
+    <a href="http://lxr.mozilla.org/seamonkey/source/accessible/public/nsIAccessible.idl">
+    http://lxr.mozilla.org/seamonkey/source/accessible/public/nsIAccessible.idl</a></li>
+    <li>Windows specific code, it is to bridge nsIAccessible into 
+    MSAA(Microsoft's Accessibility Kit), main implementation file is
+    <a href="http://lxr.mozilla.org/seamonkey/source/widget/src/windows/Accessible.cpp">
+    http://lxr.mozilla.org/seamonkey/source/widget/src/windows/Accessible.cpp</a></li>
+  </ol>
+  <p>What we did in this project is divided into 4 parts:</p>
+  <ol>
+    <li>Extend the crossplatform interface to make mozilla expose more 
+    information, we added 8 addtional interface and extended nsIAccessible, 
+    please check:
+    <a href="http://lxr.mozilla.org/seamonkey/source/accessible/public/">
+    http://lxr.mozilla.org/seamonkey/source/accessible/public/</a></li>
+    <li>Write Unix/Linux specific code to bridge these interfaces to ATK(Gnome's 
+    Accessibility ToolKit), the main implementation is located in
+    <a href="http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/mai/">
+    http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/mai/</a> &nbsp;and there 
+    is a little hookup code in
+    <a href="http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/">
+    http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/</a></li>
+    <li>Because ATK has library dependency on Gtk2/Glib2, so the graphics 
+    toolkit of accessible mozilla in Unix/Linux is GTK2, when this project 
+    started, mozilla(gtk2) was not mature, we did much job in help porting 
+    mozilla to gtk2. the code is located in
+    <a href="http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/">
+    http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/</a></li>
+    <li>At the same time, we are working with module owner and peer on component 
+    &quot;Accessibility API&quot; to fix crossplatform accessibility bug.</li>
+  </ol>
+
+<p><b><big><a name="q50">What features does the coming Unix/Linux's accessible 
+mozilla have?</a></big></b></p>
+
+  <p>The coming accessible mozilla has only accessiblity feature for browser, 
+  mail/news is planed for the next stage, composer is the in the final stage. 
+  For browser, it has these accessibility features:</p>
+  <ol>
+    <li>Content page of the browser will be accessible, end-users can get the 
+    information of the html(or other doc types) displayed in the content pane. 
+    What is more, it is enhanced much comparing with Windows version</li>
+    <li>User interface of browser is accessible, that means xul page is also 
+    accessible.</li>
+    <li>Some vital event information is accessible.</li>
+  </ol>
+
+<p><b><big><a name="q60">What major components are effected if we 
+release accessiblility feature on Unix/Linux?</a></big></b></p>
+
+  <p>For source code:</p>
+  <ol>
+    <li>We added code and modified a lot of code in
+    <a href="http://lxr.mozilla.org/seamonkey/source/accessible/">
+    http://lxr.mozilla.org/seamonkey/source/accessible/</a> to extend 
+    crossplatform code</li>
+    <li>We modified and added code in
+    <a href="http://lxr.mozilla.org/seamonkey/source/layout/">
+    http://lxr.mozilla.org/seamonkey/source/layout/</a> to extend crossplatform 
+    code</li>
+    <li>We newly created a directory
+    <a href="http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/mai/">
+    http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/mai/</a> to 
+    implement Unix/Linux specific code: to bridge the interfaces to ATK..</li>
+    <li>We modified
+    <a href="http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/">
+    http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/</a> to hook up MAI 
+    code and port mozilla to GTK2</li>
+  </ol>
+  <p>For binary file:</p>
+  <ol>
+    <li>No new component is added.</li>
+    <li>For now, a library is added, it is for
+    <a href="http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/mai/">
+    http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/mai/</a> directory, 
+    &nbsp;because it is seperated from gtk2 module for the time being, whether MAI 
+    will be integrated with gtk2_widget components and the way of integration is 
+    still under discussion.</li>
+  </ol>
+
+  <p>For runtime status:</p>
+  <ol>
+    <li>For normal user, there is nearly no performance or footprint overhead if 
+    the accessibility feature is not activated except a very little hooking up 
+    code.</li>
+    <li>For the users who will use accessibility feature, accessibility library 
+    will be loaded into memory and performance and foorprint will be worse than 
+    mozilla with accessibility not activating.</li>
+  </ol>
+
+<p><b><big><a name="q70">Is there any new component?</a></big></b></p>
+
+  <p>No, only one library is added for newly created directory
+  <a href="http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/mai/">
+  http://lxr.mozilla.org/seamonkey/source/widget/src/gtk2/mai/</a>, and whether 
+  MAI will be integrated with gtk2_widget components and the way of integration 
+  is still under discussion. If&nbsp; they are integrated together, there will 
+  be no new compoent nor new library.</p>
+
+<p><b><big><a name="q80">Is there any UI modification?</a></big></b></p>
+
+  <p>No.<br>
+  One potential possible modification is to add a preference seting to switch 
+  on/off the accessibility feature. No decision yet now. There is one bug 
+  tracking it, please see:
+  <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=159306">
+  https://bugzilla.mozilla.org/show_bug.cgi?id=159306</a></p>
+
+<p><b><big><a name="q90">What platforms are affected after 
+accessibility on Unix/Linux is implementated?</a></big></b></p>
+
+  <p>Of course, Mozilla is affected on Unix/Linux in 2 aspects:</p>
+  <ol>
+    <li>Become Accessible.</li>
+    <li>Has to use gtk2 as graphics toolkit.</li>
+  </ol>
+  <p>If end user does not activate accessibility feature in Unix/Linux, there is 
+  nearly no performance and footprint overhead.<br>
+  Mozilla is also affected on Windows becasue it is possible to bridge from 
+  additional interfact to MSAA to make mozilla more accessible on Windows, no 
+  other issue or risk.<br>
+  Mozilla guys can can take advantage of better crossplatform code to make 
+  mozilla accessible in other platforms.</p>
+
+<p><b><big><a name="q100">What is the difference of accessibility feature of mozilla on 
+Windows and Unix/Linux?</a></big></b></p>
+
+  <p>Since new inferfaces are added in crossplatform part and these interfaces 
+  are bridged to ATK in Unix/Linux, but the additional interfaces have not yet 
+  been yet brideged to MSAA on Windows (because of MSAA?), the coming accessible 
+  mozilla on Unix/Linux will be more accessible than that on Windows.</p>
+
+<p><b><big><a name="q110">Which bugs track the development of this 
+project?</a></big></b></p>
+
+  <p>It is a meta bug tracking crossplatform code and Unix/Linux specific code:<br>
+  <a href="https://bugzilla.mozilla.org/showdependencytree.cgi?id=136315">
+  https://bugzilla.mozilla.org/showdependencytree.cgi?id=136315</a><br>
+  It is a meta bug tracking gtk2 porting code: (it includes above dependency 
+  tree)<br>
+  <a href="https://bugzilla.mozilla.org/showdependencytree.cgi?id=92033">
+  https://bugzilla.mozilla.org/showdependencytree.cgi?id=92033</a><br>
+  <br>
+  Besides above work, we are also working with &nbsp;Aaronl and John on the 
+  components &quot;Accessibility API&quot; to fix accessibility API bugs and add the 
+  usability of mozilla. this URL can track our work:<a href="https://bugzilla.mozilla.org/buglist.cgi?bug_status=RESOLVED&amp;bug_status=VERIFIED&amp;resolution=FIXED&amp;email1=&amp;emailtype1=substring&amp;emailassigned_to1=1&amp;email2=&amp;emailtype2=substring&amp;emailassigned_to2=1&amp;emailreporter2=1&amp;emailqa_contact2=1&amp;bugidtype=include&amp;bug_id=&amp;changedin=&amp;votes=&amp;chfield=%5BBug+creation%5D&amp;chfieldfrom=03%2F01%2F2002&amp;chfieldto=Now&amp;chfieldvalue=&amp;product=Browser&amp;component=Accessibility+APIs&amp;short_desc=&amp;short_desc_type=substring&amp;long_desc=&amp;long_desc_type=substring&amp;bug_file_loc=&amp;bug_file_loc_type=substring&amp;status_whiteboard=&amp;status_whiteboard_type=substring&amp;keywords=&amp;keywords_type=allwords&amp;field0-0-0=noop&amp;type0-0-0=noop&amp;value0-0-0=&amp;cmdtype=doit&amp;namedcmd=All+bugs&amp;newqueryname=&amp;order=Reuse+same+sort+as+last+time"> 
+  Other genreal accessibility bug fixing</a></p>
+
+<p><b><big><a name="q120">What are the next milestones and what are 
+the potential risks to achieve the goals?</a></big></b></p>
+
+  <p>We are aiming at the August 5, we hope that at that time all the 
+  crossplatform code, Unix/Linux specific code and gtk2 porting code can be 
+  checked into mozilla trunk, then we will start a QA cycle them beta process.<br>
+  Up to now, all the crossplatform code and Unix/Linux code is checked into 
+  mozilla trunk, the biggest difficulity to achieve next milestone is to land 
+  our gtk2 porting patch in trunk, we are working with Chris Blizzard on it, but 
+  this process is very slow becasue Chris is busy with other stuff now.<br>
+  After next milestone, we hope to get a stable gnome2(with stable gtk2 and 
+  stable AT-applications) ASAP, now a lot of crash happen on Gnome2 of not only 
+  linux but also Solaris, and we have not got runable AT-applications yet. It is 
+  the biggest potential risk.</p>
+
+<p><b><big><a name="q130">If we want to release Netscape7.0A as an 
+accessible browser, from where should we branch code?</a></big></b></p>
+
+  <p>Becasue work for this project is regarded as new feature and our project 
+  started nearly at the same time when mozilla 1.0 branched, nearly all the code 
+  has not been checked into mozilla1.0branch, they are only allowed to be 
+  checked into mozilla trunk, and after mozilla1.0 branched, a lot of code 
+  modification happened, &nbsp;so it needs a lot of work to port these patches from 
+  trunk into 1.0branch even if we get the approval. From this point, we wish to 
+  start to branch code from mozilla trunk.<br>
+  But Netscape7.0 is branched from mozilla1.0 branch.<br>
+  ........<br>
+  </p>
+
+<p><b><big>If there is any question, please feel free to ask
+<a href="mailto:browser-china-atf@sun.com">us</a>, we will update the 
+documentation. Thanks a lot.</big></b></p>
+<p><i>Maintained by <a href="mailto:browser-china-atf@sun.com">
+browser-china-atf@sun.com</a> </i></p>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

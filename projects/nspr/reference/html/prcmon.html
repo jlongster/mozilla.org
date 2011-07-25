@@ -1,0 +1,651 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;8 Cached Monitors';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:04:51">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="prmon.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="priotyp.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="16546"> </A><A NAME=""> </A><h2>
+Chapter&#32;8 
+&nbsp;
+
+
+
+<A NAME="16547"> </A><A NAME="Cached Monitors"> </A>Cached Monitors
+</h2>
+</center>
+<A NAME="16548"> </A>This chapter describes the functions you use when you work with cached 
+monitors. Unlike a plain monitor, a cached monitor is associated with the address 
+of a protected object, and the association is maintained only while the protection is 
+needed. This arrangement allows a cached monitor to be associated with another 
+object without preallocating a monitor for all objects. A hash table is used to 
+quickly map addresses to their respective monitors. The system automatically 
+enlarges the hash table as needed.
+
+<P>
+
+<BR>
+<A NAME="16549"> </A><A NAME="Important"> </A><h5>
+Important
+</h5>
+
+
+<A NAME="16550"> </A>Cached monitors are slower to use than their uncached counterparts.
+
+<P>
+
+<A NAME="16554"> </A>See <A HREF="prmon.html#16286"  >Chapter&#32;7 "Monitors</A>" for information about uncached monitors.
+
+<P>
+
+
+
+<A NAME="16555"> </A>
+<A NAME="Cached Monitors Functions"> </A>
+<h2>
+Cached Monitors Functions
+</h2>
+
+
+<A NAME="16556"> </A>Cached monitors allow the client to associate monitoring protection and state 
+change synchronization in a lazy fashion. The monitoring capability is associated 
+with the protected object only during the time it is required, allowing the monitor 
+object to be reused. This additional flexibility comes at the cost of a small loss in 
+performance.
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16560"> </A><A HREF="prcmon.html#16578"  ><CODE>PR_CEnterMonitor</CODE></A> enters the lock associated with a cached monitor.
+
+<P><B>  <li></B>
+<A NAME="16564"> </A><A HREF="prcmon.html#16607"  ><CODE>PR_CExitMonitor</CODE></A> decrements the entry count associated with a cached 
+monitor.
+
+<P><B>  <li></B>
+<A NAME="16568"> </A><A HREF="prcmon.html#16630"  ><CODE>PR_CWait</CODE></A> waits for a notification that a monitor's state has changed.
+
+<P><B>  <li></B>
+<A NAME="16572"> </A><A HREF="prcmon.html#16667"  ><CODE>PR_CNotify</CODE></A> notifies a thread waiting for a change in the state of monitored 
+data.
+
+<P><B>  <li></B>
+<A NAME="16576"> </A><A HREF="prcmon.html#16690"  ><CODE>PR_CNotifyAll</CODE></A> notifies all the threads waiting for a change in the state of 
+monitored data.
+
+<P></ul>
+
+<A NAME="16578"> </A><A NAME="PR_CEnterMonitor"> </A><h4>
+PR_CEnterMonitor
+</h4>
+
+<A NAME="16579"> </A>Enters the lock associated with a cached monitor.
+
+<P>
+
+<BR>
+<A NAME="16580"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16581"></A>#include &lt;prcmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16582"></A>PRMonitor* PR_CEnterMonitor(void *address);
+</PRE>
+<P>
+<BR>
+<A NAME="16583"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="16584"> </A>The function has the following parameter:
+
+<P>
+
+<P>
+<A NAME="16590"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16587"></A>address
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16589"> </A>A reference to the data that is to be protected by the monitor. This 
+reference must remain valid as long as there are monitoring operations 
+being performed.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16591"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16592"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16596"> </A>If successful, the <CODE>function</CODE> returns a pointer to the <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A> associated with 
+the value specified in the <CODE>address</CODE> parameter.
+
+<P><B>  <li></B>
+<A NAME="16597"> </A>If unsuccessful (the monitor cache needs to be expanded and the system is out 
+of memory), the function returns <CODE>NULL</CODE>.
+
+<P></ul>
+
+<BR>
+<A NAME="16598"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16599"> </A><CODE>PR_CEnterMonitor</CODE> uses the value specified in the <CODE>address</CODE> parameter to find a 
+monitor in the monitor cache, then enters the lock associated with the monitor. If 
+no match is found, an available monitor is associated with the address and the 
+monitor's entry count is incremented (so it has a value of one). If a match is found, 
+then either the calling thread is already in the monitor (and this is a reentrant call) 
+or another thread is holding the monitor's mutex. In the former case, the entry 
+count is simply incremented and the function returns. In the latter case, the calling 
+thread is likely to find the monitor locked by another thread and waits for that 
+thread to exit before continuing.
+
+<P>
+
+<P>
+<A NAME="16605"> </A>
+
+<BR>
+<HR SIZE="1">
+<TABLE BORDER="0" CELLPADDING="5" WIDTH="75%">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="16602"> </A>
+<B>
+Note
+</B>
+
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="16604"> </A><CODE>PR_CEnterMonitor</CODE> and <CODE>PR_CExitMonitor</CODE> must be paired--that is, 
+there must be an exit for every entry--or the object will never 
+become available for any other thread.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+<HR SIZE="1">
+<BR>
+
+<P>
+
+
+<A NAME="16607"> </A><A NAME="PR_CExitMonitor"> </A><h4>
+PR_CExitMonitor
+</h4>
+
+<A NAME="16608"> </A>Decrement the entry count associated with a cached monitor.
+
+<P>
+
+<BR>
+<A NAME="16609"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16610"></A>#include &lt;prcmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16611"></A>PRStatus PR_CExitMonitor(void *address);
+</PRE>
+<P>
+<BR>
+<A NAME="16612"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="16613"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="16622"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16616"></A>address
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16618"> </A>The address of the protected object--the same address previously passed to 
+<A HREF="prcmon.html#16578"  ><CODE>PR_CEnterMonitor</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16623"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16624"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16625"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="16626"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>. This may indicate that the address parameter is 
+invalid or that the calling thread is not in the monitor.
+
+<P></ul>
+
+<BR>
+<A NAME="16627"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16628"> </A>Using the value specified in the <CODE>address</CODE> parameter to find a monitor in the 
+monitor cache, <CODE>PR_CExitMonitor</CODE> decrements the entry count associated with the 
+monitor. If the decremented entry count is zero, the monitor is exited.
+
+<P>
+
+<A NAME="16630"> </A><A NAME="PR_CWait"> </A><h4>
+PR_CWait
+</h4>
+
+<A NAME="16631"> </A>Wait for a notification that a monitor's state has changed.
+
+<P>
+
+<BR>
+<A NAME="16632"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16633"></A>#include &lt;prcmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16634"></A>PRStatus PR_CWait(<br>&nbsp;&nbsp;&nbsp;void *address, <br>&nbsp;&nbsp;&nbsp;PRIntervalTime timeout);
+</PRE>
+<P>
+<BR>
+<A NAME="16635"> </A><A NAME="Parameters<br>"> </A><h5>
+Parameters<br>
+</h5>
+
+
+<A NAME="16636"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="16652"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16639"></A>address
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16641"> </A>The address of the protected object--the same address previously passed 
+to <A HREF="prcmon.html#16578"  ><CODE>PR_CEnterMonitor</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16646"></A>timeout
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16651"> </A>The amount of time (in<A HREF="prinrvl.html#20947"  ><CODE>PRIntervalTime</CODE></A> units) that the thread is 
+willing to wait for an explicit notification before being rescheduled. If 
+you specify <CODE>PR_INTERVAL_NO_TIMEOUT</CODE>, the function returns if and 
+only if the object is notified. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16653"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16654"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16655"> </A><CODE>PR_SUCCESS</CODE> indicates either that the monitored object has been notified or that 
+the interval specified in the <CODE>timeout</CODE> parameter has been exceeded.
+
+<P><B>  <li></B>
+<A NAME="16656"> </A><CODE>PR_FAILURE</CODE> indicates either that the monitor could not be located in the cache 
+or that the monitor was located and the calling thread was not the thread that 
+held the monitor's mutex.
+
+<P></ul>
+
+<BR>
+<A NAME="16657"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16658"> </A>Using the value specified in the <CODE>address</CODE> parameter to find a monitor in the 
+monitor cache, <CODE>PR_CWait</CODE> waits for a notification that the monitor's state has 
+changed. While the thread is waiting, it exits the monitor (just as if it had called 
+<A HREF="prcmon.html#16607"  ><CODE>PR_CExitMonitor</CODE></A> as many times as it had called <A HREF="prcmon.html#16578"  ><CODE>PR_CEnterMonitor</CODE></A>). When the 
+wait has finished, the thread regains control of the monitor's lock with the same 
+entry count as before the wait began.
+
+<P>
+
+<A NAME="16665"> </A>The thread waiting on the monitor resumes execution when the monitor is notified 
+(assuming the thread is the next in line to receive the notify) or when the interval 
+specified in the <CODE>timeout</CODE> parameter has been exceeded. When the thread resumes 
+execution, it is the caller's responsibility to test the state of the monitored data to 
+determine the appropriate action.
+
+<P>
+
+<A NAME="16667"> </A><A NAME="PR_CNotify"> </A><h4>
+PR_CNotify
+</h4>
+
+<A NAME="16668"> </A>Notify a thread waiting on a change in the state of monitored data.
+
+<P>
+
+<BR>
+<A NAME="16669"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16670"></A>#include &lt;prcmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16671"></A>PRStatus PR_CNotify(void *address);
+</PRE>
+<P>
+<BR>
+<A NAME="16672"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="16673"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="16679"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16676"></A>address
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16678"> </A>The address of the monitored object. The calling thread must be in the 
+monitor defined by the value of the address.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16680"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16681"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16682"> </A><CODE>PR_SUCCESS</CODE> indicates that the calling thread is the holder of the mutex for the 
+monitor referred to by the <CODE>address</CODE> parameter.
+
+<P><B>  <li></B>
+<A NAME="16683"> </A><CODE>PR_FAILURE</CODE> indicates that the monitor has not been entered by the calling 
+thread.
+
+<P></ul>
+
+<BR>
+<A NAME="16684"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16685"> </A>Using the value specified in the <CODE>address</CODE> parameter to find a monitor in the 
+monitor cache, <CODE>PR_CNotify</CODE> notifies single a thread waiting for the monitor's state 
+to change. If a thread is waiting on the monitor (having called <A HREF="prcmon.html#16630"  ><CODE>PR_CWait</CODE></A>), then that 
+thread is made ready. As soon as the thread is scheduled, it attempts to reenter the 
+monitor.
+
+<P>
+
+<A NAME="16690"> </A><A NAME="PR_CNotifyAll"> </A><h4>
+PR_CNotifyAll
+</h4>
+
+<A NAME="16691"> </A>Notifies all the threads waiting for a change in the state of monitored data.
+
+<P>
+
+<BR>
+<A NAME="16692"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16693"></A>#include &lt;prcmon.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="16694"></A>PRStatus PR_CNotifyAll(void *address);
+</PRE>
+<P>
+<BR>
+<A NAME="16695"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="16696"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="16702"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16699"></A>address
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16701"> </A>The address of the monitored object. The calling thread must be in the 
+monitor at the time <CODE>PR_CNotifyAll</CODE> is called.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16703"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16704"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16705"> </A><CODE>PR_SUCCESS</CODE> indicates that the referenced monitor was located and the calling 
+thread was in the monitor.
+
+<P><B>  <li></B>
+<A NAME="16706"> </A><CODE>PR_FAILURE</CODE> indicates that the referenced monitor could not be located or that 
+the calling thread was not in the monitor
+
+<P></ul>
+
+<BR>
+<A NAME="16707"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16708"> </A>Using the value specified in the <CODE>address</CODE> parameter to find a monitor in the 
+monitor cache, <CODE>PR_CNotifyAll</CODE> notifies all threads waiting for the monitor's state to 
+change. All of the threads waiting on the state change are then scheduled to reenter 
+the monitor.
+
+<P>
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="prmon.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="priotyp.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

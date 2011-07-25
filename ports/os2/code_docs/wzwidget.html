@@ -1,0 +1,242 @@
+<?php
+
+$html_title = 'OS/2 Code in Mozilla: Raptor widget';
+$page_title = 'Raptor Widget';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<p>
+Files in mozilla/widget/src/os2/
+<br>
+(not yet checked in to mozilla.org cvs)
+
+<p>
+This is the cross-platform window library. Most of the files and classes
+(eg. <strong>nsEntryField</strong>) are small subclasses of the base OS/2
+window class, <strong>nsWindow</strong>.  Note that the widgets are grounded
+in an XP class, <a href="http://lxr.mozilla.org/mozilla/source/widget/src/xpwidgets/nsBaseWidget.cpp">nsBaseWidget</a>.
+The hierarchy looks like this:
+<pre>
+       nsISupports
+         |
+         +---nsIWidget
+               |
+               +---nsBaseWidget
+                     |
+                     +---nsWindow
+                           |
+                           +---nsEntryField   (for example)
+</pre>
+
+<p><a name="xptk">
+<strong>The future - XPToolkit</strong>
+<p>
+There are several incomplete sections in this library (eg. printing).  They
+are being left incomplete because their future is unclear.  Mozilla is
+adopting a system of drawn widgets; there will be a place for native
+widgets, but the details are still vague.
+<p>
+See <a href="http://www.mozilla.org/xpfe/">XPToolkit</a> for more.
+
+<p><a name="hmqs">
+<strong>Managing message queues</strong>
+<p>
+In order to do interesting things like create windows, a thread needs to
+have a <strong>HMQ</strong>.  There are three places in the mozilla code
+where, independently, PM function is neeed:  here, in libwidget; in
+<a href="wzbase.html">nsTimerOS2</a>, and in
+<a href="wznspr.html">the plevent library</a>.  Here is the way in which
+message queues are to be managed:
+<ol>
+<li>When a service needs a message queue, it should first test for there
+    being one for the current thread, using <em>WinQueryQueueInfo</em>.
+<li>If there is no queue, create one.
+    <br>
+    Otherwise the service should use <strong>HMQ_CURRENT</strong>.
+<li>The service should take no action to destroy any queue it creates.
+<li>The exception to this rule is the nsAppShell class.  It is the job of
+    nsAppShell to destroy the message queue and shut down PM.
+    <br>
+    This a valid thing to do because by the time the nsAppShell shuts down,
+    it is no longer processing its message queue, and so the services which
+    may be using will have stopped working anyhow.
+</ol>
+
+<p><a name="threads">
+<strong>Toolkits and thread management</strong>
+<p>
+Not all mozilla threads are PM threads.  Some functions in the OS/2 API
+demand that they are called from PM threads.  Indeed, some functions must
+be called in <em>specific</em> PM threads.  So there needs to be a method
+of re-routing function calls.
+<p>
+This mechanism is contained in the <strong>nsToolkit</strong> class.  Each
+widget created has a reference to an <strong>nsToolkit</strong>, which is
+associated with a thread.  There's a set of routines for calling methods
+(using a callback interface, <strong>SwitchToPMThread</strong>, which
+<strong>nsWindow</strong> implements) and a convenience equivalent of
+<em>WinSendMsg</em> which doesn't require the caller to be a PM thread.
+<p>
+That said, mozilla isn't too promiscuous in the thread-creation department.
+Plans for this version seem to be limited to one UI thread plus some more
+netlib threads (<a href="http://www.mozilla.org/xpapps/threads.html">more info</a>).
+But if things ever change, we will be ready.
+
+<p><a name="hwnds">
+<strong>HWND basics</strong>
+<p>
+nsWindow.cpp is more-or-less an encapsulation of the basic window management
+sections of the OS/2 API.
+<p>
+All windows are subclassed into a simple window procedure, the
+<strong>nsWindow</strong> for that window is looked up, and the
+<em>ProcessMessage</em> method called.
+<p>
+The <strong>HWND</strong> to <strong>nsWindow</strong> mapping is implemented
+using a hashtable, found in nsWindow.cpp.
+<p>
+Frame windows store a pointer to their <strong>nsWindow</strong> at
+<strong>QWL_USER</strong> in the window words.  Their client window handles
+are stored in the hashtable of windows.
+<p>
+The resizing and moving code is a bit non-obvious and probably contains a
+few bugs: as in the <a href="wzgfx.html">graphics</a> library, the coordinate
+system has the origin in the top-left.  Because the height of the window is
+an oft-requested quanitity, the window rectangle (in XP space) is cached in
+the object.  This is updated in the dispatch routines for the PM notification
+messages as opposed to the site of the <em>Resize</em> method.  There's some
+interesting code (which is, as yet, uncalled) to batch window repositions.
+<p>
+There are some kludges in place to better mimic the behaviour of Win32, so
+that, for example, windows totally covered by other windows do not receive
+mouseclick events.
+
+<p><a name="events">
+<strong>Events</strong>
+<p>
+XP events are defined in <a href="http://lxr.mozilla.org/mozilla/source/widget/public/nsGUIEvent.h">nsGUIEvent.h</a>.
+They're pretty straight-forward, though with a few notes:
+<ul>
+<li>The keycodes (see <strong>nsKeyEvent</strong>) are occasionally ambiguous;
+    there's a global function in nsWindow.h to convert from a WM_CHAR to the
+    keycode.
+    <br>
+    Intl work needed for MBCS input modes.
+<li>No-one really knows when <strong>NS_SIZE</strong> and <strong>NS_MOVE</strong>
+    events should be generated.  OS/2's funky coordinate system doesn't help
+    matters, and we could probably do better.
+</ul>
+<p>
+There are a bunch of methods in nsWindow.cpp which deal with setting up for
+and dispatching events to interested parties.
+
+<p><a name="laf">
+<strong>nsLookAndFeel</strong>
+<p>
+The <a href="http://lxr.mozilla.org/mozilla/source/widget/public/nsILookAndFeel.h">nsILookAndFeel</a>
+interface is meant to wrap up various platform-specific things, including
+various system colours.
+<p>
+There are some rather weird entries which have appeared relatively recently,
+which are used when laying out and aligning form elements.
+<p>
+<img src="hamm.gif">These could do with verifying.
+<p>
+If components look `a bit wrong', adjusting a value in here is probably the
+way to go (but see <a href="#xptk">above</a>).
+
+<p><a name="tooltips">
+<strong>Tooltips</strong>
+<p>
+Because Win32 has tooltips built in to the API, tooltips are built in to
+the <strong>nsIWidget</strong> interface.  The code to manage tooltips is
+in the nsTooltipManager.cpp file.  Note that this doesn't have anything to
+do with <em>displaying</em> tooltips -- it just sends a notification to
+the window, which can then act as it likes.
+<p>
+<img src="hamm.gif">The per-window data-structure could do with optimising
+(just use a hashtable)
+<p>
+This could well be subsumed into <a href="#xptk">XP code</a>.
+
+<p><a name="menus">
+<strong>Menus</strong>
+<p>
+There are separate classes for menu bars, pull-down menus, and popup menus,
+which all share code in the nsMenuBase class.  There is also an nsMenuItem
+class.  In the world of XPToolkit, menus are built up at runtime using these
+classes.  Client applications associate <em>menu listeners</em> with both
+menu items and menus; when menus appear or menu items are selected, messages
+are dispatched to the listeners.
+<p>
+Yes, event handling mechansims vary wildly.  But that's what makes it so fun.
+<p>
+How we make this work on PM:
+<ul>
+ <li>Each menu window contains a pointer to its nsMenuBase in
+     <strong>QWL_USER</strong> of its window word.
+ <li>The <em>hItem</em> field of each menu item's <strong>MENUITEM</strong>
+     contains an nsISupports for its nsMenu or nsMenuItem.
+ <li>On <strong>WM_COMMAND</strong>, <strong>WM_MENUEND</strong> or
+     <strong>WM_INITMENU</strong> events, things happen.  The menu classes
+     themselves support the nsIMenuListener interface, the implementation of
+     which just proxies on the events to the client's listener.
+     <br>
+     This design can't support images on menuitems.  Current XPToolkit plans
+     do not include this.
+ <li>In order to support both viewer (which has a native menubar, loaded from
+     a resource file) and XPToolkit applications, menu events are also
+     dispatched to the standard window listeners.
+</ul>
+<p>
+<img src="hamm.gif"><strong>nsSwitchToPMThread</strong> rerouting isn't 
+hooked up yet.
+<br>
+<img src="hamm.gif">The code for dispatching menu events is currently in
+nsWindow.cpp.  It should probably be moved to nsFrameWindow.cpp.
+
+<p><a name="dlgs">
+<strong>Dialog windows</strong>
+<p>
+Dialogs aren't, at the moment -- they're just frame windows with a dialog
+border and a light grey-filled client.  This shows up when you create button
+controls: there's a thin white border around them, which isn't normally
+present in dialogs.
+<p>
+The problem with using dialogs lies in coordinate systems.  A dialog is one
+window, whose area is made up of a 'client area', a dialog border, and a
+titlebar.  The origin of the client area depends on system settings, but
+isn't (0,0).  This makes it very difficult to draw into dialogs: mozilla
+expects to be able to draw or lay out controls from the origin over the size
+of the window.
+<p>
+In practice, the white line doesn't look that bad, and it'll probably go
+away when the <a href="#xptk">XPToolkit</a> arrives.
+
+<p><a name="dnd">
+<strong>Drag and Drop</strong>
+<p>
+<img src="hamm.gif">Currently not implemented.  Should be straight-forward,
+will eventually need a way to get a <strong>HBITMAP</strong> from an nsIImage.
+Wrap up the PM structures and everything should just work.
+
+<p>
+<hr>
+<table width="100%">
+<tr>
+<th align="left"><a href="wzgfx.html">Back to Raptor gfx</a></th>
+<th align="right"><a href="wzplug.html">On to plugins</a></th>
+</tr>
+</table>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

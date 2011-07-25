@@ -1,0 +1,850 @@
+<?php
+
+$html_title = 'Mozilla/Gecko Keyboard Navigation Proposal';
+$page_title = 'Mozilla/Gecko Keyboard Navigation Proposal';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="DC.author" content="Kyle Yuan, Ginn Chen and Peter Korn">
+<meta name="DC.creator" content="Aaron Leventhal">
+<meta name="DC.title" content="Mozilla/Gecko Keyboard Navigation Proposal">
+<meta name="DC.subject" content="Mozilla/Gecko Keyboard Navigation Proposal">
+<meta name="DC.description" content="Mozilla/Gecko Keyboard Navigation Proposal">
+<meta name="DC.date.created" content="2004-09-17T06:54:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2006-05-03T09:54:03+11:00" scheme="W3CDTF">
+';
+
+$extra_style = '
+<style type="text/css">
+a.BugFixed {text-decoration: line-through;}
+</style>
+
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<div class="author"> Kyle Yuan, Ginn Chen and Peter Korn<br>
+Sun Microsystems, Inc.</div>
+
+<h2>Preface</h2>
+
+<p>This is the second draft of the Mozilla/Gecko Keyboard Navigation Proposal
+from Sun Microsystems, Inc. After a <em>huge</em> volume of feedback, 
+we carefully re-thought a number of things and especially took to heart the 
+frequent request for configurability. To that end we have decided to 
+prune some of the commands from this second draft to cover only "core" navigation 
+to be implemented directly in C in Gecko. Configurability is most easily 
+done in JavaScript extensions, and that is where we feel all of the "item 
+navigation" work is best done. This is also where much of the "specialized 
+for specific accessibility needs" navigation falls as well - blind users for
+example finding good table item navigation particularly important where a
+general keyboard user wouldn't benefit as much. Please see the new section
+<a href="#X._Item-oriented_Navigation">Item-oriented Navigation using Javascript Component</a> for more on this.</p>
+
+<p>Sun plans to implement all of the specific keyboard navigation items 
+discussed below (any exceptions are clearly noted). We believe that 
+item navigation is important, but we don't propose to implement that immeidately 
+- both because there is yet no clear concensus as to how it should be done, 
+and because we feel that it is urgent that we have "core keyboard navigation" 
+working well as quickly as possible. Please see <a
+ href="#XII._Buglist">Section XII</a> for the list of keyboard navigation
+bugs and their status.</p>
+
+<h3>Contents</h3>
+
+<ul class="toc">
+  <li><a href="#I._Introduction">Introduction</a></li>
+  <li><a href="#II._Keyboard_Navigation_in_a_Block_of">Keyboard Navigation
+in a Block of Text</a></li>
+  <li><a href="#III._Keyboard_Navigation_Across_Frame">Keyboard Navigation
+Across Frame Boundaries</a></li>
+  <li><a href="#V._Form_Control_Navigation_">Form Control Navigation</a></li>
+  <li><a href="#VII._Keyboard_Navigation_in_a">Keyboard Navigation in a Client-side
+Image Map</a></li>
+  <li><a href="#VIII._Keyboard_Navigation_intoout-of_">Keyboard Navigation
+into/out-of Plugins (and also Java[TM] Applets)</a></li>
+  <li><a href="#IX._Keyboard_Navigation_in_a_Sample_Web">Keyboard Navigation
+in a Sample Web Page</a></li>
+  <li><a href="#X._Unresolved_Issues">Unresolved Issues</a></li>
+  <li><a href="#IX._Differences_Between_Caret_Browsing_">Differences Between
+Caret Browsing Mode and Non-Caret Browsing Mode</a></li>
+  <li><a href="#X._Item-oriented_Navigation">Item-oriented Navigation using
+Javascript Component</a></li>
+  <li><a href="#XI._Reference">Reference</a></li>
+  <li><a href="#XII._Buglist">Buglist</a></li>
+</ul>
+
+<h3><a name="I._Introduction">I. Introduction</a></h3>
+
+<p>A key accessibility requirement of software applications is
+that all features of that application be achievable via the keyboard (with 
+exceptions made for things like painting programs). See <a
+ href="http://www.section508.gov/index.cfm?FuseAction=Content&amp;ID=12#Software" class="ex-ref"> 
+Section 508 &sect; 1194.21(a)</a> which explicitly requires this of software
+that is acquired by the U.S. Federal Government. One clear feature
+of a web browser is the ability to copy a region of text from a web page and 
+then paste it elsewhere (perhaps in a text document one is writing). Without 
+a straightforward way to accomplish text navigation and selection within all
+web pages using only the keyboard, a web browser would fail to meet this key
+accessibility requirement, and should thus be avoided by U.S. Government purchasing
+agents and all others who are interested in acquiring and using accessible
+software applications.</p>
+
+<p>In addition to using keyboard navigation to perform text selection, keyboard
+navigation of text is important for screen reader users. One of the
+most common ways that screen reader users interact with software applications
+in the Graphical User Interface is via the standard keyboard interaction
+mechanisms of their computer desktop or those unique to the software application: 
+their screen reader receives events from the application in response to keyboard
+movement (focus or caret events commonly), and then in response reads to
+the user (or renders via a refreshible Braille display) the appropriate information.</p>
+
+<p>The <a href="http://www.mozilla.org/newlayout/">gecko rendering engine
+of Mozilla</a> (also embedded in other applications such as <a
+ href="http://www.mozilla.com/firefox/">Firefox</a>, <a
+ href="http://galeon.sourceforge.net/" class="ex-ref">Galeon</a>, and others) presents only
+a very minimal keyboard navigation scheme for web content, activated when
+the user presses the F7 key on their keyboard (sometimes called "F7 navigation"
+or "Caret Browsing Mode"). In the current Mozilla 1.7 and 1.8 codebases,
+this mode uses existing code written for use in the <a
+ href="http://www.mozilla.org/editor/">Mozilla Editor</a> application for
+generating web content. Unfortunately there are two significant problems
+with this mode: (1) it provides no means to navigate the rich structure of
+web content (e.g. tables, forms), and (2) it has a 
+<a href="#XII._Buglist">lot of bugs</a>.</p>
+
+<p>This document contains a proposal by the authors outlining a rich keyboard
+navigation scheme they propose to implement on the gecko rendering engine
+and thereby into Mozilla, Firefox, Galeon, and all other gecko-embedding
+web browsers. It is hoped that a consensus among those interested in 
+open source web accessibility can be reached rapidly based on this proposal, 
+so that it can be implemented quickly. Note: this document proposes 
+these keyboard navigation mechanisms only for when the user is in "Caret 
+Browsing Mode". <a href="#IX._Differences_Between_Caret_Browsing_">Section 
+IX</a> highlights the differences between these two modes.</p>
+ 
+<h3><a name="II._Keyboard_Navigation_in_a_Block_of">II. Keyboard Navigation
+in a Block of Text</a></h3>
+
+<p>This section can be generally named as "keyboard navigation in text",
+because the key bindings are applicable to all text in browser content window,
+no matter if<b> </b> it is just a paragraph text or inside table/form.</p>
+ 
+<h4>Continuous Navigation</h4>
+ 
+<ul>
+   <li>&lt;left&gt; moves the caret one character left. Especially, if the 
+caret is at the beginning of a line, &lt;left&gt; will move it to
+the end of the previous line. If caret is already at the beginning of the
+current frame, &lt;left&gt; will be no-op.
+   </li>
+   <li>&lt;right&gt; moves caret one character right. Especially, when the<b>
+    </b>caret is at the end of a line, &lt;right&gt; will move it to the beginning
+of the next line. If the caret is already at the end of the current
+frame, &lt;right&gt; will be no-op.
+   </li>
+   <li>&lt;up/down&gt; moves the caret one line up/down. Browser keeps the
+horizontal distance change of the caret as small as possible. If the target
+line is not long enough to keep the the caret's horizontal distance, browser
+will remember the original horizontal distance and will return the caret
+to that position when possible, see example below. If the caret is already
+at the first/last line of the current frame, &lt;up/down&gt; will be no-op.<br>
+ For example, there are 3 lines of text:<br>
+     
+    <pre> mnopqrst^uvw<br> 123^<br> abcdefgh^ijk<br></pre>
+     
+    <p>When the caret is between 'h' and 'i', &lt;up&gt; will move it to
+after '3^'. Also, as the last the caret position will be remembered, so pressing
+&lt;up&gt; again will move the caret to after 't^' in the first line, or
+pressing &lt;down&gt; will move the caret back to the original position (between
+'h' and 'i').</p>
+  </li>
+  <li>&lt;ctrl+left&gt; if the previous character is a part of a word, &lt;ctrl+left&gt;
+moves the caret to the beginning of that word; if the previous character
+is blank (spaces, tabs), &lt;ctrl+left&gt; moves the caret skip those blank
+spaces and to beginning of the previous word. For example:<br>
+     <br>
+ abc def gh^i - the next 3 stops when press &lt;ctrl+left&gt; will be '^g',
+'^d', '^a';<br>
+ abc def ^ghi - the next 2 stops when press &lt;ctrl+left&gt; will be '^d',
+'^a'.<br>
+     <br>
+   </li>
+   <li>&lt;ctrl+right&gt; is more complicated - its behavior depends on a
+preferences setting <span style="font-family: monospace;">layout.word_select.eat_space_to_next_word</span>.<br>
+ It defaults to true on Windows, but false on Linux/Solaris/Mac.<br><br>
+     
+    <table border="1" cellpadding="2" cellspacing="2">
+       <tbody>
+         <tr>
+           <td>layout.word_select.<br>
+ eat_space_to_next_word=</td>
+           <td>current caret position</td>
+           <td>behavior</td>
+           <td>example</td>
+         </tr>
+         <tr>
+           <td colspan="1" rowspan="2" style="vertical-align: top;">false 
+(to be consistent with GTK)</td>
+           <td>inside a word</td>
+           <td>moves the caret to the end of that word</td>
+           <td>a^bc def ghi - the next 3 stops
+are: 'c^', 'f^', 'i^';</td>
+         </tr>
+         <tr>
+           <td>before blank (spaces, tabs)</td>
+           <td>moves the caret skip those blank spaces and to end of the next word</td>
+           <td>abc^ def ghi - the next 2 stops are: 'f^', 'i^'.</td>
+         </tr>
+         <tr>
+           <td rowspan="2" style="vertical-align: top;">true (to
+be consistent with Windows)</td>
+           <td>inside a word</td>
+           <td rowspan="2" style="vertical-align: top;">moves 
+the caret to the beginning of the next word</td>
+           <td rowspan="2" style="vertical-align: top;">a^bc def
+ghi - the next 2 stops are: '^d', '^g'';<br>
+ abc^ def ghi - the next 2 stops are: '^d', '^g'';</td>
+         </tr>
+         <tr>
+           <td>before blank (spaces, tabs)</td>
+         </tr>
+      </tbody>     
+    </table>
+     
+    <p>An exception, for HTML listing elements (&lt;ul&gt;, &lt;ol&gt;, &lt;li&gt;),
+the caret won't go through the leading numbers/bullets of the &lt;li&gt; element.
+For example:</p>
+     
+    <ol>
+       <li>abc</li>
+       <li>def</li>
+    </ol>
+     
+    <p>When the caret is before "d", &lt;left&gt; will move it to after "c"
+in the previous line.</p>
+  </li>
+   <li>preferences setting <span style="font-family: monospace;">layout.word_select.stop_at_punctuation</span>.
+    <br>
+ If this setting is true, &lt;ctrl+left/right&gt; will stop at punctuations,
+for example, "-" in "e-mail".<br>
+It defaults to true on Windows, but false on Linux/Solaris/Mac.</li>
+</ul>
+
+<p><i><b>Status of Continuous Navigation work:</b> &lt;left/right/up/down&gt;
+basically work well, though some rarely visible bugs remain. See <a
+ href="#Bugs_affect_arrow_movement:_">Bugs that Affect Arrow Movement</a>
+for the detailed status. &lt;ctrl+left/right&gt; is finished. See
+  <a href="#Bugs_affect_ctrlarrow_movement:">Bugs that Affect Ctrl+Arrow
+Movement</a> for detailed status.</i></p>
+
+<h4>Discontinuous Navigation</h4>
+ 
+<ul>
+   <li>&lt;pgup/pgdn&gt; scrolls the content one page up/down. The browser
+keeps the horizontal and vertical distance change of the caret as small as
+possible. As the browser will automatically scroll the page when the caret
+is about to move out of the visible area, there is no key binding for horizontal
+scrolling.
+   </li>
+   <li>&lt;home/end&gt; moves the caret to the beginning/end of the current
+line. If the caret is already at the beginning/end of the current line, &lt;home/end&gt;
+will be no-op.
+   </li>
+   <li>&lt;ctrl+home/end&gt; moves the caret to the beginning/end of the
+current frame. If the caret is already at the beginning/end of the current
+frame, &lt;ctrl+home/end&gt; will be no-op.</li>
+   <li>&lt;tab&gt; moves the caret to the next focusable widget (link, form
+control etc.).
+   </li>
+   <li>&lt;shift+tab&gt; moves the caret to the previous focusable widget.</li>
+</ul>
+
+<p><i><b>Status of Discontinuous Navigation work:</b> Most commands
+are working properly, with a few problems remaining with Ctrl+Home/End. See
+  <a href="#Bugs_affect_discontinuous_Navigation:_">Bugs that </a></i><i><a
+ href="#Bugs_affect_discontinuous_Navigation:_">Affect Discontiuous Navigation</a>
+for detailed status.</i></p>
+
+<h4>Text Selection</h4>
+ 
+  <p>&lt;shift&gt;+any the caret movement keys listed above will move the
+caret from the current position (A) to the destination position (B) and select
+the text between A and B. For example, &lt;shift+right&gt; will move the
+caret one character right and select the current character.</p>
+
+<p><i><b>Status of Text Selection work:</b> There are some known issues
+with caret movement for text selection. Bugs to be filed in bugzilla.mozilla.org.
+   </i></p>
+
+<h3><a name="#III._Keyboard_Navigation_Across_Frame">III. Keyboard Navigation Across Frame Boundaries</a></h3>
+ 
+  <p>Using the key bindings mentioned in section II, you are not able to
+move the caret across frame boundaries.</p>
+   
+  <ul>
+     <li>For framesest, &lt;F6&gt;/&lt;shift+F6&gt; is used to switch to next/previous
+frame within the current document and the URL bar.</li>
+     <li>&lt;F8&gt; is used to focus frame's separator, and &lt;arrows&gt;
+to resize frames. (Not implement yet, we don't intent to do it immediately)</li>
+     <li>For iframe, both &lt;tab&gt; and &lt;F6&gt; can be used for switching
+focus into or out of iframe.</li>
+  </ul>
+
+<p>Browser remembers the most recent caret position of each frame and will return
+the caret to that position when press &lt;F6&gt;/&lt;shift+F6&gt;. If it
+is the first time that caret enters the frame, the caret will be placed at
+the beginning of that frame (as same as the position after you pressed &lt;ctrl+home&gt;
+in that frame).</p>
+
+<p><i><b>Status of Keyboard Navigation Across Frames work:</b> &lt;F6&gt;/&lt;shift-F6&gt;
+work, &lt;F8&gt; and iframe work not yet implemented. Bugs to be filed
+in bugzilla.mozilla.org.</i></p>
+ 
+<h3><a name="V._Form_Control_Navigation_">IV. Form Control Navigation</a></h3>
+
+<h4>Move into and out-of form Controls</h4>
+ 
+<p>When the caret is moved into a form control, this form control should
+be automatically focused. In the mean time, all keyboard events are captured
+by this form control. &lt;alt+[/]&gt; is designed for leaving the form control
+and back to the "caret browsing" mode. &lt;alt+]&gt; moves the caret to the
+position that next to the current control (move forward); &lt;alt+[&gt; moves
+the caret to the position that previous to the current control (move backward).<br>
+ (We're using alt+[/] for this purpose now, but for a long-term we'll change
+the keybinding. Need more discussion.)</p>
+
+<p>For example, when you moved the caret beyond the "t" of "input",
+you entered the input box, then you can start typing in the input box. When
+finished, press &lt;alt+]&gt; makes the input box lose focus and put caret
+after the input box, then you can continue moving the caret using &lt;left&gt;, 
+&lt;right&gt; etc. Press &lt;alt+[&gt; makes the input box lose focus and
+put caret before the input box (i.e. after the "t" of "input").<br><br>
+ input <input id="asdf" name="asdf" accesskey="s" size="30" type="text"></p>
+
+<h4>INPUT (type=text); TEXTAREA</h4>
+   
+<p>&lt;arrows&gt;, &lt;ctrl+arrows&gt;, &lt;home/end/pgup/pgdn&gt;, &lt;ctrl+home/end&gt;
+moves the caret inside text box;<br>
+ &lt;enter&gt; submits form.</p>
+   
+<h4>INPUT (type=checkbox/radio)</h4>
+   
+<p>&lt;space&gt; Toggle state. Same as mouse click;</p>
+   
+<h4>INPUT (type=button); BUTTON</h4>
+   
+<p>&lt;space&gt; Press the button down;<br>
+&lt;enter&gt; Click the button;</p>
+   
+<h4>SELECT (size&gt;1)</h4>
+   
+<p>&lt;space&gt; Select current item;<br>
+&lt;shift+up/down&gt; Extend select in multi-select listbox;<br>
+&lt;up/down&gt; Move focus to the previous/next item and select it;</p>
+
+<p> &lt;&gt;To make discontiguous selection, use &lt;ctrl+up/down&gt; and &lt;space&gt;.<br>
+ &lt;ctrl+up/down&gt; Move the focus indicator up/down without affecting the
+current selection;<br>
+ &lt;space&gt;(after pressing &lt;ctrl+up/down&gt;) Toggle the selection state
+of the focused item.<br>
+ For example, to select item 1,3,5, the key sequence is &lt;space&gt; to select
+item 1,&lt;&gt; &lt;ctrl+down&gt; twice to move focus indicator to item 3,
+&lt;space&gt; to select item 3, &lt;ctrl+down&gt; twice to move focus indicator
+to item 5, &lt;space&gt; to select item 5.</p>   
+
+<h4>SELECT (size=1)</h4>
+
+<p>&lt;&gt;&lt;up/down&gt; Cycle through list items backward/forward without 
+dropping down the list;<br>
+&lt;home/end&gt; Select the first/last item;<br>
+&lt;alt+up/down&gt; Close up/drop down the list.<br><br>
+<i><b>Status of Form Control Navigation work:</b> All <a
+ href="#Bugs_affect_form_control_navigation:">known bugs</a> are fixed.</i></p>
+ 
+<h3><a name="VII._Keyboard_Navigation_in_a">V. Keyboard Navigation in a Client-side Image Map</a></h3>
+
+<ul>
+   <li>&lt;tab&gt;/&lt;shift+tab&gt; moves focus between each area of a client-side
+image map.</li>
+   <li>&lt;space/enter&gt; has the same effect as mouse clicking on the focused
+map area.</li>
+   <li>No keyboard navigation available for server-side image maps. Web authors
+shall avoid using it.
+<p><i><b>Status of Client-side Image Map Navigation work:</b> Completed.</i></p></li>
+</ul>
+ 
+<h3><a name="VIII._Keyboard_Navigation_intoout-of_">VI. Keyboard Navigation
+into/out-of Plugins (and also Java[TM] Applets)</a></h3>
+ 
+  <ul>
+     <li>&lt;tab&gt;/&lt;shift+tab&gt; moves focus among the focusable widgets,
+including plugins, users should be able to &lt;tab&gt; into plugin and &lt;tab&gt;
+out of plugin.</li>
+     <li>Once the focus is inside plugin, the keyboard events will go there,
+plugins may have their own key binding.</li>
+     <li>Keys that the plugin doesn't need should get bubbled up to the browser.
+For example, most plugins should allow alt+left/alt+right through to the
+browser for history navigation.</li>
+  </ul>
+   
+<p>NOTE: To support this, both mozilla &amp; plugin need to implement 
+ <a
+ href="http://www.mozilla.org/projects/plugins/xembed-plugin-extension.html"> 
+xembed</a> protocol. So far, only Java plugin (above 1.5) and Helix plugin
+implemented xembed. It will be great if Flash and Acrobat reader also have
+this feature.</p>
+
+<p><i><b>Status of Plugin Navigation work:</b> &lt;tab&gt; and &lt;shift+tab&gt;
+will move the focus into the plugin/applet, but there is no way to move it
+out.</i> <i>Bug to be filed in bugzilla.mozilla.org.</i></p>
+ 
+<h3><a name="IX._Keyboard_Navigation_in_a_Sample_Web">VII. Keyboard Navigation
+in a Sample Web Page</a></h3>
+ 
+<p>It is useful to examine how this proposal would work on a sample web
+page. For our examination we have chosen <a
+ href="http://www.sun.com/" class="ex-ref">http://www.sun.com</a></p>
+
+<p>The whole page is in a table. Turn on caret browsing mode by pressing &lt;F7&gt;,
+you can navigate the context using the following ways:</p>
+ 
+  <ul>
+     <li><b>Using arrow key navigation: </b>Pressing &lt;right&gt;, the caret
+will move right, character by character, Press &lt;down&gt; the caret
+will move down, line by line.
+    </li>
+     <li><b>Using focus/TAB navigation:</b> Focus can be moved along all links
+and form controls by using &lt;tab&gt;: "How to buy" -&gt; "My Sun" -&gt;
+"text input" -&gt; "input image button (&gt;&gt;)" -&gt; "Products
+&amp; Services" -&gt; ... -&gt;"Low Cost Computing" -&gt; "Making connections
+in Greece" -&gt; "Affordable,..." -&gt; "HP's Problem" -&gt; "Sun Wins StarOffice
+Deal in Australia&#8220; -&gt; "Find It Fast" -&gt; "Solaris Preview" -&gt; "Sun
+Java Desktop System" -&gt; "Sun Fire V40z" -&gt; "Get Java Technology For
+Free" -&gt; "see all features" -&gt; "see all promotions" -&gt; "Contact"
+-&gt; ... -&gt; "Trademarks".
+     </li>
+     <li><span style="font-weight: bold;">Form control navigation:</span> 
+Press &lt;right&gt;, the caret will move right, character by character, after 
+"sun.com&nbsp;&nbsp;&nbsp;&nbsp; How To Buy | My Sun | Worldwide Sites",
+the input box will be focused, you can type something into it, and press
+&lt;alt+]&gt;, the caret will be after the input box, press &lt;right&gt;
+some times, the "&gt;&gt;" button will be focus. Press &lt;enter&gt;, your
+search will be submitted.
+     </li>
+  </ul>
+ 
+<h3><a name="X._Unresolved_Issues">VIII. Unresolved Issues</a></h3>
+ 
+<ol>
+   <li>How to access fixed/floating widget using keyboard?<br>
+Some widgets (most of them are ads) can be put anywhere in the web page
+by specifying the absolute position attribute in CSS style. Their physical
+position may be very different from their logical position.<br>
+NOTE: We didn't find anything in <a
+ href="http://www.w3.org/TR/2004/WD-WCAG20-20040311/" class="ex-ref">Web Content Accessibility
+Guidelines 2.0</a> discussing using fixed/floating widget in web pages.
+   </li>
+</ol>
+ 
+<h3><a name="IX._Differences_Between_Caret_Browsing_">IX. Differences Between Caret Browsing Mode and Non-Caret Browsing Mode</a></h3>
+ 
+<h4>Behaviors that are different in caret browsing mode and non-caret browsing mode</h4>
+ 
+  <table border="1" cellpadding="2" cellspacing="2">
+     <tbody>
+       <tr>
+         <th scope="col">key bindings</th>
+         <th scope="col">caret browsing mode</th>
+         <th scope="col">non caret browsing mode</th>
+       </tr>
+       <tr>
+         <td>&lt;left/right&gt;</td>
+         <td>move caret one character left/right</td>
+         <td>scroll page left/right (if the content has horizontal scrollbar)</td>
+       </tr>
+       <tr>
+         <td>&lt;up/down&gt;</td>
+         <td>move the caret one line up/down</td>
+         <td>scroll page up/down (if the content has vertical scrollbar)</td>
+       </tr>
+       <tr>
+         <td>&lt;home/end&gt;</td>
+         <td>move the caret to the beginning/end of the current line.</td>
+         <td>scroll to the beginning/end of the content.</td>
+       </tr>
+    </tbody>   
+  </table>
+   
+  <h4>Behaviors that are only available in caret browsing mode</h4>
+
+  <table border="1" cellpadding="2" cellspacing="2">
+     <tbody>
+       <tr>
+         <th>key bindings</th>
+         <th>behavior</th>
+       </tr>
+       <tr>
+         <td>&lt;ctrl+left/right&gt;</td>
+         <td>move the caret one word left/right</td>
+       </tr>
+       <tr>
+         <td>&lt;alt+[/]&gt;</td>
+         <td>put the caret out of form control</td>
+       </tr>
+    </tbody>   
+  </table>
+
+<h3><a name="X._Item-oriented_Navigation">X. Item-oriented Navigation using Javascript Component</a></h3>
+ 
+<p>Instead of using up/down arrows to navigate by line which is a visual
+based navigation, there is another navigation mechanism called "item-oriented
+navigation" can be used for content based navigation. A paragraph, a table
+cell, a form control, a select menu item, a list item can be defined as an
+item or the minimal unit of navigation. Arrow keys, as well as the combination
+of ctrl/shift/alt and arrow keys, will navigate the content based on those
+items, rather than character by character or line by line in the caret browsing
+mode. &lt;ctrl+F7&gt; is designed for switching between those two mode.</p>
+   
+<p>Since javascript is a convenient language for writing mozilla extension,
+the item-oriented navigation can be implemented as a javascript component.
+The advantages of doing that are:</p>
+   
+  <ul>
+     <li>Avoid the complicate hacking work in Gecko and potential regression</li>
+     <li>Easily hook up the keyboard event</li>
+     <li>Fully configurable &amp; modifiable</li>
+     <li>Avoid the versioning and API changes issues</li>
+     <li>Platform independent</li>
+  </ul>
+
+<p>The detail key binding schema for item-oriented navigation is still under
+design discussion. We'll list them in another document.<br>
+(no plan in the near future, need more discussion.)</p>
+ 
+<h3><a name="XI._Reference">XI. Reference</a></h3>
+ 
+<ul>
+   <li> <a
+ href="./">Mozilla Keyboard Planning FAQ and Cross Reference</a></li>
+   <li><a href="mozilla">Mozilla keyboard assignment map</a></li>
+   <li><a href="http://developer.gnome.org/projects/gap/keyboardnav.html" class="ex-ref">Keyboard 
+Navigation for GNOME 2.0</a></li>
+   <li><a href="http://www.microsoft.com/enable/products/keyboard.aspx" class="ex-ref">Windows 
+Keyboard Shortcuts</a></li>
+   <li><a href="./plugins">Mozilla Plugin Accessibility</a><!-- ?Possibly ./plugins and not ../plugins Plug-In API Proposal: Tabbing Integration? --></li>
+</ul>
+ 
+<h3><a name="XII._Buglist">XII. Buglist</a></h3>
+
+<p>Bug status current as of 14Nov04. Bugs are first fixed in <a
+ href="http://ftp.mozilla.org/pub/mozilla.org/mozilla/accessibility/sun-mozilla-1.7/">Sun's
+Mozilla 1.7 branch</a> and then ported to trunk. Please see the <a
+href="ftp://ftp.mozilla.org/pub/mozilla.org/mozilla/accessibility/sun-mozilla-1.7/11-14-2004/src/mozilla1.7_src.tar.gz">source
+tarball for Sun's 1.7 branch from14Nov04</a> if you want to build this edition
+of Mozilla.</p>
+ 
+<h4>General navigation bugs:</h4>
+ 
+<table border="1" cellpadding="2" cellspacing="2">
+   <tbody>
+     <tr>
+       <th scope="col">Bug ID</th>
+       <th scope="col">Description</th>
+       <th scope="col">Fixed in mozilla.org</th>
+       <th scope="col">Fixed in Sun browser 1.7</th>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=144000" title="RESOLVED FIXED" class="BugFixed">144000</a></td>
+       <td>caret browsing - bad initial position</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=169297" title="RESOLVED FIXED" class="BugFixed">169297</a></td>
+       <td>caret becomes invisible when switching windows if it's not in linked content</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=202163" title="RESOLVED FIXED" class="BugFixed">202163</a></td>
+       <td>caret mode: caret disappears after finding text (FAYT text mode)</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+  </tbody> 
+</table>
+ 
+<h4><a name="Bugs_affect_arrow_movement:_">Bugs affect arrow movement:</a></h4>
+ 
+<table border="1" cellpadding="2" cellspacing="2">
+   <tbody>
+     <tr>
+       <th scope="col">Bug ID</th>
+       <th scope="col">Description</th>
+       <th scope="col">Fixed in mozilla.org</th>
+       <th scope="col">Fixed in Sun browser 1.7</th>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=241038" title="RESOLVED DUPLICATE" class="BugFixed">241038</a></td>
+       <td>[keyboard] Up or down arrow keys can't
+go through a java applet. when caret browsing</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=241042" title="NEW">241042</a></td>
+       <td>[keyboard] [table] Can't reach the title of a table in caret browse mode</td>
+       <td>No</td>
+       <td>Fixed for up/down arrow, left/right arrow still not work</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=250371" title="RESOLVED FIXED" class="BugFixed">250371</a></td>
+       <td>Caret navigation: Links do not activate
+when using Ctrl+Arrows (Option+Arrows in OS X)</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=254997" title="RESOLVED FIXED" class="BugFixed">254997</a></td>
+       <td>Caret tracking by line (down arrow) skips over huge portions of the document</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=256833" title="RESOLVED FIXED" class="BugFixed">256833</a></td>
+       <td>Right arrow skips some text after &lt;HR&gt;</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=259984" title="RESOLVED DUPLICATE" class="BugFixed">259984</a></td>
+       <td>Caret moving pause if there is a named archor.</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=265203" title="VERIFIED FIXED" class="BugFixed">265203</a></td>
+       <td>When caret is at end of one link, focus displays to next link</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=269317" title="NEW">269317</a></td>
+       <td>Caret/selection circles in sun.com</td>
+       <td>No</td>
+       <td>Yes</td>
+     </tr>
+  </tbody> 
+</table>
+ 
+<h4><a name="Bugs_affect_ctrlarrow_movement:">Bugs affect ctrl+arrow movement:</a></h4>
+ 
+<table border="1" cellpadding="2" cellspacing="2">
+   <tbody>
+     <tr>
+       <th scope="col">Bug ID</th>
+       <th scope="col">Description</th>
+       <th scope="col">Fixed in mozilla.org</th>
+       <th scope="col">Fixed in Sun browser 1.7</th>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=237228" title="RESOLVED FIXED" class="BugFixed">237228</a></td>
+       <td>pref "layout.word_select.eat_space_to_next_word"
+can't be set by user in the profile's prefs.js</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=250371" title="RESOLVED FIXED" class="BugFixed">250371</a></td>
+       <td>Caret navigation: Links do not activate when using Ctrl+Arrows (Option+Arrows in OS X)</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=256252" title="RESOLVED FIXED" class="BugFixed">256252</a></td>
+       <td>ctrl+right arrow sometimes skip a word</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=256835" title="RESOLVED FIXED" class="BugFixed">256835</a></td>
+       <td>[crash]ctrl+left cause crash in bugzilla [@ nsTextFrame::PeekOffset ][@ ntdll.dll - nsFrame::GetFrameFromDirection]</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+  </tbody> 
+</table>
+ 
+<h4><a name="Bugs_affect_discontinuous_Navigation:_">Bugs affect discontinuous navigation:</a></h4>
+ 
+<table border="1" cellpadding="2" cellspacing="2">
+   <tbody>
+     <tr>
+       <th scope="col">Bug ID</th>
+       <th scope="col">Description</th>
+       <th scope="col">Fixed in mozilla.org</th>
+       <th scope="col">Fixed in Sun browser 1.7</th>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=70154" title="RESOLVED FIXED" class="BugFixed">70154</a></td>
+       <td>(ctrl)+shift+home/end should select to beginning/end of webpage</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=143996" title="RESOLVED FIXED" class="BugFixed">143996</a></td>
+       <td>in caret browsing, home/end must go to start/end of line</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=205846" title="NEW">205846</a></td>
+       <td>caret eventually gets stuck when trying to scroll with PageDown / PageUp keys</td>
+       <td>No</td>
+       <td>No</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=244953" title="RESOLVED DUPLICATE" class="BugFixed">244953</a></td>
+       <td>Ctrl+End and Ctrl+Home do not work in Caret Browsing mode</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=262497" title="RESOLVED FIXED" class="BugFixed">262497</a></td>
+       <td>Ctrl+Home and Ctrl+End problems (apparent with RTL)</td>
+       <td>Yes</td>
+       <td>No</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=269318" title="RESOLVED FIXED" class="BugFixed">269318</a></td>
+       <td>TAB doesn't start from selection text after mouse click</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+   
+  </tbody>
+</table>
+
+<h4><a name="Bugs_affect_form_control_navigation:">Bugs affect form control navigation:</a></h4>
+
+<table border="1" cellpadding="2" cellspacing="2">
+   <tbody>
+     <tr>
+       <th scope="col">Bug ID</th>
+       <th scope="col">Description</th>
+       <th scope="col">Fixed in mozilla.org</th>
+       <th scope="col">Fixed in Sun browser 1.7</th>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=202154" title="NEW">202154</a></td>
+       <td>caret mode: caret can appear within html listboxes</td>
+       <td>No</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=256269" title="RESOLVED FIXED" class="BugFixed">256269</a></td>
+       <td>Caret browsing: up/down arrow should not get into button text</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=260667"
+ title="RESOLVED FIXED - in caret browse mode, can't move out of textarea" class="BugFixed">260667</a></td>
+       <td>in caret browse mode, can't move out of textarea</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=260668" title="NEW">260668</a></td>
+       <td> in caret browse mode, caret skip brframe in textbox/textarea</td>
+       <td>No</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=260669" title="NEW">260669</a></td>
+       <td>caret shows in wrong place when use up/down arrow key to browse between text and textbox</td>
+       <td>No</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=262236" title="RESOLVED FIXED" class="BugFixed">262236</a></td>
+       <td>Can't select listitems which are not next to.</td>
+       <td>Yes</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=263999" title="NEW">263999</a></td>
+       <td>caret should not show when label is bound with a focusable form control</td>
+       <td>No</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=264475" title="NEW">264475</a></td>
+       <td>in caret browse mode, caret shouldn't show when focus in select, button, radio, checkbox if user use tab to switch focus</td>
+       <td>No</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=269306" title="NEW">269306</a></td>
+       <td>use left/right arrow key to move into input element with type=text and textarea element, and out with alt+[/]</td>
+       <td>No</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=269307" title="NEW">269307</a></td>
+       <td>use left/right key to move into input element with type=button/submit/reset, button element and select element,
+out of them with alt+[/]</td>
+       <td>No</td>
+       <td>Yes</td>
+     </tr>
+     <tr>
+       <td><a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=269309" title="NEW">269309</a></td>
+       <td>use left/right arrow key to move into input element with type=radio/checkbox, out of with alt+[/]</td>
+       <td>No</td>
+       <td>Yes</td>
+     </tr>
+  </tbody>
+</table>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,748 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> /*
+<b><a name="37">   37</a></b>  * Internal data structures and functions used by pkcs11.c
+<b><a name="38">   38</a></b>  */
+<b><a name="39">   39</a></b> #ifndef <a href="../softoken/pkcs11i.h.dep.html#_PKCS11I_H_">_PKCS11I_H_</a>
+<b><a name="40">   40</a></b> #define <a href="#40">_PKCS11I_H_</a> 1
+<b><a name="41">   41</a></b> 
+<b><a name="42">   42</a></b> #include "nssilock.h"
+<b><a name="43">   43</a></b> #include "seccomon.h"
+<b><a name="44">   44</a></b> #include "secoidt.h"
+<b><a name="45">   45</a></b> #include "lowkeyti.h"
+<b><a name="46">   46</a></b> #include "pkcs11t.h"
+<b><a name="47">   47</a></b> #include "pcertt.h"
+<b><a name="48">   48</a></b> 
+<b><a name="49">   49</a></b> 
+<b><a name="50">   50</a></b> /* 
+<b><a name="51">   51</a></b>  * Configuration Defines 
+<b><a name="52">   52</a></b>  *
+<b><a name="53">   53</a></b>  * The following defines affect the space verse speed trade offs of
+<b><a name="54">   54</a></b>  * the PKCS #11 module. For the most part the current settings are optimized
+<b><a name="55">   55</a></b>  * for web servers, where we want faster speed and lower lock contention at
+<b><a name="56">   56</a></b>  * the expense of space.
+<b><a name="57">   57</a></b>  */
+<b><a name="58">   58</a></b> 
+<b><a name="59">   59</a></b> /* 
+<b><a name="60">   60</a></b>  * The attribute allocation strategy is static allocation:
+<b><a name="61">   61</a></b>  *   Attributes are pre-allocated as part of the session object and used from
+<b><a name="62">   62</a></b>  *   the object array.
+<b><a name="63">   63</a></b>  */
+<b><a name="64">   64</a></b> #define <a href="#64">MAX_OBJS_ATTRS</a> 45        /* number of attributes to preallocate in
+<b><a name="65">   65</a></b>                                  * the object (must me the absolute max) */
+<b><a name="66">   66</a></b> #define <a href="#66">ATTR_SPACE</a> 50                  /* Maximum size of attribute data before extra
+<b><a name="67">   67</a></b>                                  * data needs to be allocated. This is set to
+<b><a name="68">   68</a></b>                                  * enough space to hold an SSL MASTER secret */
+<b><a name="69">   69</a></b> 
+<b><a name="70">   70</a></b> #define <a href="#70">NSC_STRICT</a>      PR_FALSE  /* forces the code to do strict template
+<b><a name="71">   71</a></b>                                    * matching when doing C_FindObject on token
+<b><a name="72">   72</a></b>                                    * objects. This will slow down search in
+<b><a name="73">   73</a></b>                                    * NSS. */
+<b><a name="74">   74</a></b> /* default search block allocations and increments */
+<b><a name="75">   75</a></b> #define <a href="#75">NSC_CERT_BLOCK_SIZE</a>     50
+<b><a name="76">   76</a></b> #define <a href="#76">NSC_SEARCH_BLOCK_SIZE</a>   5 
+<b><a name="77">   77</a></b> #define <a href="#77">NSC_SLOT_LIST_BLOCK_SIZE</a> 10
+<b><a name="78">   78</a></b> 
+<b><a name="79">   79</a></b> #define <a href="#79">NSC_FIPS_MODULE</a> 1
+<b><a name="80">   80</a></b> #define <a href="#80">NSC_NON_FIPS_MODULE</a> 0
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b> /* these are data base storage hashes, not cryptographic hashes.. The define
+<b><a name="83">   83</a></b>  * the effective size of the various object hash tables */
+<b><a name="84">   84</a></b> /* clients care more about memory usage than lookup performance on
+<b><a name="85">   85</a></b>  * cyrptographic objects. Clients also have less objects around to play with 
+<b><a name="86">   86</a></b>  *
+<b><a name="87">   87</a></b>  * we eventually should make this configurable at runtime! Especially now that
+<b><a name="88">   88</a></b>  * NSS is a shared library.
+<b><a name="89">   89</a></b>  */
+<b><a name="90">   90</a></b> #define <a href="#90">SPACE_ATTRIBUTE_HASH_SIZE</a> 32 
+<b><a name="91">   91</a></b> #define <a href="#91">SPACE_TOKEN_OBJECT_HASH_SIZE</a> 32
+<b><a name="92">   92</a></b> #define <a href="#92">SPACE_SESSION_HASH_SIZE</a> 32
+<b><a name="93">   93</a></b> #define <a href="#93">TIME_ATTRIBUTE_HASH_SIZE</a> 32
+<b><a name="94">   94</a></b> #define <a href="#94">TIME_TOKEN_OBJECT_HASH_SIZE</a> 1024
+<b><a name="95">   95</a></b> #define <a href="#95">TIME_SESSION_HASH_SIZE</a> 1024
+<b><a name="96">   96</a></b> #define <a href="#96">MAX_OBJECT_LIST_SIZE</a> 800  
+<b><a name="97">   97</a></b>                                   /* how many objects to keep on the free list
+<b><a name="98">   98</a></b>                                    * before we start freeing them */
+<b><a name="99">   99</a></b> #define <a href="#99">MAX_KEY_LEN</a> 256
+<b><a name="100">  100</a></b> 
+<b><a name="101">  101</a></b> #define <a href="#101">MULTIACCESS</a> "multiaccess:"
+<b><a name="102">  102</a></b> 
+<b><a name="103">  103</a></b> /*
+<b><a name="104">  104</a></b>  * LOG2_BUCKETS_PER_SESSION_LOCK must be a prime number.
+<b><a name="105">  105</a></b>  * With SESSION_HASH_SIZE=1024, LOG2 can be 9, 5, 1, or 0.
+<b><a name="106">  106</a></b>  * With SESSION_HASH_SIZE=4096, LOG2 can be 11, 9, 5, 1, or 0.
+<b><a name="107">  107</a></b>  *
+<b><a name="108">  108</a></b>  * HASH_SIZE   LOG2_BUCKETS_PER   BUCKETS_PER_LOCK  NUMBER_OF_BUCKETS
+<b><a name="109">  109</a></b>  * 1024        9                  512               2
+<b><a name="110">  110</a></b>  * 1024        5                  32                32
+<b><a name="111">  111</a></b>  * 1024        1                  2                 512
+<b><a name="112">  112</a></b>  * 1024        0                  1                 1024
+<b><a name="113">  113</a></b>  * 4096        11                 2048              2
+<b><a name="114">  114</a></b>  * 4096        9                  512               8
+<b><a name="115">  115</a></b>  * 4096        5                  32                128
+<b><a name="116">  116</a></b>  * 4096        1                  2                 2048
+<b><a name="117">  117</a></b>  * 4096        0                  1                 4096
+<b><a name="118">  118</a></b>  */
+<b><a name="119">  119</a></b> #define <a href="#119">LOG2_BUCKETS_PER_SESSION_LOCK</a> 1
+<b><a name="120">  120</a></b> #define <a href="#120">BUCKETS_PER_SESSION_LOCK</a> (1 &lt;&lt; (<a href="../softoken/pkcs11i.h.dep.html#LOG2_BUCKETS_PER_SESSION_LOCK">LOG2_BUCKETS_PER_SESSION_LOCK</a>))
+<b><a name="121">  121</a></b> /* NOSPREAD sessionID to hash table index macro has been slower. */
+<b><a name="122">  122</a></b> 
+<b><a name="123">  123</a></b> /* define typedefs, double as forward declarations as well */
+<b><a name="124">  124</a></b> typedef struct <a href="../softoken/pkcs11i.h.dep.html#<a href="#124">SFTKAttribute</a>Str">SFTKAttributeStr</a> SFTKAttribute;
+<b><a name="125">  125</a></b> typedef struct <a href="../softoken/pkcs11i.h.dep.html#<a href="#125">SFTKObjectList</a>Str">SFTKObjectListStr</a> SFTKObjectList;
+<b><a name="126">  126</a></b> typedef struct <a href="../softoken/pkcs11i.h.dep.html#<a href="#126">SFTKObjectFreeList</a>Str">SFTKObjectFreeListStr</a> SFTKObjectFreeList;
+<b><a name="127">  127</a></b> typedef struct <a href="../softoken/pkcs11i.h.dep.html#<a href="#127">SFTKObjectListElement</a>Str">SFTKObjectListElementStr</a> SFTKObjectListElement;
+<b><a name="128">  128</a></b> typedef struct <a href="#128">SFTKObject</a>Str SFTKObject;
+<b><a name="129">  129</a></b> typedef struct <a href="../softoken/pkcs11i.h.dep.html#<a href="#129">SFTKSessionObject</a>Str">SFTKSessionObjectStr</a> SFTKSessionObject;
+<b><a name="130">  130</a></b> typedef struct <a href="#130">SFTKTokenObject</a>Str SFTKTokenObject;
+<b><a name="131">  131</a></b> typedef struct <a href="#131">SFTKSession</a>Str SFTKSession;
+<b><a name="132">  132</a></b> typedef struct <a href="#132">SFTKSlot</a>Str SFTKSlot;
+<b><a name="133">  133</a></b> typedef struct <a href="../softoken/pkcs11i.h.dep.html#<a href="#133">SFTKSessionContext</a>Str">SFTKSessionContextStr</a> SFTKSessionContext;
+<b><a name="134">  134</a></b> typedef struct <a href="../softoken/pkcs11i.h.dep.html#<a href="#134">SFTKSearchResults</a>Str">SFTKSearchResultsStr</a> SFTKSearchResults;
+<b><a name="135">  135</a></b> typedef struct <a href="../softoken/pkcs11i.h.dep.html#<a href="#135">SFTKHashVerifyInfo</a>Str">SFTKHashVerifyInfoStr</a> SFTKHashVerifyInfo;
+<b><a name="136">  136</a></b> typedef struct <a href="#136">SFTKHashSignInfo</a>Str SFTKHashSignInfo;
+<b><a name="137">  137</a></b> typedef struct <a href="../softoken/pkcs11i.h.dep.html#<a href="#137">SFTKSSLMACInfo</a>Str">SFTKSSLMACInfoStr</a> SFTKSSLMACInfo;
+<b><a name="138">  138</a></b> 
+<b><a name="139">  139</a></b> /* define function pointer typdefs for pointer tables */
+<b><a name="140">  140</a></b> typedef void (*<a href="#140">SFTKDestroy</a>)(void *, PRBool);
+<b><a name="141">  141</a></b> typedef void (*<a href="#141">SFTKBegin</a>)(void *);
+<b><a name="142">  142</a></b> typedef <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> (*<a href="#142">SFTKCipher</a>)(void *,void *,unsigned int *,unsigned int,
+<b><a name="143">  143</a></b>                                         void *, unsigned int);
+<b><a name="144">  144</a></b> typedef <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> (*<a href="#144">SFTKVerify</a>)(void *,void *,unsigned int,void *,unsigned int);
+<b><a name="145">  145</a></b> typedef void (*<a href="#145">SFTKHash</a>)(void *,void *,unsigned int);
+<b><a name="146">  146</a></b> typedef void (*<a href="#146">SFTKEnd</a>)(void *,void *,unsigned int *,unsigned int);
+<b><a name="147">  147</a></b> typedef void (*<a href="#147">SFTKFree</a>)(void *);
+<b><a name="148">  148</a></b> 
+<b><a name="149">  149</a></b> /* Value to tell if an attribute is modifiable or not.
+<b><a name="150">  150</a></b>  *    NEVER: attribute is only set on creation.
+<b><a name="151">  151</a></b>  *    ONCOPY: attribute is set on creation and can only be changed on copy.
+<b><a name="152">  152</a></b>  *    SENSITIVE: attribute can only be changed to TRUE.
+<b><a name="153">  153</a></b>  *    ALWAYS: attribute can always be changed.
+<b><a name="154">  154</a></b>  */
+<b><a name="155">  155</a></b> typedef enum {
+<b><a name="156">  156</a></b>         SFTK_NEVER = 0,
+<b><a name="157">  157</a></b>         SFTK_ONCOPY = 1,
+<b><a name="158">  158</a></b>         SFTK_SENSITIVE = 2,
+<b><a name="159">  159</a></b>         SFTK_ALWAYS = 3
+<b><a name="160">  160</a></b> } <a href="#160">SFTKModifyType</a>;
+<b><a name="161">  161</a></b> 
+<b><a name="162">  162</a></b> /*
+<b><a name="163">  163</a></b>  * Free Status Enum... tell us more information when we think we're
+<b><a name="164">  164</a></b>  * deleting an object.
+<b><a name="165">  165</a></b>  */
+<b><a name="166">  166</a></b> typedef enum {
+<b><a name="167">  167</a></b>         SFTK_DestroyFailure,
+<b><a name="168">  168</a></b>         SFTK_Destroyed,
+<b><a name="169">  169</a></b>         SFTK_Busy
+<b><a name="170">  170</a></b> } <a href="#170">SFTKFreeStatus</a>;
+<b><a name="171">  171</a></b> 
+<b><a name="172">  172</a></b> /*
+<b><a name="173">  173</a></b>  * attribute values of an object.
+<b><a name="174">  174</a></b>  */
+<b><a name="175">  175</a></b> struct <a href="#175">SFTKAttributeStr</a> {
+<b><a name="176">  176</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKAttribute">SFTKAttribute</a>          *next;
+<b><a name="177">  177</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKAttribute">SFTKAttribute</a>          *prev;
+<b><a name="178">  178</a></b>     PRBool                freeAttr;
+<b><a name="179">  179</a></b>     PRBool                freeData;
+<b><a name="180">  180</a></b>     /*must be called handle to make sftkqueue_find work */
+<b><a name="181">  181</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a>        handle;
+<b><a name="182">  182</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE">CK_ATTRIBUTE</a></a>         attrib;
+<b><a name="183">  183</a></b>     unsigned char space[<a href="../softoken/pkcs11i.h.dep.html#ATTR_SPACE">ATTR_SPACE</a>];
+<b><a name="184">  184</a></b> };
+<b><a name="185">  185</a></b> 
+<b><a name="186">  186</a></b> 
+<b><a name="187">  187</a></b> /*
+<b><a name="188">  188</a></b>  * doubly link list of objects
+<b><a name="189">  189</a></b>  */
+<b><a name="190">  190</a></b> struct <a href="#190">SFTKObjectListStr</a> {
+<b><a name="191">  191</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObjectList">SFTKObjectList</a> *next;
+<b><a name="192">  192</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObjectList">SFTKObjectList</a> *prev;
+<b><a name="193">  193</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a>           *parent;
+<b><a name="194">  194</a></b> };
+<b><a name="195">  195</a></b> 
+<b><a name="196">  196</a></b> struct <a href="#196">SFTKObjectFreeListStr</a> {
+<b><a name="197">  197</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a>        *head;
+<b><a name="198">  198</a></b>     <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a>        *lock;
+<b><a name="199">  199</a></b>     int                count;
+<b><a name="200">  200</a></b> };
+<b><a name="201">  201</a></b> 
+<b><a name="202">  202</a></b> /*
+<b><a name="203">  203</a></b>  * PKCS 11 crypto object structure
+<b><a name="204">  204</a></b>  */
+<b><a name="205">  205</a></b> struct <a href="#205">SFTKObjectStr</a> {
+<b><a name="206">  206</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *next;
+<b><a name="207">  207</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a>        *prev;
+<b><a name="208">  208</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a>         objclass;
+<b><a name="209">  209</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a>        handle;
+<b><a name="210">  210</a></b>     int                 refCount;
+<b><a name="211">  211</a></b>     <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a>                 *refLock;
+<b><a name="212">  212</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a>                   *slot;
+<b><a name="213">  213</a></b>     void                 *objectInfo;
+<b><a name="214">  214</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKFree">SFTKFree</a>                 infoFree;
+<b><a name="215">  215</a></b> };
+<b><a name="216">  216</a></b> 
+<b><a name="217">  217</a></b> struct <a href="#217">SFTKTokenObjectStr</a> {
+<b><a name="218">  218</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a>  obj;
+<b><a name="219">  219</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>        dbKey;
+<b><a name="220">  220</a></b> };
+<b><a name="221">  221</a></b> 
+<b><a name="222">  222</a></b> struct <a href="#222">SFTKSessionObjectStr</a> {
+<b><a name="223">  223</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a>           obj;
+<b><a name="224">  224</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObjectList">SFTKObjectList</a> sessionList;
+<b><a name="225">  225</a></b>     <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a>                *attributeLock;
+<b><a name="226">  226</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a>           *session;
+<b><a name="227">  227</a></b>     PRBool                wasDerived;
+<b><a name="228">  228</a></b>     int nextAttr;
+<b><a name="229">  229</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKAttribute">SFTKAttribute</a>        attrList[<a href="../softoken/pkcs11i.h.dep.html#MAX_OBJS_ATTRS">MAX_OBJS_ATTRS</a>];
+<b><a name="230">  230</a></b>     PRBool                optimizeSpace;
+<b><a name="231">  231</a></b>     unsigned int        hashSize;
+<b><a name="232">  232</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKAttribute">SFTKAttribute</a>         *head[1];
+<b><a name="233">  233</a></b> };
+<b><a name="234">  234</a></b> 
+<b><a name="235">  235</a></b> /*
+<b><a name="236">  236</a></b>  * struct to deal with a temparary list of objects
+<b><a name="237">  237</a></b>  */
+<b><a name="238">  238</a></b> struct <a href="#238">SFTKObjectListElementStr</a> {
+<b><a name="239">  239</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObjectListElement">SFTKObjectListElement</a>        *next;
+<b><a name="240">  240</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a>                         *object;
+<b><a name="241">  241</a></b> };
+<b><a name="242">  242</a></b> 
+<b><a name="243">  243</a></b> /*
+<b><a name="244">  244</a></b>  * Area to hold Search results
+<b><a name="245">  245</a></b>  */
+<b><a name="246">  246</a></b> struct <a href="#246">SFTKSearchResultsStr</a> {
+<b><a name="247">  247</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a>        *handles;
+<b><a name="248">  248</a></b>     int                        size;
+<b><a name="249">  249</a></b>     int                        index;
+<b><a name="250">  250</a></b>     int                        array_size;
+<b><a name="251">  251</a></b> };
+<b><a name="252">  252</a></b> 
+<b><a name="253">  253</a></b> 
+<b><a name="254">  254</a></b> /* 
+<b><a name="255">  255</a></b>  * the universal crypto/hash/sign/verify context structure
+<b><a name="256">  256</a></b>  */
+<b><a name="257">  257</a></b> typedef enum {
+<b><a name="258">  258</a></b>     SFTK_ENCRYPT,
+<b><a name="259">  259</a></b>     SFTK_DECRYPT,
+<b><a name="260">  260</a></b>     SFTK_HASH,
+<b><a name="261">  261</a></b>     SFTK_SIGN,
+<b><a name="262">  262</a></b>     SFTK_SIGN_RECOVER,
+<b><a name="263">  263</a></b>     SFTK_VERIFY,
+<b><a name="264">  264</a></b>     SFTK_VERIFY_RECOVER
+<b><a name="265">  265</a></b> } <a href="#265">SFTKContextType</a>;
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b> 
+<b><a name="268">  268</a></b> #define <a href="#268">SFTK_MAX_BLOCK_SIZE</a> 16
+<b><a name="269">  269</a></b> /* currently SHA512 is the biggest hash length */
+<b><a name="270">  270</a></b> #define <a href="#270">SFTK_MAX_MAC_LENGTH</a> 64
+<b><a name="271">  271</a></b> #define <a href="#271">SFTK_INVALID_MAC_SIZE</a> 0xffffffff
+<b><a name="272">  272</a></b> 
+<b><a name="273">  273</a></b> struct <a href="#273">SFTKSessionContextStr</a> {
+<b><a name="274">  274</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKContextType">SFTKContextType</a>        type;
+<b><a name="275">  275</a></b>     PRBool                multi;                 /* is multipart */
+<b><a name="276">  276</a></b>     PRBool                doPad;                 /* use PKCS padding for block ciphers */
+<b><a name="277">  277</a></b>     unsigned int        blockSize;         /* blocksize for padding */
+<b><a name="278">  278</a></b>     unsigned int        padDataLength;         /* length of the valid data in padbuf */
+<b><a name="279">  279</a></b>     unsigned char        padBuf[<a href="../softoken/pkcs11i.h.dep.html#SFTK_MAX_BLOCK_SIZE">SFTK_MAX_BLOCK_SIZE</a>];
+<b><a name="280">  280</a></b>     unsigned char        macBuf[<a href="../softoken/pkcs11i.h.dep.html#SFTK_MAX_BLOCK_SIZE">SFTK_MAX_BLOCK_SIZE</a>];
+<b><a name="281">  281</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                macSize;        /* size of a general block cipher mac*/
+<b><a name="282">  282</a></b>     void                *cipherInfo;
+<b><a name="283">  283</a></b>     void                *hashInfo;
+<b><a name="284">  284</a></b>     unsigned int        cipherInfoLen;
+<b><a name="285">  285</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a>        currentMech;
+<b><a name="286">  286</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKCipher">SFTKCipher</a>                update;
+<b><a name="287">  287</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKHash">SFTKHash</a>                hashUpdate;
+<b><a name="288">  288</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKEnd">SFTKEnd</a>                end;
+<b><a name="289">  289</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKDestroy">SFTKDestroy</a>                destroy;
+<b><a name="290">  290</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKDestroy">SFTKDestroy</a>                hashdestroy;
+<b><a name="291">  291</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKVerify">SFTKVerify</a>                verify;
+<b><a name="292">  292</a></b>     unsigned int        maxLen;
+<b><a name="293">  293</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a>                *key;
+<b><a name="294">  294</a></b> };
+<b><a name="295">  295</a></b> 
+<b><a name="296">  296</a></b> /*
+<b><a name="297">  297</a></b>  * Sessions (have objects)
+<b><a name="298">  298</a></b>  */
+<b><a name="299">  299</a></b> struct <a href="#299">SFTKSessionStr</a> {
+<b><a name="300">  300</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a>        *next;
+<b><a name="301">  301</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a>        *prev;
+<b><a name="302">  302</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a>        handle;
+<b><a name="303">  303</a></b>     int                        refCount;
+<b><a name="304">  304</a></b>     <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a>                *objectLock;
+<b><a name="305">  305</a></b>     int                        objectIDCount;
+<b><a name="306">  306</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_INFO">CK_SESSION_INFO</a></a>        info;
+<b><a name="307">  307</a></b>     CK_NOTIFY                notify;
+<b><a name="308">  308</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a>                appData;
+<b><a name="309">  309</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a>                *slot;
+<b><a name="310">  310</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKSearchResults">SFTKSearchResults</a>        *search;
+<b><a name="311">  311</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKSessionContext">SFTKSessionContext</a>        *enc_context;
+<b><a name="312">  312</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKSessionContext">SFTKSessionContext</a>        *hash_context;
+<b><a name="313">  313</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKSessionContext">SFTKSessionContext</a>        *sign_context;
+<b><a name="314">  314</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObjectList">SFTKObjectList</a>        *objects[1];
+<b><a name="315">  315</a></b> };
+<b><a name="316">  316</a></b> 
+<b><a name="317">  317</a></b> /*
+<b><a name="318">  318</a></b>  * slots (have sessions and objects)
+<b><a name="319">  319</a></b>  *
+<b><a name="320">  320</a></b>  * The array of sessionLock's protect the session hash table (head[])
+<b><a name="321">  321</a></b>  * as well as the reference count of session objects in that bucket
+<b><a name="322">  322</a></b>  * (head[]-&gt;refCount),  objectLock protects all elements of the token
+<b><a name="323">  323</a></b>  * object hash table (tokObjects[], tokenIDCount, and tokenHashTable),
+<b><a name="324">  324</a></b>  * slotLock protects the remaining protected elements:
+<b><a name="325">  325</a></b>  * password, isLoggedIn, ssoLoggedIn, and sessionCount,
+<b><a name="326">  326</a></b>  * and pwCheckLock serializes the key database password checks in
+<b><a name="327">  327</a></b>  * NSC_SetPIN and NSC_Login.
+<b><a name="328">  328</a></b>  *
+<b><a name="329">  329</a></b>  * Each of the fields below has the following lifetime as commented
+<b><a name="330">  330</a></b>  * next to the fields:
+<b><a name="331">  331</a></b>  *   invariant  - This value is set when the slot is first created and
+<b><a name="332">  332</a></b>  * never changed until it is destroyed.
+<b><a name="333">  333</a></b>  *   per load   - This value is set when the slot is first created, or 
+<b><a name="334">  334</a></b>  * when the slot is used to open another directory. Between open and close
+<b><a name="335">  335</a></b>  * this field does not change.
+<b><a name="336">  336</a></b>  *   variable - This value changes through the normal process of slot operation.
+<b><a name="337">  337</a></b>  *      - reset. The value of this variable is cleared during an open/close 
+<b><a name="338">  338</a></b>  *   cycles.
+<b><a name="339">  339</a></b>  *      - preserved. The value of this variable is preserved over open/close
+<b><a name="340">  340</a></b>  *   cycles.
+<b><a name="341">  341</a></b>  */
+<b><a name="342">  342</a></b> struct <a href="#342">SFTKSlotStr</a> {
+<b><a name="343">  343</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a>                slotID;                        /* invariant */
+<b><a name="344">  344</a></b>     <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a>                *slotLock;                /* invariant */
+<b><a name="345">  345</a></b>     <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a>                **sessionLock;                /* invariant */
+<b><a name="346">  346</a></b>     unsigned int        numSessionLocks;        /* invariant */
+<b><a name="347">  347</a></b>     unsigned long        sessionLockMask;        /* invariant */
+<b><a name="348">  348</a></b>     <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a>                *objectLock;                /* invariant */
+<b><a name="349">  349</a></b>     PRLock                *pwCheckLock;                /* invariant */
+<b><a name="350">  350</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>                *password;                /* variable - reset */
+<b><a name="351">  351</a></b>     PRBool                present;                /* variable -set */
+<b><a name="352">  352</a></b>     PRBool                hasTokens;                /* per load */
+<b><a name="353">  353</a></b>     PRBool                <a href="../softoken/fipstokn.c.dep.html#isLoggedIn">isLoggedIn</a>;                /* variable - reset */
+<b><a name="354">  354</a></b>     PRBool                ssoLoggedIn;                /* variable - reset */
+<b><a name="355">  355</a></b>     PRBool                needLogin;                /* per load */
+<b><a name="356">  356</a></b>     PRBool                DB_loaded;                /* per load */
+<b><a name="357">  357</a></b>     PRBool                readOnly;                /* per load */
+<b><a name="358">  358</a></b>     PRBool                optimizeSpace;                /* invariant */
+<b><a name="359">  359</a></b>     <a href="../softoken/pcertt.h.dep.html#NSSLOWCERTCertDBHandle">NSSLOWCERTCertDBHandle</a> *certDB;                /* per load */
+<b><a name="360">  360</a></b>     <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYDBHandle">NSSLOWKEYDBHandle</a>        *keyDB;                        /* per load */
+<b><a name="361">  361</a></b>     int                        minimumPinLen;                /* per load */
+<b><a name="362">  362</a></b>     PRInt32                sessionIDCount;                /* atomically incremented */
+<b><a name="363">  363</a></b>                                                 /* (preserved) */
+<b><a name="364">  364</a></b>     int                        sessionIDConflict;         /* not protected by a lock */
+<b><a name="365">  365</a></b>                                                     /* (preserved) */
+<b><a name="366">  366</a></b>     int                        sessionCount;           /* variable - reset */
+<b><a name="367">  367</a></b>     PRInt32             rwSessionCount;            /* set by atomic operations */
+<b><a name="368">  368</a></b>                                                   /* (reset) */
+<b><a name="369">  369</a></b>     int                        tokenIDCount;              /* variable - perserved */
+<b><a name="370">  370</a></b>     int                        index;                        /* invariant */
+<b><a name="371">  371</a></b>     PLHashTable                *tokenHashTable;        /* invariant */
+<b><a name="372">  372</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a>                **tokObjects;                /* variable - reset */
+<b><a name="373">  373</a></b>     unsigned int        tokObjHashSize;                /* invariant */
+<b><a name="374">  374</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a>                **head;                        /* variable -reset */
+<b><a name="375">  375</a></b>     unsigned int        sessHashSize;                /* invariant */
+<b><a name="376">  376</a></b>     char                tokDescription[33];        /* per load */
+<b><a name="377">  377</a></b>     char                slotDescription[64];        /* invariant */
+<b><a name="378">  378</a></b> };
+<b><a name="379">  379</a></b> 
+<b><a name="380">  380</a></b> /*
+<b><a name="381">  381</a></b>  * special joint operations Contexts
+<b><a name="382">  382</a></b>  */
+<b><a name="383">  383</a></b> struct <a href="#383">SFTKHashVerifyInfoStr</a> {
+<b><a name="384">  384</a></b>     <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a>           hashOid;
+<b><a name="385">  385</a></b>     <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYPublicKey">NSSLOWKEYPublicKey</a>        *key;
+<b><a name="386">  386</a></b> };
+<b><a name="387">  387</a></b> 
+<b><a name="388">  388</a></b> struct <a href="#388">SFTKHashSignInfoStr</a> {
+<b><a name="389">  389</a></b>     <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a>           hashOid;
+<b><a name="390">  390</a></b>     <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYPrivateKey">NSSLOWKEYPrivateKey</a>        *key;
+<b><a name="391">  391</a></b> };
+<b><a name="392">  392</a></b> 
+<b><a name="393">  393</a></b> /* context for the Final SSLMAC message */
+<b><a name="394">  394</a></b> struct <a href="#394">SFTKSSLMACInfoStr</a> {
+<b><a name="395">  395</a></b>     void                 *hashContext;
+<b><a name="396">  396</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKBegin">SFTKBegin</a>                begin;
+<b><a name="397">  397</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKHash">SFTKHash</a>                update;
+<b><a name="398">  398</a></b>     <a href="../softoken/pkcs11i.h.dep.html#SFTKEnd">SFTKEnd</a>                end;
+<b><a name="399">  399</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                macSize;
+<b><a name="400">  400</a></b>     int                        padSize;
+<b><a name="401">  401</a></b>     unsigned char        key[<a href="../softoken/pkcs11i.h.dep.html#MAX_KEY_LEN">MAX_KEY_LEN</a>];
+<b><a name="402">  402</a></b>     unsigned int        keySize;
+<b><a name="403">  403</a></b> };
+<b><a name="404">  404</a></b> 
+<b><a name="405">  405</a></b> /*
+<b><a name="406">  406</a></b>  * session handle modifiers
+<b><a name="407">  407</a></b>  */
+<b><a name="408">  408</a></b> #define <a href="#408">SFTK_SESSION_SLOT_MASK</a>        0xff000000L
+<b><a name="409">  409</a></b> 
+<b><a name="410">  410</a></b> /*
+<b><a name="411">  411</a></b>  * object handle modifiers
+<b><a name="412">  412</a></b>  */
+<b><a name="413">  413</a></b> #define <a href="#413">SFTK_TOKEN_MASK</a>                0x80000000L
+<b><a name="414">  414</a></b> #define <a href="#414">SFTK_TOKEN_MAGIC</a>        0x80000000L
+<b><a name="415">  415</a></b> #define <a href="#415">SFTK_TOKEN_TYPE_MASK</a>        0x70000000L
+<b><a name="416">  416</a></b> /* keydb (high bit == 0) */
+<b><a name="417">  417</a></b> #define <a href="#417">SFTK_TOKEN_TYPE_PRIV</a>        0x10000000L
+<b><a name="418">  418</a></b> #define <a href="#418">SFTK_TOKEN_TYPE_PUB</a>        0x20000000L
+<b><a name="419">  419</a></b> #define <a href="#419">SFTK_TOKEN_TYPE_KEY</a>        0x30000000L
+<b><a name="420">  420</a></b> /* certdb (high bit == 1) */
+<b><a name="421">  421</a></b> #define <a href="#421">SFTK_TOKEN_TYPE_TRUST</a>        0x40000000L
+<b><a name="422">  422</a></b> #define <a href="#422">SFTK_TOKEN_TYPE_CRL</a>        0x50000000L
+<b><a name="423">  423</a></b> #define <a href="#423">SFTK_TOKEN_TYPE_SMIME</a>        0x60000000L
+<b><a name="424">  424</a></b> #define <a href="#424">SFTK_TOKEN_TYPE_CERT</a>        0x70000000L
+<b><a name="425">  425</a></b> 
+<b><a name="426">  426</a></b> #define <a href="#426">SFTK_TOKEN_KRL_HANDLE</a>        (<a href="../softoken/pkcs11i.h.dep.html#SFTK_TOKEN_MAGIC">SFTK_TOKEN_MAGIC</a>|<a href="../softoken/pkcs11i.h.dep.html#SFTK_TOKEN_TYPE_CRL">SFTK_TOKEN_TYPE_CRL</a>|1)
+<b><a name="427">  427</a></b> /* how big (in bytes) a password/pin we can deal with */
+<b><a name="428">  428</a></b> #define <a href="#428">SFTK_MAX_PIN</a>        255
+<b><a name="429">  429</a></b> /* minimum password/pin length (in Unicode characters) in FIPS mode */
+<b><a name="430">  430</a></b> #define <a href="#430">FIPS_MIN_PIN</a>        7
+<b><a name="431">  431</a></b> 
+<b><a name="432">  432</a></b> /* slot ID's */
+<b><a name="433">  433</a></b> #define <a href="#433">NETSCAPE_SLOT_ID</a> 1
+<b><a name="434">  434</a></b> #define <a href="#434">PRIVATE_KEY_SLOT_ID</a> 2
+<b><a name="435">  435</a></b> #define <a href="#435">FIPS_SLOT_ID</a> 3
+<b><a name="436">  436</a></b> 
+<b><a name="437">  437</a></b> /* slot helper macros */
+<b><a name="438">  438</a></b> #define <a href="#438">sftk_SlotFromSession</a>(sp) ((sp)-&gt;slot)
+<b><a name="439">  439</a></b> #define <a href="#439">sftk_isToken</a>(id) (((id) &amp; <a href="../softoken/pkcs11i.h.dep.html#SFTK_TOKEN_MASK">SFTK_TOKEN_MASK</a>) == <a href="../softoken/pkcs11i.h.dep.html#SFTK_TOKEN_MAGIC">SFTK_TOKEN_MAGIC</a>)
+<b><a name="440">  440</a></b> 
+<b><a name="441">  441</a></b> /* the session hash multiplier (see bug 201081) */
+<b><a name="442">  442</a></b> #define <a href="#442">SHMULTIPLIER</a> 1791398085
+<b><a name="443">  443</a></b> 
+<b><a name="444">  444</a></b> /* queueing helper macros */
+<b><a name="445">  445</a></b> #define <a href="#445">sftk_hash</a>(value,size) \
+<b><a name="446">  446</a></b>         ((PRUint32)((value) * <a href="../softoken/pkcs11i.h.dep.html#SHMULTIPLIER">SHMULTIPLIER</a>) &amp; (size-1))
+<b><a name="447">  447</a></b> #define <a href="#447">sftkqueue_add</a>(element,id,head,hash_size) \
+<b><a name="448">  448</a></b>         { int <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = <a href="../softoken/pkcs11i.h.dep.html#sftk_hash">sftk_hash</a>(id,hash_size); \
+<b><a name="449">  449</a></b>         (element)-&gt;next = (head)[<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>]; \
+<b><a name="450">  450</a></b>         (element)-&gt;prev = NULL; \
+<b><a name="451">  451</a></b>         if ((head)[<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>]) (head)[<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>]-&gt;prev = (element); \
+<b><a name="452">  452</a></b>         (head)[<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>] = (element); }
+<b><a name="453">  453</a></b> #define <a href="#453">sftkqueue_find</a>(element,id,head,hash_size) \
+<b><a name="454">  454</a></b>         for( (element) = (head)[<a href="../softoken/pkcs11i.h.dep.html#sftk_hash">sftk_hash</a>(id,hash_size)]; (element) != NULL; \
+<b><a name="455">  455</a></b>                                          (element) = (element)-&gt;next) { \
+<b><a name="456">  456</a></b>             if ((element)-&gt;handle == (id)) { break; } }
+<b><a name="457">  457</a></b> #define <a href="#457">sftkqueue_is_queued</a>(element,id,head,hash_size) \
+<b><a name="458">  458</a></b>         ( ((element)-&gt;next) || ((element)-&gt;prev) || \
+<b><a name="459">  459</a></b>          ((head)[<a href="../softoken/pkcs11i.h.dep.html#sftk_hash">sftk_hash</a>(id,hash_size)] == (element)) )
+<b><a name="460">  460</a></b> #define <a href="#460">sftkqueue_delete</a>(element,id,head,hash_size) \
+<b><a name="461">  461</a></b>         if ((element)-&gt;next) (element)-&gt;next-&gt;prev = (element)-&gt;prev; \
+<b><a name="462">  462</a></b>         if ((element)-&gt;prev) (element)-&gt;prev-&gt;next = (element)-&gt;next; \
+<b><a name="463">  463</a></b>            else (head)[<a href="../softoken/pkcs11i.h.dep.html#sftk_hash">sftk_hash</a>(id,hash_size)] = ((element)-&gt;next); \
+<b><a name="464">  464</a></b>         (element)-&gt;next = NULL; \
+<b><a name="465">  465</a></b>         (element)-&gt;prev = NULL; \
+<b><a name="466">  466</a></b> 
+<b><a name="467">  467</a></b> #define sftkqueue_init_element(element) \
+<b><a name="468">  468</a></b>     (element)-&gt;prev = NULL;
+<b><a name="469">  469</a></b> 
+<b><a name="470">  470</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#sftkqueue_add2">sftkqueue_add2</a>(element, id, index, head) \
+<b><a name="471">  471</a></b>     {                                            \
+<b><a name="472">  472</a></b>         (element)-&gt;next = (head)[index];         \
+<b><a name="473">  473</a></b>         if ((head)[index])                       \
+<b><a name="474">  474</a></b>             (head)[index]-&gt;prev = (element);     \
+<b><a name="475">  475</a></b>         (head)[index] = (element);               \
+<b><a name="476">  476</a></b>     }
+<b><a name="477">  477</a></b> 
+<b><a name="478">  478</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#sftkqueue_find2">sftkqueue_find2</a>(element, id, index, head) \
+<b><a name="479">  479</a></b>     for ( (element) = (head)[index];              \
+<b><a name="480">  480</a></b>           (element) != NULL;                      \
+<b><a name="481">  481</a></b>           (element) = (element)-&gt;next) {          \
+<b><a name="482">  482</a></b>         if ((element)-&gt;handle == (id)) { break; } \
+<b><a name="483">  483</a></b>     }
+<b><a name="484">  484</a></b> 
+<b><a name="485">  485</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#sftkqueue_delete2">sftkqueue_delete2</a>(element, id, index, head) \
+<b><a name="486">  486</a></b>         if ((element)-&gt;next) (element)-&gt;next-&gt;prev = (element)-&gt;prev; \
+<b><a name="487">  487</a></b>         if ((element)-&gt;prev) (element)-&gt;prev-&gt;next = (element)-&gt;next; \
+<b><a name="488">  488</a></b>            else (head)[index] = ((element)-&gt;next);
+<b><a name="489">  489</a></b> 
+<b><a name="490">  490</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#sftkqueue_clear_deleted_element">sftkqueue_clear_deleted_element</a>(element) \
+<b><a name="491">  491</a></b>         (element)-&gt;next = NULL; \
+<b><a name="492">  492</a></b>         (element)-&gt;prev = NULL; \
+<b><a name="493">  493</a></b> 
+<b><a name="494">  494</a></b> 
+<b><a name="495">  495</a></b> /* sessionID (handle) is used to determine session lock bucket */
+<b><a name="496">  496</a></b> #ifdef NOSPREAD
+<b><a name="497">  497</a></b> /* NOSPREAD:        (ID&gt;&gt;L2LPB) &amp; (perbucket-1) */
+<b><a name="498">  498</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#SFTK_SESSION_LOCK">SFTK_SESSION_LOCK</a></a>(slot,handle) \
+<b><a name="499">  499</a></b>     ((slot)-&gt;sessionLock[((handle) &gt;&gt; <a href="../softoken/pkcs11i.h.dep.html#LOG2_BUCKETS_PER_SESSION_LOCK">LOG2_BUCKETS_PER_SESSION_LOCK</a>) \
+<b><a name="500">  500</a></b>         &amp; (slot)-&gt;sessionLockMask])
+<b><a name="501">  501</a></b> #else
+<b><a name="502">  502</a></b> /* SPREAD:        ID &amp; (perbucket-1) */
+<b><a name="503">  503</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#SFTK_SESSION_LOCK">SFTK_SESSION_LOCK</a></a>(slot,handle) \
+<b><a name="504">  504</a></b>     ((slot)-&gt;sessionLock[(handle) &amp; (slot)-&gt;sessionLockMask])
+<b><a name="505">  505</a></b> #endif
+<b><a name="506">  506</a></b> 
+<b><a name="507">  507</a></b> /* expand an attribute &amp; secitem structures out */
+<b><a name="508">  508</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#sftk_attr_expand">sftk_attr_expand</a>(ap) (ap)-&gt;type,(ap)-&gt;pValue,(ap)-&gt;ulValueLen
+<b><a name="509">  509</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#sftk_item_expand">sftk_item_expand</a>(ip) (ip)-&gt;data,(ip)-&gt;len
+<b><a name="510">  510</a></b> 
+<b><a name="511">  511</a></b> typedef struct <a href="../softoken/pkcs11i.h.dep.html#sftk_token_parametersStr">sftk_token_parametersStr</a> {
+<b><a name="512">  512</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a> slotID;
+<b><a name="513">  513</a></b>     char *configdir;
+<b><a name="514">  514</a></b>     char *certPrefix;
+<b><a name="515">  515</a></b>     char *keyPrefix;
+<b><a name="516">  516</a></b>     char *tokdes;
+<b><a name="517">  517</a></b>     char *slotdes;
+<b><a name="518">  518</a></b>     int minPW; 
+<b><a name="519">  519</a></b>     PRBool readOnly;
+<b><a name="520">  520</a></b>     PRBool noCertDB;
+<b><a name="521">  521</a></b>     PRBool noKeyDB;
+<b><a name="522">  522</a></b>     PRBool forceOpen;
+<b><a name="523">  523</a></b>     PRBool pwRequired;
+<b><a name="524">  524</a></b>     PRBool optimizeSpace;
+<b><a name="525">  525</a></b> } <a href="../softoken/pkcs11i.h.dep.html#sftk_token_parameters">sftk_token_parameters</a>;
+<b><a name="526">  526</a></b> 
+<b><a name="527">  527</a></b> typedef struct <a href="../softoken/pkcs11i.h.dep.html#sftk_parametersStr">sftk_parametersStr</a> {
+<b><a name="528">  528</a></b>     char *configdir;
+<b><a name="529">  529</a></b>     char *secmodName;
+<b><a name="530">  530</a></b>     char *man;
+<b><a name="531">  531</a></b>     char *libdes; 
+<b><a name="532">  532</a></b>     PRBool readOnly;
+<b><a name="533">  533</a></b>     PRBool noModDB;
+<b><a name="534">  534</a></b>     PRBool noCertDB;
+<b><a name="535">  535</a></b>     PRBool forceOpen;
+<b><a name="536">  536</a></b>     PRBool pwRequired;
+<b><a name="537">  537</a></b>     PRBool optimizeSpace;
+<b><a name="538">  538</a></b>     <a href="../softoken/pkcs11i.h.dep.html#sftk_token_parameters">sftk_token_parameters</a> *tokens;
+<b><a name="539">  539</a></b>     int token_count;
+<b><a name="540">  540</a></b> } <a href="../softoken/pkcs11i.h.dep.html#sftk_parameters">sftk_parameters</a>;
+<b><a name="541">  541</a></b> 
+<b><a name="542">  542</a></b> 
+<b><a name="543">  543</a></b> /* machine dependent path stuff used by dbinit.c and pk11db.c */
+<b><a name="544">  544</a></b> #ifdef macintosh
+<b><a name="545">  545</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#PATH_SEPARATOR">PATH_SEPARATOR</a></a> ":"
+<b><a name="546">  546</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#SECMOD_DB">SECMOD_DB</a></a> "Security Modules"
+<b><a name="547">  547</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#CERT_DB_FMT">CERT_DB_FMT</a></a> "%sCertificates%s"
+<b><a name="548">  548</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#KEY_DB_FMT">KEY_DB_FMT</a></a> "%sKey Database%s"
+<b><a name="549">  549</a></b> #else
+<b><a name="550">  550</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#PATH_SEPARATOR">PATH_SEPARATOR</a></a> "/"
+<b><a name="551">  551</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#SECMOD_DB">SECMOD_DB</a></a> "secmod.db"
+<b><a name="552">  552</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#CERT_DB_FMT">CERT_DB_FMT</a></a> "%scert%s.db"
+<b><a name="553">  553</a></b> #define <a href="../softoken/pkcs11i.h.dep.html#KEY_DB_FMT">KEY_DB_FMT</a></a> "%skey%s.db"
+<b><a name="554">  554</a></b> #endif
+<b><a name="555">  555</a></b> 
+<b><a name="556">  556</a></b> <a href="../util/seccomon.h.dep.html#SEC_BEGIN_PROTOS">SEC_BEGIN_PROTOS</a></a>
+<b><a name="557">  557</a></b> 
+<b><a name="558">  558</a></b> /* shared functions between pkcs11.c and fipstokn.c */
+<b><a name="559">  559</a></b> extern PRBool <a href="../softoken/fipstokn.c.dep.html#nsf_init">nsf_init</a><a href="../softoken/pkcs11i.h.dep.html#nsf_init"><sup>[1]</sup></a>;
+<b><a name="560">  560</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11.c.dep.html#nsc_CommonInitialize">nsc_CommonInitialize</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> pReserved, PRBool isFIPS);
+<b><a name="561">  561</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11.c.dep.html#nsc_CommonFinalize">nsc_CommonFinalize</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> pReserved, PRBool isFIPS);
+<b><a name="562">  562</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11.c.dep.html#nsc_CommonGetSlotList">nsc_CommonGetSlotList</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a> tokPresent, 
+<b><a name="563">  563</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID_PTR">CK_SLOT_ID_PTR</a> pSlotList, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pulCount, int moduleIndex);
+<b><a name="564">  564</a></b> 
+<b><a name="565">  565</a></b> /* slot initialization, reinit, shutdown and destruction */
+<b><a name="566">  566</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11.c.dep.html#SFTK_SlotInit">SFTK_SlotInit</a>(char *configdir,
+<b><a name="567">  567</a></b>                         <a href="../softoken/pkcs11i.h.dep.html#sftk_token_parameters">sftk_token_parameters</a> *params, int moduleIndex);
+<b><a name="568">  568</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11.c.dep.html#SFTK_SlotReInit">SFTK_SlotReInit</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot, char *configdir,
+<b><a name="569">  569</a></b>                         <a href="../softoken/pkcs11i.h.dep.html#sftk_token_parameters">sftk_token_parameters</a> *params, int moduleIndex);
+<b><a name="570">  570</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11.c.dep.html#SFTK_DestroySlotData">SFTK_DestroySlotData</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot);
+<b><a name="571">  571</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11.c.dep.html#SFTK_ShutdownSlot">SFTK_ShutdownSlot</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot);
+<b><a name="572">  572</a></b> 
+<b><a name="573">  573</a></b> 
+<b><a name="574">  574</a></b> /* internal utility functions used by pkcs11.c */
+<b><a name="575">  575</a></b> extern <a href="../softoken/pkcs11i.h.dep.html#SFTKAttribute">SFTKAttribute</a> *<a href="../softoken/pkcs11u.c.dep.html#sftk_FindAttribute">sftk_FindAttribute</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object,
+<b><a name="576">  576</a></b>                                          <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type);
+<b><a name="577">  577</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_FreeAttribute">sftk_FreeAttribute</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKAttribute">SFTKAttribute</a> *attribute);
+<b><a name="578">  578</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_AddAttributeType">sftk_AddAttributeType</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type,
+<b><a name="579">  579</a></b>                                    void *valPtr,
+<b><a name="580">  580</a></b>                                   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> length);
+<b><a name="581">  581</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_Attribute2SecItem">sftk_Attribute2SecItem</a>(PLArenaPool *arena, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *item,
+<b><a name="582">  582</a></b>                                     <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type);
+<b><a name="583">  583</a></b> extern unsigned int <a href="../softoken/pkcs11u.c.dep.html#sftk_GetLengthInBits">sftk_GetLengthInBits</a>(unsigned char *buf,
+<b><a name="584">  584</a></b>                                                          unsigned int bufLen);
+<b><a name="585">  585</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_ConstrainAttribute">sftk_ConstrainAttribute</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object, 
+<b><a name="586">  586</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type, int minLength, int maxLength, int minMultiple);
+<b><a name="587">  587</a></b> extern PRBool <a href="../softoken/pkcs11u.c.dep.html#sftk_hasAttribute">sftk_hasAttribute</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type);
+<b><a name="588">  588</a></b> extern PRBool <a href="../softoken/pkcs11u.c.dep.html#sftk_isTrue">sftk_isTrue</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type);
+<b><a name="589">  589</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_DeleteAttributeType">sftk_DeleteAttributeType</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object,
+<b><a name="590">  590</a></b>                                      <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type);
+<b><a name="591">  591</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_Attribute2SecItem">sftk_Attribute2SecItem</a>(PLArenaPool *arena, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *item,
+<b><a name="592">  592</a></b>                                     <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type);
+<b><a name="593">  593</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_Attribute2SSecItem">sftk_Attribute2SSecItem</a>(PLArenaPool *arena, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *item,
+<b><a name="594">  594</a></b>                                      <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object,
+<b><a name="595">  595</a></b>                                      <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type);
+<b><a name="596">  596</a></b> extern <a href="../softoken/pkcs11i.h.dep.html#SFTKModifyType">SFTKModifyType</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_modifyType">sftk_modifyType</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type,
+<b><a name="597">  597</a></b>                                       <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> inClass);
+<b><a name="598">  598</a></b> extern PRBool <a href="../softoken/pkcs11u.c.dep.html#sftk_isSensitive">sftk_isSensitive</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> inClass);
+<b><a name="599">  599</a></b> extern char *<a href="../softoken/pkcs11u.c.dep.html#sftk_getString">sftk_getString</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type);
+<b><a name="600">  600</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_nullAttribute">sftk_nullAttribute</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object,<a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type);
+<b><a name="601">  601</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_GetULongAttribute">sftk_GetULongAttribute</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type,
+<b><a name="602">  602</a></b>                                                          <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> *longData);
+<b><a name="603">  603</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_forceAttribute">sftk_forceAttribute</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type,
+<b><a name="604">  604</a></b>                                  void *value, unsigned int len);
+<b><a name="605">  605</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11.c.dep.html#sftk_defaultAttribute">sftk_defaultAttribute</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type,
+<b><a name="606">  606</a></b>                                    void *value, unsigned int len);
+<b><a name="607">  607</a></b> extern unsigned int <a href="../softoken/pkcs11.c.dep.html#sftk_MapTrust">sftk_MapTrust</a>(<a href="../softoken/pkcs11n.h.dep.html#CK_TRUST">CK_TRUST</a> trust, PRBool clientAuth);
+<b><a name="608">  608</a></b> 
+<b><a name="609">  609</a></b> extern <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *<a href="../softoken/pkcs11u.c.dep.html#sftk_NewObject">sftk_NewObject</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot);
+<b><a name="610">  610</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_CopyObject">sftk_CopyObject</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *destObject, <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *srcObject);
+<b><a name="611">  611</a></b> extern <a href="../softoken/pkcs11i.h.dep.html#SFTKFreeStatus">SFTKFreeStatus</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_FreeObject">sftk_FreeObject</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object);
+<b><a name="612">  612</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_DeleteObject">sftk_DeleteObject</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a> *session, <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object);
+<b><a name="613">  613</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_ReferenceObject">sftk_ReferenceObject</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object);
+<b><a name="614">  614</a></b> extern <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *<a href="../softoken/pkcs11u.c.dep.html#sftk_ObjectFromHandle">sftk_ObjectFromHandle</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> handle,
+<b><a name="615">  615</a></b>                                          <a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a> *session);
+<b><a name="616">  616</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_AddSlotObject">sftk_AddSlotObject</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot, <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object);
+<b><a name="617">  617</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_AddObject">sftk_AddObject</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a> *session, <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object);
+<b><a name="618">  618</a></b> /* clear out all the existing object ID to database key mappings.
+<b><a name="619">  619</a></b>  * used to reinit a token */
+<b><a name="620">  620</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11u.c.dep.html#SFTK_ClearTokenKeyHashTable">SFTK_ClearTokenKeyHashTable</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot);
+<b><a name="621">  621</a></b> 
+<b><a name="622">  622</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_searchObjectList">sftk_searchObjectList</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSearchResults">SFTKSearchResults</a> *search,
+<b><a name="623">  623</a></b>                                    <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> **head, unsigned int size,
+<b><a name="624">  624</a></b>                                    <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a> *lock, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> inTemplate,
+<b><a name="625">  625</a></b>                                    int count, PRBool <a href="../softoken/fipstokn.c.dep.html#isLoggedIn">isLoggedIn</a>);
+<b><a name="626">  626</a></b> extern <a href="../softoken/pkcs11i.h.dep.html#SFTKObjectListElement">SFTKObjectListElement</a> *<a href="../softoken/pkcs11u.c.dep.html#sftk_FreeObjectListElement">sftk_FreeObjectListElement</a>(
+<b><a name="627">  627</a></b>                                              <a href="../softoken/pkcs11i.h.dep.html#SFTKObjectListElement">SFTKObjectListElement</a> *objectList);
+<b><a name="628">  628</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_FreeObjectList">sftk_FreeObjectList</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObjectListElement">SFTKObjectListElement</a> *objectList);
+<b><a name="629">  629</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_FreeSearch">sftk_FreeSearch</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSearchResults">SFTKSearchResults</a> *search);
+<b><a name="630">  630</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11.c.dep.html#sftk_handleObject">sftk_handleObject</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object, <a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a> *session);
+<b><a name="631">  631</a></b> 
+<b><a name="632">  632</a></b> extern <a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *<a href="../softoken/pkcs11.c.dep.html#sftk_SlotFromID">sftk_SlotFromID</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a> slotID, PRBool all);
+<b><a name="633">  633</a></b> extern <a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *<a href="../softoken/pkcs11.c.dep.html#sftk_SlotFromSessionHandle">sftk_SlotFromSessionHandle</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> handle);
+<b><a name="634">  634</a></b> extern <a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a> *<a href="../softoken/pkcs11u.c.dep.html#sftk_SessionFromHandle">sftk_SessionFromHandle</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> handle);
+<b><a name="635">  635</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_FreeSession">sftk_FreeSession</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a> *session);
+<b><a name="636">  636</a></b> extern <a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a> *<a href="../softoken/pkcs11u.c.dep.html#sftk_NewSession">sftk_NewSession</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a> slotID, CK_NOTIFY notify,
+<b><a name="637">  637</a></b>                                     <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> pApplication, <a href="../softoken/pkcs11t.h.dep.html#CK_FLAGS">CK_FLAGS</a> flags);
+<b><a name="638">  638</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_update_state">sftk_update_state</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot,<a href="../softoken/pkcs11i.h.dep.html#SFTKSession">SFTKSession</a> *session);
+<b><a name="639">  639</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_update_all_states">sftk_update_all_states</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot);
+<b><a name="640">  640</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_FreeContext">sftk_FreeContext</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSessionContext">SFTKSessionContext</a> *context);
+<b><a name="641">  641</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_InitFreeLists">sftk_InitFreeLists</a>(void);
+<b><a name="642">  642</a></b> extern void <a href="../softoken/pkcs11u.c.dep.html#sftk_CleanupFreeLists">sftk_CleanupFreeLists</a>(void);
+<b><a name="643">  643</a></b> 
+<b><a name="644">  644</a></b> extern <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYPublicKey">NSSLOWKEYPublicKey</a> *<a href="../softoken/pkcs11.c.dep.html#sftk_GetPubKey">sftk_GetPubKey</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object,
+<b><a name="645">  645</a></b>                                           <a href="../softoken/pkcs11t.h.dep.html#CK_KEY_TYPE">CK_KEY_TYPE</a> key_type, <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> *crvp);
+<b><a name="646">  646</a></b> extern <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYPrivateKey">NSSLOWKEYPrivateKey</a> *<a href="../softoken/pkcs11.c.dep.html#sftk_GetPrivKey">sftk_GetPrivKey</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *object,
+<b><a name="647">  647</a></b>                                             <a href="../softoken/pkcs11t.h.dep.html#CK_KEY_TYPE">CK_KEY_TYPE</a> key_type, <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> *crvp);
+<b><a name="648">  648</a></b> extern void <a href="../softoken/pkcs11.c.dep.html#sftk_FormatDESKey">sftk_FormatDESKey</a>(unsigned char *key, int length);
+<b><a name="649">  649</a></b> extern PRBool <a href="../softoken/pkcs11.c.dep.html#sftk_CheckDESKey">sftk_CheckDESKey</a>(unsigned char *key);
+<b><a name="650">  650</a></b> extern PRBool <a href="../softoken/pkcs11.c.dep.html#sftk_IsWeakKey">sftk_IsWeakKey</a>(unsigned char *key,<a href="../softoken/pkcs11t.h.dep.html#CK_KEY_TYPE">CK_KEY_TYPE</a> key_type);
+<b><a name="651">  651</a></b> 
+<b><a name="652">  652</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pk11db.c.dep.html#secmod_parseParameters">secmod_parseParameters</a>(char *param, <a href="../softoken/pkcs11i.h.dep.html#sftk_parameters">sftk_parameters</a> *parsed,
+<b><a name="653">  653</a></b>                                                                 PRBool isFIPS);
+<b><a name="654">  654</a></b> extern void <a href="../softoken/pk11db.c.dep.html#secmod_freeParams">secmod_freeParams</a>(<a href="../softoken/pkcs11i.h.dep.html#sftk_parameters">sftk_parameters</a> *params);
+<b><a name="655">  655</a></b> extern char *<a href="../softoken/pk11db.c.dep.html#secmod_getSecmodName">secmod_getSecmodName</a>(char *params, char **domain, 
+<b><a name="656">  656</a></b>                                                 char **filename, PRBool *rw);
+<b><a name="657">  657</a></b> extern char ** <a href="../softoken/pk11db.c.dep.html#secmod_ReadPermDB">secmod_ReadPermDB</a>(const char *domain, const char *filename, 
+<b><a name="658">  658</a></b>                         const char *dbname, char *params, PRBool rw);
+<b><a name="659">  659</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../softoken/pk11db.c.dep.html#secmod_DeletePermDB">secmod_DeletePermDB</a>(const char *domain, const char *filename,
+<b><a name="660">  660</a></b>                         const char *dbname, char *args, PRBool rw);
+<b><a name="661">  661</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../softoken/pk11db.c.dep.html#secmod_AddPermDB">secmod_AddPermDB</a>(const char *domain, const char *filename,
+<b><a name="662">  662</a></b>                         const char *dbname, char *module, PRBool rw);
+<b><a name="663">  663</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../softoken/pk11db.c.dep.html#secmod_ReleasePermDBData">secmod_ReleasePermDBData</a>(const char *domain, 
+<b><a name="664">  664</a></b>         const char *filename, const char *dbname, char **specList, PRBool rw);
+<b><a name="665">  665</a></b> /* mechanism allows this operation */
+<b><a name="666">  666</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/pkcs11.c.dep.html#sftk_MechAllowsOperation">sftk_MechAllowsOperation</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a> type, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> op);
+<b><a name="667">  667</a></b> /*
+<b><a name="668">  668</a></b>  * OK there are now lots of options here, lets go through them all:
+<b><a name="669">  669</a></b>  *
+<b><a name="670">  670</a></b>  * configdir - base directory where all the cert, key, and module datbases live.
+<b><a name="671">  671</a></b>  * certPrefix - prefix added to the beginning of the cert database example: "
+<b><a name="672">  672</a></b>  *                      "https-server1-"
+<b><a name="673">  673</a></b>  * keyPrefix - prefix added to the beginning of the key database example: "
+<b><a name="674">  674</a></b>  *                      "https-server1-"
+<b><a name="675">  675</a></b>  * secmodName - name of the security module database (usually "secmod.db").
+<b><a name="676">  676</a></b>  * readOnly - Boolean: true if the databases are to be openned read only.
+<b><a name="677">  677</a></b>  * nocertdb - Don't open the cert DB and key DB's, just initialize the
+<b><a name="678">  678</a></b>  *                      Volatile certdb.
+<b><a name="679">  679</a></b>  * nomoddb - Don't open the security module DB, just initialize the
+<b><a name="680">  680</a></b>  *                      PKCS #11 module.
+<b><a name="681">  681</a></b>  * forceOpen - Continue to force initializations even if the databases cannot
+<b><a name="682">  682</a></b>  *                      be opened.
+<b><a name="683">  683</a></b>  */
+<b><a name="684">  684</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/dbinit.c.dep.html#sftk_DBInit">sftk_DBInit</a>(const char *configdir, const char *certPrefix,
+<b><a name="685">  685</a></b>                  const char *keyPrefix, PRBool readOnly, PRBool noCertDB, 
+<b><a name="686">  686</a></b>                 PRBool noKeyDB, PRBool forceOpen, 
+<b><a name="687">  687</a></b>                 <a href="../softoken/pcertt.h.dep.html#NSSLOWCERTCertDBHandle">NSSLOWCERTCertDBHandle</a> **certDB, <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYDBHandle">NSSLOWKEYDBHandle</a> **keyDB);
+<b><a name="688">  688</a></b> <a href="../softoken/pcertt.h.dep.html#NSSLOWCERTCertDBHandle">NSSLOWCERTCertDBHandle</a> *<a href="../softoken/dbinit.c.dep.html#sftk_getCertDB">sftk_getCertDB</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot);
+<b><a name="689">  689</a></b> <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYDBHandle">NSSLOWKEYDBHandle</a> *<a href="../softoken/dbinit.c.dep.html#sftk_getKeyDB">sftk_getKeyDB</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot);
+<b><a name="690">  690</a></b> void <a href="../softoken/dbinit.c.dep.html#sftk_freeCertDB">sftk_freeCertDB</a>(<a href="../softoken/pcertt.h.dep.html#NSSLOWCERTCertDBHandle">NSSLOWCERTCertDBHandle</a> *certHandle);
+<b><a name="691">  691</a></b> void <a href="../softoken/dbinit.c.dep.html#sftk_freeKeyDB">sftk_freeKeyDB</a>(<a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYDBHandle">NSSLOWKEYDBHandle</a> *keyHandle);
+<b><a name="692">  692</a></b> 
+<b><a name="693">  693</a></b> /* helper function which calls nsslowkey_FindKeyByPublicKey after safely
+<b><a name="694">  694</a></b>  * acquiring a reference to the keydb from the slot */
+<b><a name="695">  695</a></b> <a href="../softoken/lowkeyti.h.dep.html#NSSLOWKEYPrivateKey">NSSLOWKEYPrivateKey</a> *<a href="../softoken/pkcs11u.c.dep.html#sftk_FindKeyByPublicKey">sftk_FindKeyByPublicKey</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dbKey);
+<b><a name="696">  696</a></b> 
+<b><a name="697">  697</a></b> const char *<a href="../softoken/dbinit.c.dep.html#sftk_EvaluateConfigDir">sftk_EvaluateConfigDir</a>(const char *configdir, char **domain);
+<b><a name="698">  698</a></b> 
+<b><a name="699">  699</a></b> /*
+<b><a name="700">  700</a></b>  * narrow objects
+<b><a name="701">  701</a></b>  */
+<b><a name="702">  702</a></b> <a href="../softoken/pkcs11i.h.dep.html#SFTKSessionObject">SFTKSessionObject</a> * <a href="../softoken/pkcs11u.c.dep.html#sftk_narrowToSessionObject">sftk_narrowToSessionObject</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *);
+<b><a name="703">  703</a></b> <a href="../softoken/pkcs11i.h.dep.html#SFTKTokenObject">SFTKTokenObject</a> * <a href="../softoken/pkcs11u.c.dep.html#sftk_narrowToTokenObject">sftk_narrowToTokenObject</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *);
+<b><a name="704">  704</a></b> 
+<b><a name="705">  705</a></b> /*
+<b><a name="706">  706</a></b>  * token object utilities
+<b><a name="707">  707</a></b>  */
+<b><a name="708">  708</a></b> void <a href="../softoken/pkcs11u.c.dep.html#sftk_addHandle">sftk_addHandle</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSearchResults">SFTKSearchResults</a> *search, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> handle);
+<b><a name="709">  709</a></b> PRBool <a href="../softoken/pkcs11u.c.dep.html#sftk_poisonHandle">sftk_poisonHandle</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dbkey, 
+<b><a name="710">  710</a></b>                                                 <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> handle);
+<b><a name="711">  711</a></b> PRBool <a href="../softoken/pkcs11u.c.dep.html#sftk_tokenMatch">sftk_tokenMatch</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dbKey, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> class,
+<b><a name="712">  712</a></b>                                         <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> theTemplate,int count);
+<b><a name="713">  713</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> <a href="../softoken/pkcs11u.c.dep.html#sftk_mkHandle">sftk_mkHandle</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot, 
+<b><a name="714">  714</a></b>                                         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dbKey, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> class);
+<b><a name="715">  715</a></b> <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> * <a href="../softoken/pkcs11u.c.dep.html#sftk_NewTokenObject">sftk_NewTokenObject</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSlot">SFTKSlot</a> *slot, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dbKey, 
+<b><a name="716">  716</a></b>                                                 <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> handle);
+<b><a name="717">  717</a></b> <a href="../softoken/pkcs11i.h.dep.html#SFTKTokenObject">SFTKTokenObject</a> *<a href="../softoken/pkcs11u.c.dep.html#sftk_convertSessionToToken">sftk_convertSessionToToken</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *so);
+<b><a name="718">  718</a></b> 
+<b><a name="719">  719</a></b> /****************************************
+<b><a name="720">  720</a></b>  * implement TLS Pseudo Random Function (PRF)
+<b><a name="721">  721</a></b>  */
+<b><a name="722">  722</a></b> 
+<b><a name="723">  723</a></b> extern <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="724">  724</a></b> <a href="../softoken/tlsprf.c.dep.html#sftk_TLSPRFInit">sftk_TLSPRFInit</a>(<a href="../softoken/pkcs11i.h.dep.html#SFTKSessionContext">SFTKSessionContext</a> *context, 
+<b><a name="725">  725</a></b>                   <a href="../softoken/pkcs11i.h.dep.html#SFTKObject">SFTKObject</a> *        key, 
+<b><a name="726">  726</a></b>                   <a href="../softoken/pkcs11t.h.dep.html#CK_KEY_TYPE">CK_KEY_TYPE</a>         key_type);
+<b><a name="727">  727</a></b> 
+<b><a name="728">  728</a></b> <a href="../util/secasn1.h.dep.html#SEC_END_PROTOS">SEC_END_PROTOS</a><a href="../util/seccomon.h.dep.html#SEC_END_PROTOS"><sup>[1]</sup></a></a>
+<b><a name="729">  729</a></b> 
+<b><a name="730">  730</a></b> #endif /* _PKCS11I_H_ */
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

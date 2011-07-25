@@ -1,0 +1,298 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> /*
+<b><a name="38">   38</a></b>  * CMS encryptedData methods.
+<b><a name="39">   39</a></b>  *
+<b><a name="40">   40</a></b>  * $Id$
+<b><a name="41">   41</a></b>  */
+<b><a name="42">   42</a></b> 
+<b><a name="43">   43</a></b> #include "cmslocal.h"
+<b><a name="44">   44</a></b> 
+<b><a name="45">   45</a></b> #include "key.h"
+<b><a name="46">   46</a></b> #include "secasn1.h"
+<b><a name="47">   47</a></b> #include "secitem.h"
+<b><a name="48">   48</a></b> #include "secoid.h"
+<b><a name="49">   49</a></b> #include "pk11func.h"
+<b><a name="50">   50</a></b> #include "prtime.h"
+<b><a name="51">   51</a></b> #include "secerr.h"
+<b><a name="52">   52</a></b> #include "secpkcs5.h"
+<b><a name="53">   53</a></b> 
+<b><a name="54">   54</a></b> /*
+<b><a name="55">   55</a></b>  * NSS_CMSEncryptedData_Create - create an empty encryptedData object.
+<b><a name="56">   56</a></b>  *
+<b><a name="57">   57</a></b>  * "algorithm" specifies the bulk encryption algorithm to use.
+<b><a name="58">   58</a></b>  * "keysize" is the key size.
+<b><a name="59">   59</a></b>  * 
+<b><a name="60">   60</a></b>  * An error results in a return value of NULL and an error set.
+<b><a name="61">   61</a></b>  * (Retrieve specific errors via PORT_GetError()/XP_GetError().)
+<b><a name="62">   62</a></b>  */
+<b><a name="63">   63</a></b> <a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a> *
+<b><a name="64">   64</a></b> <a href="#64">NSS_CMSEncryptedData_Create</a>(<a href="../smime/cmst.h.dep.html#NSSCMSMessage">NSSCMSMessage</a> *cmsg, <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm, int <a href="../mozilla/security/nss/cmd/bltest/blapitest.c.dep.html#keysize">keysize</a>)
+<b><a name="65">   65</a></b> {
+<b><a name="66">   66</a></b>     void *mark;
+<b><a name="67">   67</a></b>     <a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a> *encd;
+<b><a name="68">   68</a></b>     <a href="../mozilla/nsprpub/lib/ds/plarena.h.dep.html#PLArenaPool">PLArenaPool</a><a href="../mozilla/nsprpub/lib/ds/plarenas.h.dep.html#PLArenaPool"><sup>[1]</sup></a> *poolp;
+<b><a name="69">   69</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *pbe_algid;
+<b><a name="70">   70</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="71">   71</a></b> 
+<b><a name="72">   72</a></b>     poolp = cmsg-&gt;poolp;
+<b><a name="73">   73</a></b> 
+<b><a name="74">   74</a></b>     mark = <a href="../util/secport.c.dep.html#PORT_ArenaMark">PORT_ArenaMark</a>(poolp);
+<b><a name="75">   75</a></b> 
+<b><a name="76">   76</a></b>     encd = (<a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a> *)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(poolp, sizeof(<a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a>));
+<b><a name="77">   77</a></b>     if (encd == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="78">   78</a></b>         goto loser;
+<b><a name="79">   79</a></b> 
+<b><a name="80">   80</a></b>     encd-&gt;cmsg = cmsg;
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b>     /* version is set in NSS_CMSEncryptedData_Encode_BeforeStart() */
+<b><a name="83">   83</a></b> 
+<b><a name="84">   84</a></b>     switch (algorithm) {
+<b><a name="85">   85</a></b>     /* XXX hmmm... hardcoded algorithms? */
+<b><a name="86">   86</a></b>     case SEC_OID_RC2_CBC:
+<b><a name="87">   87</a></b>     case SEC_OID_DES_EDE3_CBC:
+<b><a name="88">   88</a></b>     case SEC_OID_DES_CBC:
+<b><a name="89">   89</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../smime/cmscinfo.c.dep.html#NSS_CMSContentInfo_SetContentEncAlg">NSS_CMSContentInfo_SetContentEncAlg</a>(poolp, &amp;(encd-&gt;contentInfo), algorithm, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, <a href="../mozilla/security/nss/cmd/bltest/blapitest.c.dep.html#keysize">keysize</a>);
+<b><a name="90">   90</a></b>         break;
+<b><a name="91">   91</a></b>     default:
+<b><a name="92">   92</a></b>         /* Assume password-based-encryption.  At least, try that. */
+<b><a name="93">   93</a></b>         pbe_algid = <a href="../pk11wrap/pk11pbe.c.dep.html#PK11_CreatePBEAlgorithmID">PK11_CreatePBEAlgorithmID</a>(algorithm, 1, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="94">   94</a></b>         if (pbe_algid == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="95">   95</a></b>             <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="96">   96</a></b>             break;
+<b><a name="97">   97</a></b>         }
+<b><a name="98">   98</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../smime/cmscinfo.c.dep.html#NSS_CMSContentInfo_SetContentEncAlgID">NSS_CMSContentInfo_SetContentEncAlgID</a>(poolp, &amp;(encd-&gt;contentInfo), pbe_algid, <a href="../mozilla/security/nss/cmd/bltest/blapitest.c.dep.html#keysize">keysize</a>);
+<b><a name="99">   99</a></b>         <a href="../util/secalgid.c.dep.html#SECOID_DestroyAlgorithmID">SECOID_DestroyAlgorithmID</a> (pbe_algid, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="100">  100</a></b>         break;
+<b><a name="101">  101</a></b>     }
+<b><a name="102">  102</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>)
+<b><a name="103">  103</a></b>         goto loser;
+<b><a name="104">  104</a></b> 
+<b><a name="105">  105</a></b>     <a href="../util/secport.c.dep.html#PORT_ArenaUnmark">PORT_ArenaUnmark</a>(poolp, mark);
+<b><a name="106">  106</a></b>     return encd;
+<b><a name="107">  107</a></b> 
+<b><a name="108">  108</a></b> loser:
+<b><a name="109">  109</a></b>     <a href="../util/secport.c.dep.html#PORT_ArenaRelease">PORT_ArenaRelease</a>(poolp, mark);
+<b><a name="110">  110</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="111">  111</a></b> }
+<b><a name="112">  112</a></b> 
+<b><a name="113">  113</a></b> /*
+<b><a name="114">  114</a></b>  * NSS_CMSEncryptedData_Destroy - destroy an encryptedData object
+<b><a name="115">  115</a></b>  */
+<b><a name="116">  116</a></b> void
+<b><a name="117">  117</a></b> <a href="#117">NSS_CMSEncryptedData_Destroy</a>(<a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a> *encd)
+<b><a name="118">  118</a></b> {
+<b><a name="119">  119</a></b>     /* everything's in a pool, so don't worry about the storage */
+<b><a name="120">  120</a></b>     <a href="../smime/cmscinfo.c.dep.html#NSS_CMSContentInfo_Destroy">NSS_CMSContentInfo_Destroy</a>(&amp;(encd-&gt;contentInfo));
+<b><a name="121">  121</a></b>     return;
+<b><a name="122">  122</a></b> }
+<b><a name="123">  123</a></b> 
+<b><a name="124">  124</a></b> /*
+<b><a name="125">  125</a></b>  * NSS_CMSEncryptedData_GetContentInfo - return pointer to encryptedData object's contentInfo
+<b><a name="126">  126</a></b>  */
+<b><a name="127">  127</a></b> <a href="../smime/cmst.h.dep.html#NSSCMSContentInfo">NSSCMSContentInfo</a> *
+<b><a name="128">  128</a></b> <a href="#128">NSS_CMSEncryptedData_GetContentInfo</a>(<a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a> *encd)
+<b><a name="129">  129</a></b> {
+<b><a name="130">  130</a></b>     return &amp;(encd-&gt;contentInfo);
+<b><a name="131">  131</a></b> }
+<b><a name="132">  132</a></b> 
+<b><a name="133">  133</a></b> /*
+<b><a name="134">  134</a></b>  * NSS_CMSEncryptedData_Encode_BeforeStart - do all the necessary things to a EncryptedData
+<b><a name="135">  135</a></b>  *     before encoding begins.
+<b><a name="136">  136</a></b>  *
+<b><a name="137">  137</a></b>  * In particular:
+<b><a name="138">  138</a></b>  *  - set the correct version value.
+<b><a name="139">  139</a></b>  *  - get the encryption key
+<b><a name="140">  140</a></b>  */
+<b><a name="141">  141</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="142">  142</a></b> <a href="#142">NSS_CMSEncryptedData_Encode_BeforeStart</a>(<a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a> *encd)
+<b><a name="143">  143</a></b> {
+<b><a name="144">  144</a></b>     int <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>;
+<b><a name="145">  145</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *bulkkey = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="146">  146</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/dbm/src/memmove.c.dep.html#dummy">dummy</a><a href="../mozilla/dbm/src/snprintf.c.dep.html#dummy"><sup>[1]</sup></a>;
+<b><a name="147">  147</a></b>     <a href="../smime/cmst.h.dep.html#NSSCMSContentInfo">NSSCMSContentInfo</a> *cinfo = &amp;(encd-&gt;contentInfo);
+<b><a name="148">  148</a></b> 
+<b><a name="149">  149</a></b>     if (<a href="../smime/cmsarray.c.dep.html#NSS_CMSArray_IsEmpty">NSS_CMSArray_IsEmpty</a>((void **)encd-&gt;unprotectedAttr))
+<b><a name="150">  150</a></b>         <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a> = <a href="../smime/cmst.h.dep.html#NSS_CMS_ENCRYPTED_DATA_VERSION">NSS_CMS_ENCRYPTED_DATA_VERSION</a>;
+<b><a name="151">  151</a></b>     else
+<b><a name="152">  152</a></b>         <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a> = <a href="../smime/cmst.h.dep.html#NSS_CMS_ENCRYPTED_DATA_VERSION_UPATTR">NSS_CMS_ENCRYPTED_DATA_VERSION_UPATTR</a>;
+<b><a name="153">  153</a></b>     
+<b><a name="154">  154</a></b>     <a href="../mozilla/dbm/src/memmove.c.dep.html#dummy">dummy</a><a href="../mozilla/dbm/src/snprintf.c.dep.html#dummy"><sup>[1]</sup></a> = <a href="../util/secasn1e.c.dep.html#SEC_ASN1EncodeInteger">SEC_ASN1EncodeInteger</a> (encd-&gt;cmsg-&gt;poolp, &amp;(encd-&gt;<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>), <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>);
+<b><a name="155">  155</a></b>     if (<a href="../mozilla/dbm/src/memmove.c.dep.html#dummy">dummy</a><a href="../mozilla/dbm/src/snprintf.c.dep.html#dummy"><sup>[1]</sup></a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="156">  156</a></b>         return SECFailure;
+<b><a name="157">  157</a></b> 
+<b><a name="158">  158</a></b>     /* now get content encryption key (bulk key) by using our cmsg callback */
+<b><a name="159">  159</a></b>     if (encd-&gt;cmsg-&gt;decrypt_key_cb)
+<b><a name="160">  160</a></b>         bulkkey = (*encd-&gt;cmsg-&gt;decrypt_key_cb)(encd-&gt;cmsg-&gt;decrypt_key_cb_arg, 
+<b><a name="161">  161</a></b>                     <a href="../smime/cmscinfo.c.dep.html#NSS_CMSContentInfo_GetContentEncAlg">NSS_CMSContentInfo_GetContentEncAlg</a>(cinfo));
+<b><a name="162">  162</a></b>     if (bulkkey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="163">  163</a></b>         return SECFailure;
+<b><a name="164">  164</a></b> 
+<b><a name="165">  165</a></b>     /* store the bulk key in the contentInfo so that the encoder can find it */
+<b><a name="166">  166</a></b>     <a href="../smime/cmscinfo.c.dep.html#NSS_CMSContentInfo_SetBulkKey">NSS_CMSContentInfo_SetBulkKey</a>(cinfo, bulkkey);
+<b><a name="167">  167</a></b>     <a href="../pk11wrap/pk11skey.c.dep.html#PK11_FreeSymKey">PK11_FreeSymKey</a> (bulkkey);
+<b><a name="168">  168</a></b> 
+<b><a name="169">  169</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="170">  170</a></b> }
+<b><a name="171">  171</a></b> 
+<b><a name="172">  172</a></b> /*
+<b><a name="173">  173</a></b>  * NSS_CMSEncryptedData_Encode_BeforeData - set up encryption
+<b><a name="174">  174</a></b>  */
+<b><a name="175">  175</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="176">  176</a></b> <a href="#176">NSS_CMSEncryptedData_Encode_BeforeData</a>(<a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a> *encd)
+<b><a name="177">  177</a></b> {
+<b><a name="178">  178</a></b>     <a href="../smime/cmst.h.dep.html#NSSCMSContentInfo">NSSCMSContentInfo</a> *cinfo;
+<b><a name="179">  179</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *bulkkey;
+<b><a name="180">  180</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid;
+<b><a name="181">  181</a></b> 
+<b><a name="182">  182</a></b>     cinfo = &amp;(encd-&gt;contentInfo);
+<b><a name="183">  183</a></b> 
+<b><a name="184">  184</a></b>     /* find bulkkey and algorithm - must have been set by NSS_CMSEncryptedData_Encode_BeforeStart */
+<b><a name="185">  185</a></b>     bulkkey = <a href="../smime/cmscinfo.c.dep.html#NSS_CMSContentInfo_GetBulkKey">NSS_CMSContentInfo_GetBulkKey</a>(cinfo);
+<b><a name="186">  186</a></b>     if (bulkkey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="187">  187</a></b>         return SECFailure;
+<b><a name="188">  188</a></b>     algid = <a href="../smime/cmscinfo.c.dep.html#NSS_CMSContentInfo_GetContentEncAlg">NSS_CMSContentInfo_GetContentEncAlg</a>(cinfo);
+<b><a name="189">  189</a></b>     if (algid == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="190">  190</a></b>         return SECFailure;
+<b><a name="191">  191</a></b> 
+<b><a name="192">  192</a></b>     /* this may modify algid (with IVs generated in a token).
+<b><a name="193">  193</a></b>      * it is therefore essential that algid is a pointer to the "real" contentEncAlg,
+<b><a name="194">  194</a></b>      * not just to a copy */
+<b><a name="195">  195</a></b>     cinfo-&gt;ciphcx = <a href="../smime/cmscipher.c.dep.html#NSS_CMSCipherContext_StartEncrypt">NSS_CMSCipherContext_StartEncrypt</a>(encd-&gt;cmsg-&gt;poolp, bulkkey, algid);
+<b><a name="196">  196</a></b>     <a href="../pk11wrap/pk11skey.c.dep.html#PK11_FreeSymKey">PK11_FreeSymKey</a>(bulkkey);
+<b><a name="197">  197</a></b>     if (cinfo-&gt;ciphcx == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="198">  198</a></b>         return SECFailure;
+<b><a name="199">  199</a></b> 
+<b><a name="200">  200</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="201">  201</a></b> }
+<b><a name="202">  202</a></b> 
+<b><a name="203">  203</a></b> /*
+<b><a name="204">  204</a></b>  * NSS_CMSEncryptedData_Encode_AfterData - finalize this encryptedData for encoding
+<b><a name="205">  205</a></b>  */
+<b><a name="206">  206</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="207">  207</a></b> <a href="#207">NSS_CMSEncryptedData_Encode_AfterData</a>(<a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a> *encd)
+<b><a name="208">  208</a></b> {
+<b><a name="209">  209</a></b>     if (encd-&gt;contentInfo.ciphcx) {
+<b><a name="210">  210</a></b>         <a href="../smime/cmscipher.c.dep.html#NSS_CMSCipherContext_Destroy">NSS_CMSCipherContext_Destroy</a>(encd-&gt;contentInfo.ciphcx);
+<b><a name="211">  211</a></b>         encd-&gt;contentInfo.ciphcx = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="212">  212</a></b>     }
+<b><a name="213">  213</a></b> 
+<b><a name="214">  214</a></b>     /* nothing to do after data */
+<b><a name="215">  215</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="216">  216</a></b> }
+<b><a name="217">  217</a></b> 
+<b><a name="218">  218</a></b> 
+<b><a name="219">  219</a></b> /*
+<b><a name="220">  220</a></b>  * NSS_CMSEncryptedData_Decode_BeforeData - find bulk key &amp; set up decryption
+<b><a name="221">  221</a></b>  */
+<b><a name="222">  222</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="223">  223</a></b> <a href="#223">NSS_CMSEncryptedData_Decode_BeforeData</a>(<a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a> *encd)
+<b><a name="224">  224</a></b> {
+<b><a name="225">  225</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *bulkkey = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="226">  226</a></b>     <a href="../smime/cmst.h.dep.html#NSSCMSContentInfo">NSSCMSContentInfo</a> *cinfo;
+<b><a name="227">  227</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *bulkalg;
+<b><a name="228">  228</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="229">  229</a></b> 
+<b><a name="230">  230</a></b>     cinfo = &amp;(encd-&gt;contentInfo);
+<b><a name="231">  231</a></b> 
+<b><a name="232">  232</a></b>     bulkalg = <a href="../smime/cmscinfo.c.dep.html#NSS_CMSContentInfo_GetContentEncAlg">NSS_CMSContentInfo_GetContentEncAlg</a>(cinfo);
+<b><a name="233">  233</a></b> 
+<b><a name="234">  234</a></b>     if (encd-&gt;cmsg-&gt;decrypt_key_cb == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)        /* no callback? no key../ */
+<b><a name="235">  235</a></b>         goto loser;
+<b><a name="236">  236</a></b> 
+<b><a name="237">  237</a></b>     bulkkey = (*encd-&gt;cmsg-&gt;decrypt_key_cb)(encd-&gt;cmsg-&gt;decrypt_key_cb_arg, bulkalg);
+<b><a name="238">  238</a></b>     if (bulkkey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="239">  239</a></b>         /* no success finding a bulk key */
+<b><a name="240">  240</a></b>         goto loser;
+<b><a name="241">  241</a></b> 
+<b><a name="242">  242</a></b>     <a href="../smime/cmscinfo.c.dep.html#NSS_CMSContentInfo_SetBulkKey">NSS_CMSContentInfo_SetBulkKey</a>(cinfo, bulkkey);
+<b><a name="243">  243</a></b> 
+<b><a name="244">  244</a></b>     cinfo-&gt;ciphcx = <a href="../smime/cmscipher.c.dep.html#NSS_CMSCipherContext_StartDecrypt">NSS_CMSCipherContext_StartDecrypt</a>(bulkkey, bulkalg);
+<b><a name="245">  245</a></b>     if (cinfo-&gt;ciphcx == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="246">  246</a></b>         goto loser;                /* error has been set by NSS_CMSCipherContext_StartDecrypt */
+<b><a name="247">  247</a></b> 
+<b><a name="248">  248</a></b> 
+<b><a name="249">  249</a></b>     /* we are done with (this) bulkkey now. */
+<b><a name="250">  250</a></b>     <a href="../pk11wrap/pk11skey.c.dep.html#PK11_FreeSymKey">PK11_FreeSymKey</a>(bulkkey);
+<b><a name="251">  251</a></b> 
+<b><a name="252">  252</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="253">  253</a></b> 
+<b><a name="254">  254</a></b> loser:
+<b><a name="255">  255</a></b>     return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="256">  256</a></b> }
+<b><a name="257">  257</a></b> 
+<b><a name="258">  258</a></b> /*
+<b><a name="259">  259</a></b>  * NSS_CMSEncryptedData_Decode_AfterData - finish decrypting this encryptedData's content
+<b><a name="260">  260</a></b>  */
+<b><a name="261">  261</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="262">  262</a></b> <a href="#262">NSS_CMSEncryptedData_Decode_AfterData</a>(<a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a> *encd)
+<b><a name="263">  263</a></b> {
+<b><a name="264">  264</a></b>     if (encd-&gt;contentInfo.ciphcx) {
+<b><a name="265">  265</a></b>         <a href="../smime/cmscipher.c.dep.html#NSS_CMSCipherContext_Destroy">NSS_CMSCipherContext_Destroy</a>(encd-&gt;contentInfo.ciphcx);
+<b><a name="266">  266</a></b>         encd-&gt;contentInfo.ciphcx = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="267">  267</a></b>     }
+<b><a name="268">  268</a></b> 
+<b><a name="269">  269</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="270">  270</a></b> }
+<b><a name="271">  271</a></b> 
+<b><a name="272">  272</a></b> /*
+<b><a name="273">  273</a></b>  * NSS_CMSEncryptedData_Decode_AfterEnd - finish decoding this encryptedData
+<b><a name="274">  274</a></b>  */
+<b><a name="275">  275</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="276">  276</a></b> <a href="#276">NSS_CMSEncryptedData_Decode_AfterEnd</a>(<a href="../smime/cmst.h.dep.html#NSSCMSEncryptedData">NSSCMSEncryptedData</a> *encd)
+<b><a name="277">  277</a></b> {
+<b><a name="278">  278</a></b>     /* apply final touches */
+<b><a name="279">  279</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="280">  280</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,126 @@
+<?php
+
+$html_title = 'Trust in Stan';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<br>
+<h2>Defining Trust in Stan</h2>
+<br>
+Let's being with where we are today.&nbsp; Trust is currently defined by
+<code>CERTCertTrust</code>:<br>
+<br>
+<code>struct CERTCertTrustStr {<br>
+&nbsp;&nbsp;&nbsp; unsigned int sslFlags;<br>
+&nbsp;&nbsp;&nbsp; unsigned int emailFlags;<br>
+&nbsp;&nbsp;&nbsp; unsigned int objectSigningFlags;<br>
+};</code><br>
+<br>
+The integer fields are bit masks of the following values:<br>
+<br>
+/<code>* common flags for all types of certificates */<br>
+#define CERTDB_VALID_PEER&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;(1&lt;&lt;0)<br>
+#define CERTDB_TRUSTED&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+(1&lt;&lt;1)<br>
+#define CERTDB_SEND_WARN&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; (1&lt;&lt;2)<br>
+#define CERTDB_VALID_CA&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp;(1&lt;&lt;3)<br>
+#define CERTDB_TRUSTED_CA&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;(1&lt;&lt;4)
+/* trusted for issuing server certs */<br>
+#define CERTDB_NS_TRUSTED_CA&nbsp;&nbsp; &nbsp; &nbsp; (1&lt;&lt;5)<br>
+#define CERTDB_USER&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp;(1&lt;&lt;6)<br>
+#define CERTDB_TRUSTED_CLIENT_CA &nbsp; (1&lt;&lt;7) /* trusted for issuing
+client certs */<br>
+#define CERTDB_INVISIBLE_CA&nbsp;&nbsp; &nbsp; &nbsp; &nbsp;(1&lt;&lt;8)
+/* don't show in UI */<br>
+#define CERTDB_GOVT_APPROVED_CA&nbsp;&nbsp; &nbsp;(1&lt;&lt;9) /* can do
+strong crypto in export ver */<br>
+</code><br>
+In NSS 3.4+, we moved trust under PKCS#11.&nbsp; This required defining PKCS#11
+attributes that could match our legacy trust defines.&nbsp; The following
+are defined in Netscape's PKCS#11 vendor space:<br>
+<br>
+<code>/* If trust goes standard, these'll probably drop out of vendor space.
+*/<br>
+#define CKT_NETSCAPE_TRUSTED&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(CKT_NETSCAPE + 1)<br>
+#define CKT_NETSCAPE_TRUSTED_DELEGATOR&nbsp; (CKT_NETSCAPE + 2)<br>
+#define CKT_NETSCAPE_UNTRUSTED&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(CKT_NETSCAPE + 3)<br>
+#define CKT_NETSCAPE_MUST_VERIFY&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(CKT_NETSCAPE + 4)<br>
+#define CKT_NETSCAPE_TRUST_UNKNOWN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (CKT_NETSCAPE
++ 5) /* default */<br>
+/* <br>
+&nbsp;* These may well remain Netscape-specific; I'm only using them<br>
+&nbsp;* to cache resolution data.<br>
+&nbsp;*/<br>
+#define CKT_NETSCAPE_VALID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(CKT_NETSCAPE + 10)<br>
+#define CKT_NETSCAPE_VALID_DELEGATOR&nbsp;&nbsp;&nbsp; (CKT_NETSCAPE + 11)<br>
+<br>
+</code><br>
+The NSS 3.4+ trust object is defined as follows, with <code>nssTrustLevel</code>
+taken from the values above.<br>
+<br>
+<code>struct nssTrustStr <br>
+{<br>
+&nbsp;&nbsp;&nbsp; nssPKIObject object;<br>
+&nbsp;&nbsp;&nbsp; NSSCertificate *certificate;<br>
+&nbsp;&nbsp;&nbsp; nssTrustLevel serverAuth;<br>
+&nbsp;&nbsp;&nbsp; nssTrustLevel clientAuth;<br>
+&nbsp;&nbsp;&nbsp; nssTrustLevel emailProtection;<br>
+&nbsp;&nbsp;&nbsp; nssTrustLevel codeSigning;<br>
+};</code><br>
+<br>
+Where does that leave us?&nbsp; The trust bits map this way:<br>
+<br>
+<pre>NSS 3.3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NSS 3.4+</pre>
+<pre>---&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CKT_NETSCAPE_TRUST_UNKNOWN<br>---&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CKT_NETSCAPE_MUST_VERIFY<br>(0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CKT_NETSCAPE_UNTRUSTED<br>CERTDB_VALID_PEER&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CKT_NETSCAPE_VALID<br>CERTDB_TRUSTED&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CKT_NETSCAPE_TRUSTED<br>CERTDB_SEND_WARN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ---<br>CERTDB_VALID_CA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CKT_NETSCAPE_VALID_DELEGATOR<br>CERTDB_TRUSTED_CA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CKT_NETSCAPE_TRUSTED_DELEGATOR (serverAuth)<br>CERTDB_NS_TRUSTED_CA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CKT_NETSCAPE_TRUSTED_DELEGATOR<br>CERTDB_USER&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ---<br>CERTDB_TRUSTED_CLIENT_CA&nbsp;&nbsp;&nbsp; CKT_NETSCAPE_TRUSTED_DELEGATOR (clientAuth)<br>CERTDB_INVISIBLE_CA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ---<br>CERTDB_GOVT_APPROVED_CA&nbsp;&nbsp;&nbsp;&nbsp; ---</pre>
+<br>
+AFAIK, <code>CERTDB_INVISIBLE_CA</code> and <code>CERTDB_GOVT_APPROVED_CA</code>
+have been safely deprecated.&nbsp; <code>CERTDB_USER</code> should have never
+been a trust bit - a cert is a user certificate if the private key is available.&nbsp;
+In Stan, this is even a separate type, <code>NSSUserCertificate</code>.&nbsp;
+<code>CERTDB_SEND_WARN</code> has also disappeared.<br>
+<br>
+Valid trust was used to mark CA certificates which did not have the proper
+set of extensions to reveal them as a CA. &nbsp;For example, X509v1 certs.<br>
+<br>
+<h3>Proposal:</h3>
+<br>
+I propose that the only necessary trust values are "unknown" (defer to another
+token), "untrusted" (explicitly do not trust), and "trusted" (this cert is
+trusted for whatever its extensions allow).&nbsp; Additionally, we add a
+field to <code>nssTrust</code>, "signCertificates".&nbsp; The object <code>CK_TRUST</code>
+would have an additional attribute, <code>CKA_IS_DELEGATOR</code>. &nbsp;This
+boolean value would simply indicate whether NSS has marked this cert as a
+CA, not whether the cert is trusted for CA operations. &nbsp;This wouldn't
+distinguish between v1 SSL CA's and v1 S/MIME CA's, but is that problem we
+will encounter?<br>
+<br>
+Applications should not directly interact with trust objects, instead referencing
+them through their associated certificates.&nbsp; The following have been proposed,
+which I agree with:<br>
+<code><br>
+&nbsp;* Only these high-level general routines would be promoted to the<br>
+&nbsp;* general certificate level here.&nbsp; Hence the {xxx} below would
+be things<br>
+&nbsp;* like "EmailSigning."<br>
+<br>
+&nbsp;PRBool NSSCertificate_GetIsTrustedFor{xxx}(NSSCertificate *c);<br>
+&nbsp;PRStatus NSSCertificate_SetIsTrustedFor{xxx}(NSSCertificate *c, PRBool
+trusted);</code><br>
+<br>
+<br>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

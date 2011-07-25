@@ -1,0 +1,130 @@
+<?php
+
+$html_title = 'Certificate Cache Proposal';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+    <br>
+       
+<h2>Stan Certificate Cache Proposal</h2>
+    <br>
+    In NSS versions prior to NSS 3.4, the certificate "cache" was both a
+cache   and a storage facility for temporary certs.&nbsp; The cache consisted
+of  an in-memory DBM database.&nbsp; The entries of the database were exactly
+ like cert7.db: one matched certificateKey to certificate, the second matched
+ subject to set of certificateKeys, the third mapped nickname to subject,
+and the last mapped email address to subject.<br>
+    <br>
+    In order to do a lookup from a high-level index like nickname, one had
+ to  walk from nickname to subject to set of certKeys to set of certificates.<br>
+    <br>
+    In 3.4 and beyond, the certificate cache was split into a proper cache
+ and  a certificate store.&nbsp; The store was associated with NSSCryptoContext.&nbsp;
+  The cache became a PLHashTable.&nbsp; There four indices remained the same,
+  but subject and nickname entries became a list of certificates, and email
+  entries became a list of list of certificates (set of matching subjects).<br>
+    <br>
+    This design makes the assumption that certificate pointers are unique,
+and enforces this assumption.&nbsp;   It has the following drawbacks:<br>
+    <br>
+       
+<ol>
+      <li>When a cert is stored in the cache, it is propogated to all indices:
+  a reference is stored in the issuer/serial, subject, and nickname or email
+  address entries.</li>
+      <li>Certs stay in the cache until the last reference is freed.&nbsp;
+ Then  they leave the cache immediately, though they may be needed again
+right  away.&nbsp;  In this sense, the cache is still not a true cache.</li>
+      <li>The cache must be explictly kept consistent with token insertion
+ and  removal.</li>
+      <li>The cache can grow to an unlimited size.<br>
+      </li>
+       
+</ol>
+    <br>
+    <br>
+    Here are design ideas I have heard for the Stan cache:<br>
+    <br>
+       
+<ul>
+      <li>It should be a true fixed-size cache, preferably something using
+ an  LRU scheme.</li>
+      <li>It should cache searches, not just certs.&nbsp; That is, it should
+  remember if a search has been performed, and return the result of that
+search.&nbsp;   The caller can test whether the reply is up-to-date, and
+if so, avoid actually   going out to tokens to perform searches.&nbsp; This
+would avoid costly database   lookups for common searches.<br>
+      </li>
+       
+</ul>
+    <br>
+    <br>
+    With that in mind, I propose the following:<br>
+    <br>
+       
+<ol>
+      <li>The cache still consists of four mappings.&nbsp; Each of these
+mappings   is a separate LRU.&nbsp; The mappings are independent of one another.&nbsp;
+  They are:                 
+    <ul>
+        <li>issuer/serial --&gt; certificate</li>
+        <li>subject --&gt; array of certificates</li>
+        <li>nickname --&gt; array of certificates</li>
+        <li>email --&gt; array of certificates</li>
+                   
+    </ul>
+      By independent, I mean that a cert that was stored in the cache by
+ subject will <u>only</u> be stored in the subject cache.<br>
+     <br>
+   </li>
+      <li>What is stored is the result of a search, whether there are any 
+certs  or not.&nbsp; In pseudocode:<br>
+    <br>
+   <code>&nbsp; certs = find_subject_certs_in_cache(cache, subject);<br>
+    &nbsp; if (up_to_date(certs)) {<br>
+    &nbsp;&nbsp;&nbsp; return certs;<br>
+    &nbsp; }<br>
+    &nbsp; certs = find_subject_certs_on_tokens(tokens, subject);<br>
+    &nbsp; add_subject_certs_to_cache(certs);<br>
+    &nbsp; return certs;<br>
+    </code><br>
+  Even if certs is NULL after the token search, the result is cached.&nbsp;
+  The next time the search is performed, the reply comes from the cache.&nbsp;
+  No tokens are involved.<br>
+     <br>
+   </li>
+    <li>Cache entries are kept "up-to-date" with respect to token events.&nbsp;
+  An entry in the cache can go stale if:        
+    <ul>
+      <li>a cert is deleted from a token</li>
+      <li>a cert is imported to a token</li>
+      <li>a token is removed</li>
+      <li>a token is inserted</li>
+         
+    </ul>
+    Handling the first two events is straightforward, the cache is notified 
+of the event.&nbsp;  Handling the last two events would be done via a series 
+counter.&nbsp; Every time  a token is removed or inserted, the series counter 
+is incremented.&nbsp; When entries are put into the cache, they are given 
+the value of the series counter at the time of the search.&nbsp; The cache's 
+response is considered valid as long as that value matches the current counter. 
+&nbsp;For a system that uses no removable devices, the series counter would 
+always  be 1, and the cache responses would always be correct.<br>
+     <br>
+   </li>
+   <li>Using an LRU scheme means that certificate pointers are no longer
+ unique.&nbsp; NSS must no longer rely on this assumption.<br>
+       </li>
+</ol>
+     
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,164 @@
+<?php
+
+$html_title = 'Keyboard Feature: Find As You Type';
+$page_title = 'Find As You Type';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="DC.author" content="Aaron Leventhal">
+<meta name="DC.creator" content="Aaron Leventhal">
+<meta name="DC.title" content="Mozilla Keyboard Feature: Find As You Type">
+<meta name="DC.subject" content="Mozilla Keyboard Feature: Find As You Type">
+<meta name="DC.date.created" content="2004-09-08T19:50:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2006-08-07T02:46:03+11:00" scheme="W3CDTF">
+<link rel="top" href="../../" title="Home of the Mozilla project">
+<link rel="up" href="../" title="Back to Mozilla Accessibility project">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<p>Find As You Type (formerly called Type Ahead Find) is a feature that allows
+quick web page navigation when you type a succession of characters in the body
+of the displayed page (not in an edit box of or drop down list). The coding of
+Find As You Type was contributed to Mozilla by Netscape Corporation.</p>
+
+<h2>Features</h2>
+<ul>
+  <li>Type several characters into the active browser window to navigate to any
+link with that text in it</li>
+  <li>If you repeat the same character, it will start to cycle through
+all the links that begin with that character. However, if it can find a
+match with the exact string you've typed, such as "oo" in "woods" it will
+go there first. Typing "o" more times will then cycle through the links that
+start with "o".</li>
+  <li>Use the backspace key to undo the last character typed</li>
+  <li>Type a ' before your string to search only links. Type / before
+your string to search all text.</li>
+  <li>You can use the text search field to get to buttons, text boxes and other
+form controls. Just search for the text right before it, and then press Tab when
+to move from there.</li>
+  <li>To cancel a find, change focus or scroll, press Escape, or wait
+for the timeout</li>
+  <li>Press Accel+G or F3 to use "find next". Press Accel+Shift+G or
+Shift+F3 to find previous, with the current string you've typed. This respects
+the current "linksonly" setting. Note: 'accel' means Ctrl on Windows, and Cmd
+on Mac. On Unix, 'accel' usually means Ctrl, but it can be set to Alt.</li>
+  <li>Works with any Gecko HTML content window - embedded clients, IM
+conversation window, help, etc.</li>
+  <li>works with IME for input of Chinese, Japanese, Korean, etc.</li>
+  <li>When focused on a link, the following keys will work:
+  <ul>
+     <li>Enter - activate the link</li>
+     <li>Shift+Enter - save the page that the link points to</li>
+     <li>Ctrl+Enter (Cmd+Enter on Mac) - open the link in a new window</li>
+     <li>Insert - open the link in a new foreground or background tab, depending
+on the "Load links in the background" pref. under Preferences - Navigator -
+Tabbed Browsing.</li>
+     <li>Shift+Insert - same as Insert, but does the opposite of the
+foreground/background pref</li>
+  </ul>
+  </li>
+</ul>
+
+<h2>Deactivating it</h2>
+
+<p>Find As You Type is currently part of the default install. To turn
+it off, use:<br><br>
+user_pref <kbd>("accessibility.typeaheadfind", false);</kbd></p>
+
+<p>Or, to remove it completely, find all files in your installation subdirectories
+that match *typeaheadfind*, and delete those files.</p>
+
+<h2>Reactivating it</h2>
+
+<p>To turn it back on, use:<br><br>
+user_pref <kbd>("accessibility.typeaheadfind", true);</kbd></p>
+
+<h2>Settings</h2>
+<p>There is a new Keyboard Navigation preferences panel, under Preferences -
+Advanced. It contains a few Find As You Type Preferences, such as startup options,
+and whether the timeout or sound should be enabled.</p>
+
+<p>If you want to fine tune your settings by hand, Find As You Type uses the following prefs as defaults, which
+can be changed in your prefs.js file:</p>
+
+<p><kbd>user_pref("accessibility.typeaheadfind.autostart", true); // If true, just typing can automatically start Find As You Type. If false, you must hit / (find text) or ' (find links) before your search</kbd>
+<br><br>
+    <kbd>user_pref("accessibility.typeaheadfind.linksonly", true);
+   // If true, defaults to linksonly as user starts typing. User can override
+it by pressing / for all text, or ' for links only<br>
+     </kbd> <kbd><br>
+user_pref("accessibility.typeaheadfind.startlinksonly", false);&nbsp;&nbsp;&nbsp;
+// If true, matches only to the start of links when searching only for links</kbd><br>
+     <br>
+     <kbd>user_pref("accessibility.typeaheadfind.timeout", 3000); // if
+&gt; 0, # of milliseconds since user last typed, before the find is cancelled.</kbd><br>
+     <br>
+     <kbd>user_pref("ui.textSelectBackgroundAttention", "#rrggbb"); // where
+rrggbb is the hex color you want for found text.</kbd>    <br><br>
+     <kbd>user_pref("accessibility.typeaheadfind.enablesound", false); // error sound on? (it is currently off by default for Linux/Unix, on by default for other platforms)</kbd>
+<br><br>
+<kbd>user_pref("accessibility.typeaheadfind.soundURL", "filename"); // Specify your own wav file for the error sound, or use the string "default" for the default sound or "beep" for the system beep</kbd>
+</p>
+
+<h2>How it works</h2>
+<p>The source is checked into <a href="http://lxr.mozilla.org/seamonkey/source/extensions/typeaheadfind/">mozilla/extensions/typeaheadfind</a></p>
+<p>Basically when it gets initialized as a component, it starts listening
+for domwindowopened events via nsIWindowWatcher, and attaches a keypress
+listeners to these windows. Whenever a keypress occurs in a new window, it
+checks to see if Find As You Type should auto-activate in that window (that
+is, if it's not an editor or mailnews window, etc.).</p>
+<p>If autostart is disabled (when / or ' are required to start typeaheadfind),
+it receives the command through the nsICommand interface. The commands are
+specified in htmlBindings.xml</p>
+<p>After that, it simply keeps track of the characters typed and uses
+the low level nsIFind interface to see if it can find that text. It actually
+does this twice for a page, so that it can prefer text that's visible on
+the page.</p>
+
+<h2>TypeAheadFind for Embeddors</h2>
+<p>TypeAheadFind is now an option for embeddors (as of September 28,
+2002).</p>
+<ol>
+  <li>Find the file called <kbd>mozilla/embedding/config/basebrowser-[yourplatformname]</kbd>
+and uncomment the 2 lines that list files (a binary file and an <kbd>.xpt</kbd>
+file).</li>
+  <li>cd <kbd>mozilla/embedding/config</kbd></li>
+  <li><kbd>make</kbd></li>
+</ol>
+<p>You should now have typeaheadfind enabled in your <kbd>dist/Embed</kbd>
+directory.</p>
+
+<h2>To Be Done</h2>
+
+<ul>
+  <li>Have it be able to search button text, as well as alt/title text
+on tooltips for images and objects -- the tooltip would popup with found
+text highlighted. This is <a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=158757" title="Status: NEW; Target: Future">bug 158757: Make type ahead find work with button and image labels</a>.</li>
+  <li>Change dotted focus outline to something more visible. See <a
+ href="https://bugzilla.mozilla.org/show_bug.cgi?id=53927" title="Status: NEW; Target: Future">bug 53927: Focus outlines (ring) should look like Mac focus outlines on Mac OS</a> and <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=151375" title="Status: RESOLVED FIXED" style="text-decoration: line-through;">bug 151375: focus outline should be drawn outside of element</a>.</li>
+</ul>
+
+<h2>We Like Feedback</h2>
+
+<h3>Requests for Enhancement, Bug Reports</h3>
+<p>Please create a <a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Core">Bugzilla bug report</a>,
+under the Component "Keyboard: Find as you Type".</p>
+
+<h3>Testing</h3>
+<p>Try out our Find As You Type tests, and report any problems you see! Visit the
+<a href="testing">Find As You Type - QA Page</a>.</p>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

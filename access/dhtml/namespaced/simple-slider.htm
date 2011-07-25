@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="http://www.w3.org/StyleSheets/TR/base"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:role="http://www.w3.org/2005/01/wai-rdf/GUIRoleTaxonomy#"
+      xmlns:aaa="http://www.w3.org/2005/07/aaa">
+<head>
+<title>DHTML Slider</title>
+<script>
+<![CDATA[
+function displaySlider(slider)
+{
+  var valueNow = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow"));
+  var valueMin = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemin"));
+  var valueMax = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemax"));
+
+  // I'm sure there's something better than using a loop, but I don't feel like looking it up right now
+  var sliderText = "(";
+  for (var count = valueMin; count < valueNow; count ++) {
+    sliderText += "-";
+  }
+  sliderText += "|";
+  for (var count = valueNow; count < valueMax; count ++) {
+    sliderText += "-";
+  }
+  sliderText += ")";
+  slider.firstChild.data = sliderText;
+  return false;
+}
+
+function handleSliderKey(slider, event)
+{
+  var valueNow = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow"));
+  var valueMin = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemin"));
+  var valueMax = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemax"));
+  var delta = 0;
+  if (event.keyCode == event.DOM_VK_LEFT) {
+    delta = -5;
+  }
+  else if (event.keyCode == event.DOM_VK_RIGHT) {
+    delta = 5;
+  }
+  else if (event.keyCode == event.DOM_VK_HOME) {
+    delta = -( valueNow - valueMin );
+  }
+  else if (event.keyCode == event.DOM_VK_END) {
+    delta = valueMax - valueNow
+  }
+  else {
+    return true;
+  }
+
+  valueNow += delta;
+  if (valueNow < valueMin) {
+    valueNow = valueMin;
+  }
+  if (valueNow > valueMax) {
+    valueNow = valueMax;
+  }
+  slider.setAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow", valueNow);
+
+  displaySlider(slider);
+}
+]]>
+</script>
+</head>
+
+<body onload="displaySlider(document.getElementById('slider1'));">
+  <p>Here's a slider that you can focus and modify using left/right/home/end. It's not pretty, this is just here to show what's basically possible. It can also be made to look like a desktop slider by using positioned images.</p>
+
+  0
+  <span tabindex="0" role="role:slider" aaa:valuenow="33" aaa:valuemin="0" aaa:valuemax="50"
+                     id="slider1" title="My slider" onkeypress="return handleSliderKey(this, event)">
+    --
+  </span>
+  100
+</body>
+</html>

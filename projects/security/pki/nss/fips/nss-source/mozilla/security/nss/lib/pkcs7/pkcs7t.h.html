@@ -1,0 +1,317 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> /*
+<b><a name="38">   38</a></b>  * Header for pkcs7 types.
+<b><a name="39">   39</a></b>  *
+<b><a name="40">   40</a></b>  * $Id$
+<b><a name="41">   41</a></b>  */
+<b><a name="42">   42</a></b> 
+<b><a name="43">   43</a></b> #ifndef <a href="../pkcs7/pkcs7t.h.dep.html#_PKCS7T_H_">_PKCS7T_H_</a>
+<b><a name="44">   44</a></b> #define <a href="#44">_PKCS7T_H_</a>
+<b><a name="45">   45</a></b> 
+<b><a name="46">   46</a></b> #include "plarena.h"
+<b><a name="47">   47</a></b> 
+<b><a name="48">   48</a></b> #include "seccomon.h"
+<b><a name="49">   49</a></b> #include "secoidt.h"
+<b><a name="50">   50</a></b> #include "certt.h"
+<b><a name="51">   51</a></b> #include "secmodt.h"
+<b><a name="52">   52</a></b> 
+<b><a name="53">   53</a></b> /* Opaque objects */
+<b><a name="54">   54</a></b> typedef struct <a href="../pkcs7/p7decode.c.dep.html#<a href="#54">SEC_PKCS7DecoderContext</a>Str">SEC_PKCS7DecoderContextStr</a> SEC_PKCS7DecoderContext;
+<b><a name="55">   55</a></b> typedef struct <a href="#55">SEC_PKCS7EncoderContext</a>Str SEC_PKCS7EncoderContext;
+<b><a name="56">   56</a></b> 
+<b><a name="57">   57</a></b> /* legacy defines that haven't been active for years */
+<b><a name="58">   58</a></b> typedef void *(*<a href="#58">SECKEYGetPasswordKey</a>)(void *arg, void *handle);
+<b><a name="59">   59</a></b> 
+<b><a name="60">   60</a></b> 
+<b><a name="61">   61</a></b> /* Non-opaque objects.  NOTE, though: I want them to be treated as
+<b><a name="62">   62</a></b>  * opaque as much as possible.  If I could hide them completely,
+<b><a name="63">   63</a></b>  * I would.  (I tried, but ran into trouble that was taking me too
+<b><a name="64">   64</a></b>  * much time to get out of.)  I still intend to try to do so.
+<b><a name="65">   65</a></b>  * In fact, the only type that "outsiders" should even *name* is
+<b><a name="66">   66</a></b>  * SEC_PKCS7ContentInfo, and they should not reference its fields.
+<b><a name="67">   67</a></b>  */
+<b><a name="68">   68</a></b> /* rjr: PKCS #11 cert handling (pk11cert.c) does use SEC_PKCS7RecipientInfo's.
+<b><a name="69">   69</a></b>  * This is because when we search the recipient list for the cert and key we
+<b><a name="70">   70</a></b>  * want, we need to invert the order of the loops we used to have. The old
+<b><a name="71">   71</a></b>  * loops were:
+<b><a name="72">   72</a></b>  *
+<b><a name="73">   73</a></b>  *  For each recipient {
+<b><a name="74">   74</a></b>  *       find_cert = PK11_Find_AllCert(recipient-&gt;issuerSN);
+<b><a name="75">   75</a></b>  *       [which unrolls to... ]
+<b><a name="76">   76</a></b>  *       For each slot {
+<b><a name="77">   77</a></b>  *            Log into slot;
+<b><a name="78">   78</a></b>  *            search slot for cert;
+<b><a name="79">   79</a></b>  *      }
+<b><a name="80">   80</a></b>  *  }
+<b><a name="81">   81</a></b>  *
+<b><a name="82">   82</a></b>  *  the new loop searchs all the recipients at once on a slot. this allows
+<b><a name="83">   83</a></b>  *  PKCS #11 to order slots in such a way that logout slots don't get checked
+<b><a name="84">   84</a></b>  *  if we can find the cert on a logged in slot. This eliminates lots of
+<b><a name="85">   85</a></b>  *  spurious password prompts when smart cards are installed... so why this
+<b><a name="86">   86</a></b>  *  comment? If you make SEC_PKCS7RecipientInfo completely opaque, you need
+<b><a name="87">   87</a></b>  *  to provide a non-opaque list of issuerSN's (the only field PKCS#11 needs
+<b><a name="88">   88</a></b>  *  and fix up pk11cert.c first. NOTE: Only S/MIME calls this special PKCS #11
+<b><a name="89">   89</a></b>  *  function.
+<b><a name="90">   90</a></b>  */
+<b><a name="91">   91</a></b> typedef struct <a href="#91">SEC_PKCS7ContentInfo</a>Str SEC_PKCS7ContentInfo;
+<b><a name="92">   92</a></b> typedef struct <a href="../pkcs7/pkcs7t.h.dep.html#<a href="#92">SEC_PKCS7SignedData</a>Str">SEC_PKCS7SignedDataStr</a> SEC_PKCS7SignedData;
+<b><a name="93">   93</a></b> typedef struct <a href="#93">SEC_PKCS7EncryptedContentInfo</a>Str SEC_PKCS7EncryptedContentInfo;
+<b><a name="94">   94</a></b> typedef struct <a href="../pkcs7/pkcs7t.h.dep.html#<a href="#94">SEC_PKCS7EnvelopedData</a>Str">SEC_PKCS7EnvelopedDataStr</a> SEC_PKCS7EnvelopedData;
+<b><a name="95">   95</a></b> typedef struct <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7SignedAndEnvelopedDataStr">SEC_PKCS7SignedAndEnvelopedDataStr</a>
+<b><a name="96">   96</a></b>                 <a href="#96">SEC_PKCS7SignedAndEnvelopedData</a>;
+<b><a name="97">   97</a></b> typedef struct <a href="../pkcs7/pkcs7t.h.dep.html#<a href="#97">SEC_PKCS7SignerInfo</a>Str">SEC_PKCS7SignerInfoStr</a> SEC_PKCS7SignerInfo;
+<b><a name="98">   98</a></b> typedef struct <a href="../pkcs7/pkcs7t.h.dep.html#<a href="#98">SEC_PKCS7RecipientInfo</a>Str">SEC_PKCS7RecipientInfoStr</a> SEC_PKCS7RecipientInfo;
+<b><a name="99">   99</a></b> typedef struct <a href="#99">SEC_PKCS7DigestedData</a>Str SEC_PKCS7DigestedData;
+<b><a name="100">  100</a></b> typedef struct <a href="../pkcs7/pkcs7t.h.dep.html#<a href="#100">SEC_PKCS7EncryptedData</a>Str">SEC_PKCS7EncryptedDataStr</a> SEC_PKCS7EncryptedData;
+<b><a name="101">  101</a></b> typedef struct <a href="#101">SEC_PKCS7SMIMEKEAParameters</a>Str SEC_PKCS7SMIMEKEAParameters;
+<b><a name="102">  102</a></b> /*
+<b><a name="103">  103</a></b>  * The following is not actually a PKCS7 type, but for now it is only
+<b><a name="104">  104</a></b>  * used by PKCS7, so we have adopted it.  If someone else *ever* needs
+<b><a name="105">  105</a></b>  * it, its name should be changed and it should be moved out of here.
+<b><a name="106">  106</a></b>  * Do not dare to use it without doing so!
+<b><a name="107">  107</a></b>  */
+<b><a name="108">  108</a></b> typedef struct <a href="#108">SEC_PKCS7Attribute</a>Str SEC_PKCS7Attribute;
+<b><a name="109">  109</a></b> 
+<b><a name="110">  110</a></b> struct <a href="#110">SEC_PKCS7ContentInfoStr</a> {
+<b><a name="111">  111</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *poolp;                        /* local; not part of encoding */
+<b><a name="112">  112</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> created;                        /* local; not part of encoding */
+<b><a name="113">  113</a></b>     int refCount;                        /* local; not part of encoding */
+<b><a name="114">  114</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a> *contentTypeTag;                /* local; not part of encoding */
+<b><a name="115">  115</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SECKEYGetPasswordKey">SECKEYGetPasswordKey</a> pwfn;                /* local; not part of encoding */
+<b><a name="116">  116</a></b>     void *pwfn_arg;                        /* local; not part of encoding */
+<b><a name="117">  117</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> contentType;
+<b><a name="118">  118</a></b>     union {
+<b><a name="119">  119</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>                                *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;
+<b><a name="120">  120</a></b>         <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7DigestedData">SEC_PKCS7DigestedData</a>                *digestedData;
+<b><a name="121">  121</a></b>         <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7EncryptedData">SEC_PKCS7EncryptedData</a>                *encryptedData;
+<b><a name="122">  122</a></b>         <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7EnvelopedData">SEC_PKCS7EnvelopedData</a>                *envelopedData;
+<b><a name="123">  123</a></b>         <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7SignedData">SEC_PKCS7SignedData</a>                *signedData;
+<b><a name="124">  124</a></b>         <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7SignedAndEnvelopedData">SEC_PKCS7SignedAndEnvelopedData</a>        *signedAndEnvelopedData;
+<b><a name="125">  125</a></b>     } content;
+<b><a name="126">  126</a></b> };
+<b><a name="127">  127</a></b> 
+<b><a name="128">  128</a></b> struct <a href="#128">SEC_PKCS7SignedDataStr</a> {
+<b><a name="129">  129</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>;
+<b><a name="130">  130</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> **digestAlgorithms;
+<b><a name="131">  131</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7ContentInfo">SEC_PKCS7ContentInfo</a> contentInfo;
+<b><a name="132">  132</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> **rawCerts;
+<b><a name="133">  133</a></b>     <a href="../certdb/certt.h.dep.html#CERTSignedCrl">CERTSignedCrl</a> **crls;
+<b><a name="134">  134</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7SignerInfo">SEC_PKCS7SignerInfo</a> **signerInfos;
+<b><a name="135">  135</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> **digests;                        /* local; not part of encoding */
+<b><a name="136">  136</a></b>     <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a> **certs;                /* local; not part of encoding */
+<b><a name="137">  137</a></b>     <a href="../certdb/certt.h.dep.html#CERTCertificateList">CERTCertificateList</a> **certLists;        /* local; not part of encoding */
+<b><a name="138">  138</a></b> };
+<b><a name="139">  139</a></b> #define <a href="#139">SEC_PKCS7_SIGNED_DATA_VERSION</a>                1        /* what we *create* */
+<b><a name="140">  140</a></b> 
+<b><a name="141">  141</a></b> struct <a href="#141">SEC_PKCS7EncryptedContentInfoStr</a> {
+<b><a name="142">  142</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a> *contentTypeTag;                /* local; not part of encoding */
+<b><a name="143">  143</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> contentType;
+<b><a name="144">  144</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> contentEncAlg;
+<b><a name="145">  145</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> encContent;
+<b><a name="146">  146</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> plainContent;                /* local; not part of encoding */
+<b><a name="147">  147</a></b>                                         /* bytes not encrypted, but encoded */
+<b><a name="148">  148</a></b>     int <a href="../mozilla/security/nss/cmd/bltest/blapitest.c.dep.html#keysize">keysize</a>;                        /* local; not part of encoding */
+<b><a name="149">  149</a></b>                                         /* size of bulk encryption key
+<b><a name="150">  150</a></b>                                          * (only used by creation code) */
+<b><a name="151">  151</a></b>     <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> encalg;                        /* local; not part of encoding */
+<b><a name="152">  152</a></b>                                         /* oid tag of encryption algorithm
+<b><a name="153">  153</a></b>                                          * (only used by creation code) */
+<b><a name="154">  154</a></b> };
+<b><a name="155">  155</a></b> 
+<b><a name="156">  156</a></b> struct <a href="#156">SEC_PKCS7EnvelopedDataStr</a> {
+<b><a name="157">  157</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>;
+<b><a name="158">  158</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7RecipientInfo">SEC_PKCS7RecipientInfo</a> **recipientInfos;
+<b><a name="159">  159</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7EncryptedContentInfo">SEC_PKCS7EncryptedContentInfo</a> encContentInfo;
+<b><a name="160">  160</a></b> };
+<b><a name="161">  161</a></b> #define <a href="#161">SEC_PKCS7_ENVELOPED_DATA_VERSION</a>        0        /* what we *create* */
+<b><a name="162">  162</a></b> 
+<b><a name="163">  163</a></b> struct <a href="#163">SEC_PKCS7SignedAndEnvelopedDataStr</a> {
+<b><a name="164">  164</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>;
+<b><a name="165">  165</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7RecipientInfo">SEC_PKCS7RecipientInfo</a> **recipientInfos;
+<b><a name="166">  166</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> **digestAlgorithms;
+<b><a name="167">  167</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7EncryptedContentInfo">SEC_PKCS7EncryptedContentInfo</a> encContentInfo;
+<b><a name="168">  168</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> **rawCerts;
+<b><a name="169">  169</a></b>     <a href="../certdb/certt.h.dep.html#CERTSignedCrl">CERTSignedCrl</a> **crls;
+<b><a name="170">  170</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7SignerInfo">SEC_PKCS7SignerInfo</a> **signerInfos;
+<b><a name="171">  171</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> **digests;                        /* local; not part of encoding */
+<b><a name="172">  172</a></b>     <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a> **certs;                /* local; not part of encoding */
+<b><a name="173">  173</a></b>     <a href="../certdb/certt.h.dep.html#CERTCertificateList">CERTCertificateList</a> **certLists;        /* local; not part of encoding */
+<b><a name="174">  174</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *sigKey;                        /* local; not part of encoding */
+<b><a name="175">  175</a></b> };
+<b><a name="176">  176</a></b> #define <a href="#176">SEC_PKCS7_SIGNED_AND_ENVELOPED_DATA_VERSION</a> 1        /* what we *create* */
+<b><a name="177">  177</a></b> 
+<b><a name="178">  178</a></b> struct <a href="#178">SEC_PKCS7SignerInfoStr</a> {
+<b><a name="179">  179</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>;
+<b><a name="180">  180</a></b>     <a href="../certdb/certt.h.dep.html#CERTIssuerAndSN">CERTIssuerAndSN</a> *issuerAndSN;
+<b><a name="181">  181</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> digestAlg;
+<b><a name="182">  182</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7Attribute">SEC_PKCS7Attribute</a> **authAttr;
+<b><a name="183">  183</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> digestEncAlg;
+<b><a name="184">  184</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> encDigest;
+<b><a name="185">  185</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7Attribute">SEC_PKCS7Attribute</a> **unAuthAttr;
+<b><a name="186">  186</a></b>     <a href="../<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>db/<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>t.h.dep.html#CERTCertificate">CERTCertificate</a> *<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>;                /* local; not part of encoding */
+<b><a name="187">  187</a></b>     <a href="../certdb/certt.h.dep.html#CERTCertificateList">CERTCertificateList</a> *certList;        /* local; not part of encoding */
+<b><a name="188">  188</a></b> };
+<b><a name="189">  189</a></b> #define <a href="#189">SEC_PKCS7_SIGNER_INFO_VERSION</a>                1        /* what we *create* */
+<b><a name="190">  190</a></b> 
+<b><a name="191">  191</a></b> struct <a href="#191">SEC_PKCS7RecipientInfoStr</a> {
+<b><a name="192">  192</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>;
+<b><a name="193">  193</a></b>     <a href="../certdb/certt.h.dep.html#CERTIssuerAndSN">CERTIssuerAndSN</a> *issuerAndSN;
+<b><a name="194">  194</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> keyEncAlg;
+<b><a name="195">  195</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> encKey;
+<b><a name="196">  196</a></b>     <a href="../<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>db/<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>t.h.dep.html#CERTCertificate">CERTCertificate</a> *<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>;                /* local; not part of encoding */
+<b><a name="197">  197</a></b> };
+<b><a name="198">  198</a></b> #define <a href="#198">SEC_PKCS7_RECIPIENT_INFO_VERSION</a>        0        /* what we *create* */
+<b><a name="199">  199</a></b> 
+<b><a name="200">  200</a></b> struct <a href="#200">SEC_PKCS7DigestedDataStr</a> {
+<b><a name="201">  201</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>;
+<b><a name="202">  202</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> digestAlg;
+<b><a name="203">  203</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7ContentInfo">SEC_PKCS7ContentInfo</a> contentInfo;
+<b><a name="204">  204</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> digest;
+<b><a name="205">  205</a></b> };
+<b><a name="206">  206</a></b> #define <a href="#206">SEC_PKCS7_DIGESTED_DATA_VERSION</a>                0        /* what we *create* */
+<b><a name="207">  207</a></b> 
+<b><a name="208">  208</a></b> struct <a href="#208">SEC_PKCS7EncryptedDataStr</a> {
+<b><a name="209">  209</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>;
+<b><a name="210">  210</a></b>     <a href="../pkcs7/pkcs7t.h.dep.html#SEC_PKCS7EncryptedContentInfo">SEC_PKCS7EncryptedContentInfo</a> encContentInfo;
+<b><a name="211">  211</a></b> };
+<b><a name="212">  212</a></b> #define <a href="#212">SEC_PKCS7_ENCRYPTED_DATA_VERSION</a>        0        /* what we *create* */
+<b><a name="213">  213</a></b> 
+<b><a name="214">  214</a></b> /*
+<b><a name="215">  215</a></b>  * See comment above about this type not really belonging to PKCS7.
+<b><a name="216">  216</a></b>  */
+<b><a name="217">  217</a></b> struct <a href="#217">SEC_PKCS7AttributeStr</a> {
+<b><a name="218">  218</a></b>     /* The following fields make up an encoded Attribute: */
+<b><a name="219">  219</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>;
+<b><a name="220">  220</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> **values;        /* data may or may not be encoded */
+<b><a name="221">  221</a></b>     /* The following fields are not part of an encoded Attribute: */
+<b><a name="222">  222</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a> *typeTag;
+<b><a name="223">  223</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> encoded;        /* when true, values are encoded */
+<b><a name="224">  224</a></b> };
+<b><a name="225">  225</a></b> 
+<b><a name="226">  226</a></b> /* An enumerated type used to select templates based on the encryption
+<b><a name="227">  227</a></b>    scenario and data specifics. */
+<b><a name="228">  228</a></b> typedef enum
+<b><a name="229">  229</a></b> {
+<b><a name="230">  230</a></b>         SECKEAInvalid = -1,
+<b><a name="231">  231</a></b>         SECKEAUsesSkipjack = 0,
+<b><a name="232">  232</a></b>         SECKEAUsesNonSkipjack = 1,
+<b><a name="233">  233</a></b>         SECKEAUsesNonSkipjackWithPaddedEncKey = 2
+<b><a name="234">  234</a></b> } <a href="#234">SECKEATemplateSelector</a>;
+<b><a name="235">  235</a></b> 
+<b><a name="236">  236</a></b> /* ### mwelch - S/MIME KEA parameters. These don't really fit here,
+<b><a name="237">  237</a></b>                 but I cannot think of a more appropriate place at this time. */
+<b><a name="238">  238</a></b> struct <a href="#238">SEC_PKCS7SMIMEKEAParametersStr</a> {
+<b><a name="239">  239</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> originatorKEAKey;        /* sender KEA key (encrypted?) */
+<b><a name="240">  240</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> originatorRA;                /* random number generated by sender */
+<b><a name="241">  241</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> nonSkipjackIV;                /* init'n vector for SkipjackCBC64
+<b><a name="242">  242</a></b>                                            decryption of KEA key if Skipjack
+<b><a name="243">  243</a></b>                                            is not the bulk algorithm used on
+<b><a name="244">  244</a></b>                                            the message */
+<b><a name="245">  245</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> bulkKeySize;                /* if Skipjack is not the bulk
+<b><a name="246">  246</a></b>                                            algorithm used on the message,
+<b><a name="247">  247</a></b>                                            and the size of the bulk encryption
+<b><a name="248">  248</a></b>                                            key is not the same as that of
+<b><a name="249">  249</a></b>                                            originatorKEAKey (due to padding
+<b><a name="250">  250</a></b>                                            perhaps), this field will contain
+<b><a name="251">  251</a></b>                                            the real size of the bulk encryption
+<b><a name="252">  252</a></b>                                            key. */
+<b><a name="253">  253</a></b> };
+<b><a name="254">  254</a></b> 
+<b><a name="255">  255</a></b> /*
+<b><a name="256">  256</a></b>  * Type of function passed to SEC_PKCS7Decode or SEC_PKCS7DecoderStart.
+<b><a name="257">  257</a></b>  * If specified, this is where the content bytes (only) will be "sent"
+<b><a name="258">  258</a></b>  * as they are recovered during the decoding.
+<b><a name="259">  259</a></b>  *
+<b><a name="260">  260</a></b>  * XXX Should just combine this with SEC_PKCS7EncoderContentCallback type
+<b><a name="261">  261</a></b>  * and use a simpler, common name.
+<b><a name="262">  262</a></b>  */
+<b><a name="263">  263</a></b> typedef void (* <a href="#263">SEC_PKCS7DecoderContentCallback</a>)(void *arg,
+<b><a name="264">  264</a></b>                                                  const char *<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#buf">buf</a><a href="../mozilla/nsprpub/pr/tests/append.c.dep.html#buf"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/nameshm1.c.dep.html#buf"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#buf"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#buf"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#buf"><sup>[5]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#buf"><sup>[8]</sup></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#buf"><sup>[9]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#buf"><sup>[12]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#buf"><sup>[13]</sup></a></a></a></a></a></a>,
+<b><a name="265">  265</a></b>                                                  unsigned long <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b> /*
+<b><a name="268">  268</a></b>  * Type of function passed to SEC_PKCS7Encode or SEC_PKCS7EncoderStart.
+<b><a name="269">  269</a></b>  * This is where the encoded bytes will be "sent".
+<b><a name="270">  270</a></b>  *
+<b><a name="271">  271</a></b>  * XXX Should just combine this with SEC_PKCS7DecoderContentCallback type
+<b><a name="272">  272</a></b>  * and use a simpler, common name.
+<b><a name="273">  273</a></b>  */
+<b><a name="274">  274</a></b> typedef void (* <a href="#274">SEC_PKCS7EncoderOutputCallback</a>)(void *arg,
+<b><a name="275">  275</a></b>                                                 const char *<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#buf">buf</a><a href="../mozilla/nsprpub/pr/tests/append.c.dep.html#buf"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/nameshm1.c.dep.html#buf"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#buf"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#buf"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#buf"><sup>[5]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#buf"><sup>[8]</sup></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#buf"><sup>[9]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#buf"><sup>[12]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#buf"><sup>[13]</sup></a></a></a></a></a></a>,
+<b><a name="276">  276</a></b>                                                 unsigned long <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="277">  277</a></b> 
+<b><a name="278">  278</a></b> 
+<b><a name="279">  279</a></b> /*
+<b><a name="280">  280</a></b>  * Type of function passed to SEC_PKCS7Decode or SEC_PKCS7DecoderStart
+<b><a name="281">  281</a></b>  * to retrieve the decryption key.  This function is inteded to be
+<b><a name="282">  282</a></b>  * used for EncryptedData content info's which do not have a key available
+<b><a name="283">  283</a></b>  * in a certificate, etc.
+<b><a name="284">  284</a></b>  */
+<b><a name="285">  285</a></b> typedef <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> * (* <a href="#285">SEC_PKCS7GetDecryptKeyCallback</a>)(void *arg, 
+<b><a name="286">  286</a></b>                                                         <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid);
+<b><a name="287">  287</a></b> 
+<b><a name="288">  288</a></b> /* 
+<b><a name="289">  289</a></b>  * Type of function passed to SEC_PKCS7Decode or SEC_PKCS7DecoderStart.
+<b><a name="290">  290</a></b>  * This function in intended to be used to verify that decrypting a
+<b><a name="291">  291</a></b>  * particular crypto algorithm is allowed.  Content types which do not
+<b><a name="292">  292</a></b>  * require decryption will not need the callback.  If the callback
+<b><a name="293">  293</a></b>  * is not specified for content types which require decryption, the
+<b><a name="294">  294</a></b>  * decryption will be disallowed.
+<b><a name="295">  295</a></b>  */
+<b><a name="296">  296</a></b> typedef <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> (* <a href="#296">SEC_PKCS7DecryptionAllowedCallback</a>)(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid,  
+<b><a name="297">  297</a></b>                                                       <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *bulkkey);
+<b><a name="298">  298</a></b> 
+<b><a name="299">  299</a></b> #endif /* _PKCS7T_H_ */
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

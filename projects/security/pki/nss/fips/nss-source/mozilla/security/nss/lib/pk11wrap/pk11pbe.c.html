@@ -1,0 +1,885 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> #include "plarena.h"
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> #include "seccomon.h"
+<b><a name="40">   40</a></b> #include "secitem.h"
+<b><a name="41">   41</a></b> #include "secport.h"
+<b><a name="42">   42</a></b> #include "hasht.h"
+<b><a name="43">   43</a></b> #include "pkcs11t.h"
+<b><a name="44">   44</a></b> #include "sechash.h"
+<b><a name="45">   45</a></b> #include "secasn1.h"
+<b><a name="46">   46</a></b> #include "secder.h"
+<b><a name="47">   47</a></b> #include "secoid.h"
+<b><a name="48">   48</a></b> #include "secerr.h"
+<b><a name="49">   49</a></b> #include "secmod.h"
+<b><a name="50">   50</a></b> #include "pk11func.h"
+<b><a name="51">   51</a></b> #include "secpkcs5.h"
+<b><a name="52">   52</a></b> #include "secmodi.h"
+<b><a name="53">   53</a></b> #include "secmodti.h"
+<b><a name="54">   54</a></b> #include "pkcs11.h"
+<b><a name="55">   55</a></b> #include "pk11func.h"
+<b><a name="56">   56</a></b> #include "secitem.h"
+<b><a name="57">   57</a></b> #include "key.h"
+<b><a name="58">   58</a></b> 
+<b><a name="59">   59</a></b> typedef struct <a href="../pk11wrap/pk11pbe.c.dep.html#<a href="#59">SEC_PKCS5PBEParameter</a>Str">SEC_PKCS5PBEParameterStr</a> SEC_PKCS5PBEParameter;
+<b><a name="60">   60</a></b> struct <a href="#60">SEC_PKCS5PBEParameterStr</a> {
+<b><a name="61">   61</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *poolp;
+<b><a name="62">   62</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>     salt;           /* octet string */
+<b><a name="63">   63</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>     iteration;      /* integer */
+<b><a name="64">   64</a></b> };
+<b><a name="65">   65</a></b> 
+<b><a name="66">   66</a></b> 
+<b><a name="67">   67</a></b> /* template for PKCS 5 PBE Parameter.  This template has been expanded
+<b><a name="68">   68</a></b>  * based upon the additions in PKCS 12.  This should eventually be moved
+<b><a name="69">   69</a></b>  * if RSA updates PKCS 5.
+<b><a name="70">   70</a></b>  */
+<b><a name="71">   71</a></b> const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#71">SEC_PKCS5PBEParameterTemplate</a>[] =
+<b><a name="72">   72</a></b> {
+<b><a name="73">   73</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SEQUENCE">SEC_ASN1_SEQUENCE</a>, 
+<b><a name="74">   74</a></b>         0, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, sizeof(<a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a>) },
+<b><a name="75">   75</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OCTET_STRING">SEC_ASN1_OCTET_STRING</a>, 
+<b><a name="76">   76</a></b>         offsetof(<a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a>, salt) },
+<b><a name="77">   77</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INTEGER">SEC_ASN1_INTEGER</a>,
+<b><a name="78">   78</a></b>         offsetof(<a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a>, iteration) },
+<b><a name="79">   79</a></b>     { 0 }
+<b><a name="80">   80</a></b> };
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b> const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#82">SEC_V2PKCS12PBEParameterTemplate</a>[] =
+<b><a name="83">   83</a></b> {   
+<b><a name="84">   84</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SEQUENCE">SEC_ASN1_SEQUENCE</a>, 0, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, sizeof(<a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a>) },
+<b><a name="85">   85</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OCTET_STRING">SEC_ASN1_OCTET_STRING</a>, offsetof(<a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a>, salt) },
+<b><a name="86">   86</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INTEGER">SEC_ASN1_INTEGER</a>, offsetof(<a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a>, iteration) },
+<b><a name="87">   87</a></b>     { 0 }
+<b><a name="88">   88</a></b> };
+<b><a name="89">   89</a></b> 
+<b><a name="90">   90</a></b> /* maps crypto algorithm from PBE algorithm.
+<b><a name="91">   91</a></b>  */
+<b><a name="92">   92</a></b> <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> 
+<b><a name="93">   93</a></b> <a href="#93">SEC_PKCS5GetCryptoAlgorithm</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid)
+<b><a name="94">   94</a></b> {
+<b><a name="95">   95</a></b> 
+<b><a name="96">   96</a></b>     <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm;
+<b><a name="97">   97</a></b> 
+<b><a name="98">   98</a></b>     if(algid == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="99">   99</a></b>         return SEC_OID_UNKNOWN;
+<b><a name="100">  100</a></b> 
+<b><a name="101">  101</a></b>     algorithm = <a href="../util/secalgid.c.dep.html#SECOID_GetAlgorithmTag">SECOID_GetAlgorithmTag</a>(algid);
+<b><a name="102">  102</a></b>     switch(algorithm)
+<b><a name="103">  103</a></b>     {
+<b><a name="104">  104</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_3KEY_TRIPLE_DES_CBC:
+<b><a name="105">  105</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_2KEY_TRIPLE_DES_CBC:
+<b><a name="106">  106</a></b>         case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_TRIPLE_DES_CBC:
+<b><a name="107">  107</a></b>             return SEC_OID_DES_EDE3_CBC;
+<b><a name="108">  108</a></b>         case SEC_OID_PKCS5_PBE_WITH_SHA1_AND_DES_CBC:
+<b><a name="109">  109</a></b>         case SEC_OID_PKCS5_PBE_WITH_MD5_AND_DES_CBC:
+<b><a name="110">  110</a></b>         case SEC_OID_PKCS5_PBE_WITH_MD2_AND_DES_CBC:
+<b><a name="111">  111</a></b>             return SEC_OID_DES_CBC;
+<b><a name="112">  112</a></b>         case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_40_BIT_RC2_CBC:
+<b><a name="113">  113</a></b>         case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_128_BIT_RC2_CBC:
+<b><a name="114">  114</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_128_BIT_RC2_CBC:
+<b><a name="115">  115</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_40_BIT_RC2_CBC:
+<b><a name="116">  116</a></b>             return SEC_OID_RC2_CBC;
+<b><a name="117">  117</a></b>         case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_40_BIT_RC4:
+<b><a name="118">  118</a></b>         case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_128_BIT_RC4:
+<b><a name="119">  119</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_128_BIT_RC4:
+<b><a name="120">  120</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_40_BIT_RC4:
+<b><a name="121">  121</a></b>             return SEC_OID_RC4;
+<b><a name="122">  122</a></b>         default:
+<b><a name="123">  123</a></b>             break;
+<b><a name="124">  124</a></b>     }
+<b><a name="125">  125</a></b> 
+<b><a name="126">  126</a></b>     return SEC_OID_UNKNOWN;
+<b><a name="127">  127</a></b> }
+<b><a name="128">  128</a></b> 
+<b><a name="129">  129</a></b> /* check to see if an oid is a pbe algorithm
+<b><a name="130">  130</a></b>  */ 
+<b><a name="131">  131</a></b> <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> 
+<b><a name="132">  132</a></b> <a href="#132">SEC_PKCS5IsAlgorithmPBEAlg</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid)
+<b><a name="133">  133</a></b> {
+<b><a name="134">  134</a></b>     return (<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a>)(<a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5GetCryptoAlgorithm">SEC_PKCS5GetCryptoAlgorithm</a>(algid) != SEC_OID_UNKNOWN);
+<b><a name="135">  135</a></b> }
+<b><a name="136">  136</a></b> 
+<b><a name="137">  137</a></b> /* maps PBE algorithm from crypto algorithm, assumes SHA1 hashing.
+<b><a name="138">  138</a></b>  */
+<b><a name="139">  139</a></b> <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> 
+<b><a name="140">  140</a></b> <a href="#140">SEC_PKCS5GetPBEAlgorithm</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algTag, int keyLen)
+<b><a name="141">  141</a></b> {
+<b><a name="142">  142</a></b>     switch(algTag)
+<b><a name="143">  143</a></b>     {
+<b><a name="144">  144</a></b>         case SEC_OID_DES_EDE3_CBC:
+<b><a name="145">  145</a></b>             switch(keyLen) {
+<b><a name="146">  146</a></b>                 case 168:
+<b><a name="147">  147</a></b>                 case 192:
+<b><a name="148">  148</a></b>                     return SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_3KEY_TRIPLE_DES_CBC;
+<b><a name="149">  149</a></b>                 case 128:
+<b><a name="150">  150</a></b>                 case 92:
+<b><a name="151">  151</a></b>                     return SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_2KEY_TRIPLE_DES_CBC;
+<b><a name="152">  152</a></b>                 default:
+<b><a name="153">  153</a></b>                     break;
+<b><a name="154">  154</a></b>             }
+<b><a name="155">  155</a></b>             break;
+<b><a name="156">  156</a></b>         case SEC_OID_DES_CBC:
+<b><a name="157">  157</a></b>             return SEC_OID_PKCS5_PBE_WITH_SHA1_AND_DES_CBC;
+<b><a name="158">  158</a></b>         case SEC_OID_RC2_CBC:
+<b><a name="159">  159</a></b>             switch(keyLen) {
+<b><a name="160">  160</a></b>                 case 40:
+<b><a name="161">  161</a></b>                     return SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_40_BIT_RC2_CBC;
+<b><a name="162">  162</a></b>                 case 128:
+<b><a name="163">  163</a></b>                     return SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_128_BIT_RC2_CBC;
+<b><a name="164">  164</a></b>                 default:
+<b><a name="165">  165</a></b>                     break;
+<b><a name="166">  166</a></b>             }
+<b><a name="167">  167</a></b>             break;
+<b><a name="168">  168</a></b>         case SEC_OID_RC4:
+<b><a name="169">  169</a></b>             switch(keyLen) {
+<b><a name="170">  170</a></b>                 case 40:
+<b><a name="171">  171</a></b>                     return SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_40_BIT_RC4;
+<b><a name="172">  172</a></b>                 case 128:
+<b><a name="173">  173</a></b>                     return SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_128_BIT_RC4;
+<b><a name="174">  174</a></b>                 default:
+<b><a name="175">  175</a></b>                     break;
+<b><a name="176">  176</a></b>             }
+<b><a name="177">  177</a></b>             break;
+<b><a name="178">  178</a></b>         default:
+<b><a name="179">  179</a></b>             break;
+<b><a name="180">  180</a></b>     }
+<b><a name="181">  181</a></b> 
+<b><a name="182">  182</a></b>     return SEC_OID_UNKNOWN;
+<b><a name="183">  183</a></b> }
+<b><a name="184">  184</a></b> 
+<b><a name="185">  185</a></b> 
+<b><a name="186">  186</a></b> /* get the key length needed for the PBE algorithm
+<b><a name="187">  187</a></b>  */
+<b><a name="188">  188</a></b> 
+<b><a name="189">  189</a></b> int 
+<b><a name="190">  190</a></b> <a href="#190">SEC_PKCS5GetKeyLength</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid)
+<b><a name="191">  191</a></b> {
+<b><a name="192">  192</a></b> 
+<b><a name="193">  193</a></b>     <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm;
+<b><a name="194">  194</a></b> 
+<b><a name="195">  195</a></b>     if(algid == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="196">  196</a></b>         return SEC_OID_UNKNOWN;
+<b><a name="197">  197</a></b> 
+<b><a name="198">  198</a></b>     algorithm = <a href="../util/secalgid.c.dep.html#SECOID_GetAlgorithmTag">SECOID_GetAlgorithmTag</a>(algid);
+<b><a name="199">  199</a></b> 
+<b><a name="200">  200</a></b>     switch(algorithm)
+<b><a name="201">  201</a></b>     {
+<b><a name="202">  202</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_3KEY_TRIPLE_DES_CBC:
+<b><a name="203">  203</a></b>         case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_TRIPLE_DES_CBC:
+<b><a name="204">  204</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_2KEY_TRIPLE_DES_CBC:
+<b><a name="205">  205</a></b>             return 24;
+<b><a name="206">  206</a></b>         case SEC_OID_PKCS5_PBE_WITH_MD2_AND_DES_CBC:
+<b><a name="207">  207</a></b>         case SEC_OID_PKCS5_PBE_WITH_SHA1_AND_DES_CBC:
+<b><a name="208">  208</a></b>         case SEC_OID_PKCS5_PBE_WITH_MD5_AND_DES_CBC:
+<b><a name="209">  209</a></b>             return 8;
+<b><a name="210">  210</a></b>         case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_40_BIT_RC2_CBC:
+<b><a name="211">  211</a></b>         case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_40_BIT_RC4:
+<b><a name="212">  212</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_40_BIT_RC4:
+<b><a name="213">  213</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_40_BIT_RC2_CBC:
+<b><a name="214">  214</a></b>             return 5;
+<b><a name="215">  215</a></b>         case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_128_BIT_RC2_CBC:
+<b><a name="216">  216</a></b>         case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_128_BIT_RC4:
+<b><a name="217">  217</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_128_BIT_RC2_CBC:
+<b><a name="218">  218</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_128_BIT_RC4:
+<b><a name="219">  219</a></b>             return 16;
+<b><a name="220">  220</a></b>         default:
+<b><a name="221">  221</a></b>             break;
+<b><a name="222">  222</a></b>     }
+<b><a name="223">  223</a></b>     return -1;
+<b><a name="224">  224</a></b> }
+<b><a name="225">  225</a></b> 
+<b><a name="226">  226</a></b> 
+<b><a name="227">  227</a></b> /* the V2 algorithms only encode the salt, there is no iteration
+<b><a name="228">  228</a></b>  * count so we need a check for V2 algorithm parameters.
+<b><a name="229">  229</a></b>  */
+<b><a name="230">  230</a></b> static <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a>
+<b><a name="231">  231</a></b> <a href="#231">sec_pkcs5_is_algorithm_v2_pkcs12_algorithm</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm)
+<b><a name="232">  232</a></b> {
+<b><a name="233">  233</a></b>     switch(algorithm) 
+<b><a name="234">  234</a></b>     {
+<b><a name="235">  235</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_128_BIT_RC4:
+<b><a name="236">  236</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_40_BIT_RC4:
+<b><a name="237">  237</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_3KEY_TRIPLE_DES_CBC:
+<b><a name="238">  238</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_2KEY_TRIPLE_DES_CBC:
+<b><a name="239">  239</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_128_BIT_RC2_CBC:
+<b><a name="240">  240</a></b>         case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_40_BIT_RC2_CBC:
+<b><a name="241">  241</a></b>             return <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>;
+<b><a name="242">  242</a></b>         default:
+<b><a name="243">  243</a></b>             break;
+<b><a name="244">  244</a></b>     }
+<b><a name="245">  245</a></b> 
+<b><a name="246">  246</a></b>     return <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>;
+<b><a name="247">  247</a></b> }
+<b><a name="248">  248</a></b> /* destroy a pbe parameter.  it assumes that the parameter was 
+<b><a name="249">  249</a></b>  * generated using the appropriate create function and therefor
+<b><a name="250">  250</a></b>  * contains an arena pool.
+<b><a name="251">  251</a></b>  */
+<b><a name="252">  252</a></b> static void 
+<b><a name="253">  253</a></b> <a href="#253">sec_pkcs5_destroy_pbe_param</a>(<a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a> *pbe_param)
+<b><a name="254">  254</a></b> {
+<b><a name="255">  255</a></b>     if(pbe_param != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="256">  256</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(pbe_param-&gt;poolp, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="257">  257</a></b> }
+<b><a name="258">  258</a></b> 
+<b><a name="259">  259</a></b> /* creates a PBE parameter based on the PBE algorithm.  the only required
+<b><a name="260">  260</a></b>  * parameters are algorithm and interation.  the return is a PBE parameter
+<b><a name="261">  261</a></b>  * which conforms to PKCS 5 parameter unless an extended parameter is needed.
+<b><a name="262">  262</a></b>  * this is primarily if keyLen and a variable key length algorithm are
+<b><a name="263">  263</a></b>  * specified.
+<b><a name="264">  264</a></b>  *   salt -  if null, a salt will be generated from random bytes.
+<b><a name="265">  265</a></b>  *   iteration - number of iterations to perform hashing.
+<b><a name="266">  266</a></b>  *   keyLen - only used in variable key length algorithms
+<b><a name="267">  267</a></b>  *   iv - if null, the IV will be generated based on PKCS 5 when needed.
+<b><a name="268">  268</a></b>  *   params - optional, currently unsupported additional parameters.
+<b><a name="269">  269</a></b>  * once a parameter is allocated, it should be destroyed calling 
+<b><a name="270">  270</a></b>  * sec_pkcs5_destroy_pbe_parameter or SEC_PKCS5DestroyPBEParameter.
+<b><a name="271">  271</a></b>  */
+<b><a name="272">  272</a></b> #define <a href="#272">DEFAULT_SALT_LENGTH</a> 16
+<b><a name="273">  273</a></b> static <a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a> *
+<b><a name="274">  274</a></b> <a href="#274">sec_pkcs5_create_pbe_parameter</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm, 
+<b><a name="275">  275</a></b>                         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt, 
+<b><a name="276">  276</a></b>                         int iteration)
+<b><a name="277">  277</a></b> {
+<b><a name="278">  278</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *poolp = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="279">  279</a></b>     <a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a> *pbe_param = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="280">  280</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>= <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>; 
+<b><a name="281">  281</a></b>     void *<a href="../mozilla/dbm/src/memmove.c.dep.html#dummy">dummy</a><a href="../mozilla/dbm/src/snprintf.c.dep.html#dummy"><sup>[1]</sup></a> = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="282">  282</a></b> 
+<b><a name="283">  283</a></b>     if(iteration &lt; 0) {
+<b><a name="284">  284</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="285">  285</a></b>     }
+<b><a name="286">  286</a></b> 
+<b><a name="287">  287</a></b>     poolp = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../util/secasn1t.h.dep.html#SEC_ASN1_DEFAULT_ARENA_SIZE">SEC_ASN1_DEFAULT_ARENA_SIZE</a>);
+<b><a name="288">  288</a></b>     if(poolp == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="289">  289</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="290">  290</a></b> 
+<b><a name="291">  291</a></b>     pbe_param = (<a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a> *)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(poolp,
+<b><a name="292">  292</a></b>         sizeof(<a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a>));
+<b><a name="293">  293</a></b>     if(!pbe_param) {
+<b><a name="294">  294</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(poolp, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="295">  295</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="296">  296</a></b>     }
+<b><a name="297">  297</a></b> 
+<b><a name="298">  298</a></b>     pbe_param-&gt;poolp = poolp;
+<b><a name="299">  299</a></b> 
+<b><a name="300">  300</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="301">  301</a></b>     if (salt &amp;&amp; salt-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>) {
+<b><a name="302">  302</a></b>             <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secitem.c.dep.html#SECITEM_CopyItem">SECITEM_CopyItem</a>(poolp, &amp;pbe_param-&gt;salt, salt);
+<b><a name="303">  303</a></b>     } else {
+<b><a name="304">  304</a></b>         /* sigh, the old interface generated salt on the fly, so we have to
+<b><a name="305">  305</a></b>          * preserve the semantics */
+<b><a name="306">  306</a></b>         pbe_param-&gt;salt.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = <a href="../pk11wrap/pk11pbe.c.dep.html#DEFAULT_SALT_LENGTH">DEFAULT_SALT_LENGTH</a>;
+<b><a name="307">  307</a></b>         pbe_param-&gt;salt.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = <a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(poolp,<a href="../pk11wrap/pk11pbe.c.dep.html#DEFAULT_SALT_LENGTH">DEFAULT_SALT_LENGTH</a>);
+<b><a name="308">  308</a></b>         if (pbe_param-&gt;salt.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>) {
+<b><a name="309">  309</a></b>            <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../pk11wrap/pk11slot.c.dep.html#PK11_GenerateRandom">PK11_GenerateRandom</a>(pbe_param-&gt;salt.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>,<a href="../pk11wrap/pk11pbe.c.dep.html#DEFAULT_SALT_LENGTH">DEFAULT_SALT_LENGTH</a>);
+<b><a name="310">  310</a></b>         }
+<b><a name="311">  311</a></b>     }
+<b><a name="312">  312</a></b> 
+<b><a name="313">  313</a></b>     if(<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="314">  314</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(poolp, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="315">  315</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="316">  316</a></b>     }
+<b><a name="317">  317</a></b> 
+<b><a name="318">  318</a></b>     /* encode the integer */
+<b><a name="319">  319</a></b>     <a href="../mozilla/dbm/src/memmove.c.dep.html#dummy">dummy</a><a href="../mozilla/dbm/src/snprintf.c.dep.html#dummy"><sup>[1]</sup></a> = <a href="../util/secasn1e.c.dep.html#SEC_ASN1EncodeInteger">SEC_ASN1EncodeInteger</a>(poolp, &amp;pbe_param-&gt;iteration, 
+<b><a name="320">  320</a></b>                 iteration);
+<b><a name="321">  321</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = (<a href="../mozilla/dbm/src/memmove.c.dep.html#dummy">dummy</a><a href="../mozilla/dbm/src/snprintf.c.dep.html#dummy"><sup>[1]</sup></a>) ? <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a> : SECFailure;
+<b><a name="322">  322</a></b> 
+<b><a name="323">  323</a></b>     if(<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="324">  324</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(poolp, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>);
+<b><a name="325">  325</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="326">  326</a></b>     }
+<b><a name="327">  327</a></b> 
+<b><a name="328">  328</a></b>     return pbe_param;
+<b><a name="329">  329</a></b> }
+<b><a name="330">  330</a></b> 
+<b><a name="331">  331</a></b> /* creates a algorithm ID containing the PBE algorithm and appropriate
+<b><a name="332">  332</a></b>  * parameters.  the required parameter is the algorithm.  if salt is
+<b><a name="333">  333</a></b>  * not specified, it is generated randomly.  if IV is specified, it overrides
+<b><a name="334">  334</a></b>  * the PKCS 5 generation of the IV.  
+<b><a name="335">  335</a></b>  *
+<b><a name="336">  336</a></b>  * the returned SECAlgorithmID should be destroyed using 
+<b><a name="337">  337</a></b>  * SECOID_DestroyAlgorithmID
+<b><a name="338">  338</a></b>  */
+<b><a name="339">  339</a></b> <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *
+<b><a name="340">  340</a></b> <a href="#340">SEC_PKCS5CreateAlgorithmID</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm, 
+<b><a name="341">  341</a></b>                            <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt, 
+<b><a name="342">  342</a></b>                            int iteration)
+<b><a name="343">  343</a></b> {
+<b><a name="344">  344</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *poolp = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="345">  345</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid, *ret_algid;
+<b><a name="346">  346</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> der_param;
+<b><a name="347">  347</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="348">  348</a></b>     <a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a> *pbe_param;
+<b><a name="349">  349</a></b> 
+<b><a name="350">  350</a></b>     if(iteration &lt;= 0) {
+<b><a name="351">  351</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="352">  352</a></b>     }
+<b><a name="353">  353</a></b> 
+<b><a name="354">  354</a></b>     der_param.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="355">  355</a></b>     der_param.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = 0;
+<b><a name="356">  356</a></b> 
+<b><a name="357">  357</a></b>     /* generate the parameter */
+<b><a name="358">  358</a></b>     pbe_param = <a href="../pk11wrap/pk11pbe.c.dep.html#sec_pkcs5_create_pbe_parameter">sec_pkcs5_create_pbe_parameter</a>(algorithm, salt, iteration);
+<b><a name="359">  359</a></b>     if(!pbe_param) {
+<b><a name="360">  360</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="361">  361</a></b>     }
+<b><a name="362">  362</a></b> 
+<b><a name="363">  363</a></b>     poolp = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../util/secasn1t.h.dep.html#SEC_ASN1_DEFAULT_ARENA_SIZE">SEC_ASN1_DEFAULT_ARENA_SIZE</a>);
+<b><a name="364">  364</a></b>     if(!poolp) {
+<b><a name="365">  365</a></b>         <a href="../pk11wrap/pk11pbe.c.dep.html#sec_pkcs5_destroy_pbe_param">sec_pkcs5_destroy_pbe_param</a>(pbe_param);
+<b><a name="366">  366</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="367">  367</a></b>     }
+<b><a name="368">  368</a></b> 
+<b><a name="369">  369</a></b>     /* generate the algorithm id */
+<b><a name="370">  370</a></b>     algid = (<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(poolp, sizeof(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>));
+<b><a name="371">  371</a></b>     if(algid != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="372">  372</a></b>         void *<a href="../mozilla/dbm/src/memmove.c.dep.html#dummy">dummy</a><a href="../mozilla/dbm/src/snprintf.c.dep.html#dummy"><sup>[1]</sup></a>;
+<b><a name="373">  373</a></b>         if(!<a href="../pk11wrap/pk11pbe.c.dep.html#sec_pkcs5_is_algorithm_v2_pkcs12_algorithm">sec_pkcs5_is_algorithm_v2_pkcs12_algorithm</a>(algorithm)) {
+<b><a name="374">  374</a></b>             <a href="../mozilla/dbm/src/memmove.c.dep.html#dummy">dummy</a><a href="../mozilla/dbm/src/snprintf.c.dep.html#dummy"><sup>[1]</sup></a> = <a href="../util/secasn1e.c.dep.html#SEC_ASN1EncodeItem">SEC_ASN1EncodeItem</a>(poolp, &amp;der_param, pbe_param,
+<b><a name="375">  375</a></b>                                         <a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameterTemplate">SEC_PKCS5PBEParameterTemplate</a>);
+<b><a name="376">  376</a></b>         } else {
+<b><a name="377">  377</a></b>             <a href="../mozilla/dbm/src/memmove.c.dep.html#dummy">dummy</a><a href="../mozilla/dbm/src/snprintf.c.dep.html#dummy"><sup>[1]</sup></a> = <a href="../util/secasn1e.c.dep.html#SEC_ASN1EncodeItem">SEC_ASN1EncodeItem</a>(poolp, &amp;der_param, pbe_param,
+<b><a name="378">  378</a></b>                                             <a href="../pk11wrap/pk11pbe.c.dep.html#SEC_V2PKCS12PBEParameterTemplate">SEC_V2PKCS12PBEParameterTemplate</a>);
+<b><a name="379">  379</a></b>         }
+<b><a name="380">  380</a></b>         
+<b><a name="381">  381</a></b>         if(<a href="../mozilla/dbm/src/memmove.c.dep.html#dummy">dummy</a><a href="../mozilla/dbm/src/snprintf.c.dep.html#dummy"><sup>[1]</sup></a>) {
+<b><a name="382">  382</a></b>             <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secalgid.c.dep.html#SECOID_SetAlgorithmID">SECOID_SetAlgorithmID</a>(poolp, algid, algorithm, &amp;der_param);
+<b><a name="383">  383</a></b>         }
+<b><a name="384">  384</a></b>     }
+<b><a name="385">  385</a></b> 
+<b><a name="386">  386</a></b>     ret_algid = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="387">  387</a></b>     if(algid != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="388">  388</a></b>         ret_algid = (<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(sizeof(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>));
+<b><a name="389">  389</a></b>         if(ret_algid != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="390">  390</a></b>             <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secalgid.c.dep.html#SECOID_CopyAlgorithmID">SECOID_CopyAlgorithmID</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, ret_algid, algid);
+<b><a name="391">  391</a></b>             if(<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="392">  392</a></b>                 <a href="../util/secalgid.c.dep.html#SECOID_DestroyAlgorithmID">SECOID_DestroyAlgorithmID</a>(ret_algid, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="393">  393</a></b>                 ret_algid = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="394">  394</a></b>             }
+<b><a name="395">  395</a></b>         }
+<b><a name="396">  396</a></b>     }
+<b><a name="397">  397</a></b>         
+<b><a name="398">  398</a></b>     if(poolp != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="399">  399</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(poolp, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="400">  400</a></b>         algid = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="401">  401</a></b>     }
+<b><a name="402">  402</a></b> 
+<b><a name="403">  403</a></b>     <a href="../pk11wrap/pk11pbe.c.dep.html#sec_pkcs5_destroy_pbe_param">sec_pkcs5_destroy_pbe_param</a>(pbe_param);
+<b><a name="404">  404</a></b> 
+<b><a name="405">  405</a></b>     return ret_algid;
+<b><a name="406">  406</a></b> }
+<b><a name="407">  407</a></b> 
+<b><a name="408">  408</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="409">  409</a></b> <a href="#409">pbe_PK11AlgidToParam</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid,<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *mech)
+<b><a name="410">  410</a></b> {
+<b><a name="411">  411</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> *pbe_params = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="412">  412</a></b>     <a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameter">SEC_PKCS5PBEParameter</a> p5_param;
+<b><a name="413">  413</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="414">  414</a></b>     <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm = <a href="../util/secalgid.c.dep.html#SECOID_GetAlgorithmTag">SECOID_GetAlgorithmTag</a>(algid);
+<b><a name="415">  415</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *arena = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="416">  416</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="417">  417</a></b>     int iv_len;
+<b><a name="418">  418</a></b>     
+<b><a name="419">  419</a></b> 
+<b><a name="420">  420</a></b>     arena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../util/secasn1t.h.dep.html#SEC_ASN1_DEFAULT_ARENA_SIZE">SEC_ASN1_DEFAULT_ARENA_SIZE</a>);
+<b><a name="421">  421</a></b>     if (arena == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="422">  422</a></b>         goto loser;
+<b><a name="423">  423</a></b>     }
+<b><a name="424">  424</a></b>     iv_len = <a href="../pk11wrap/pk11mech.c.dep.html#PK11_GetIVLength">PK11_GetIVLength</a>(<a href="../pk11wrap/pk11mech.c.dep.html#PK11_AlgtagToMechanism">PK11_AlgtagToMechanism</a>(algorithm));
+<b><a name="425">  425</a></b>     if (iv_len &lt; 0) {
+<b><a name="426">  426</a></b>         goto loser;
+<b><a name="427">  427</a></b>     }
+<b><a name="428">  428</a></b> 
+<b><a name="429">  429</a></b>     if (<a href="../pk11wrap/pk11pbe.c.dep.html#sec_pkcs5_is_algorithm_v2_pkcs12_algorithm">sec_pkcs5_is_algorithm_v2_pkcs12_algorithm</a>(algorithm)) {
+<b><a name="430">  430</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secasn1d.c.dep.html#SEC_ASN1DecodeItem">SEC_ASN1DecodeItem</a>(arena, &amp;p5_param,
+<b><a name="431">  431</a></b>                          <a href="../pk11wrap/pk11pbe.c.dep.html#SEC_V2PKCS12PBEParameterTemplate">SEC_V2PKCS12PBEParameterTemplate</a>, &amp;algid-&gt;<a href="../softoken/pk11pars.h.dep.html#parameters">parameters</a>);
+<b><a name="432">  432</a></b>     } else {
+<b><a name="433">  433</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secasn1d.c.dep.html#SEC_ASN1DecodeItem">SEC_ASN1DecodeItem</a>(arena,&amp;p5_param,<a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5PBEParameterTemplate">SEC_PKCS5PBEParameterTemplate</a>, 
+<b><a name="434">  434</a></b>                                                 &amp;algid-&gt;<a href="../softoken/pk11pars.h.dep.html#parameters">parameters</a>);
+<b><a name="435">  435</a></b>     }
+<b><a name="436">  436</a></b> 
+<b><a name="437">  437</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="438">  438</a></b>         goto loser;
+<b><a name="439">  439</a></b>     }
+<b><a name="440">  440</a></b>         
+<b><a name="441">  441</a></b>     salt = &amp;p5_param.salt;
+<b><a name="442">  442</a></b> 
+<b><a name="443">  443</a></b>     pbe_params = (<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(sizeof(<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a>)+
+<b><a name="444">  444</a></b>                                                 salt-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>+iv_<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="445">  445</a></b>     if (pbe_params == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="446">  446</a></b>         goto loser;
+<b><a name="447">  447</a></b>     }
+<b><a name="448">  448</a></b> 
+<b><a name="449">  449</a></b>     /* get salt */
+<b><a name="450">  450</a></b>     pbe_params-&gt;pSalt = ((<a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a>) pbe_params)+sizeof(<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a>);
+<b><a name="451">  451</a></b>     if (iv_len) {
+<b><a name="452">  452</a></b>         pbe_params-&gt;pInitVector = ((<a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a>) pbe_params)+
+<b><a name="453">  453</a></b>                                         sizeof(<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a>)+salt-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>;
+<b><a name="454">  454</a></b>     }
+<b><a name="455">  455</a></b>     <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(pbe_params-&gt;pSalt, salt-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, salt-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="456">  456</a></b>     pbe_params-&gt;ulSaltLen = (<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>) salt-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>;
+<b><a name="457">  457</a></b> 
+<b><a name="458">  458</a></b>     /* get iteration count */
+<b><a name="459">  459</a></b>     pbe_params-&gt;ulIteration = (<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>) <a href="../util/dersubr.c.dep.html#DER_GetInteger">DER_GetInteger</a>(&amp;p5_param.iteration);
+<b><a name="460">  460</a></b> 
+<b><a name="461">  461</a></b>     /* copy into the mechanism sec item */
+<b><a name="462">  462</a></b>     mech-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = (unsigned char *)pbe_params;
+<b><a name="463">  463</a></b>     mech-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = sizeof(*pbe_params);
+<b><a name="464">  464</a></b>     if (arena) {
+<b><a name="465">  465</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(arena,<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="466">  466</a></b>     }
+<b><a name="467">  467</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="468">  468</a></b> 
+<b><a name="469">  469</a></b> loser:
+<b><a name="470">  470</a></b>     if (pbe_params) {
+<b><a name="471">  471</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(pbe_params);
+<b><a name="472">  472</a></b>     }
+<b><a name="473">  473</a></b>     if (arena) {
+<b><a name="474">  474</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(arena,<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="475">  475</a></b>     }
+<b><a name="476">  476</a></b>     return SECFailure;
+<b><a name="477">  477</a></b> }
+<b><a name="478">  478</a></b> 
+<b><a name="479">  479</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="480">  480</a></b> <a href="#480">PBE_PK11ParamToAlgid</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algTag, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *param, <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *arena, 
+<b><a name="481">  481</a></b>                      <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algId)
+<b><a name="482">  482</a></b> {
+<b><a name="483">  483</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> *pbe_param;
+<b><a name="484">  484</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> pbeSalt;
+<b><a name="485">  485</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *pbeAlgID = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="486">  486</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="487">  487</a></b> 
+<b><a name="488">  488</a></b>     if(!param || !algId) {
+<b><a name="489">  489</a></b>         return SECFailure;
+<b><a name="490">  490</a></b>     }
+<b><a name="491">  491</a></b> 
+<b><a name="492">  492</a></b>     pbe_param = (<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> *)param-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;
+<b><a name="493">  493</a></b>     pbeSalt.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = (unsigned char *)pbe_param-&gt;pSalt;
+<b><a name="494">  494</a></b>     pbeSalt.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = pbe_param-&gt;ulSaltLen;
+<b><a name="495">  495</a></b>     pbeAlgID = <a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5CreateAlgorithmID">SEC_PKCS5CreateAlgorithmID</a>(algTag, &amp;pbeSalt, 
+<b><a name="496">  496</a></b>                                           (int)pbe_param-&gt;ulIteration);
+<b><a name="497">  497</a></b>     if(!pbeAlgID) {
+<b><a name="498">  498</a></b>         return SECFailure;
+<b><a name="499">  499</a></b>     }
+<b><a name="500">  500</a></b> 
+<b><a name="501">  501</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secalgid.c.dep.html#SECOID_CopyAlgorithmID">SECOID_CopyAlgorithmID</a>(arena, algId, pbeAlgID);
+<b><a name="502">  502</a></b>     <a href="../util/secalgid.c.dep.html#SECOID_DestroyAlgorithmID">SECOID_DestroyAlgorithmID</a>(pbeAlgID, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="503">  503</a></b>     return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="504">  504</a></b> }
+<b><a name="505">  505</a></b> 
+<b><a name="506">  506</a></b> <a href="../pk11wrap/secpkcs5.h.dep.html#PBEBitGenContext">PBEBitGenContext</a> *
+<b><a name="507">  507</a></b> <a href="#507">PBE_CreateContext</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> hashAlgorithm, <a href="../pk11wrap/secpkcs5.h.dep.html#PBEBitGenID">PBEBitGenID</a><a href="../softoken/lowpbe.h.dep.html#PBEBitGenID"><sup>[1]</sup></a> bitGenPurpose,
+<b><a name="508">  508</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt, unsigned int bitsNeeded,
+<b><a name="509">  509</a></b>         unsigned int <a href="../mozilla/nsprpub/lib/msgc/tests/gc1.c.dep.html#iterations">iterations</a><a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#iterations"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/peek.c.dep.html#iterations"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#iterations"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/tests/semaping.c.dep.html#iterations"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/tests/semapong.c.dep.html#iterations"><sup>[5]</sup></a><a href="../mozilla/nsprpub/pr/tests/threads.c.dep.html#iterations"><sup>[6]</sup></a>)
+<b><a name="510">  510</a></b> {
+<b><a name="511">  511</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a> = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="512">  512</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> mechItem;
+<b><a name="513">  513</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> pbe_params;
+<b><a name="514">  514</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a> <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a> = <a href="../pk11wrap/secmodt.h.dep.html#CKM_INVALID_MECHANISM">CKM_INVALID_MECHANISM</a>;
+<b><a name="515">  515</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>;
+<b><a name="516">  516</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *symKey = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="517">  517</a></b>     unsigned char ivData[8];
+<b><a name="518">  518</a></b>     
+<b><a name="519">  519</a></b> 
+<b><a name="520">  520</a></b>     /* use the purpose to select the low level keygen algorithm */
+<b><a name="521">  521</a></b>     switch (bitGenPurpose) {
+<b><a name="522">  522</a></b>     case pbeBitGenIntegrityKey:
+<b><a name="523">  523</a></b>         switch (hashAlgorithm) {
+<b><a name="524">  524</a></b>         case SEC_OID_SHA1:
+<b><a name="525">  525</a></b>             <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a> = <a href="../softoken/pkcs11t.h.dep.html#CKM_PBA_SHA1_WITH_SHA1_HMAC">CKM_PBA_SHA1_WITH_SHA1_HMAC</a>;
+<b><a name="526">  526</a></b>             break;
+<b><a name="527">  527</a></b>         case SEC_OID_MD2:
+<b><a name="528">  528</a></b>             <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a> = <a href="../softoken/pkcs11n.h.dep.html#CKM_NETSCAPE_PBE_MD2_HMAC_KEY_GEN">CKM_NETSCAPE_PBE_MD2_HMAC_KEY_GEN</a>;
+<b><a name="529">  529</a></b>             break;
+<b><a name="530">  530</a></b>         case SEC_OID_MD5:
+<b><a name="531">  531</a></b>             <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a> = <a href="../softoken/pkcs11n.h.dep.html#CKM_NETSCAPE_PBE_MD5_HMAC_KEY_GEN">CKM_NETSCAPE_PBE_MD5_HMAC_KEY_GEN</a>;
+<b><a name="532">  532</a></b>             break;
+<b><a name="533">  533</a></b>         default:
+<b><a name="534">  534</a></b>             break;
+<b><a name="535">  535</a></b>         }
+<b><a name="536">  536</a></b>         break;
+<b><a name="537">  537</a></b>     case pbeBitGenCipherIV:
+<b><a name="538">  538</a></b>         if (bitsNeeded &gt; 64) {
+<b><a name="539">  539</a></b>             break;
+<b><a name="540">  540</a></b>         }
+<b><a name="541">  541</a></b>         if (hashAlgorithm != SEC_OID_SHA1) {
+<b><a name="542">  542</a></b>             break;
+<b><a name="543">  543</a></b>         }
+<b><a name="544">  544</a></b>         <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a> = <a href="../softoken/pkcs11t.h.dep.html#CKM_PBE_SHA1_DES3_EDE_CBC">CKM_PBE_SHA1_DES3_EDE_CBC</a>;
+<b><a name="545">  545</a></b>         break;
+<b><a name="546">  546</a></b>     case pbeBitGenCipherKey:
+<b><a name="547">  547</a></b>         if (hashAlgorithm != SEC_OID_SHA1) {
+<b><a name="548">  548</a></b>             break;
+<b><a name="549">  549</a></b>         }
+<b><a name="550">  550</a></b>         switch (bitsNeeded) {
+<b><a name="551">  551</a></b>         case 40:
+<b><a name="552">  552</a></b>             <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a> = <a href="../softoken/pkcs11t.h.dep.html#CKM_PBE_SHA1_RC4_40">CKM_PBE_SHA1_RC4_40</a>;
+<b><a name="553">  553</a></b>             break;
+<b><a name="554">  554</a></b>         case 128:
+<b><a name="555">  555</a></b>             <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a> = <a href="../softoken/pkcs11t.h.dep.html#CKM_PBE_SHA1_RC4_128">CKM_PBE_SHA1_RC4_128</a>;
+<b><a name="556">  556</a></b>             break;
+<b><a name="557">  557</a></b>         default:
+<b><a name="558">  558</a></b>             break;
+<b><a name="559">  559</a></b>         }
+<b><a name="560">  560</a></b>     case pbeBitGenIDNull:
+<b><a name="561">  561</a></b>         break;
+<b><a name="562">  562</a></b>     }
+<b><a name="563">  563</a></b> 
+<b><a name="564">  564</a></b>     if (<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a> == <a href="../pk11wrap/secmodt.h.dep.html#CKM_INVALID_MECHANISM">CKM_INVALID_MECHANISM</a>) {
+<b><a name="565">  565</a></b>         /* we should set an error, but this is a depricated function, and
+<b><a name="566">  566</a></b>          * we are keeping bug for bug compatibility;)... */
+<b><a name="567">  567</a></b>             return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="568">  568</a></b>     } 
+<b><a name="569">  569</a></b> 
+<b><a name="570">  570</a></b>     pbe_params.pInitVector = ivData;
+<b><a name="571">  571</a></b>     pbe_params.pPassword = pwitem-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;
+<b><a name="572">  572</a></b>     pbe_params.ulPasswordLen = pwitem-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>;
+<b><a name="573">  573</a></b>     pbe_params.pSalt = salt-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;
+<b><a name="574">  574</a></b>     pbe_params.ulSaltLen = salt-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>;
+<b><a name="575">  575</a></b>     pbe_params.ulIteration = <a href="../mozilla/nsprpub/lib/msgc/tests/gc1.c.dep.html#iterations">iterations</a><a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#iterations"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/peek.c.dep.html#iterations"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#iterations"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/tests/semaping.c.dep.html#iterations"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/tests/semapong.c.dep.html#iterations"><sup>[5]</sup></a><a href="../mozilla/nsprpub/pr/tests/threads.c.dep.html#iterations"><sup>[6]</sup></a>;
+<b><a name="576">  576</a></b>     mechItem.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = (unsigned char *) &amp;pbe_params;
+<b><a name="577">  577</a></b>     mechItem.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = sizeof(pbe_params);
+<b><a name="578">  578</a></b> 
+<b><a name="579">  579</a></b> 
+<b><a name="580">  580</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a> = <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_GetInternalSlot">PK11_GetInternalSlot</a>();
+<b><a name="581">  581</a></b>     symKey = <a href="../pk11wrap/pk11pbe.c.dep.html#PK11_RawPBEKeyGen">PK11_RawPBEKeyGen</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a>,
+<b><a name="582">  582</a></b>                                         &amp;mechItem, pwitem, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="583">  583</a></b>     <a href="../pk11wrap/pk11slot.c.dep.html#PK11_FreeSlot">PK11_FreeSlot</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="584">  584</a></b>     if (symKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="585">  585</a></b>         if (bitGenPurpose == pbeBitGenCipherIV) {
+<b><a name="586">  586</a></b>             /* NOTE: this assumes that bitsNeeded is a multiple of 8! */
+<b><a name="587">  587</a></b>             <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> ivItem;
+<b><a name="588">  588</a></b> 
+<b><a name="589">  589</a></b>             ivItem.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = ivData;
+<b><a name="590">  590</a></b>             ivItem.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = bitsNeeded/8;
+<b><a name="591">  591</a></b>             <a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a> = <a href="../util/secitem.c.dep.html#SECITEM_DupItem">SECITEM_DupItem</a>(&amp;ivItem);
+<b><a name="592">  592</a></b>         } else {
+<b><a name="593">  593</a></b>             <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *keyData;
+<b><a name="594">  594</a></b>             <a href="../pk11wrap/pk11skey.c.dep.html#PK11_ExtractKeyValue">PK11_ExtractKeyValue</a>(symKey);
+<b><a name="595">  595</a></b>             keyData = <a href="../nss/nssrenam.h.dep.html#PK11_GetKeyData">PK11_GetKeyData</a><a href="../pk11wrap/pk11skey.c.dep.html#PK11_GetKeyData"><sup>[1]</sup></a>(symKey);
+<b><a name="596">  596</a></b> 
+<b><a name="597">  597</a></b>             /* assert bitsNeeded with length? */
+<b><a name="598">  598</a></b>             if (keyData) {
+<b><a name="599">  599</a></b>                     <a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a> = <a href="../util/secitem.c.dep.html#SECITEM_DupItem">SECITEM_DupItem</a>(keyData);
+<b><a name="600">  600</a></b>             }
+<b><a name="601">  601</a></b>         }
+<b><a name="602">  602</a></b>         <a href="../pk11wrap/pk11skey.c.dep.html#PK11_FreeSymKey">PK11_FreeSymKey</a>(symKey);
+<b><a name="603">  603</a></b>     }
+<b><a name="604">  604</a></b> 
+<b><a name="605">  605</a></b>     return (<a href="../pk11wrap/secpkcs5.h.dep.html#PBEBitGenContext">PBEBitGenContext</a> *)<a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>;
+<b><a name="606">  606</a></b> }
+<b><a name="607">  607</a></b> 
+<b><a name="608">  608</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="609">  609</a></b> <a href="#609">PBE_GenerateBits</a>(<a href="../pk11wrap/secpkcs5.h.dep.html#PBEBitGenContext">PBEBitGenContext</a> *<a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>)
+<b><a name="610">  610</a></b> {
+<b><a name="611">  611</a></b>     return (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *)<a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>;
+<b><a name="612">  612</a></b> }
+<b><a name="613">  613</a></b> 
+<b><a name="614">  614</a></b> void
+<b><a name="615">  615</a></b> <a href="#615">PBE_DestroyContext</a>(<a href="../pk11wrap/secpkcs5.h.dep.html#PBEBitGenContext">PBEBitGenContext</a> *<a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>)
+<b><a name="616">  616</a></b> {
+<b><a name="617">  617</a></b>     <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>((<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *)<a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>,<a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="618">  618</a></b> }
+<b><a name="619">  619</a></b> 
+<b><a name="620">  620</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="621">  621</a></b> <a href="#621">SEC_PKCS5GetIV</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> faulty3DES)
+<b><a name="622">  622</a></b> {
+<b><a name="623">  623</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> mechItem;
+<b><a name="624">  624</a></b>     <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm = <a href="../util/secalgid.c.dep.html#SECOID_GetAlgorithmTag">SECOID_GetAlgorithmTag</a>(algid);
+<b><a name="625">  625</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> *pbe_params;
+<b><a name="626">  626</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a> <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a>;
+<b><a name="627">  627</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *iv = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="628">  628</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="629">  629</a></b>     int iv_len;
+<b><a name="630">  630</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>;
+<b><a name="631">  631</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *symKey;
+<b><a name="632">  632</a></b> 
+<b><a name="633">  633</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../pk11wrap/pk11pbe.c.dep.html#pbe_PK11AlgidToParam">pbe_PK11AlgidToParam</a>(algid,&amp;mechItem);
+<b><a name="634">  634</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="635">  635</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="636">  636</a></b>     }
+<b><a name="637">  637</a></b> 
+<b><a name="638">  638</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a> = <a href="../pk11wrap/pk11mech.c.dep.html#PK11_AlgtagToMechanism">PK11_AlgtagToMechanism</a>(algorithm);
+<b><a name="639">  639</a></b>     iv_len = <a href="../pk11wrap/pk11mech.c.dep.html#PK11_GetIVLength">PK11_GetIVLength</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a>);
+<b><a name="640">  640</a></b>     pbe_params = (<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS_PTR">CK_PBE_PARAMS_PTR</a>)mechItem.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;
+<b><a name="641">  641</a></b> 
+<b><a name="642">  642</a></b>     <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a> = <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_GetInternalSlot">PK11_GetInternalSlot</a>();
+<b><a name="643">  643</a></b>     symKey = <a href="../pk11wrap/pk11pbe.c.dep.html#PK11_RawPBEKeyGen">PK11_RawPBEKeyGen</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>,<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.h.dep.html#mechanism">mechanism</a>,
+<b><a name="644">  644</a></b>                                         &amp;mechItem, pwitem, faulty3DES,<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="645">  645</a></b>     <a href="../pk11wrap/pk11slot.c.dep.html#PK11_FreeSlot">PK11_FreeSlot</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="646">  646</a></b> 
+<b><a name="647">  647</a></b>     if (symKey) {
+<b><a name="648">  648</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href="../freebl/sha_fast.c.dep.html#tmp">tmp</a></a><a href="../softoken/pk11pars.h.dep.html#tmp"><sup>[2]</sup></a>;
+<b><a name="649">  649</a></b> 
+<b><a name="650">  650</a></b>         <a href="../freebl/sha_fast.c.dep.html#tmp">tmp</a></a><a href="../softoken/pk11pars.h.dep.html#tmp"><sup>[2]</sup></a>.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = pbe_params-&gt;pInitVector;
+<b><a name="651">  651</a></b>         <a href="../freebl/sha_fast.c.dep.html#tmp">tmp</a></a><a href="../softoken/pk11pars.h.dep.html#tmp"><sup>[2]</sup></a>.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = iv_<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>;
+<b><a name="652">  652</a></b>         iv = <a href="../util/secitem.c.dep.html#SECITEM_DupItem">SECITEM_DupItem</a>(&amp;<a href="../freebl/sha_fast.c.dep.html#tmp">tmp</a></a><a href="../softoken/pk11pars.h.dep.html#tmp"><sup>[2]</sup></a>);
+<b><a name="653">  653</a></b>         <a href="../pk11wrap/pk11skey.c.dep.html#PK11_FreeSymKey">PK11_FreeSymKey</a>(symKey);
+<b><a name="654">  654</a></b>     }
+<b><a name="655">  655</a></b> 
+<b><a name="656">  656</a></b>     if (mechItem.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>) {
+<b><a name="657">  657</a></b>         <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(mechItem.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>,mechItem.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="658">  658</a></b>     }
+<b><a name="659">  659</a></b> 
+<b><a name="660">  660</a></b>     return iv;
+<b><a name="661">  661</a></b> }
+<b><a name="662">  662</a></b> 
+<b><a name="663">  663</a></b> /*
+<b><a name="664">  664</a></b>  * Subs from nss 3.x that are depricated
+<b><a name="665">  665</a></b>  */
+<b><a name="666">  666</a></b> <a href="../pk11wrap/secpkcs5.h.dep.html#PBEBitGenContext">PBEBitGenContext</a> *
+<b><a name="667">  667</a></b> <a href="#667">__PBE_CreateContext</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> hashAlgorithm, <a href="../pk11wrap/secpkcs5.h.dep.html#PBEBitGenID">PBEBitGenID</a><a href="../softoken/lowpbe.h.dep.html#PBEBitGenID"><sup>[1]</sup></a> bitGenPurpose,
+<b><a name="668">  668</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt, unsigned int bitsNeeded,
+<b><a name="669">  669</a></b>         unsigned int <a href="../mozilla/nsprpub/lib/msgc/tests/gc1.c.dep.html#iterations">iterations</a><a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#iterations"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/peek.c.dep.html#iterations"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#iterations"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/tests/semaping.c.dep.html#iterations"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/tests/semapong.c.dep.html#iterations"><sup>[5]</sup></a><a href="../mozilla/nsprpub/pr/tests/threads.c.dep.html#iterations"><sup>[6]</sup></a>)
+<b><a name="670">  670</a></b> {
+<b><a name="671">  671</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>("<a href="../pk11wrap/pk11pbe.c.dep.html#__PBE_CreateContext">__PBE_CreateContext</a> is Depricated" == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="672">  672</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="673">  673</a></b> }
+<b><a name="674">  674</a></b> 
+<b><a name="675">  675</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="676">  676</a></b> <a href="#676">__PBE_GenerateBits</a>(<a href="../pk11wrap/secpkcs5.h.dep.html#PBEBitGenContext">PBEBitGenContext</a> *<a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>)
+<b><a name="677">  677</a></b> {
+<b><a name="678">  678</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>("<a href="../pk11wrap/pk11pbe.c.dep.html#__PBE_GenerateBits">__PBE_GenerateBits</a> is Depricated" == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="679">  679</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="680">  680</a></b> }
+<b><a name="681">  681</a></b> 
+<b><a name="682">  682</a></b> void
+<b><a name="683">  683</a></b> <a href="#683">__PBE_DestroyContext</a>(<a href="../pk11wrap/secpkcs5.h.dep.html#PBEBitGenContext">PBEBitGenContext</a> *<a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>)
+<b><a name="684">  684</a></b> {
+<b><a name="685">  685</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>("<a href="../pk11wrap/pk11pbe.c.dep.html#__PBE_DestroyContext">__PBE_DestroyContext</a> is Depricated" == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="686">  686</a></b> }
+<b><a name="687">  687</a></b> 
+<b><a name="688">  688</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="689">  689</a></b> <a href="#689">RSA_FormatBlock</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *result, unsigned modulusLen,
+<b><a name="690">  690</a></b>                 int blockType, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>)
+<b><a name="691">  691</a></b> {
+<b><a name="692">  692</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>("<a href="../pk11wrap/pk11pbe.c.dep.html#RSA_FormatBlock">RSA_FormatBlock</a> is Depricated" == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="693">  693</a></b>     return SECFailure;
+<b><a name="694">  694</a></b> }
+<b><a name="695">  695</a></b> 
+<b><a name="696">  696</a></b> /****************************************************************************
+<b><a name="697">  697</a></b>  *
+<b><a name="698">  698</a></b>  * Now Do The PBE Functions Here...
+<b><a name="699">  699</a></b>  *
+<b><a name="700">  700</a></b>  ****************************************************************************/
+<b><a name="701">  701</a></b> 
+<b><a name="702">  702</a></b> static void
+<b><a name="703">  703</a></b> <a href="#703">pk11_destroy_ck_pbe_params</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> *pbe_params)
+<b><a name="704">  704</a></b> {
+<b><a name="705">  705</a></b>     if (pbe_params) {
+<b><a name="706">  706</a></b>         if (pbe_params-&gt;pPassword)
+<b><a name="707">  707</a></b>             <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(pbe_params-&gt;pPassword, pbe_params-&gt;ulPasswordLen);
+<b><a name="708">  708</a></b>         if (pbe_params-&gt;pSalt)
+<b><a name="709">  709</a></b>             <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(pbe_params-&gt;pSalt, pbe_params-&gt;ulSaltLen);
+<b><a name="710">  710</a></b>         <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(pbe_params, sizeof(<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a>));
+<b><a name="711">  711</a></b>     }
+<b><a name="712">  712</a></b> }
+<b><a name="713">  713</a></b> 
+<b><a name="714">  714</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * 
+<b><a name="715">  715</a></b> <a href="#715">PK11_CreatePBEParams</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwd, unsigned int <a href="../mozilla/nsprpub/lib/msgc/tests/gc1.c.dep.html#iterations">iterations</a><a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#iterations"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/peek.c.dep.html#iterations"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#iterations"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/tests/semaping.c.dep.html#iterations"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/tests/semapong.c.dep.html#iterations"><sup>[5]</sup></a><a href="../mozilla/nsprpub/pr/tests/threads.c.dep.html#iterations"><sup>[6]</sup></a>)
+<b><a name="716">  716</a></b> {
+<b><a name="717">  717</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> *pbe_params = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="718">  718</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *paramRV = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="719">  719</a></b> 
+<b><a name="720">  720</a></b>     paramRV = <a href="../util/secitem.c.dep.html#SECITEM_AllocItem">SECITEM_AllocItem</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, sizeof(<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a>));
+<b><a name="721">  721</a></b>     if (!paramRV ) {
+<b><a name="722">  722</a></b>         goto loser;
+<b><a name="723">  723</a></b>     }
+<b><a name="724">  724</a></b>     /* init paramRV-&gt;data with zeros. SECITEM_AllocItem does not do it */
+<b><a name="725">  725</a></b>     <a href="../util/secport.h.dep.html#PORT_Memset">PORT_Memset</a>(paramRV-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, 0, sizeof(<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a>));
+<b><a name="726">  726</a></b> 
+<b><a name="727">  727</a></b>     pbe_params = (<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> *)paramRV-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;
+<b><a name="728">  728</a></b>     pbe_params-&gt;pPassword = (<a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a>)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(pwd-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="729">  729</a></b>     if (!pbe_params-&gt;pPassword) {
+<b><a name="730">  730</a></b>         goto loser;
+<b><a name="731">  731</a></b>     }
+<b><a name="732">  732</a></b>     <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(pbe_params-&gt;pPassword, pwd-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, pwd-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="733">  733</a></b>     pbe_params-&gt;ulPasswordLen = pwd-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>;
+<b><a name="734">  734</a></b> 
+<b><a name="735">  735</a></b>     pbe_params-&gt;pSalt = (<a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a>)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(salt-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="736">  736</a></b>     if (!pbe_params-&gt;pSalt) {
+<b><a name="737">  737</a></b>         goto loser;
+<b><a name="738">  738</a></b>     }
+<b><a name="739">  739</a></b>     <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(pbe_params-&gt;pSalt, salt-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, salt-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="740">  740</a></b>     pbe_params-&gt;ulSaltLen = salt-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>;
+<b><a name="741">  741</a></b> 
+<b><a name="742">  742</a></b>     pbe_params-&gt;ulIteration = (<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>)<a href="../mozilla/nsprpub/lib/msgc/tests/gc1.c.dep.html#iterations">iterations</a><a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#iterations"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/peek.c.dep.html#iterations"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/sema.c.dep.html#iterations"><sup>[3]</sup></a><a href="../mozilla/nsprpub/pr/tests/semaping.c.dep.html#iterations"><sup>[4]</sup></a><a href="../mozilla/nsprpub/pr/tests/semapong.c.dep.html#iterations"><sup>[5]</sup></a><a href="../mozilla/nsprpub/pr/tests/threads.c.dep.html#iterations"><sup>[6]</sup></a>;
+<b><a name="743">  743</a></b>     return paramRV;
+<b><a name="744">  744</a></b> 
+<b><a name="745">  745</a></b> loser:
+<b><a name="746">  746</a></b>     if (pbe_params)
+<b><a name="747">  747</a></b>         <a href="../pk11wrap/pk11pbe.c.dep.html#pk11_destroy_ck_pbe_params">pk11_destroy_ck_pbe_params</a>(pbe_params);
+<b><a name="748">  748</a></b>     if (paramRV) 
+<b><a name="749">  749</a></b>             <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(paramRV, sizeof(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>));
+<b><a name="750">  750</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="751">  751</a></b> }
+<b><a name="752">  752</a></b> 
+<b><a name="753">  753</a></b> void
+<b><a name="754">  754</a></b> <a href="#754">PK11_DestroyPBEParams</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pItem)
+<b><a name="755">  755</a></b> {
+<b><a name="756">  756</a></b>     if (pItem) {
+<b><a name="757">  757</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> * params = (<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> *)(pItem-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>);
+<b><a name="758">  758</a></b>         if (params)
+<b><a name="759">  759</a></b>             <a href="../pk11wrap/pk11pbe.c.dep.html#pk11_destroy_ck_pbe_params">pk11_destroy_ck_pbe_params</a>(params);
+<b><a name="760">  760</a></b>         <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(pItem, sizeof(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>));
+<b><a name="761">  761</a></b>     }
+<b><a name="762">  762</a></b> }
+<b><a name="763">  763</a></b> 
+<b><a name="764">  764</a></b> <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *
+<b><a name="765">  765</a></b> <a href="#765">PK11_CreatePBEAlgorithmID</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm, int iteration, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt)
+<b><a name="766">  766</a></b> {
+<b><a name="767">  767</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="768">  768</a></b>     algid = <a href="../pk11wrap/pk11pbe.c.dep.html#SEC_PKCS5CreateAlgorithmID">SEC_PKCS5CreateAlgorithmID</a>(algorithm, salt, iteration);
+<b><a name="769">  769</a></b>     return algid;
+<b><a name="770">  770</a></b> }
+<b><a name="771">  771</a></b> 
+<b><a name="772">  772</a></b> <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *
+<b><a name="773">  773</a></b> <a href="#773">PK11_RawPBEKeyGen</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a> <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *mech,
+<b><a name="774">  774</a></b>                          <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> faulty3DES, void *wincx)
+<b><a name="775">  775</a></b> {
+<b><a name="776">  776</a></b>     /* pbe stuff */
+<b><a name="777">  777</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> *pbe_params;
+<b><a name="778">  778</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *symKey;
+<b><a name="779">  779</a></b> 
+<b><a name="780">  780</a></b>     if(faulty3DES &amp;&amp; (<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> == <a href="../softoken/pkcs11n.h.dep.html#CKM_NETSCAPE_PBE_SHA1_TRIPLE_DES_CBC">CKM_NETSCAPE_PBE_SHA1_TRIPLE_DES_CBC</a>)) {
+<b><a name="781">  781</a></b>         <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = <a href="../softoken/pkcs11n.h.dep.html#CKM_NETSCAPE_PBE_SHA1_FAULTY_3DES_CBC">CKM_NETSCAPE_PBE_SHA1_FAULTY_3DES_CBC</a>;
+<b><a name="782">  782</a></b>     }
+<b><a name="783">  783</a></b>     if(mech == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="784">  784</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="785">  785</a></b>     }
+<b><a name="786">  786</a></b> 
+<b><a name="787">  787</a></b>     pbe_params = (<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> *)mech-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;
+<b><a name="788">  788</a></b>     if (!pbe_params) {
+<b><a name="789">  789</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="790">  790</a></b>     }
+<b><a name="791">  791</a></b>     pbe_params-&gt;pPassword = (<a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a>)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(pwitem-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="792">  792</a></b>     if(pbe_params-&gt;pPassword != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="793">  793</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(pbe_params-&gt;pPassword, pwitem-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, pwitem-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="794">  794</a></b>         pbe_params-&gt;ulPasswordLen = pwitem-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>;
+<b><a name="795">  795</a></b>     } else {
+<b><a name="796">  796</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(mech, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="797">  797</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="798">  798</a></b>     }
+<b><a name="799">  799</a></b> 
+<b><a name="800">  800</a></b>     symKey = <a href="../pk11wrap/pk11skey.c.dep.html#PK11_TokenKeyGenWithFlags">PK11_TokenKeyGenWithFlags</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>, mech, 0, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>,
+<b><a name="801">  801</a></b>            <a href="../softoken/pkcs11t.h.dep.html#CKF_SIGN">CKF_SIGN</a>|<a href="../softoken/pkcs11t.h.dep.html#CKF_ENCRYPT">CKF_ENCRYPT</a>|<a href="../softoken/pkcs11t.h.dep.html#CKF_DECRYPT">CKF_DECRYPT</a>|<a href="../softoken/pkcs11t.h.dep.html#CKF_UNWRAP">CKF_UNWRAP</a>|<a href="../softoken/pkcs11t.h.dep.html#CKF_WRAP">CKF_WRAP</a>, 0, wincx);
+<b><a name="802">  802</a></b> 
+<b><a name="803">  803</a></b>     <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(pbe_params-&gt;pPassword, pwitem-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="804">  804</a></b>     pbe_params-&gt;pPassword = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="805">  805</a></b>     pbe_params-&gt;ulPasswordLen = 0;
+<b><a name="806">  806</a></b>     return symKey;
+<b><a name="807">  807</a></b> }
+<b><a name="808">  808</a></b> 
+<b><a name="809">  809</a></b> <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *
+<b><a name="810">  810</a></b> <a href="#810">PK11_PBEKeyGen</a>(<a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem,
+<b><a name="811">  811</a></b>                                                        <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> faulty3DES, void *wincx)
+<b><a name="812">  812</a></b> {
+<b><a name="813">  813</a></b>     /* pbe stuff */
+<b><a name="814">  814</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a> <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>;
+<b><a name="815">  815</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *mech;
+<b><a name="816">  816</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *symKey;
+<b><a name="817">  817</a></b> 
+<b><a name="818">  818</a></b>     mech = <a href="../pk11wrap/pk11mech.c.dep.html#PK11_ParamFromAlgid">PK11_ParamFromAlgid</a>(algid);
+<b><a name="819">  819</a></b>     <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = <a href="../pk11wrap/pk11mech.c.dep.html#PK11_AlgtagToMechanism">PK11_AlgtagToMechanism</a>(<a href="../util/secoid.c.dep.html#SECOID_FindOIDTag">SECOID_FindOIDTag</a>(&amp;algid-&gt;algorithm));
+<b><a name="820">  820</a></b>     if(faulty3DES &amp;&amp; (<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> == <a href="../softoken/pkcs11n.h.dep.html#CKM_NETSCAPE_PBE_SHA1_TRIPLE_DES_CBC">CKM_NETSCAPE_PBE_SHA1_TRIPLE_DES_CBC</a>)) {
+<b><a name="821">  821</a></b>         <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = <a href="../softoken/pkcs11n.h.dep.html#CKM_NETSCAPE_PBE_SHA1_FAULTY_3DES_CBC">CKM_NETSCAPE_PBE_SHA1_FAULTY_3DES_CBC</a>;
+<b><a name="822">  822</a></b>     }
+<b><a name="823">  823</a></b>     if(mech == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="824">  824</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="825">  825</a></b>     }
+<b><a name="826">  826</a></b>     symKey = <a href="../pk11wrap/pk11pbe.c.dep.html#PK11_RawPBEKeyGen">PK11_RawPBEKeyGen</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>, mech, pwitem, faulty3DES, wincx);
+<b><a name="827">  827</a></b> 
+<b><a name="828">  828</a></b>     <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(mech, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="829">  829</a></b>     return symKey;
+<b><a name="830">  830</a></b> }
+<b><a name="831">  831</a></b> 
+<b><a name="832">  832</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="833">  833</a></b> <a href="#833">PK11_GetPBEIV</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem)
+<b><a name="834">  834</a></b> {
+<b><a name="835">  835</a></b>     /* pbe stuff */
+<b><a name="836">  836</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a> <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>;
+<b><a name="837">  837</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *mech;
+<b><a name="838">  838</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SymKey">PK11SymKey</a> *symKey;
+<b><a name="839">  839</a></b>     <a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a> *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a> = <a href="../pk11wrap/pk11<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>.c.dep.html#PK11_GetInternalSlot">PK11_GetInternalSlot</a>();
+<b><a name="840">  840</a></b>     int iv_len = 0;
+<b><a name="841">  841</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS_PTR">CK_PBE_PARAMS_PTR</a> pPBEparams;
+<b><a name="842">  842</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>;
+<b><a name="843">  843</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *iv;
+<b><a name="844">  844</a></b> 
+<b><a name="845">  845</a></b> 
+<b><a name="846">  846</a></b>     mech = <a href="../pk11wrap/pk11mech.c.dep.html#PK11_ParamFromAlgid">PK11_ParamFromAlgid</a>(algid);
+<b><a name="847">  847</a></b>     <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = <a href="../pk11wrap/pk11mech.c.dep.html#PK11_AlgtagToMechanism">PK11_AlgtagToMechanism</a>(<a href="../util/secoid.c.dep.html#SECOID_FindOIDTag">SECOID_FindOIDTag</a>(&amp;algid-&gt;algorithm));
+<b><a name="848">  848</a></b>     if(mech == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="849">  849</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="850">  850</a></b>     }
+<b><a name="851">  851</a></b>     symKey = <a href="../pk11wrap/pk11pbe.c.dep.html#PK11_RawPBEKeyGen">PK11_RawPBEKeyGen</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>, <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>, mech, pwitem, <a href="../mozilla/nsprpub/pr/include/pr<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>s.h.dep.html#PR_FALSE">PR_FALSE</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="852">  852</a></b>     <a href="../pk11wrap/pk11slot.c.dep.html#PK11_FreeSlot">PK11_FreeSlot</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/pkcs11/pk11test.c.dep.html#slot">slot</a>);
+<b><a name="853">  853</a></b>     if (symKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="854">  854</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(mech, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="855">  855</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="856">  856</a></b>     }
+<b><a name="857">  857</a></b>     <a href="../pk11wrap/pk11skey.c.dep.html#PK11_FreeSymKey">PK11_FreeSymKey</a>(symKey);
+<b><a name="858">  858</a></b>     pPBEparams = (<a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS_PTR">CK_PBE_PARAMS_PTR</a>)mech-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;
+<b><a name="859">  859</a></b>     iv_len = <a href="../pk11wrap/pk11mech.c.dep.html#PK11_GetIVLength">PK11_GetIVLength</a>(<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>);
+<b><a name="860">  860</a></b> 
+<b><a name="861">  861</a></b>     <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = (unsigned char *)pPBEparams-&gt;pInitVector;
+<b><a name="862">  862</a></b>     <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> = iv_<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>;
+<b><a name="863">  863</a></b>     iv = <a href="../util/secitem.c.dep.html#SECITEM_DupItem">SECITEM_DupItem</a>(&amp;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>);
+<b><a name="864">  864</a></b> 
+<b><a name="865">  865</a></b>     <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(mech, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="866">  866</a></b>     return iv;
+<b><a name="867">  867</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,2481 @@
+<?php
+
+$html_title = 'Export Server SSL Connection Details';
+$page_title = 'Export Server SSL Connection Details';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="GENERATOR" CONTENT="Mozilla/4.02 [en] (WinNT; U) [Netscape]">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+This document contains traces of two SSL connections between an "export"
+client and an SSL server, as seen by the server.
+
+<P>This document shows actual values of all the cryptographic computations,
+their inputs and outputs, in order in the example SSL connections. This
+is to aid others in developing SSL implementations.
+The public and private certificates and keys used (revealed) in this 
+example are used only for SSL session samples.
+
+<P>The connections do not use client-auth. They use RC4 with a 128-bit
+key, derived from 40 secret bits (an "export" key).
+
+<P>This table shows the different messages in the first connection. 
+Each link will take you directly to the relevant portion of the document.
+<P>
+<CENTER><FONT SIZE=+1> First Connection Messages</FONT></CENTER>
+
+<TABLE BORDER=3 CELLSPACING=3 COLS=2 WIDTH="100%" >
+<TR><TD> <CENTER><B>Client</B></CENTER> </TD>
+<TD> <CENTER><B>Server</B></CENTER></TD></TR>
+
+<TR><TD> <A HREF="#ClientHello1">Client Hello</A> </TD><TD></TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#ServerHello1">Server Hello</A> </TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#Certificate1">Certificate</A> </TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#ServerHelloDone1">Server Hello Done</A> </TD></TR>
+
+<TR><TD> <A HREF="#ClientKeyExchange1">Client Key Exchange</A> </TD><TD></TD></TR>
+
+<TR><TD> <A HREF="#ClientChangeCipherSpec1">Change Cipher Spec</A> </TD><TD></TD></TR>
+
+<TR><TD> <A HREF="#ClientFinished1">Finished</A> </TD><TD></TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#ServerChangeCipherSpec1">Change Cipher Spec</A> </TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#ServerFinished1">Finished</A> </TD></TR>
+
+<TR><TD> <A HREF="#HttpRequest1">HTTP request</A> </TD><TD></TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#HttpResponse1">HTTP response</A> </TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#ServerCloseAlert1">Close Notify Alert</A> </TD></TR>
+
+<TR><TD>Close Notify Alert</TD><TD></TD></TR>
+</TABLE>
+
+
+<P>The second connection uses the "session resume" (or "session restart")
+feature of SSL, to avoid repeating all the computation of the
+client_key_exchange message.
+<P>
+<CENTER><FONT SIZE=+1> Second ("Restarted") Connection Messages</FONT></CENTER>
+
+<CENTER><TABLE BORDER=3 CELLSPACING=3 CELLPADDING=3 COLS=2 WIDTH="100%" >
+<TR>
+<TD> <CENTER><B>Client</B></CENTER> </TD>
+<TD> <CENTER><B>Server</B></CENTER> </TD>
+</TR>
+
+<TR><TD> <A HREF="#ClientHello2">Client Hello (V3)</A> </TD><TD></TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#ServerHello2">Server Hello</A> </TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#ServerChangeCipherSpec2">Change Cipher Spec</A> </TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#ServerFinished2">Finished</A> </TD></TR>
+
+<TR><TD> <A HREF="#ClientChangeCipherSpec2">Change Cipher Spec</A> </TD><TD></TD></TR>
+
+<TR><TD> <A HREF="#ClientFinished2">Finished</A> </TD><TD></TD></TR>
+
+<TR><TD> <A HREF="#ClientData2">HTTP request</A> </TD><TD></TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#ServerData2">HTTP response</A> </TD></TR>
+
+<TR><TD></TD><TD> <A HREF="#ServerAlert2">Close Notify Alert</A> </TD></TR>
+
+<TR><TD>Close Notify Alert</TD><TD></TD></TR>
+</TABLE></CENTER>
+<HR WIDTH="100%">
+Notes on presentation (format) of following data:
+<P>
+Data that is transmitted, received, or that is input to or output from
+functions that hash, compress, encrypt or decrypt, are shown in both 
+hexadecimal and in ASCII, with unprintable charaacters shown as dots.  
+<P>
+Other lines contain comments or analysis of the data.  Comments generally
+preceed the data they describe.
+<P>
+Lines beginning with a plus ("+") symbol denote data that is actually
+transmitted or received over the underlying transport (TCP) connection.
+All other lines of data are used only internally.
+<P>
+The intermediate state of the MD5 and SHA-1 hashes is shown in two parts,
+the contents of the 4 (MD5) or 5 (SHA-1) 32-bit state variables are shown 
+in hexadecimal, followed by the content of any buffered input 
+to the hash function (partial hash input block) that has not yet been 
+processed by the hash function.
+<HR WIDTH="100%">
+
+
+
+
+
+
+<H2>The first Connection.</H2>
+<H3><A NAME="ClientHello1"></A>Client Hello Handshake</H3>
+The first connection begins with an SSL version 2 client-hello message 
+from the client.
+<PRE>
+raw gather data: [Len: 2]
++  80 1f                                             ..
+recv clear record: [Len: 31]
++  01 03 00 00 06 00 00 00 10 00 00 03 00 00 06 90   ................
++  06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20      .Fi .d...?...[ 
+got handshake record of 31 bytes
+dump-msg: Client-Hello
+          version (Major)=3
+          version (minor)=0
+          cipher-specs [Len: 6]
+            00 00 03 00 00 06 
+          session-id [Len: 0]
+          challenge [Len: 16]
+            90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20 
+handle v2 client_hello
+start handshake hashes
+</PRE>
+The server interprets the "challenge" data from the V2 client-hello as
+the low order, right-most, bytes of the SSL3 "client random" data.
+<PRE>
+client random: [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[
+</PRE>
+All handshake messages, from either client or server, beginning with the
+client-hello, must be included in the ongoing "handshake hashes". There
+are two handshake hashes, one MD5, the other SHA1. The content of the handshake
+messages, excluding any record-layer headers, is hashed into each of the
+two hashes.
+
+<P>The client-hello shown above is the first input to the handshake hashes:
+<PRE>
+MD5 &amp; SHA handshake hash input: [Len: 31]
+   01 03 00 00 06 00 00 00 10 00 00 03 00 00 06 90   ................
+   06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20      .Fi .d...?...[
+</PRE>
+After hashing the client_hello handshake, the hashshake hashes are:
+<PRE>
+MD5 state: 67452301 efcdab89 98badcfe 10325476
+MD5_TraceState: buffered input [Len: 31]
+   01 03 00 00 06 00 00 00 10 00 00 03 00 00 06 90   ................
+   06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20      .Fi .d...?...[ 
+SHA1 state: 67452301 efcdab89 98badcfe 10325476 c3d2e1f0
+SHA1_TraceState: buffered input [Len: 31]
+   01 03 00 00 06 00 00 00 10 00 00 03 00 00 06 90   ................
+   06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20      .Fi .d...?...[ 
+</PRE>
+
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+
+<H3><A NAME="ServerHello1"></A>Server Hello Handshake</H3>
+The server now sends a response, a single
+handshake record containing 3 handshake messages:
+<UL>
+<LI> server_hello</LI>
+<LI> certificate</LI>
+<LI> server_hello_done</LI>
+</UL>
+
+<PRE>
+begin send server_hello sequence
+</PRE>
+The server_hello handshake message, shown below, is entirely included in
+the handshake hashes.
+<PRE>
+append handshake header: type server_hello  (2)
+   02                                                .
+   00 00 46                                          ..F
+   03 00                                             ..
+server random:
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+session ID len:
+   20                                                 
+session ID:
+   00 00 82 f4 58 2b 88 b7 ff 12 59 0d 32 2c d7 13   ....X+....Y.2,..
+   6f 20 c6 f7 9c 98 b6 de 85 be b2 40 cd 85 9f f3   o .........@....
+   00 03                                             ..
+   00                                                .
+
+Set Pending Cipher Suite to 0x0003 - SSL_RSA_EXPORT_WITH_RC4_40_MD5
+</PRE>
+After hashing the server_hello handshake, the handshake hashes are now:
+<PRE>
+MD5 state: fe5432fc 4546c043 247db6dd 4c44a2d9
+MD5_TraceState: buffered input [Len: 41]
+   2c 84 82 58 be 20 00 00 82 f4 58 2b 88 b7 ff 12   ,..X. ....X+....
+   59 0d 32 2c d7 13 6f 20 c6 f7 9c 98 b6 de 85 be   Y.2,..o ........
+   b2 40 cd 85 9f f3 00 03 00                        .@.......
+SHA1 state: b62879bd 38f9c328 f9d4d5e2 b633c37d b14fa56c
+SHA1_TraceState: buffered input [Len: 41]
+   2c 84 82 58 be 20 00 00 82 f4 58 2b 88 b7 ff 12   ,..X. ....X+....
+   59 0d 32 2c d7 13 6f 20 c6 f7 9c 98 b6 de 85 be   Y.2,..o ........
+   b2 40 cd 85 9f f3 00 03 00                        .@.......
+
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+<h3><A NAME="Certificate1">Server's Certificate Handhake</A></h3>
+The Server constructs the following certificate handshake message, which
+is entirely included in the handshake hashes.
+<PRE>
+send certificate handshake
+append handshake header: type certificate  (11)
+   0b                                                .
+   00 05 2f                                          ../
+   00 05 2c                                          ..,
+   00 02 7c                                          ..|
+   30 82 02 78 30 82 01 e1 a0 03 02 01 02 02 01 70   0..x0..........p
+   30 0d 06 09 2a 86 48 86 f7 0d 01 01 04 05 00 30   0...*.H........0
+   77 31 0b 30 09 06 03 55 04 06 13 02 55 53 31 2c   w1.0...U....US1,
+   30 2a 06 03 55 04 0a 13 23 4e 65 74 73 63 61 70   0*..U...#Netscap
+   65 20 43 6f 6d 6d 75 6e 69 63 61 74 69 6f 6e 73   e Communications
+   20 43 6f 72 70 6f 72 61 74 69 6f 6e 31 11 30 0f    Corporation1.0.
+   06 03 55 04 0b 13 08 48 61 72 64 63 6f 72 65 31   ..U....Hardcore1
+   27 30 25 06 03 55 04 03 13 1e 48 61 72 64 63 6f   '0%..U....Hardco
+   72 65 20 43 65 72 74 69 66 69 63 61 74 65 20 53   re Certificate S
+   65 72 76 65 72 20 49 49 30 1e 17 0d 39 37 30 38   erver II0...9708
+   31 39 30 34 33 32 32 38 5a 17 0d 39 38 30 32 31   19043228Z..98021
+   35 30 34 33 32 32 38 5a 30 81 98 31 0b 30 09 06   5043228Z0..1.0..
+   03 55 04 06 13 02 55 53 31 11 30 0f 06 03 55 04   .U....US1.0...U.
+   0a 13 08 4e 65 74 73 63 61 70 65 31 1d 30 1b 06   ...Netscape1.0..
+   03 55 04 0b 13 14 48 61 72 64 63 6f 72 65 20 53   .U....Hardcore S
+   53 4c 20 74 65 73 74 69 6e 67 31 19 30 17 06 0a   SL testing1.0...
+   09 92 26 89 93 f2 2c 64 01 01 13 09 53 53 4c 54   ..&amp;...,d....SSLT
+   65 73 74 65 72 31 17 30 15 06 03 55 04 03 13 0e   ester1.0...U....
+   62 69 6a 6f 75 2e 6d 63 6f 6d 2e 63 6f 6d 31 23   bijou.mcom.com1#
+   30 21 06 09 2a 86 48 86 f7 0d 01 09 01 16 14 6e   0!..*.H........n
+   65 6c 73 6f 6e 62 40 6e 65 74 73 63 61 70 65 2e   elsonb@netscape.
+   63 6f 6d 30 5c 30 0d 06 09 2a 86 48 86 f7 0d 01   com0\0...*.H....
+   01 01 05 00 03 4b 00 30 48 02 41 00 e3 f3 ba 48   .....K.0H.A....H
+   dd 2e bd a8 e9 87 8e 5f 8a 9e cb c9 6d c1 8b 79   ......._....m..y
+   31 ad b0 26 39 ba dc 28 d1 f0 20 75 a4 24 d2 e8   1..&amp;9..(.. u.$..
+   16 e7 b3 b6 aa 39 e5 e2 4c bf 8e 5f 96 4b cd 09   .....9..L.._.K..
+   75 71 b1 69 1f 67 df b7 ac 58 29 a1 02 03 01 00   uq.i.g...X).....
+   01 a3 36 30 34 30 11 06 09 60 86 48 01 86 f8 42   ..6040...`.H...B
+   01 01 04 04 03 02 00 40 30 1f 06 03 55 1d 23 04   .......@0...U.#.
+   18 30 16 80 14 97 b1 6d b2 b6 02 16 54 0c 97 d7   .0.....m....T...
+   e3 32 6d cb 9c df ee de 80 30 0d 06 09 2a 86 48   .2m......0...*.H
+   86 f7 0d 01 01 04 05 00 03 81 81 00 a0 e6 3f 22   ..............?"
+   15 fb 54 8f ee a3 d8 81 ee 20 ad 67 d6 a4 64 67   ..T...... .g..dg
+   3a d1 74 4f 19 4a ba 9e 9d ce b9 4c d7 40 c1 f0   :.tO.J.....L.@..
+   fd 32 5e 7b 73 c5 27 55 e4 e0 f0 7d ee ec fe 10   .2^{s.'U...}....
+   16 0f 6f c5 a0 12 5e c6 74 c9 16 c4 d7 43 cc 78   ..o...^.t....C.x
+   16 2b 4c 98 7f be 27 cf d9 bd 76 53 e8 ed f9 1a   .+L...'...vS....
+   05 77 9e fd 80 a9 e6 05 14 bf d2 0d 0f ff 17 38   .w.............8
+   5c 74 62 e9 f1 1b 41 3b 74 36 06 cc 67 da 03 ca   \tb...A;t6..g...
+   37 d2 1c 66 37 fc c0 be fd 20 32 e0               7..f7.... 2.
+   00 02 aa                                          ...
+   30 82 02 a6 30 82 02 0f a0 03 02 01 02 02 01 01   0...0...........
+   30 0d 06 09 2a 86 48 86 f7 0d 01 01 05 05 00 30   0...*.H........0
+   77 31 0b 30 09 06 03 55 04 06 13 02 55 53 31 2c   w1.0...U....US1,
+   30 2a 06 03 55 04 0a 13 23 4e 65 74 73 63 61 70   0*..U...#Netscap
+   65 20 43 6f 6d 6d 75 6e 69 63 61 74 69 6f 6e 73   e Communications
+   20 43 6f 72 70 6f 72 61 74 69 6f 6e 31 11 30 0f    Corporation1.0.
+   06 03 55 04 0b 13 08 48 61 72 64 63 6f 72 65 31   ..U....Hardcore1
+   27 30 25 06 03 55 04 03 13 1e 48 61 72 64 63 6f   '0%..U....Hardco
+   72 65 20 43 65 72 74 69 66 69 63 61 74 65 20 53   re Certificate S
+   65 72 76 65 72 20 49 49 30 1e 17 0d 39 37 30 35   erver II0...9705
+   32 37 31 38 30 39 34 37 5a 17 0d 39 38 30 35 32   27180947Z..98052
+   37 31 38 30 39 34 37 5a 30 77 31 0b 30 09 06 03   7180947Z0w1.0...
+   55 04 06 13 02 55 53 31 2c 30 2a 06 03 55 04 0a   U....US1,0*..U..
+   13 23 4e 65 74 73 63 61 70 65 20 43 6f 6d 6d 75   .#Netscape Commu
+   6e 69 63 61 74 69 6f 6e 73 20 43 6f 72 70 6f 72   nications Corpor
+   61 74 69 6f 6e 31 11 30 0f 06 03 55 04 0b 13 08   ation1.0...U....
+   48 61 72 64 63 6f 72 65 31 27 30 25 06 03 55 04   Hardcore1'0%..U.
+   03 13 1e 48 61 72 64 63 6f 72 65 20 43 65 72 74   ...Hardcore Cert
+   69 66 69 63 61 74 65 20 53 65 72 76 65 72 20 49   ificate Server I
+   49 30 81 9f 30 0d 06 09 2a 86 48 86 f7 0d 01 01   I0..0...*.H.....
+   01 05 00 03 81 8d 00 30 81 89 02 81 81 00 bc 14   .......0........
+   a0 c0 53 fa e1 4d b9 cd 0e b7 42 e3 cd 98 46 e0   ..S..M....B...F.
+   b3 1e 13 76 c7 c5 e5 3d e5 24 18 dd 72 1a 37 7f   ...v...=.$..r.7.
+   c4 66 51 36 7f e1 ae e9 11 5e 29 6f ac ff 28 ce   .fQ6.....^)o..(.
+   cd 53 ae 39 09 75 a1 eb d2 ec 79 d4 e9 6b 4c 99   .S.9.u....y..kL.
+   e4 b6 42 d0 f7 52 8b ae 4a 33 6b 58 5b 47 57 13   ..B..R..J3kX[GW.
+   a3 61 32 86 02 e8 63 e6 7a 27 c2 99 7a 22 48 d9   .a2...c.z'..z"H.
+   c8 d1 5c 6d b1 37 84 66 4b 9e a2 ce 31 6c 1c 06   ..\m.7.fK...1l..
+   7a 5f c5 7b b8 ff 58 89 f6 0b 40 6f 7c 0d 02 03   z_.{..X...@o|...
+   01 00 01 a3 42 30 40 30 1d 06 03 55 1d 0e 04 16   ....B0@0...U....
+   04 14 97 b1 6d b2 b6 02 16 54 0c 97 d7 e3 32 6d   ....m....T....2m
+   cb 9c df ee de 80 30 1f 06 03 55 1d 23 04 18 30   ......0...U.#..0
+   16 80 14 97 b1 6d b2 b6 02 16 54 0c 97 d7 e3 32   .....m....T....2
+   6d cb 9c df ee de 80 30 0d 06 09 2a 86 48 86 f7   m......0...*.H..
+   0d 01 01 05 05 00 03 81 81 00 9b 52 fe 93 fa 40   ...........R...@
+   4d a9 8d 72 f9 f6 f6 c9 32 40 dc 20 fe be a5 a2   M..r....2@. ....
+   db e6 2c df d1 5f a0 66 45 d1 6e 5f 0a 91 e9 0b   ..,.._.fE.n_....
+   c1 7c 8a c0 64 a0 d4 24 56 85 b5 a0 aa 1e c8 8c   .|..d..$V.......
+   15 40 ac fc 5a 2f 94 18 44 b9 73 23 c1 49 a0 24   .@..Z/..D.s#.I.$
+   ff b0 47 9c d8 28 1f b3 70 a7 62 b3 5b 8e 4d 82   ..G..(..p.b.[.M.
+   bd 4d 85 eb 0d 5a 87 c0 41 c9 a6 c2 69 9c ee 81   .M...Z..A...i...
+   49 2a fb 01 55 6f b1 df 21 a7 b0 70 e4 5d 34 3b   I*..Uo..!..p.]4;
+   90 29 f9 14 c3 2e 07 79 13 c7                     .).....y..
+</PRE>
+After hashing the certificate handshake message, the handshake hashes are:
+<PRE>
+MD5 state: 560c93e0 964c3ad9 e5247f9d b34341d1
+MD5_TraceState: buffered input [Len: 28]
+   ee 81 49 2a fb 01 55 6f b1 df 21 a7 b0 70 e4 5d   ..I*..Uo..!..p.]
+   34 3b 90 29 f9 14 c3 2e 07 79 13 c7               4;.).....y..
+SHA1 state: e72665bc 312f118f 0bd0913a 1978c453 290ee2e7
+SHA1_TraceState: buffered input [Len: 28]
+   ee 81 49 2a fb 01 55 6f b1 df 21 a7 b0 70 e4 5d   ..I*..Uo..!..p.]
+   34 3b 90 29 f9 14 c3 2e 07 79 13 c7               4;.).....y..
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+
+<h3><A NAME="ServerHelloDone1"></A>Server Hello Done Handshake</h3>
+The following server_hello_done handshake
+message is entirely included in the handshake hashes.
+<PRE>
+send server_hello_done handshake
+append handshake header: type server_hello_done   (14)
+   0e                                                .
+   00 00 00                                          ...
+</PRE>
+After hashing the server_hello_done handshake message, the handshake hashes
+are:
+<PRE>
+MD5 state: 560c93e0 964c3ad9 e5247f9d b34341d1
+MD5_TraceState: buffered input [Len: 32]
+   ee 81 49 2a fb 01 55 6f b1 df 21 a7 b0 70 e4 5d   ..I*..Uo..!..p.]
+   34 3b 90 29 f9 14 c3 2e 07 79 13 c7 0e 00 00 00   4;.).....y......
+SHA1 state: e72665bc 312f118f 0bd0913a 1978c453 290ee2e7
+SHA1_TraceState: buffered input [Len: 32]
+   ee 81 49 2a fb 01 55 6f b1 df 21 a7 b0 70 e4 5d   ..I*..Uo..!..p.]
+   34 3b 90 29 f9 14 c3 2e 07 79 13 c7 0e 00 00 00   4;.).....y......
+</PRE>
+
+
+
+
+
+
+
+
+
+
+
+The above three handshake messages are now sent to the client in one record.
+No MACing, compression, or encryption of the record is done, because no
+change_cipher_spec record has yet been sent. 
+The entire record sent is as follows:
+<PRE>
+SendPlainText record type: handshake  (22) bytes=1409
+send (unencrypted) record data: [Len: 1414]
++  16 03 00 05 81 02 00 00 46 03 00 34 02 87 24 8e   ........F..4..$.
++  ea bd f7 c2 8c fc fe 39 54 90 bb 06 fe 48 b4 a2   .......9T....H..
++  07 fc 9d 2a d2 d9 2c 84 82 58 be 20 00 00 82 f4   ...*..,..X. ....
++  58 2b 88 b7 ff 12 59 0d 32 2c d7 13 6f 20 c6 f7   X+....Y.2,..o ..
++  9c 98 b6 de 85 be b2 40 cd 85 9f f3 00 03 00 0b   .......@........
++  00 05 2f 00 05 2c 00 02 7c 30 82 02 78 30 82 01   ../..,..|0..x0..
++  e1 a0 03 02 01 02 02 01 70 30 0d 06 09 2a 86 48   ........p0...*.H
++  86 f7 0d 01 01 04 05 00 30 77 31 0b 30 09 06 03   ........0w1.0...
++  55 04 06 13 02 55 53 31 2c 30 2a 06 03 55 04 0a   U....US1,0*..U..
++  13 23 4e 65 74 73 63 61 70 65 20 43 6f 6d 6d 75   .#Netscape Commu
++  6e 69 63 61 74 69 6f 6e 73 20 43 6f 72 70 6f 72   nications Corpor
++  61 74 69 6f 6e 31 11 30 0f 06 03 55 04 0b 13 08   ation1.0...U....
++  48 61 72 64 63 6f 72 65 31 27 30 25 06 03 55 04   Hardcore1'0%..U.
++  03 13 1e 48 61 72 64 63 6f 72 65 20 43 65 72 74   ...Hardcore Cert
++  69 66 69 63 61 74 65 20 53 65 72 76 65 72 20 49   ificate Server I
++  49 30 1e 17 0d 39 37 30 38 31 39 30 34 33 32 32   I0...97081904322
++  38 5a 17 0d 39 38 30 32 31 35 30 34 33 32 32 38   8Z..980215043228
++  5a 30 81 98 31 0b 30 09 06 03 55 04 06 13 02 55   Z0..1.0...U....U
++  53 31 11 30 0f 06 03 55 04 0a 13 08 4e 65 74 73   S1.0...U....Nets
++  63 61 70 65 31 1d 30 1b 06 03 55 04 0b 13 14 48   cape1.0...U....H
++  61 72 64 63 6f 72 65 20 53 53 4c 20 74 65 73 74   ardcore SSL test
++  69 6e 67 31 19 30 17 06 0a 09 92 26 89 93 f2 2c   ing1.0.....&amp;...,
++  64 01 01 13 09 53 53 4c 54 65 73 74 65 72 31 17   d....SSLTester1.
++  30 15 06 03 55 04 03 13 0e 62 69 6a 6f 75 2e 6d   0...U....bijou.m
++  63 6f 6d 2e 63 6f 6d 31 23 30 21 06 09 2a 86 48   com.com1#0!..*.H
++  86 f7 0d 01 09 01 16 14 6e 65 6c 73 6f 6e 62 40   ........nelsonb@
++  6e 65 74 73 63 61 70 65 2e 63 6f 6d 30 5c 30 0d   netscape.com0\0.
++  06 09 2a 86 48 86 f7 0d 01 01 01 05 00 03 4b 00   ..*.H.........K.
++  30 48 02 41 00 e3 f3 ba 48 dd 2e bd a8 e9 87 8e   0H.A....H.......
++  5f 8a 9e cb c9 6d c1 8b 79 31 ad b0 26 39 ba dc   _....m..y1..&amp;9..
++  28 d1 f0 20 75 a4 24 d2 e8 16 e7 b3 b6 aa 39 e5   (.. u.$.......9.
++  e2 4c bf 8e 5f 96 4b cd 09 75 71 b1 69 1f 67 df   .L.._.K..uq.i.g.
++  b7 ac 58 29 a1 02 03 01 00 01 a3 36 30 34 30 11   ..X).......6040.
++  06 09 60 86 48 01 86 f8 42 01 01 04 04 03 02 00   ..`.H...B.......
++  40 30 1f 06 03 55 1d 23 04 18 30 16 80 14 97 b1   @0...U.#..0.....
++  6d b2 b6 02 16 54 0c 97 d7 e3 32 6d cb 9c df ee   m....T....2m....
++  de 80 30 0d 06 09 2a 86 48 86 f7 0d 01 01 04 05   ..0...*.H.......
++  00 03 81 81 00 a0 e6 3f 22 15 fb 54 8f ee a3 d8   .......?"..T....
++  81 ee 20 ad 67 d6 a4 64 67 3a d1 74 4f 19 4a ba   .. .g..dg:.tO.J.
++  9e 9d ce b9 4c d7 40 c1 f0 fd 32 5e 7b 73 c5 27   ....L.@...2^{s.'
++  55 e4 e0 f0 7d ee ec fe 10 16 0f 6f c5 a0 12 5e   U...}......o...^
++  c6 74 c9 16 c4 d7 43 cc 78 16 2b 4c 98 7f be 27   .t....C.x.+L...'
++  cf d9 bd 76 53 e8 ed f9 1a 05 77 9e fd 80 a9 e6   ...vS.....w.....
++  05 14 bf d2 0d 0f ff 17 38 5c 74 62 e9 f1 1b 41   ........8\tb...A
++  3b 74 36 06 cc 67 da 03 ca 37 d2 1c 66 37 fc c0   ;t6..g...7..f7..
++  be fd 20 32 e0 00 02 aa 30 82 02 a6 30 82 02 0f   .. 2....0...0...
++  a0 03 02 01 02 02 01 01 30 0d 06 09 2a 86 48 86   ........0...*.H.
++  f7 0d 01 01 05 05 00 30 77 31 0b 30 09 06 03 55   .......0w1.0...U
++  04 06 13 02 55 53 31 2c 30 2a 06 03 55 04 0a 13   ....US1,0*..U...
++  23 4e 65 74 73 63 61 70 65 20 43 6f 6d 6d 75 6e   #Netscape Commun
++  69 63 61 74 69 6f 6e 73 20 43 6f 72 70 6f 72 61   ications Corpora
++  74 69 6f 6e 31 11 30 0f 06 03 55 04 0b 13 08 48   tion1.0...U....H
++  61 72 64 63 6f 72 65 31 27 30 25 06 03 55 04 03   ardcore1'0%..U..
++  13 1e 48 61 72 64 63 6f 72 65 20 43 65 72 74 69   ..Hardcore Certi
++  66 69 63 61 74 65 20 53 65 72 76 65 72 20 49 49   ficate Server II
++  30 1e 17 0d 39 37 30 35 32 37 31 38 30 39 34 37   0...970527180947
++  5a 17 0d 39 38 30 35 32 37 31 38 30 39 34 37 5a   Z..980527180947Z
++  30 77 31 0b 30 09 06 03 55 04 06 13 02 55 53 31   0w1.0...U....US1
++  2c 30 2a 06 03 55 04 0a 13 23 4e 65 74 73 63 61   ,0*..U...#Netsca
++  70 65 20 43 6f 6d 6d 75 6e 69 63 61 74 69 6f 6e   pe Communication
++  73 20 43 6f 72 70 6f 72 61 74 69 6f 6e 31 11 30   s Corporation1.0
++  0f 06 03 55 04 0b 13 08 48 61 72 64 63 6f 72 65   ...U....Hardcore
++  31 27 30 25 06 03 55 04 03 13 1e 48 61 72 64 63   1'0%..U....Hardc
++  6f 72 65 20 43 65 72 74 69 66 69 63 61 74 65 20   ore Certificate 
++  53 65 72 76 65 72 20 49 49 30 81 9f 30 0d 06 09   Server II0..0...
++  2a 86 48 86 f7 0d 01 01 01 05 00 03 81 8d 00 30   *.H............0
++  81 89 02 81 81 00 bc 14 a0 c0 53 fa e1 4d b9 cd   ..........S..M..
++  0e b7 42 e3 cd 98 46 e0 b3 1e 13 76 c7 c5 e5 3d   ..B...F....v...=
++  e5 24 18 dd 72 1a 37 7f c4 66 51 36 7f e1 ae e9   .$..r.7..fQ6....
++  11 5e 29 6f ac ff 28 ce cd 53 ae 39 09 75 a1 eb   .^)o..(..S.9.u..
++  d2 ec 79 d4 e9 6b 4c 99 e4 b6 42 d0 f7 52 8b ae   ..y..kL...B..R..
++  4a 33 6b 58 5b 47 57 13 a3 61 32 86 02 e8 63 e6   J3kX[GW..a2...c.
++  7a 27 c2 99 7a 22 48 d9 c8 d1 5c 6d b1 37 84 66   z'..z"H...\m.7.f
++  4b 9e a2 ce 31 6c 1c 06 7a 5f c5 7b b8 ff 58 89   K...1l..z_.{..X.
++  f6 0b 40 6f 7c 0d 02 03 01 00 01 a3 42 30 40 30   ..@o|.......B0@0
++  1d 06 03 55 1d 0e 04 16 04 14 97 b1 6d b2 b6 02   ...U........m...
++  16 54 0c 97 d7 e3 32 6d cb 9c df ee de 80 30 1f   .T....2m......0.
++  06 03 55 1d 23 04 18 30 16 80 14 97 b1 6d b2 b6   ..U.#..0.....m..
++  02 16 54 0c 97 d7 e3 32 6d cb 9c df ee de 80 30   ..T....2m......0
++  0d 06 09 2a 86 48 86 f7 0d 01 01 05 05 00 03 81   ...*.H..........
++  81 00 9b 52 fe 93 fa 40 4d a9 8d 72 f9 f6 f6 c9   ...R...@M..r....
++  32 40 dc 20 fe be a5 a2 db e6 2c df d1 5f a0 66   2@. ......,.._.f
++  45 d1 6e 5f 0a 91 e9 0b c1 7c 8a c0 64 a0 d4 24   E.n_.....|..d..$
++  56 85 b5 a0 aa 1e c8 8c 15 40 ac fc 5a 2f 94 18   V........@..Z/..
++  44 b9 73 23 c1 49 a0 24 ff b0 47 9c d8 28 1f b3   D.s#.I.$..G..(..
++  70 a7 62 b3 5b 8e 4d 82 bd 4d 85 eb 0d 5a 87 c0   p.b.[.M..M...Z..
++  41 c9 a6 c2 69 9c ee 81 49 2a fb 01 55 6f b1 df   A...i...I*..Uo..
++  21 a7 b0 70 e4 5d 34 3b 90 29 f9 14 c3 2e 07 79   !..p.]4;.).....y
++  13 c7 0e 00 00 00                                 ......
+</PRE>
+
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+<h3><A NAME="ClientKeyExchange1"></A>Client Key Exchange Handshake</h3>
+Next, the server receives the client's responses. 
+In this example, the client sends the following three records:
+<UL>
+<LI> a record containing a client_key_exchange handshake</LI>
+<LI> a change_cipher_spec record</LI>
+<LI> an encrypted record, containing a "finished" handshake.</LI>
+</UL>
+Here is the first record.
+<PRE>
++  16 03 00 00 44                                    ....D
+plaintext: [Len: 68]
++  10 00 00 40 2e 64 fd 0c 39 0e 08 05 1d f9 a1 de   ...@.d..9.......
++  10 63 ab 7f e2 23 fc a2 9c 09 e6 3b 60 da d0 32   .c...#.....;`..2
++  2b f9 8d ca f3 18 6a 1a bd 9c 1f 99 f9 b5 bd 55   +.....j........U
++  9a 5b 4d 42 71 79 bb 80 59 12 d8 be fc 9a a3 c1   .[MBqy..Y.......
++  74 3b 00 e8                                       t;..
+handle handshake message: client_key_exchange (16)
+</PRE>
+Recall that the values of the handshake hashes, after the previous record
+sent, and before the client's response has been received, are now:
+<PRE>
+MD5 state: 560c93e0 964c3ad9 e5247f9d b34341d1
+MD5_TraceState: buffered input [Len: 32]
+   ee 81 49 2a fb 01 55 6f b1 df 21 a7 b0 70 e4 5d   ..I*..Uo..!..p.]
+   34 3b 90 29 f9 14 c3 2e 07 79 13 c7 0e 00 00 00   4;.).....y......
+SHA1 state: e72665bc 312f118f 0bd0913a 1978c453 290ee2e7
+SHA1_TraceState: buffered input [Len: 32]
+   ee 81 49 2a fb 01 55 6f b1 df 21 a7 b0 70 e4 5d   ..I*..Uo..!..p.]
+   34 3b 90 29 f9 14 c3 2e 07 79 13 c7 0e 00 00 00   4;.).....y......
+</PRE>
+The entire client_key_exchange handshake message (not including the record
+header) is now hashed into the handshake hashes. The hash input is:
+<PRE>
+MD5 &amp; SHA handshake hash input: [Len: 4]
+   10 00 00 40                                       ...@
+MD5 &amp; SHA handshake hash input: [Len: 64]
+   2e 64 fd 0c 39 0e 08 05 1d f9 a1 de 10 63 ab 7f   .d..9........c..
+   e2 23 fc a2 9c 09 e6 3b 60 da d0 32 2b f9 8d ca   .#.....;`..2+...
+   f3 18 6a 1a bd 9c 1f 99 f9 b5 bd 55 9a 5b 4d 42   ..j........U.[MB
+   71 79 bb 80 59 12 d8 be fc 9a a3 c1 74 3b 00 e8   qy..Y.......t;..
+</PRE>
+After hashing the client_key_exchange, the hashes now contain:
+<PRE>
+MD5 state: 047946f4 a933b86e 7002fd6e 017c4731
+MD5_TraceState: buffered input [Len: 36]
+   2b f9 8d ca f3 18 6a 1a bd 9c 1f 99 f9 b5 bd 55   +.....j........U
+   9a 5b 4d 42 71 79 bb 80 59 12 d8 be fc 9a a3 c1   .[MBqy..Y.......
+   74 3b 00 e8                                       t;..
+SHA1 state: 0711b86f 804602cc f4a01dbb 3fd58d56 c648dbe3
+SHA1_TraceState: buffered input [Len: 36]
+   2b f9 8d ca f3 18 6a 1a bd 9c 1f 99 f9 b5 bd 55   +.....j........U
+   9a 5b 4d 42 71 79 bb 80 59 12 d8 be fc 9a a3 c1   .[MBqy..Y.......
+   74 3b 00 e8                                       t;..
+</PRE>
+The client_key_exchange handshake contains the pre-master secret, which
+has been wrapped (public-key encrypted) with the server's public key.
+<BR>Here are the steps in the unwrapping (decryption) of the pre-master
+secret.  
+See <A HREF="http://www.rsa.com/pub/pkcs/ascii/pkcs-1.asc">PKCS#1</A>
+section 8.1 for details.&nbsp; Note the use of "block type 02".
+<PRE>
+handle client_key_exchange handshake
+RSA_DecryptBlock: ciphertext [Len: 64]
+   2e 64 fd 0c 39 0e 08 05 1d f9 a1 de 10 63 ab 7f   .d..9........c..
+   e2 23 fc a2 9c 09 e6 3b 60 da d0 32 2b f9 8d ca   .#.....;`..2+...
+   f3 18 6a 1a bd 9c 1f 99 f9 b5 bd 55 9a 5b 4d 42   ..j........U.[MB
+   71 79 bb 80 59 12 d8 be fc 9a a3 c1 74 3b 00 e8   qy..Y.......t;..
+RSA_DecryptBlock: modulus [Len: 65]
+   00 e3 f3 ba 48 dd 2e bd a8 e9 87 8e 5f 8a 9e cb   ....H......._...
+   c9 6d c1 8b 79 31 ad b0 26 39 ba dc 28 d1 f0 20   .m..y1..&amp;9..(.. 
+   75 a4 24 d2 e8 16 e7 b3 b6 aa 39 e5 e2 4c bf 8e   u.$.......9..L..
+   5f 96 4b cd 09 75 71 b1 69 1f 67 df b7 ac 58 29   _.K..uq.i.g...X)
+   a1                                                .
+RSA_DecryptBlock: privateExponent [Len: 64]
+   61 90 65 c0 dd fa 2d 6e e8 54 fe 98 e1 e9 c9 6b   a.e...-n.T.....k
+   33 30 cd 93 57 b1 f1 5c cb 04 b1 4a 3f 60 b9 63   30..W..\...J?`.c
+   11 b6 56 d2 8b 48 73 f4 db 44 45 fc d2 b9 04 cd   ..V..Hs..DE.....
+   5b e3 71 c5 a6 ee 6e 8f e5 ba d2 25 1e 3c 2d 61   [.q...n....%.&lt;-a
+RSA_DecryptBlock: formatted plaintext [Len: 64]
+   00 02 31 b0 c1 82 cb a2 56 81 62 e0 be de 17 00   ..1.....V.b.....
+   03 00 43 c0 06 15 e4 0a e7 fa b0 8f 6c 95 d7 6b   ..C.........l..k
+   a6 77 30 9a b8 0d 02 54 b9 84 21 33 0b 9d 46 21   .w0....T..!3..F!
+   ec c7 9b d0 d7 6c e3 b5 3f f9 64 1b e0 fe 5b 83   .....l..?.d...[.
+RSA_DecryptBlock: unpadded plaintext [Len: 48]
+   03 00 43 c0 06 15 e4 0a e7 fa b0 8f 6c 95 d7 6b   ..C.........l..k
+   a6 77 30 9a b8 0d 02 54 b9 84 21 33 0b 9d 46 21   .w0....T..!3..F!
+   ec c7 9b d0 d7 6c e3 b5 3f f9 64 1b e0 fe 5b 83   .....l..?.d...[.
+decrypted premaster secret: [Len: 48]
+   03 00 43 c0 06 15 e4 0a e7 fa b0 8f 6c 95 d7 6b   ..C.........l..k
+   a6 77 30 9a b8 0d 02 54 b9 84 21 33 0b 9d 46 21   .w0....T..!3..F!
+   ec c7 9b d0 d7 6c e3 b5 3f f9 64 1b e0 fe 5b 83   .....l..?.d...[.
+</PRE>
+The pre-master secret is now hashed with the server-random and client-random
+numbers and the "mixers" to produce the master secret, as described in
+<A HREF="../draft302.txt">
+section 8.1 of the SSL 3.0 spec.</A> 
+ Here are the steps involved. The intermediate SHA hash results are shown 
+in these steps, as inputs to the successive MD5 hashes.
+
+<PRE>
+master SHA hash: mixers [Len: 1]
+   41                                                A
+master SHA hash: pre-master secret [Len: 48]
+   03 00 43 c0 06 15 e4 0a e7 fa b0 8f 6c 95 d7 6b   ..C.........l..k
+   a6 77 30 9a b8 0d 02 54 b9 84 21 33 0b 9d 46 21   .w0....T..!3..F!
+   ec c7 9b d0 d7 6c e3 b5 3f f9 64 1b e0 fe 5b 83   .....l..?.d...[.
+master SHA hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+master SHA hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+master MD5 hash: pre-master secret [Len: 48]
+   03 00 43 c0 06 15 e4 0a e7 fa b0 8f 6c 95 d7 6b   ..C.........l..k
+   a6 77 30 9a b8 0d 02 54 b9 84 21 33 0b 9d 46 21   .w0....T..!3..F!
+   ec c7 9b d0 d7 6c e3 b5 3f f9 64 1b e0 fe 5b 83   .....l..?.d...[.
+master MD5 hash: SHA hash output [Len: 20]
+   67 92 a1 df 05 94 c2 cc 8d 3b 9b 11 2c 58 dd 27   g........;..,X.'
+   41 7b 5c 5c                                       A{\\
+
+Result of first MD5 Hash:
+master MD5 hash: MD5 hash output [Len: 16]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+
+Begin second MD5 hash
+master SHA hash: mixers [Len: 2]
+   42 42                                             BB
+master SHA hash: pre-master secret [Len: 48]
+   03 00 43 c0 06 15 e4 0a e7 fa b0 8f 6c 95 d7 6b   ..C.........l..k
+   a6 77 30 9a b8 0d 02 54 b9 84 21 33 0b 9d 46 21   .w0....T..!3..F!
+   ec c7 9b d0 d7 6c e3 b5 3f f9 64 1b e0 fe 5b 83   .....l..?.d...[.
+master SHA hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+master SHA hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+master MD5 hash: pre-master secret [Len: 48]
+   03 00 43 c0 06 15 e4 0a e7 fa b0 8f 6c 95 d7 6b   ..C.........l..k
+   a6 77 30 9a b8 0d 02 54 b9 84 21 33 0b 9d 46 21   .w0....T..!3..F!
+   ec c7 9b d0 d7 6c e3 b5 3f f9 64 1b e0 fe 5b 83   .....l..?.d...[.
+master MD5 hash: SHA hash output [Len: 20]
+   6c 91 b4 c8 25 c3 ab 50 2f 4b 09 7b 96 31 bf 12   l...%..P/K.{.1..
+   eb 86 7d f7                                       ..}.
+
+Result of second MD5 hash:
+master MD5 hash: MD5 hash output [Len: 16]
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+
+Begin third MD5 hash
+master SHA hash: mixers [Len: 3]
+   43 43 43                                          CCC
+master SHA hash: pre-master secret [Len: 48]
+   03 00 43 c0 06 15 e4 0a e7 fa b0 8f 6c 95 d7 6b   ..C.........l..k
+   a6 77 30 9a b8 0d 02 54 b9 84 21 33 0b 9d 46 21   .w0....T..!3..F!
+   ec c7 9b d0 d7 6c e3 b5 3f f9 64 1b e0 fe 5b 83   .....l..?.d...[.
+master SHA hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+master SHA hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+
+master MD5 hash: pre-master secret [Len: 48]
+   03 00 43 c0 06 15 e4 0a e7 fa b0 8f 6c 95 d7 6b   ..C.........l..k
+   a6 77 30 9a b8 0d 02 54 b9 84 21 33 0b 9d 46 21   .w0....T..!3..F!
+   ec c7 9b d0 d7 6c e3 b5 3f f9 64 1b e0 fe 5b 83   .....l..?.d...[.
+master MD5 hash: SHA hash output [Len: 20]
+   de 04 c0 ff 0e a1 ab 68 fe 54 b1 92 21 6a 2d 8a   .......h.T..!j-.
+   76 75 46 05                                       vuF.
+
+Result of third MD5 hash.
+master MD5 hash: MD5 hash output [Len: 16]
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+</PRE>
+The three MD5 hash results are concatenated to form the master secret.
+<PRE>
+master secret: [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+</PRE>
+The server immediately begins to compute the "key block", from which the
+mac secrets, write-keys and write-IVs will be derived. This is as described in
+<A HREF="../draft302.txt">
+section 8.2.2 of the SSL 3.0 spec.</A> 
+<PRE>
+Begin first keyblock SHA/MD5 hash:
+keygen SHA hash: mixers [Len: 1]
+   41                                                A
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+keygen SHA hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   02 07 51 33 46 9d 59 b5 4b 1b eb 04 32 a8 10 c3   ..Q3F.Y.K...2...
+   0c ca 88 c0                                       ....
+
+First MD5 result:
+keygen MD5 hash: MD5 hash output [Len: 16]
+   18 2a 75 51 f8 9f 5c f9 5c 90 0d 0d 76 2f 1e 9e   .*uQ..\.\...v/..
+
+Begin second keyblock SHA/MD5 hash:
+keygen SHA hash: mixers [Len: 2]
+   42 42                                             BB
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+keygen SHA hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   ed cd 80 27 e3 ba bc 28 68 51 af ba 95 8b 83 66   ...'...(hQ.....f
+   29 50 11 43                                       )P.C
+
+Second MD5 result:
+keygen MD5 hash: MD5 hash output [Len: 16]
+   33 70 58 28 f9 05 03 85 5b 9d ac 39 63 c9 e6 9c   3pX(....[..9c...
+
+Begin third keyblock SHA/MD5 hash:
+keygen SHA hash: mixers [Len: 3]
+   43 43 43                                          CCC
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+keygen SHA hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   ea 0a f5 36 42 4a e6 dd 75 e4 cf fa 2c a1 d5 aa   ...6BJ..u...,...
+   10 cf 88 1b                                       ....
+
+Third MD5 result:
+keygen MD5 hash: MD5 hash output [Len: 16]
+   d6 4f 8a e7 c9 66 ea 2d 48 c0 80 a5 4d 4a f2 df   .O...f.-H...MJ..
+
+Begin fourth keyblock SHA/MD5 hash:
+keygen SHA hash: mixers [Len: 4]
+   44 44 44 44                                       DDDD
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+keygen SHA hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   19 68 b4 29 e7 06 dc 2b a4 f4 67 5a 3b 50 97 cc   .h.)...+..gZ;P..
+   e9 df 96 3f                                       ...?
+
+Fourth MD5 result:
+keygen MD5 hash: MD5 hash output [Len: 16]
+   94 d5 5a b3 a6 bc d3 7a 00 22 2f 63 8e ca 51 c6   ..Z....z."/c..Q.
+
+Begin fifth keyblock SHA/MD5 hash:
+keygen SHA hash: mixers [Len: 5]
+   45 45 45 45 45                                    EEEEE
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+keygen SHA hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   8b d5 98 79 cb 11 c7 74 cc 3b e6 aa e9 40 76 71   ...y...t.;...@vq
+   33 11 3c 82                                       3.&lt;.
+
+Fifth MD5 result:
+keygen MD5 hash: MD5 hash output [Len: 16]
+   64 9b 85 9b 32 16 00 5c f2 91 b2 40 20 fc 61 3b   d...2..\...@ .a;
+
+Begin sixth keyblock SHA/MD5 hash:
+keygen SHA hash: mixers [Len: 6]
+   46 46 46 46 46 46                                 FFFFFF
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+keygen SHA hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   c4 ae 90 55 11 e4 00 af 75 74 2c 4c 82 03 a2 c6   ...U....ut,L....
+   6c 18 17 5c                                       l..\
+
+Sixth MD5 result:
+keygen MD5 hash: MD5 hash output [Len: 16]
+   59 0e 93 93 14 6a c2 79 ff 41 eb 07 c0 48 97 2c   Y....j.y.A...H.,
+
+Begin seventh keyblock SHA/MD5 hash:
+keygen SHA hash: mixers [Len: 7]
+   47 47 47 47 47 47 47                              GGGGGGG
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+keygen SHA hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   3b a5 82 13 fd 9c 2b 4a 5f b9 17 26 66 30 46 6f   ;.....+J_..&amp;f0Fo
+   c0 c9 f4 3e                                       ...>
+
+Seventh MD5 result:
+keygen MD5 hash: MD5 hash output [Len: 16]
+   79 35 a5 64 eb 42 fa 12 d1 81 15 e0 10 cf a0 93   y5.d.B..........
+</PRE>
+Concatenate the above seven MD5 hash results to produce the "key block":
+<PRE>
+key block: [Len: 112]
+   18 2a 75 51 f8 9f 5c f9 5c 90 0d 0d 76 2f 1e 9e   .*uQ..\.\...v/..
+   33 70 58 28 f9 05 03 85 5b 9d ac 39 63 c9 e6 9c   3pX(....[..9c...
+   d6 4f 8a e7 c9 66 ea 2d 48 c0 80 a5 4d 4a f2 df   .O...f.-H...MJ..
+   94 d5 5a b3 a6 bc d3 7a 00 22 2f 63 8e ca 51 c6   ..Z....z."/c..Q.
+   64 9b 85 9b 32 16 00 5c f2 91 b2 40 20 fc 61 3b   d...2..\...@ .a;
+   59 0e 93 93 14 6a c2 79 ff 41 eb 07 c0 48 97 2c   Y....j.y.A...H.,
+   79 35 a5 64 eb 42 fa 12 d1 81 15 e0 10 cf a0 93   y5.d.B..........
+</PRE>
+Now, divide up the key block, producing the mac secrets, write keys, and
+(for block-mode ciphers) the write IVs.
+<PRE>
+client write mac secret: [Len: 16]
+   18 2a 75 51 f8 9f 5c f9 5c 90 0d 0d 76 2f 1e 9e   .*uQ..\.\...v/..
+server write mac secret: [Len: 16]
+   33 70 58 28 f9 05 03 85 5b 9d ac 39 63 c9 e6 9c   3pX(....[..9c...
+</PRE>
+Since this is an "export" client, the final client write key is derived,
+via MD5, from the next 40 bits of the key block, and the client and server
+random values, as follows:
+<PRE>
+CWKey MD5 hash: key block [Len: 5]
+   d6 4f 8a e7 c9                                    .O...
+CWKey MD5 hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+CWKey MD5 hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+
+final client write key: [Len: 16]
+   32 10 cd e1 d6 dc 07 83 f3 75 4c 32 2e 59 96 61   2........uL2.Y.a
+</PRE>
+Likewise, the final server write key is derived, via MD5, from the next
+40 bits of the key block, and the client and server random values, as follows:
+<PRE>
+SWKey MD5 hash: key block [Len: 5]
+   66 ea 2d 48 c0                                    f.-H.
+SWKey MD5 hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+SWKey MD5 hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+
+server write key: [Len: 16]
+   ed 0e 56 c8 95 12 37 b6 21 17 1c 72 79 91 12 1e   ..V...7.!..ry...
+</PRE>
+The client and server write IVs are computed by hashing the client and
+server ramdom values, in different orders. In this case, since the RC4
+cipher is a stream cipher, and needs no IVs, the result of the hash is
+ignored.
+<PRE>
+CWiv MD5 hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+CWiv MD5 hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+client write iv: [Len: 0]
+
+SWiv MD5 hash: server random [Len: 32]
+   34 02 87 24 8e ea bd f7 c2 8c fc fe 39 54 90 bb   4..$........9T..
+   06 fe 48 b4 a2 07 fc 9d 2a d2 d9 2c 84 82 58 be   ..H.....*..,..X.
+SWiv MD5 hash: client random [Len: 32]
+   00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+   90 06 46 69 20 81 64 08 ba b4 3f 9f 81 fa 5b 20   ..Fi .d...?...[ 
+server write iv: [Len: 0]
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+
+<h3><A NAME="ClientChangeCipherSpec1"></A>Client's Change_Cipher_Spec Record</h3>
+The server will process the next record from the client, 
+the change_cipher_spec record. This record is not a handshake record,
+and is not included in the handshake hashes.
+<PRE>
+raw gather data: [Len: 5]
++  14 03 00 00 01                                    .....
+plaintext: [Len: 1]
++  01                                                .
+
+handle change_cipher_spec record
+Set Current Read Cipher Suite to Pending
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+<H3><A NAME="ClientFinished1"></A> Client's Finished Handshake</H3>
+The next record will contain fully MAC'ed and encrypted data, 
+according to the SSL_RSA_EXPORT_WITH_RC4_40_MD5 cipher spec 
+we just began using.  It is the client's "finished" handshake.
+<PRE>
+raw gather data: [Len: 5]
++  16 03 00 00 38                                    ....8
+ciphertext: [Len: 56]
++  ed 37 7f 16 d3 11 e8 a3 e1 2a 20 b7 88 f6 11 f3   .7.......* .....
++  a6 7d 37 f7 17 ac 67 20 b8 0e 88 d1 a0 c6 83 e4   .}7...g ........
++  80 e8 c7 e3 0b 91 29 30 29 e4 28 47 b7 40 a4 d1   ......)0).(G.@..
++  3c da 82 b7 b3 9f 67 10                           &lt;.....g.
+</PRE>
+Decrypt the ciphertext using the keys/IVs above.
+<PRE>
+plaintext: [Len: 56]
+   14 00 00 24 f2 40 10 3f 74 63 ea e8 7a 27 23 56   ...$.@.?tc..z'#V
+   5f 59 07 d2 a3 79 5d b7 8b 94 db cf fa f5 18 22   _Y...y]........"
+   15 7b f2 4a 96 52 9a 0e d3 09 de 28 84 a7 07 5c   .{.J.R.....(...\
+   7c 0c 08 85 6b 4f 63 04                           |...kOc.
+</PRE>
+The last 16 bytes of plaintext above are (ostensibly) the sender's MAC.
+Compute the MAC on all but the last 16 bytes above, for verification.
+This is done according to 
+<A HREF="../draft302.txt">
+section 7.2.3.1 of the SSL 3.0 spec.</A> 
+<PRE>
+frag hash1: MAC secret [Len: 16]
+   18 2a 75 51 f8 9f 5c f9 5c 90 0d 0d 76 2f 1e 9e   .*uQ..\.\...v/..
+frag hash1: Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+frag hash1: temp [Len: 11]
+   00 00 00 00 00 00 00 00 16 00 28                  ..........(
+frag hash1: input [Len: 40]
+   14 00 00 24 f2 40 10 3f 74 63 ea e8 7a 27 23 56   ...$.@.?tc..z'#V
+   5f 59 07 d2 a3 79 5d b7 8b 94 db cf fa f5 18 22   _Y...y]........"
+   15 7b f2 4a 96 52 9a 0e                           .{.J.R..
+
+frag hash2: MAC secret [Len: 16]
+   18 2a 75 51 f8 9f 5c f9 5c 90 0d 0d 76 2f 1e 9e   .*uQ..\.\...v/..
+frag hash2: Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+frag hash2: hash1 [Len: 16]
+   08 02 21 40 3e 2a da 4a 8b 55 11 91 ea 00 70 f3   ..!@>*.J.U....p.
+</PRE>
+Here is the result of the MAC computation:
+<PRE>
+frag hash2: result [Len: 16]
+   d3 09 de 28 84 a7 07 5c 7c 0c 08 85 6b 4f 63 04   ...(...\|...kOc.
+</PRE>
+Note that it matches the last 16 bytes of the plaintext above. The MAC
+is verified.  This is a "finished" handshake from the client.
+
+<P>Compute the "md5_hash" and "sha_hash" as defined for the client's "finished" 
+message in <A HREF="../draft302.txt">
+section 7.6.9 of the SSL 3.0 spec.</A> 
+In this example, we first compute the
+"inner" portion of each hash, then compute the "outer" portions.
+<PRE>
+Compute inner MD5 hash.  First, review the current handshake hash state.
+MD5 state: 047946f4 a933b86e 7002fd6e 017c4731
+MD5_TraceState: buffered input [Len: 36]
+   2b f9 8d ca f3 18 6a 1a bd 9c 1f 99 f9 b5 bd 55   +.....j........U
+   9a 5b 4d 42 71 79 bb 80 59 12 d8 be fc 9a a3 c1   .[MBqy..Y.......
+   74 3b 00 e8                                       t;..
+
+Now, hash inputs to MD5 inner hash:
+MD5 inner: sender [Len: 4]
+   43 4c 4e 54                                       CLNT
+MD5 inner: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+MD5 inner: MAC Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+
+Result of inner MD5 hash:
+MD5 inner: result [Len: 16]
+   8f fd 61 1e 05 26 22 ef 51 c0 9c 66 5b fe 37 73   ..a..&amp;".Q..f[.7s
+
+Compute inner SHA hash.  First, review the current handshake hash state.
+SHA1 state: 0711b86f 804602cc f4a01dbb 3fd58d56 c648dbe3
+SHA1_TraceState: buffered input [Len: 36]
+   2b f9 8d ca f3 18 6a 1a bd 9c 1f 99 f9 b5 bd 55   +.....j........U
+   9a 5b 4d 42 71 79 bb 80 59 12 d8 be fc 9a a3 c1   .[MBqy..Y.......
+   74 3b 00 e8                                       t;..
+
+Now, hash inputs to inner SHA hash:
+SHA inner: sender [Len: 4]
+   43 4c 4e 54                                       CLNT
+SHA inner: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+SHA inner: MAC Pad 1 [Len: 40]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36                           66666666
+
+Result of inner SHA hash:
+SHA inner: result [Len: 20]
+   8b f3 4f 1e 12 f6 8b 9f 65 a0 47 ac 7c 6a ac 50   ..O.....e.G.|j.P
+   b1 d4 76 08                                       ..v.
+
+Compute outer MD5 hash:
+MD5 outer: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+MD5 outer: MAC Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+MD5 outer: MD5 inner [Len: 16]
+   8f fd 61 1e 05 26 22 ef 51 c0 9c 66 5b fe 37 73   ..a..&amp;".Q..f[.7s
+
+Result of outer MD5 hash:
+MD5 outer: result [Len: 16]
+   f2 40 10 3f 74 63 ea e8 7a 27 23 56 5f 59 07 d2   .@.?tc..z'#V_Y..
+
+Compute outer SHA hash:
+SHA outer: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+SHA outer: MAC Pad 2 [Len: 40]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c                           \\\\\\\\
+SHA outer: SHA inner [Len: 20]
+   8b f3 4f 1e 12 f6 8b 9f 65 a0 47 ac 7c 6a ac 50   ..O.....e.G.|j.P
+   b1 d4 76 08                                       ..v.
+
+Result of outer SHA hash:
+SHA outer: result [Len: 20]
+   a3 79 5d b7 8b 94 db cf fa f5 18 22 15 7b f2 4a   .y]........".{.J
+   96 52 9a 0e                                       .R..
+</PRE>
+Note that these computed outer hashes match the values found in the plaintext
+finished message (shown above). We have verified that the "md5_hash" and
+"sha_hash" in the "finished" message are correct.
+
+<P>Now that we've completed the hash computations for the "finished" message,
+include the body of the handshake message in the "handshake hashes". First,
+we review the previous values of the "handshake hashes".
+<PRE>
+handle handshake message: finished     (20)
+MD5 state: 047946f4 a933b86e 7002fd6e 017c4731
+MD5_TraceState: buffered input [Len: 36]
+   2b f9 8d ca f3 18 6a 1a bd 9c 1f 99 f9 b5 bd 55   +.....j........U
+   9a 5b 4d 42 71 79 bb 80 59 12 d8 be fc 9a a3 c1   .[MBqy..Y.......
+   74 3b 00 e8                                       t;..
+SHA1 state: 0711b86f 804602cc f4a01dbb 3fd58d56 c648dbe3
+SHA1_TraceState: buffered input [Len: 36]
+   2b f9 8d ca f3 18 6a 1a bd 9c 1f 99 f9 b5 bd 55   +.....j........U
+   9a 5b 4d 42 71 79 bb 80 59 12 d8 be fc 9a a3 c1   .[MBqy..Y.......
+   74 3b 00 e8                                       t;..
+</PRE>
+Now include the "finished" handshake in the hashes.
+<PRE>
+MD5 &amp; SHA handshake hash input: [Len: 4]
+   14 00 00 24                                       ...$
+MD5 &amp; SHA handshake hash input: [Len: 36]
+   f2 40 10 3f 74 63 ea e8 7a 27 23 56 5f 59 07 d2   .@.?tc..z'#V_Y..
+   a3 79 5d b7 8b 94 db cf fa f5 18 22 15 7b f2 4a   .y]........".{.J
+   96 52 9a 0e                                       .R..
+</PRE>
+New values of handshake hashes:
+<PRE>
+MD5 state: dce6cec5 25cb0e3a 11217975 1acf19d6
+MD5_TraceState: buffered input [Len: 12]
+   fa f5 18 22 15 7b f2 4a 96 52 9a 0e               ...".{.J.R..
+SHA1 state: 5aa27325 80f3ee0f 06f15e24 f3cf4555 f30dedb5
+SHA1_TraceState: buffered input [Len: 12]
+   fa f5 18 22 15 7b f2 4a 96 52 9a 0e               ...".{.J.R..
+
+handle finished handshake
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+<H3><A NAME="ServerChangeCipherSpec1"></A>Server's Change_Cipher_Spec Record</H3>
+The server sends its final two records before the application data can be sent. 
+The final two records are:
+<UL>
+<LI> a change_cipher_spec record</LI>
+<LI> a "Finished" handshake record</LI>
+</UL>
+The change_cipher_spec record is not included in the handshake
+hashes because it is not a handshake record.
+
+<PRE>
+send change_cipher_spec record
+SendPlainText record type: change_cipher_spec (20) bytes=1
+send record data: [Len: 6]
++  14 03 00 00 01 01                                 ......
+
+Set Current Write Cipher Suite to Pending
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+<H3><A NAME="ServerFinished1"></A>Server's Finished Handshake </H3>
+The server sends the fully MAC'ed and encrypted finished handshake message.
+<BR>First, compute the "md5_hash" and "sha_hash" as defined for the "finished"
+message in  <A HREF="../draft302.txt">
+section 7.6.9 of the SSL 3.0 spec.</A> In this example, we first compute
+the "inner" portion of each hash, then compute the "outer" portions.
+<PRE>
+send finished handshake
+Compute inner MD5_hash:
+
+MD5 state: dce6cec5 25cb0e3a 11217975 1acf19d6
+MD5_TraceState: buffered input [Len: 12]
+   fa f5 18 22 15 7b f2 4a 96 52 9a 0e               ...".{.J.R..
+
+MD5 inner: sender [Len: 4]
+   53 52 56 52                                       SRVR
+MD5 inner: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+MD5 inner: MAC Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+
+Inner MD5_hash result:
+MD5 inner: result [Len: 16]
+   83 4f 3a af f1 f3 0c 3d b5 d9 f1 e6 8f da 9b c5   .O:....=........
+
+Compute inner SHA_hash:
+SHA1 state: 5aa27325 80f3ee0f 06f15e24 f3cf4555 f30dedb5
+SHA1_TraceState: buffered input [Len: 12]
+   fa f5 18 22 15 7b f2 4a 96 52 9a 0e               ...".{.J.R..
+
+SHA inner: sender [Len: 4]
+   53 52 56 52                                       SRVR
+SHA inner: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+SHA inner: MAC Pad 1 [Len: 40]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36                           66666666
+
+Inner SHA_hash result:
+SHA inner: result [Len: 20]
+   36 a5 51 2e 88 0b 11 6d ef 46 ed de 31 0f a9 50   6.Q....m.F..1..P
+   9c ea 2a 7b                                       ..*{
+
+Compute outer MD5_hash:
+MD5 outer: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+MD5 outer: MAC Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+MD5 outer: MD5 inner [Len: 16]
+   83 4f 3a af f1 f3 0c 3d b5 d9 f1 e6 8f da 9b c5   .O:....=........
+
+Outer (final) MD5_hash result:
+MD5 outer: result [Len: 16]
+   b7 cc d6 05 6b fc fa 6d fa dd 76 81 45 36 e4 f4   ....k..m..v.E6..
+
+Compute outer SHA_hash:
+SHA outer: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+SHA outer: MAC Pad 2 [Len: 40]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c                           \\\\\\\\
+SHA outer: SHA inner [Len: 20]
+   36 a5 51 2e 88 0b 11 6d ef 46 ed de 31 0f a9 50   6.Q....m.F..1..P
+   9c ea 2a 7b                                       ..*{
+
+Outer (final) SHA_hash result:
+SHA outer: result [Len: 20]
+   26 35 72 2c ec 87 62 1f 55 08 05 4f c8 f5 7c 49   &amp;5r,..b.U..O..|I
+   e2 ee c5 ba                                       ....
+</PRE>
+Now, construct the "finished" handshake message, and include it in the
+"handshake hashes". Note that it is composed of the two outer hashes computed
+above. First, review the current values of the handshake hashes:
+<PRE>
+MD5 state: dce6cec5 25cb0e3a 11217975 1acf19d6
+MD5_TraceState: buffered input [Len: 12]
+   fa f5 18 22 15 7b f2 4a 96 52 9a 0e               ...".{.J.R..
+SHA1 state: 5aa27325 80f3ee0f 06f15e24 f3cf4555 f30dedb5
+SHA1_TraceState: buffered input [Len: 12]
+   fa f5 18 22 15 7b f2 4a 96 52 9a 0e               ...".{.J.R..
+
+append handshake header: type finished     (20)
+MD5 &amp; SHA handshake hash input: [Len: 1]
+   14                                                .
+   00 00 24                                          ..$
+   b7 cc d6 05 6b fc fa 6d fa dd 76 81 45 36 e4 f4   ....k..m..v.E6..
+   26 35 72 2c ec 87 62 1f 55 08 05 4f c8 f5 7c 49   &amp;5r,..b.U..O..|I
+   e2 ee c5 ba                                       ....
+</PRE>
+The handshake hash results of the second "finished" handshake are not used.
+<PRE>
+SendPlainText record type: handshake  (22) bytes=40
+Send PlainText record [Len: 40]
+   14 00 00 24 b7 cc d6 05 6b fc fa 6d fa dd 76 81   ...$....k..m..v.
+   45 36 e4 f4 26 35 72 2c ec 87 62 1f 55 08 05 4f   E6..&amp;5r,..b.U..O
+   c8 f5 7c 49 e2 ee c5 ba                           ..|I....
+</PRE>
+Compute the MAC on the plaintext "finished" handshake message.
+This is done according to 
+<A HREF="../draft302.txt">
+section 7.2.3.1 of the SSL 3.0 spec.</A> 
+<PRE>
+frag hash1: MAC secret [Len: 16]
+   33 70 58 28 f9 05 03 85 5b 9d ac 39 63 c9 e6 9c   3pX(....[..9c...
+frag hash1: Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+frag hash1: temp [Len: 11]
+   00 00 00 00 00 00 00 00 16 00 28                  ..........(
+frag hash1: input [Len: 40]
+   14 00 00 24 b7 cc d6 05 6b fc fa 6d fa dd 76 81   ...$....k..m..v.
+   45 36 e4 f4 26 35 72 2c ec 87 62 1f 55 08 05 4f   E6..&amp;5r,..b.U..O
+   c8 f5 7c 49 e2 ee c5 ba                           ..|I....
+frag hash2: MAC secret [Len: 16]
+   33 70 58 28 f9 05 03 85 5b 9d ac 39 63 c9 e6 9c   3pX(....[..9c...
+frag hash2: Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+frag hash2: hash1 [Len: 16]
+   ef 6d e5 07 12 86 e5 68 f7 91 78 94 2f 02 1a 57   .m.....h..x./..W
+frag hash2: result [Len: 16]
+   bd 69 27 3b d0 13 23 52 ed ec 11 55 d8 b9 90 8c   .i';..#R...U....
+</PRE>
+Append the result above to the plaintext handshake message (above), compress
+(null), and encrypt, and add the record header, producing the following
+record:
+<PRE>
+send (encrypted) record data: [Len: 61]
++  16 03 00 00 38 54 3c e1 e7 4d 77 76 62 86 fa 4e   ....8T&lt;..Mwvb..N
++  0a 6f 5f 6a 3d 43 26 f4 ad 8d 3e 09 0b 2b f7 9f   .o_j=C&amp;...>..+..
++  49 44 92 fb a9 a4 b0 5a d8 72 77 6e 8b b3 78 fb   ID.....Z.rwn..x.
++  da e0 25 ef b3 f5 a7 90 08 6d 60 d5 4e            ..%......m`.N
+</PRE>
+The handshakes are completed.
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+<H3><A NAME="HttpRequest1"></A>Client Application Data Record</H3>
+The server receives the client's first application data record.
+It is not included in handshake hashes because it is not a handshake.
+It is MAC'ed and encrypted, per the cipher spec now in use.
+<PRE>
+raw gather data: [Len: 5]
++  17 03 00 01 09                                    .....
+ciphertext: [Len: 265]
++  7e 59 03 09 da 34 05 c3 76 18 15 c8 87 e3 fb 81   ~Y...4..v.......
++  51 dd 7d 82 6b 4a d1 ff 75 b1 3e 72 ac d5 62 c7   Q.}.kJ..u.>r..b.
++  29 8a b0 0b a9 ec 5e 0d a9 6e cd 92 28 32 2e 05   ).....^..n..(2..
++  be 30 8e 7d 56 67 01 11 ec 2e 2f ab ea bd e1 61   .0.}Vg..../....a
++  e2 ff d1 aa c3 d6 80 bb c1 8e 82 04 82 eb 62 be   ..............b.
++  21 17 99 c9 6a fa 9d 60 3c ca f4 30 48 96 9a 71   !...j..`&lt;..0H..q
++  44 2d e4 1d 1d eb 0f 07 cb 12 a4 cb bc d4 72 de   D-............r.
++  6d d6 53 8c 33 f9 9b 8e 1c 55 74 83 9c cb a9 91   m.S.3....Ut.....
++  69 4d 93 f2 93 80 ae c9 9e 9e 4b 88 42 17 57 e3   iM........K.B.W.
++  90 80 df f3 75 5d 49 d3 dc 67 53 2a 06 f4 32 6c   ....u]I..gS*..2l
++  71 6c c6 98 ed 8c 9f aa b6 ce 0d 17 4c a4 b9 f8   ql..........L...
++  a7 73 87 f0 8b c3 23 2f 0e df cc 5e 56 4a 7e 15   .s....#/...^VJ~.
++  12 38 a9 5b 90 f8 08 bc 94 1f f3 22 e4 01 16 40   .8.[......."...@
++  5c d6 e6 dd 50 18 f8 1d ec 7b 14 b8 e1 d1 5f a9   \...P....{...._.
++  ff af f9 58 98 f5 29 b2 82 69 df 02 c6 6a f4 3f   ...X..)..i...j.?
++  6a 79 10 dc 3b cd 50 18 e4 4e 88 c5 5c 33 e3 3f   jy..;.P..N..\3.?
++  10 8c 00 ca bf 8b f6 5d 04                        .......].
+</PRE>
+Decrypt(RC4) and uncompress(null) the ciphertext.
+<PRE>
+plaintext: [Len: 265]
+   47 45 54 20 2f 62 61 72 20 48 54 54 50 2f 31 2e   GET /bar HTTP/1.
+   30 0d 0a 43 6f 6e 6e 65 63 74 69 6f 6e 3a 20 4b   0..Connection: K
+   65 65 70 2d 41 6c 69 76 65 0d 0a 55 73 65 72 2d   eep-Alive..User-
+   41 67 65 6e 74 3a 20 4d 6f 7a 69 6c 6c 61 2f 34   Agent: Mozilla/4
+   2e 30 32 20 5b 65 6e 5d 20 28 57 69 6e 4e 54 3b   .02 [en] (WinNT;
+   20 49 29 0d 0a 48 6f 73 74 3a 20 62 69 6a 6f 75    I)..Host: bijou
+   2e 6d 63 6f 6d 2e 63 6f 6d 3a 31 39 39 39 0d 0a   .mcom.com:1999..
+   41 63 63 65 70 74 3a 20 69 6d 61 67 65 2f 67 69   Accept: image/gi
+   66 2c 20 69 6d 61 67 65 2f 78 2d 78 62 69 74 6d   f, image/x-xbitm
+   61 70 2c 20 69 6d 61 67 65 2f 6a 70 65 67 2c 20   ap, image/jpeg, 
+   69 6d 61 67 65 2f 70 6a 70 65 67 2c 20 2a 2f 2a   image/pjpeg, */*
+   0d 0a 41 63 63 65 70 74 2d 4c 61 6e 67 75 61 67   ..Accept-Languag
+   65 3a 20 65 6e 2d 55 53 2c 65 6e 2d 47 42 2c 65   e: en-US,en-GB,e
+   6e 0d 0a 41 63 63 65 70 74 2d 43 68 61 72 73 65   n..Accept-Charse
+   74 3a 20 69 73 6f 2d 38 38 35 39 2d 31 2c 2a 2c   t: iso-8859-1,*,
+   75 74 66 2d 38 0d 0a 0d 0a 4b 2d 6c 5e 5c 1b bd   utf-8....K-l^\..
+   d7 26 56 57 27 43 b8 c8 7c                        .&amp;VW'C..|
+</PRE>
+Compute the MAC on all but the last 16 bytes of the plaintext above.
+This is done according to 
+<A HREF="../draft302.txt">
+section 7.2.3.1 of the SSL 3.0 spec.</A> 
+<PRE>
+frag hash1: MAC secret [Len: 16]
+   18 2a 75 51 f8 9f 5c f9 5c 90 0d 0d 76 2f 1e 9e   .*uQ..\.\...v/..
+frag hash1: Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+frag hash1: temp [Len: 11]
+   00 00 00 00 00 00 00 01 17 00 f9                  ...........
+frag hash1: input [Len: 249]
+   47 45 54 20 2f 62 61 72 20 48 54 54 50 2f 31 2e   GET /bar HTTP/1.
+   30 0d 0a 43 6f 6e 6e 65 63 74 69 6f 6e 3a 20 4b   0..Connection: K
+   65 65 70 2d 41 6c 69 76 65 0d 0a 55 73 65 72 2d   eep-Alive..User-
+   41 67 65 6e 74 3a 20 4d 6f 7a 69 6c 6c 61 2f 34   Agent: Mozilla/4
+   2e 30 32 20 5b 65 6e 5d 20 28 57 69 6e 4e 54 3b   .02 [en] (WinNT;
+   20 49 29 0d 0a 48 6f 73 74 3a 20 62 69 6a 6f 75    I)..Host: bijou
+   2e 6d 63 6f 6d 2e 63 6f 6d 3a 31 39 39 39 0d 0a   .mcom.com:1999..
+   41 63 63 65 70 74 3a 20 69 6d 61 67 65 2f 67 69   Accept: image/gi
+   66 2c 20 69 6d 61 67 65 2f 78 2d 78 62 69 74 6d   f, image/x-xbitm
+   61 70 2c 20 69 6d 61 67 65 2f 6a 70 65 67 2c 20   ap, image/jpeg, 
+   69 6d 61 67 65 2f 70 6a 70 65 67 2c 20 2a 2f 2a   image/pjpeg, */*
+   0d 0a 41 63 63 65 70 74 2d 4c 61 6e 67 75 61 67   ..Accept-Languag
+   65 3a 20 65 6e 2d 55 53 2c 65 6e 2d 47 42 2c 65   e: en-US,en-GB,e
+   6e 0d 0a 41 63 63 65 70 74 2d 43 68 61 72 73 65   n..Accept-Charse
+   74 3a 20 69 73 6f 2d 38 38 35 39 2d 31 2c 2a 2c   t: iso-8859-1,*,
+   75 74 66 2d 38 0d 0a 0d 0a                        utf-8....
+frag hash2: MAC secret [Len: 16]
+   18 2a 75 51 f8 9f 5c f9 5c 90 0d 0d 76 2f 1e 9e   .*uQ..\.\...v/..
+frag hash2: Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+frag hash2: hash1 [Len: 16]
+   67 d4 6f 1d 54 d1 d3 ff 32 62 e4 ef a4 38 3d e3   g.o.T...2b...8=.
+frag hash2: result [Len: 16]
+   4b 2d 6c 5e 5c 1b bd d7 26 56 57 27 43 b8 c8 7c   K-l^\...&amp;VW'C..|
+</PRE>
+Note that the computed MAC matches the last 16 bytes of the plaintext above.
+The Client's MAC is verified.
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+<H3><A NAME="HttpResponse1"></A>Server Application Data Record</H3>
+The server is ready to send the response
+to the HTML GET request shown in the plaintext above.
+<PRE>
+SecureSend: sending 5 bytes
+SendPlainText record type: application_data (23) bytes=5
+Send PlainText record [Len: 5]
+   66 6f 6f 0a 00                                    foo..
+</PRE>
+This is, admittedly, a strange response from an HTTPS server, but it will
+suffice for this SSL example.
+
+<P>Compute the MAC on the application_data message.
+This is done according to 
+<A HREF="../draft302.txt">
+section 7.2.3.1 of the SSL 3.0 spec.</A> 
+<PRE>
+frag hash1: MAC secret [Len: 16]
+   33 70 58 28 f9 05 03 85 5b 9d ac 39 63 c9 e6 9c   3pX(....[..9c...
+frag hash1: Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+frag hash1: temp [Len: 11]
+   00 00 00 00 00 00 00 01 17 00 05                  ...........
+frag hash1: input [Len: 5]
+   66 6f 6f 0a 00                                    foo..
+frag hash2: MAC secret [Len: 16]
+   33 70 58 28 f9 05 03 85 5b 9d ac 39 63 c9 e6 9c   3pX(....[..9c...
+frag hash2: Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+frag hash2: hash1 [Len: 16]
+   ab 43 a3 d7 9e 92 fc 57 e0 d1 ad c7 0b 9e cf df   .C.....W........
+frag hash2: result [Len: 16]
+   29 fb d4 6a 8e 13 11 a8 6e 46 e0 f5 8b c3 25 3d   )..j....nF....%=
+</PRE>
+Append the result above to the plaintext application_data message (above),
+compress (null), and encrypt, and add the record header, producing the
+following record:
+<PRE>
+send (encrypted) record data: [Len: 26]
++  17 03 00 00 15 55 46 55 af f1 a4 d3 3e 35 67 d2   .....UFU....>5g.
++  51 71 68 6f 2e 8a b2 71 9e 99                     Qqho...q..
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+
+<H3><A NAME="ServerCloseAlert1"></A>Server Close_Notify Alert Record</H3>
+Finally, The server sends a "close notify" alert
+record to tell the client it is done.  
+This is not a handshake, and is not included in handshake hashes.
+<PRE>
+send alert record, level=1 desc=0
+SendPlainText record type: alert      (21) bytes=2
+Send PlainText record [Len: 2]
+   01 00                                             ..
+</PRE>
+Compute the MAC on the alert.
+This is done according to 
+<A HREF="../draft302.txt">
+section 7.2.3.1 of the SSL 3.0 spec.</A> 
+<PRE>
+frag hash1: MAC secret [Len: 16]
+   33 70 58 28 f9 05 03 85 5b 9d ac 39 63 c9 e6 9c   3pX(....[..9c...
+frag hash1: Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+frag hash1: temp [Len: 11]
+   00 00 00 00 00 00 00 02 15 00 02                  ...........
+frag hash1: input [Len: 2]
+   01 00                                             ..
+frag hash2: MAC secret [Len: 16]
+   33 70 58 28 f9 05 03 85 5b 9d ac 39 63 c9 e6 9c   3pX(....[..9c...
+frag hash2: Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+frag hash2: hash1 [Len: 16]
+   5f ad 2a 1b 54 0d 74 f5 55 53 e5 5e 03 e7 bb 8c   _.*.T.t.US.^....
+frag hash2: result [Len: 16]
+   c2 6e 29 57 b3 12 3d b7 07 fc 7f c3 26 2f 80 52   .n)W..=.....&amp;/.R
+</PRE>
+Append the result above to the plaintext alert message (above), compress
+(null), and encrypt, and add the record header, producing the following
+record:
+<PRE>
+send (encrypted) record data: [Len: 23]
++  15 03 00 00 12 e7 e3 de 9d 89 60 ac 73 15 a6 83   ..........`.s...
++  7c 35 38 5e df b1 76                              |58^..v
+
+closing, rv=0 errno=10035
+</PRE>
+The server closes the connection, 
+and thus does not receive the close notify alert from the client.
+<HR WIDTH="100%">
+
+
+
+
+
+<H2><A NAME="ClientHello2"></A>Second connection, "resuming" the first one.</H2>
+<H3>SSL V3 client_hello Handshake</H3>
+Unlike the first connection above, the second connection begins with a
+SSL V3 client_hello handshake message.
+<PRE>
++  16 03 00 00 4f                                    ....O
++  01 00 00 4b 03 00 34 02 87 2a b4 c2 09 76 f3 7c   ...K..4..*...v.|
++  58 dd 9d 53 ec ef e6 c5 e2 5e 61 4e 36 93 42 a3   X..S.....^aN6.B.
++  12 c9 a5 e0 9c e4 20 00 00 82 f4 58 2b 88 b7 ff   ...... ....X+...
++  12 59 0d 32 2c d7 13 6f 20 c6 f7 9c 98 b6 de 85   .Y.2,..o .......
++  be b2 40 cd 85 9f f3 00 04 00 03 00 06 01 00      ..@............
+</PRE>
+Since this is a new connection, the handshake hashes start from scratch.
+<PRE>
+start handshake hashes
+MD5 state: 67452301 efcdab89 98badcfe 10325476
+MD5_TraceState: buffered input [Len: 0]
+SHA1 state: 67452301 efcdab89 98badcfe 10325476 c3d2e1f0
+SHA1_TraceState: buffered input [Len: 0]
+</PRE>
+Include the client hello in the new handshake hashes.
+<PRE>
+MD5 &amp; SHA handshake hash input: [Len: 4]
+   01 00 00 4b                                       ...K
+MD5 &amp; SHA handshake hash input: [Len: 75]
+   03 00 34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53   ..4..*...v.|X..S
+   ec ef e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0   .....^aN6.B.....
+   9c e4 20 00 00 82 f4 58 2b 88 b7 ff 12 59 0d 32   .. ....X+....Y.2
+   2c d7 13 6f 20 c6 f7 9c 98 b6 de 85 be b2 40 cd   ,..o .........@.
+   85 9f f3 00 04 00 03 00 06 01 00                  ...........
+</PRE>
+After hashing the client hello handshake, the handshake hashes are:
+<PRE>
+MD5 state: a25fcd11 1125964f d23ff03c a015c650
+MD5_TraceState: buffered input [Len: 15]
+   be b2 40 cd 85 9f f3 00 04 00 03 00 06 01 00      ..@............
+SHA1 state: de42552e 57695115 bfebb944 261c5e0e 16fe7ae3
+SHA1_TraceState: buffered input [Len: 15]
+   be b2 40 cd 85 9f f3 00 04 00 03 00 06 01 00      ..@............
+</PRE>
+The client_hello handshake is parsed as:
+<PRE>
+handle client_hello handshake
+   03 00                                             ..
+client random (new):
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+session ID length:
+   20                                                 
+session ID (same as in previous server_hello):
+   00 00 82 f4 58 2b 88 b7 ff 12 59 0d 32 2c d7 13   ....X+....Y.2,..
+   6f 20 c6 f7 9c 98 b6 de 85 be b2 40 cd 85 9f f3   o .........@....
+cipher suite length:
+   00 04                                             ..
+cipher suites:
+   00 03 00 06                                       ....
+compression len:
+   01                                                .
+compression:
+   00                                                .
+</PRE>
+The server recognizes the session ID in this client_hello handshake as
+being the same as in the previous connection, so after sending the server_hello,
+it will proceed directly to the change_cipher_spec handshake.
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+<H3><A NAME="ServerHello2"></A>Server_Hello Handshake</H3>
+Construct the server_hello.
+<BR>The entire server_hello handshake is included in the "handshake hashes"..
+
+<PRE>
+send server_hello handshake
+append handshake header: type server_hello  (2)
+   02                                                .
+   00 00 46                                          ..F
+   03 00                                             ..
+server random (new):
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+session ID len:
+   20                                                 
+session ID (same as before):
+   00 00 82 f4 58 2b 88 b7 ff 12 59 0d 32 2c d7 13   ....X+....Y.2,..
+   6f 20 c6 f7 9c 98 b6 de 85 be b2 40 cd 85 9f f3   o .........@....
+   00 03                                             ..
+   00                                                .
+</PRE>
+After hashing the server_hello handshake, the handshake hashes are:
+<PRE>
+MD5 state: fadce9b0 28e1e182 d311fc68 1efe3dea
+MD5_TraceState: buffered input [Len: 25]
+   59 0d 32 2c d7 13 6f 20 c6 f7 9c 98 b6 de 85 be   Y.2,..o ........
+   b2 40 cd 85 9f f3 00 03 00                        .@.......
+SHA1 state: ad8b7ac0 ded1c977 5698dc0d 5f6d80ef b7adf049
+SHA1_TraceState: buffered input [Len: 25]
+   59 0d 32 2c d7 13 6f 20 c6 f7 9c 98 b6 de 85 be   Y.2,..o ........
+   b2 40 cd 85 9f f3 00 03 00                        .@.......
+
+Set Pending Cipher Suite to 0x0003 - SSL_RSA_EXPORT_WITH_RC4_40_MD5
+</PRE>
+We re-use the master secret from the previous session, 
+the one being "restarted".
+There are new client_random and server_random values,
+so we must compute a new "key block" from which the mac secrets, 
+write-keys and write-IVs will be derived. This is as described in 
+<A HREF="../draft302.txt">
+section 8.2.2 of the SSL 3.0 spec.</A> 
+<PRE>
+Begin first keyblock SHA/MD5 hash:
+keygen SHA hash: mixers [Len: 1]
+   41                                                A
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+keygen SHA hash: client random [Len: 32]
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   26 f7 bb 51 9b 7d d1 9d 04 25 fb ea f7 ab 7b a3   &amp;..Q.}...%....{.
+   de c0 f0 b0                                       ....
+keygen MD5 hash: MD5 hash output [Len: 16]
+   f9 d7 07 66 12 e8 2b 00 5d 20 8a 0b cb ff de 9e   ...f..+.] ......
+
+keygen SHA hash: mixers [Len: 2]
+   42 42                                             BB
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+keygen SHA hash: client random [Len: 32]
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   7d 33 03 0b 2b 3b b8 c5 b7 1b 5b 48 93 85 58 a0   }3..+;....[H..X.
+   a3 18 9f ab                                       ....
+keygen MD5 hash: MD5 hash output [Len: 16]
+   8c 19 ed 1b e7 bc 66 47 f6 2a d3 6c 6d ee ba bf   ......fG.*.lm...
+
+keygen SHA hash: mixers [Len: 3]
+   43 43 43                                          CCC
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+keygen SHA hash: client random [Len: 32]
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   6f ce ce e4 34 9d af dd 93 0a 0a f4 05 7c bb da   o...4........|..
+   2c e3 b0 83                                       ,...
+keygen MD5 hash: MD5 hash output [Len: 16]
+   30 af 37 f6 2c e9 49 f6 32 8f e7 1d d5 26 01 30   0.7.,.I.2....&amp;.0
+
+keygen SHA hash: mixers [Len: 4]
+   44 44 44 44                                       DDDD
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+keygen SHA hash: client random [Len: 32]
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   ff ad 30 a0 70 c7 f7 22 d8 d7 a9 08 f5 e3 f7 ed   ..0.p.."........
+   0a 12 72 24                                       ..r$
+keygen MD5 hash: MD5 hash output [Len: 16]
+   e0 b3 57 f8 57 c7 e5 cc e7 b1 c9 20 dc fe 1d bb   ..W.W...... ....
+
+keygen SHA hash: mixers [Len: 5]
+   45 45 45 45 45                                    EEEEE
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+keygen SHA hash: client random [Len: 32]
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   c9 d8 9c 2b ab cf a4 44 29 34 a7 2a a4 c6 7a 23   ...+...D)4.*..z#
+   6f 6b 04 d7                                       ok..
+keygen MD5 hash: MD5 hash output [Len: 16]
+   bc 72 28 93 28 91 b2 b8 e3 48 11 0e 22 17 da d8   .r(.(....H.."...
+
+keygen SHA hash: mixers [Len: 6]
+   46 46 46 46 46 46                                 FFFFFF
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+keygen SHA hash: client random [Len: 32]
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   10 ef eb f5 b0 5c c3 2d 19 cf ae 5e b3 42 bb 56   .....\.-...^.B.V
+   88 cf d2 70                                       ...p
+keygen MD5 hash: MD5 hash output [Len: 16]
+   b3 cf b0 b6 d0 65 0f c3 14 de a7 8a a3 ed cf 68   .....e.........h
+
+keygen SHA hash: mixers [Len: 7]
+   47 47 47 47 47 47 47                              GGGGGGG
+keygen SHA hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen SHA hash: server random [Len: 32]
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+keygen SHA hash: client random [Len: 32]
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+keygen MD5 hash: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+keygen MD5 hash: SHA hash output [Len: 20]
+   b7 c4 1e 00 2d f6 e1 8c 34 76 85 47 31 a2 c1 29   ....-...4v.G1..)
+   55 3d 80 97                                       U=..
+keygen MD5 hash: MD5 hash output [Len: 16]
+   74 83 44 a6 99 2d 73 75 07 02 23 b7 3c b7 dc d6   t.D..-su..#.&lt;...
+</PRE>
+Concatenate the above seven MD5 hash results to produce the "key block":
+<PRE>
+key block: [Len: 112]
+   f9 d7 07 66 12 e8 2b 00 5d 20 8a 0b cb ff de 9e   ...f..+.] ......
+   8c 19 ed 1b e7 bc 66 47 f6 2a d3 6c 6d ee ba bf   ......fG.*.lm...
+   30 af 37 f6 2c e9 49 f6 32 8f e7 1d d5 26 01 30   0.7.,.I.2....&amp;.0
+   e0 b3 57 f8 57 c7 e5 cc e7 b1 c9 20 dc fe 1d bb   ..W.W...... ....
+   bc 72 28 93 28 91 b2 b8 e3 48 11 0e 22 17 da d8   .r(.(....H.."...
+   b3 cf b0 b6 d0 65 0f c3 14 de a7 8a a3 ed cf 68   .....e.........h
+   74 83 44 a6 99 2d 73 75 07 02 23 b7 3c b7 dc d6   t.D..-su..#.&lt;...
+</PRE>
+Now, divide up the key block, producing the mac secrets, write keys, and
+(for block-mode ciphers) the write IVs.
+<PRE>
+client write mac secret: [Len: 16]
+   f9 d7 07 66 12 e8 2b 00 5d 20 8a 0b cb ff de 9e   ...f..+.] ......
+server write mac secret: [Len: 16]
+   8c 19 ed 1b e7 bc 66 47 f6 2a d3 6c 6d ee ba bf   ......fG.*.lm...
+</PRE>
+Since this is an "export" client, the final client write key is derived,
+via MD5, from the next 40 bits of the key block, and the client and server
+random values, as follows:
+<PRE>
+CWKey MD5 hash: key block [Len: 5]
+   30 af 37 f6 2c                                    0.7.,
+CWKey MD5 hash: client random [Len: 32]
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+CWKey MD5 hash: server random [Len: 32]
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+
+client write key: [Len: 16]
+   5d ca d8 85 b9 bc 40 ab d0 a3 cc 86 56 7e 7f 8a   ].....@.....V~..
+</PRE>
+Likewise, the final server write key is derived, via MD5, from the next
+40 bits of the key block, and the client and server random values, as follows:
+<PRE>
+SWKey MD5 hash: key block [Len: 5]
+   e9 49 f6 32 8f                                    .I.2.
+SWKey MD5 hash: server random [Len: 32]
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+SWKey MD5 hash: client random [Len: 32]
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+
+server write key: [Len: 16]
+   f3 81 e3 71 66 78 e0 06 45 53 15 12 df d7 b5 ca   ...qfx..ES......
+</PRE>
+The client and server write IVs are computed by hashing the client and
+server ramdom values, in different orders. In this case, since the RC4
+cipher is a stream cipher, and needs no IVs, the result of the hash is
+ignored.
+<PRE>
+CWiv MD5 hash: client random [Len: 32]
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+CWiv MD5 hash: server random [Len: 32]
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+
+client write iv: [Len: 0]
+
+SWiv MD5 hash: server random [Len: 32]
+   34 02 87 2a 66 f6 33 2d e9 86 2f d5 1a e8 39 1b   4..*f.3-../...9.
+   50 5c b4 ac f1 4f 67 a0 d2 9b 34 bf 8b 30 da 95   P\...Og...4..0..
+SWiv MD5 hash: client random [Len: 32]
+   34 02 87 2a b4 c2 09 76 f3 7c 58 dd 9d 53 ec ef   4..*...v.|X..S..
+   e6 c5 e2 5e 61 4e 36 93 42 a3 12 c9 a5 e0 9c e4   ...^aN6.B.......
+
+server write iv: [Len: 0]
+</PRE>
+Flush the server_hello handshake record out to the wire, because the 
+change_cipher_spec record, which follows, is not a handshake record.
+<PRE>
+SendPlainText record type: handshake  (22) bytes=74
+send (unencrypted) record data: [Len: 79]
++  16 03 00 00 4a 02 00 00 46 03 00 34 02 87 2a 66   ....J...F..4..*f
++  f6 33 2d e9 86 2f d5 1a e8 39 1b 50 5c b4 ac f1   .3-../...9.P\...
++  4f 67 a0 d2 9b 34 bf 8b 30 da 95 20 00 00 82 f4   Og...4..0.. ....
++  58 2b 88 b7 ff 12 59 0d 32 2c d7 13 6f 20 c6 f7   X+....Y.2,..o ..
++  9c 98 b6 de 85 be b2 40 cd 85 9f f3 00 03 00      .......@.......
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+
+
+<H3><A NAME="ServerChangeCipherSpec2"></A>Server's Change_Cipher_Spec Record</H3>
+This is not a handshake record, and is not included in the handshake hashes..
+<PRE>
+send change_cipher_spec record
+SendPlainText record type: change_cipher_spec (20) bytes=1
+send (encrypted) record data: [Len: 6]
++  14 03 00 00 01 01                                 ......
+
+Set Current Write Cipher Suite to Pending
+</PRE>
+
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+<H3><A NAME="ServerFinished2"></A>Server's Finished Handshake</H3>
+Send the fully MAC'ed and encrypted finished message.
+<BR>First, compute the "md5_hash" and "sha_hash" as defined for the "finished"
+message in 
+<A HREF="../draft302.txt">
+section 7.6.9 of the SSL 3.0 spec.</A> 
+In this example, we first compute
+the "inner" portion of each hash, then compute the "outer" portions.
+<PRE>
+send finished handshake
+Compute inner MD5_hash:
+MD5 state: fadce9b0 28e1e182 d311fc68 1efe3dea
+MD5_TraceState: buffered input [Len: 25]
+   59 0d 32 2c d7 13 6f 20 c6 f7 9c 98 b6 de 85 be   Y.2,..o ........
+   b2 40 cd 85 9f f3 00 03 00                        .@.......
+MD5 inner: sender [Len: 4]
+   53 52 56 52                                       SRVR
+MD5 inner: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+MD5 inner: MAC Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+MD5 inner: result [Len: 16]
+   50 37 c5 7f ec 6e cb 09 33 d7 22 8c 22 0f d5 1a   P7...n..3."."...
+
+Compute inner SHA1 hash:
+SHA1 state: ad8b7ac0 ded1c977 5698dc0d 5f6d80ef b7adf049
+SHA1_TraceState: buffered input [Len: 25]
+   59 0d 32 2c d7 13 6f 20 c6 f7 9c 98 b6 de 85 be   Y.2,..o ........
+   b2 40 cd 85 9f f3 00 03 00                        .@.......
+SHA inner: sender [Len: 4]
+   53 52 56 52                                       SRVR
+SHA inner: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+SHA inner: MAC Pad 1 [Len: 40]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36                           66666666
+SHA inner: result [Len: 20]
+   af a9 31 d2 b4 d1 e0 c5 a8 84 e7 51 0f 3d e2 b1   ..1........Q.=..
+   5e 5c d2 f4                                       ^\..
+
+Compute outer MD5 hash:
+MD5 outer: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+MD5 outer: MAC Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+MD5 outer: MD5 inner [Len: 16]
+   50 37 c5 7f ec 6e cb 09 33 d7 22 8c 22 0f d5 1a   P7...n..3."."...
+MD5 outer: result [Len: 16]
+   6b 83 ac 46 ba 40 3f 2d 17 b3 c3 dd 1f 60 b5 e7   k..F.@?-.....`..
+
+Compute outer SHA1 hash:
+SHA outer: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+SHA outer: MAC Pad 2 [Len: 40]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c                           \\\\\\\\
+SHA outer: SHA inner [Len: 20]
+   af a9 31 d2 b4 d1 e0 c5 a8 84 e7 51 0f 3d e2 b1   ..1........Q.=..
+   5e 5c d2 f4                                       ^\..
+SHA outer: result [Len: 20]
+   29 c2 25 e4 d4 b0 40 1f 43 11 7d 6f fb 43 2c 9d   ).%...@.C.}o.C,.
+   57 53 19 6c                                       WS.l
+</PRE>
+Now, construct the "finished" handshake message, and include it in the
+"handshake hashes". Note that it is composed of the two outer hashes computed
+above. First, review the current values of the handshake hashes:
+<PRE>
+MD5 state: fadce9b0 28e1e182 d311fc68 1efe3dea
+MD5_TraceState: buffered input [Len: 25]
+   59 0d 32 2c d7 13 6f 20 c6 f7 9c 98 b6 de 85 be   Y.2,..o ........
+   b2 40 cd 85 9f f3 00 03 00                        .@.......
+SHA1 state: ad8b7ac0 ded1c977 5698dc0d 5f6d80ef b7adf049
+SHA1_TraceState: buffered input [Len: 25]
+   59 0d 32 2c d7 13 6f 20 c6 f7 9c 98 b6 de 85 be   Y.2,..o ........
+   b2 40 cd 85 9f f3 00 03 00                        .@.......
+</PRE>
+Include the "finished" message in the handshake hashes.
+<PRE>
+append handshake header: type finished     (20)
+   14                                                .
+   00 00 24                                          ..$
+   6b 83 ac 46 ba 40 3f 2d 17 b3 c3 dd 1f 60 b5 e7   k..F.@?-.....`..
+   29 c2 25 e4 d4 b0 40 1f 43 11 7d 6f fb 43 2c 9d   ).%...@.C.}o.C,.
+   57 53 19 6c                                       WS.l
+</PRE>
+After hashing in the server's finished handshake, the handshake hashes are:
+<PRE>
+MD5 state: 1b4568c2 672850b0 0e77cc2e 26d79702
+MD5_TraceState: buffered input [Len: 1]
+   6c                                                l
+SHA1 state: 4a90e7a8 cd045fee dab7ca73 a097c081 e75c818f
+SHA1_TraceState: buffered input [Len: 1]
+   6c                                                l
+
+SendPlainText record type: handshake  (22) bytes=40
+Send PlainText record [Len: 40]
+   14 00 00 24 6b 83 ac 46 ba 40 3f 2d 17 b3 c3 dd   ...$k..F.@?-....
+   1f 60 b5 e7 29 c2 25 e4 d4 b0 40 1f 43 11 7d 6f   .`..).%...@.C.}o
+   fb 43 2c 9d 57 53 19 6c                           .C,.WS.l
+</PRE>
+Compute the MAC on the plaintext "finished" handshake message.
+This is done according to 
+<A HREF="../draft302.txt">
+section 7.2.3.1 of the SSL 3.0 spec.</A> 
+<PRE>
+frag hash1: MAC secret [Len: 16]
+   8c 19 ed 1b e7 bc 66 47 f6 2a d3 6c 6d ee ba bf   ......fG.*.lm...
+frag hash1: Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+frag hash1: temp [Len: 11]
+   00 00 00 00 00 00 00 00 16 00 28                  ..........(
+frag hash1: input [Len: 40]
+   14 00 00 24 6b 83 ac 46 ba 40 3f 2d 17 b3 c3 dd   ...$k..F.@?-....
+   1f 60 b5 e7 29 c2 25 e4 d4 b0 40 1f 43 11 7d 6f   .`..).%...@.C.}o
+   fb 43 2c 9d 57 53 19 6c                           .C,.WS.l
+frag hash2: MAC secret [Len: 16]
+   8c 19 ed 1b e7 bc 66 47 f6 2a d3 6c 6d ee ba bf   ......fG.*.lm...
+frag hash2: Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+frag hash2: hash1 [Len: 16]
+   40 7c a5 1e ec a5 b9 7a d7 40 ee df f4 a5 1c 75   @|.....z.@.....u
+frag hash2: result [Len: 16]
+   3c ec 38 cf 50 28 5a 3a 78 42 1d ea 26 e3 8e 3a   &lt;.8.P(Z:xB..&amp;..:
+</PRE>
+Append the MAC result above to the plaintext handshake message (above),
+compress (null), and encrypt, and add the record header, producing the
+following record:
+<PRE>
+send (encrypted) record data: [Len: 61]
++  16 03 00 00 38 60 3c bc 58 ca 60 61 ea d6 76 0a   ....8`&lt;.X.`a..v.
++  f4 53 fc 01 28 0f 47 c1 44 ca 93 84 06 e3 d8 a9   .S..(.G.D.......
++  90 84 cc 04 c4 9e 40 c1 69 ea ee 7e b3 34 6e 64   ......@.i..~.4nd
++  ae b5 ec cf 6c b8 0a 65 ec 22 33 97 10            ....l..e."3..
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+
+<H3><A NAME="ClientChangeCipherSpec2"></A>Client's Change_Cipher_Spec Record</H3>
+The client will now send us two records:
+<UL>
+<LI> a change_cipher_spec record</LI>
+<LI> a "finished" handshake record.</LI>
+</UL>
+Here is the change_cipher_spec record, which is not encrypted. It is not
+included in the handshake hashes, because it is not a handshake record.
+<PRE>
+raw gather data: [Len: 5]
++  14 03 00 00 01                                    .....
+plaintext: [Len: 1]
++  01                                                .
+handle change_cipher_spec record
+Set Current Read Cipher Suite to Pending
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+
+
+<H3><A NAME="ClientFinished2"></A>Client's Finished Handshake</H3>
+Now receive the client's "finished" handshake record.
+<PRE>
+raw gather data: [Len: 5]
++  16 03 00 00 38                                    ....8
+ciphertext: [Len: 56]
++  10 ff 46 14 cf 34 c5 c2 4a c5 6a 64 d0 4c 73 25   ..F..4..J.jd.Ls%
++  90 5f f7 c4 b5 f4 2c a4 7e 85 ea 99 65 6f 13 1b   ._....,.~...eo..
++  53 05 06 3a 59 08 cc d2 b1 31 41 64 94 09 be e3   S..:Y....1Ad....
++  3d 2a 0f 22 62 1e 52 55                           =*."b.RU
+</PRE>
+Decrypt the ciphertext using the keys/IVs above.
+<PRE>
+plaintext: [Len: 56]
+   14 00 00 24 47 ec 8c 4a eb 63 6f 3d 87 ae 13 15   ...$G..J.co=....
+   96 d3 1c aa 23 72 17 c0 93 91 79 1e 8c 86 c2 aa   ....#r....y.....
+   d3 29 ba fd b8 e9 59 6e 3e 42 f5 26 b1 fa 7d d9   .)....Yn>B.&amp;..}.
+   3d 65 f8 a4 7a ff 38 20                           =e..z.8
+</PRE>
+The last 16 bytes of plaintext above are (ostensibly) the sender's MAC.
+Compute the MAC on all but the last 16 bytes above, for verification.
+This is done according to 
+<A HREF="../draft302.txt">
+section 7.2.3.1 of the SSL 3.0 spec.</A> 
+<PRE>
+frag hash1: MAC secret [Len: 16]
+   f9 d7 07 66 12 e8 2b 00 5d 20 8a 0b cb ff de 9e   ...f..+.] ......
+frag hash1: Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+frag hash1: temp [Len: 11]
+   00 00 00 00 00 00 00 00 16 00 28                  ..........(
+frag hash1: input [Len: 40]
+   14 00 00 24 47 ec 8c 4a eb 63 6f 3d 87 ae 13 15   ...$G..J.co=....
+   96 d3 1c aa 23 72 17 c0 93 91 79 1e 8c 86 c2 aa   ....#r....y.....
+   d3 29 ba fd b8 e9 59 6e                           .)....Yn
+frag hash2: MAC secret [Len: 16]
+   f9 d7 07 66 12 e8 2b 00 5d 20 8a 0b cb ff de 9e   ...f..+.] ......
+frag hash2: Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+frag hash2: hash1 [Len: 16]
+   5b 2b 45 24 e9 dc 26 49 01 03 12 4e f9 6a bd ff   [+E$..&amp;I...N.j..
+frag hash2: result [Len: 16]
+   3e 42 f5 26 b1 fa 7d d9 3d 65 f8 a4 7a ff 38 20   >B.&amp;..}.=e..z.8
+</PRE>
+Note that the computed MAC matches the last 16 bytes of the plaintext above.
+The MAC is verified.
+
+<P>Compute the "md5_hash" and "sha_hash" as defined for the "finished" message
+in <A HREF="../draft302.txt">
+section 7.6.9 of the SSL 3.0 spec.</A> In this example, we first compute the
+"inner" portion of each hash, then compute the "outer" portions.
+<PRE>
+Compute inner MD5 hash.  First, review the current handshake hash state.
+MD5 state: 1b4568c2 672850b0 0e77cc2e 26d79702
+MD5_TraceState: buffered input [Len: 1]
+   6c                                                l
+MD5 inner: sender [Len: 4]
+   43 4c 4e 54                                       CLNT
+MD5 inner: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+MD5 inner: MAC Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+MD5 inner: result [Len: 16]
+   9a 93 90 95 7d a7 0b 3b e0 17 b0 e4 6c c2 f6 cd   ....}..;....l...
+
+Compute inner SHA hash.  First, review the current handshake hash state.
+SHA1 state: 4a90e7a8 cd045fee dab7ca73 a097c081 e75c818f
+SHA1_TraceState: buffered input [Len: 1]
+   6c                                                l
+SHA inner: sender [Len: 4]
+   43 4c 4e 54                                       CLNT
+SHA inner: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+SHA inner: MAC Pad 1 [Len: 40]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36                           66666666
+SHA inner: result [Len: 20]
+   40 aa 62 e3 39 db e8 7f 6c ea b7 c5 24 31 c6 3d   @.b.9...l...$1.=
+   60 83 8a 9e                                       `...
+
+Compute the outer MD5 hash:
+MD5 outer: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+MD5 outer: MAC Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+MD5 outer: MD5 inner [Len: 16]
+   9a 93 90 95 7d a7 0b 3b e0 17 b0 e4 6c c2 f6 cd   ....}..;....l...
+MD5 outer: result [Len: 16]
+   47 ec 8c 4a eb 63 6f 3d 87 ae 13 15 96 d3 1c aa   G..J.co=........
+
+Compute the outer SHA hash:
+SHA outer: master secret [Len: 48]
+   f6 63 98 c5 c4 84 e0 c4 c1 e7 4b 2d ef 62 9c f9   .c........K-.b..
+   fd 49 30 07 ce 6c b7 00 ad 00 23 a5 0d 2e 40 b2   .I0..l....#...@.
+   88 07 4f 19 ac 52 b6 43 61 77 d7 87 bb 17 9c c4   ..O..R.Caw......
+SHA outer: MAC Pad 2 [Len: 40]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c                           \\\\\\\\
+SHA outer: SHA inner [Len: 20]
+   40 aa 62 e3 39 db e8 7f 6c ea b7 c5 24 31 c6 3d   @.b.9...l...$1.=
+   60 83 8a 9e                                       `...
+SHA outer: result [Len: 20]
+   23 72 17 c0 93 91 79 1e 8c 86 c2 aa d3 29 ba fd   #r....y......)..
+   b8 e9 59 6e                                       ..Yn
+</PRE>
+The two outer hashes just computed match those in the plaintext finished
+message, shown above. So the handshake hashes are verified. Now, include
+the received "finished" handshake in the handshake hashes. First, review
+the state of the handshake hashes.
+<PRE>
+MD5 state: 1b4568c2 672850b0 0e77cc2e 26d79702
+MD5_TraceState: buffered input [Len: 1]
+   6c                                                l
+SHA1 state: 4a90e7a8 cd045fee dab7ca73 a097c081 e75c818f
+SHA1_TraceState: buffered input [Len: 1]
+   6c                                                l
+
+handle handshake message: finished     (20)
+MD5 &amp; SHA handshake hash input: [Len: 4]
+   14 00 00 24                                       ...$
+MD5 &amp; SHA handshake hash input: [Len: 36]
+   47 ec 8c 4a eb 63 6f 3d 87 ae 13 15 96 d3 1c aa   G..J.co=........
+   23 72 17 c0 93 91 79 1e 8c 86 c2 aa d3 29 ba fd   #r....y......)..
+   b8 e9 59 6e                                       ..Yn
+
+handshake is finished
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+
+
+<H3><A NAME="ClientData2"></A>Client's Application Data Record</h3>
+Receive the client's first application_data record.
+<PRE>
+raw gather data: [Len: 5]
++  17 03 00 01 0a                                    .....
+ciphertext: [Len: 266]
++  ba de fa 55 d7 9f 99 dd 01 2f 90 fd 78 7b 40 69   ...U...../..x{@i
++  f1 e1 72 56 e0 cf 60 ef 7b 0c 5f b1 69 ad 7e 7d   ..rV..`.{._.i.~}
++  2c ca bd 4e 9f dd a0 a6 ef f8 55 c3 8f ef e7 f0   ,..N......U.....
++  f1 d1 c2 61 42 8c 07 f2 ca 02 8b 03 fc da e5 a1   ...aB...........
++  46 e7 c4 73 22 1d 7c b3 3a d8 1a 61 89 b4 23 85   F..s".|.:..a..#.
++  04 81 c5 78 18 d8 59 ec 63 1a 97 08 48 0e bc 45   ...x..Y.c...H..E
++  55 65 c5 70 48 c3 4a df 41 e4 ba ed 8e 1d 58 c5   Ue.pH.J.A.....X.
++  79 8f 60 07 65 a8 90 e1 2c c7 16 28 64 f0 01 77   y.`.e...,..(d..w
++  ba b1 3c 3a c1 d7 b5 a3 a8 f3 87 c0 61 b7 c0 d0   ..&lt;:........a...
++  ab 6d 1e 78 e4 a4 67 c8 2b d4 b3 92 d6 f4 6e f2   .m.x..g.+.....n.
++  cf e6 ff 24 8b 7e 63 02 da 73 d3 03 7a 21 6d d1   ...$.~c..s..z!m.
++  45 66 26 32 2b 00 70 ea c7 cc c6 a2 9f df bd 09   Ef&amp;2+.p.........
++  81 cf b9 22 12 ab b2 76 81 9f 48 66 a7 33 72 c2   ..."...v..Hf.3r.
++  45 33 2b 8c ea f6 b1 7c d1 14 82 82 a2 e3 29 ef   E3+....|......).
++  48 67 86 35 7f 23 65 f6 95 e0 55 9a f3 42 5b 81   Hg.5.#e...U..B[.
++  50 8b 5a 45 d7 92 2d b2 93 b2 97 51 88 2b f9 3a   P.ZE..-....Q.+.:
++  e3 78 2e ad 16 e3 57 54 f4 ed                     .x....WT..
+</PRE>
+Decrypt the ciphertext using the keys/IVs above.
+<PRE>
+plaintext: [Len: 266]
+   47 45 54 20 2f 62 61 72 32 20 48 54 54 50 2f 31   GET /bar2 HTTP/1
+   2e 30 0d 0a 43 6f 6e 6e 65 63 74 69 6f 6e 3a 20   .0..Connection: 
+   4b 65 65 70 2d 41 6c 69 76 65 0d 0a 55 73 65 72   Keep-Alive..User
+   2d 41 67 65 6e 74 3a 20 4d 6f 7a 69 6c 6c 61 2f   -Agent: Mozilla/
+   34 2e 30 32 20 5b 65 6e 5d 20 28 57 69 6e 4e 54   4.02 [en] (WinNT
+   3b 20 49 29 0d 0a 48 6f 73 74 3a 20 62 69 6a 6f   ; I)..Host: bijo
+   75 2e 6d 63 6f 6d 2e 63 6f 6d 3a 31 39 39 39 0d   u.mcom.com:1999.
+   0a 41 63 63 65 70 74 3a 20 69 6d 61 67 65 2f 67   .Accept: image/g
+   69 66 2c 20 69 6d 61 67 65 2f 78 2d 78 62 69 74   if, image/x-xbit
+   6d 61 70 2c 20 69 6d 61 67 65 2f 6a 70 65 67 2c   map, image/jpeg,
+   20 69 6d 61 67 65 2f 70 6a 70 65 67 2c 20 2a 2f    image/pjpeg, */
+   2a 0d 0a 41 63 63 65 70 74 2d 4c 61 6e 67 75 61   *..Accept-Langua
+   67 65 3a 20 65 6e 2d 55 53 2c 65 6e 2d 47 42 2c   ge: en-US,en-GB,
+   65 6e 0d 0a 41 63 63 65 70 74 2d 43 68 61 72 73   en..Accept-Chars
+   65 74 3a 20 69 73 6f 2d 38 38 35 39 2d 31 2c 2a   et: iso-8859-1,*
+   2c 75 74 66 2d 38 0d 0a 0d 0a ea 0b ae ab 9b 09   ,utf-8..........
+   cb 46 c5 15 85 0d a2 0f ff 4e                     .F.......N
+</PRE>
+The last 16 bytes of plaintext above are (ostensibly) the sender's MAC.
+Compute the MAC on all but the last 16 bytes above, for verification.
+This is done according to 
+<A HREF="../draft302.txt">
+section 7.2.3.1 of the SSL 3.0 spec.</A> 
+<PRE>
+frag hash1: MAC secret [Len: 16]
+   f9 d7 07 66 12 e8 2b 00 5d 20 8a 0b cb ff de 9e   ...f..+.] ......
+frag hash1: Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+frag hash1: temp [Len: 11]
+   00 00 00 00 00 00 00 01 17 00 fa                  ...........
+frag hash1: input [Len: 250]
+   47 45 54 20 2f 62 61 72 32 20 48 54 54 50 2f 31   GET /bar2 HTTP/1
+   2e 30 0d 0a 43 6f 6e 6e 65 63 74 69 6f 6e 3a 20   .0..Connection: 
+   4b 65 65 70 2d 41 6c 69 76 65 0d 0a 55 73 65 72   Keep-Alive..User
+   2d 41 67 65 6e 74 3a 20 4d 6f 7a 69 6c 6c 61 2f   -Agent: Mozilla/
+   34 2e 30 32 20 5b 65 6e 5d 20 28 57 69 6e 4e 54   4.02 [en] (WinNT
+   3b 20 49 29 0d 0a 48 6f 73 74 3a 20 62 69 6a 6f   ; I)..Host: bijo
+   75 2e 6d 63 6f 6d 2e 63 6f 6d 3a 31 39 39 39 0d   u.mcom.com:1999.
+   0a 41 63 63 65 70 74 3a 20 69 6d 61 67 65 2f 67   .Accept: image/g
+   69 66 2c 20 69 6d 61 67 65 2f 78 2d 78 62 69 74   if, image/x-xbit
+   6d 61 70 2c 20 69 6d 61 67 65 2f 6a 70 65 67 2c   map, image/jpeg,
+   20 69 6d 61 67 65 2f 70 6a 70 65 67 2c 20 2a 2f    image/pjpeg, */
+   2a 0d 0a 41 63 63 65 70 74 2d 4c 61 6e 67 75 61   *..Accept-Langua
+   67 65 3a 20 65 6e 2d 55 53 2c 65 6e 2d 47 42 2c   ge: en-US,en-GB,
+   65 6e 0d 0a 41 63 63 65 70 74 2d 43 68 61 72 73   en..Accept-Chars
+   65 74 3a 20 69 73 6f 2d 38 38 35 39 2d 31 2c 2a   et: iso-8859-1,*
+   2c 75 74 66 2d 38 0d 0a 0d 0a                     ,utf-8....
+frag hash2: MAC secret [Len: 16]
+   f9 d7 07 66 12 e8 2b 00 5d 20 8a 0b cb ff de 9e   ...f..+.] ......
+frag hash2: Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+frag hash2: hash1 [Len: 16]
+   26 8e 83 85 5b c2 7d b9 f5 7d 74 e0 b5 e7 74 59   &amp;...[.}..}t...tY
+frag hash2: result [Len: 16]
+   ea 0b ae ab 9b 09 cb 46 c5 15 85 0d a2 0f ff 4e   .......F.......N
+</PRE>
+Note that the computed MAC matches the last 16 bytes of the plaintext above.
+The MAC is verified.
+The GET request is sent to the HTTP layer above. 
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+
+
+
+<H3><A NAME="ServerData2"></A>Server's Application Data record</H3>
+The server's response is sent back to the client.
+<PRE>
+SendPlainText record type: application_data (23) bytes=5
+Send PlainText record [Len: 5]
+   66 6f 6f 0a 00                                    foo..
+</PRE>
+Compute the MAC on the plaintext application_data message.
+This is done according to 
+<A HREF="../draft302.txt">
+section 7.2.3.1 of the SSL 3.0 spec.</A> 
+<PRE>
+frag hash1: MAC secret [Len: 16]
+   8c 19 ed 1b e7 bc 66 47 f6 2a d3 6c 6d ee ba bf   ......fG.*.lm...
+frag hash1: Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+frag hash1: temp [Len: 11]
+   00 00 00 00 00 00 00 01 17 00 05                  ...........
+frag hash1: input [Len: 5]
+   66 6f 6f 0a 00                                    foo..
+frag hash2: MAC secret [Len: 16]
+   8c 19 ed 1b e7 bc 66 47 f6 2a d3 6c 6d ee ba bf   ......fG.*.lm...
+frag hash2: Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+frag hash2: hash1 [Len: 16]
+   d5 78 65 16 01 6f c8 72 c1 fb 65 c5 e7 47 b8 b1   .xe..o.r..e..G..
+frag hash2: result [Len: 16]
+   84 b1 b5 d0 c5 b5 dc 23 3d 4e 03 5c 91 0c 61 47   .......#=N.\..aG
+</PRE>
+Append the result above to the plaintext application_data message (above),
+compress (null), and encrypt, and add the record header, producing the
+following record:
+<PRE>
+send (encrypted) record data: [Len: 26]
++  17 03 00 00 15 9a 62 6d 9e 63 f3 ff 58 e7 d5 56   ......bm.c..X..V
++  5c d0 c6 a6 8e 15 dd f9 d7 90                     \.........
+</PRE>
+<HR WIDTH="100%">
+
+
+
+
+
+
+
+
+
+<H3><A NAME="ServerAlert2"></A>Server's Close_Notify Alert Record</H3>
+This is the end of the server's response.
+The server sends an close_notify alert, to tell the client it is done.
+<PRE>
+send alert record, level=1 desc=0
+SendPlainText record type: alert      (21) bytes=2
+Send PlainText record [Len: 2]
+   01 00                                             ..
+</PRE>
+Compute the MAC on the plaintext close_notify alert message.
+This is done according to 
+<A HREF="../draft302.txt">
+section 7.2.3.1 of the SSL 3.0 spec.</A> 
+<PRE>
+frag hash1: MAC secret [Len: 16]
+   8c 19 ed 1b e7 bc 66 47 f6 2a d3 6c 6d ee ba bf   ......fG.*.lm...
+frag hash1: Pad 1 [Len: 48]
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+   36 36 36 36 36 36 36 36 36 36 36 36 36 36 36 36   6666666666666666
+frag hash1: temp [Len: 11]
+   00 00 00 00 00 00 00 02 15 00 02                  ...........
+frag hash1: input [Len: 2]
+   01 00                                             ..
+frag hash2: MAC secret [Len: 16]
+   8c 19 ed 1b e7 bc 66 47 f6 2a d3 6c 6d ee ba bf   ......fG.*.lm...
+frag hash2: Pad 2 [Len: 48]
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+   5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c 5c   \\\\\\\\\\\\\\\\
+frag hash2: hash1 [Len: 16]
+   d5 7a cd 5f d7 55 99 b9 9d 80 80 d7 fe f9 0e e6   .z._.U..........
+frag hash2: result [Len: 16]
+   0b e8 d2 20 e8 d5 49 b1 86 1f 3d f0 c6 f9 d7 58   ... ..I...=....X
+</PRE>
+Append the MAC result above to the plaintext alert message (above), compress
+(null), and encrypt, and add the record header, producing the following
+record:
+<PRE>
+send (encrypted) record data: [Len: 23]
++  15 03 00 00 12 13 d7 eb 75 4f 91 28 09 d9 32 ab   ........uO.(..2.
++  07 2d af da e2 11 36                              .-....6
+</PRE>
+The server may now close the socket.
+<PRE>
+closing, rv=0 errno=10035
+</PRE>
+The server closes the connection, 
+and thus does not receive the close notify alert from the client.
+
+<HR WIDTH="100%">
+Please direct all questions, suggestions, and comments 
+<I><B>concerning these traces</B></I> to 
+<A HREF="mailto:nelsonb@iname.com?Subject=/projects/security/pki/nss/ssl/traces/trc-srv-ex.html">Nelson Bolyard</A>. 
+<P>
+All <I><B>general questions about SSL</B></I> 
+(that do not directly relate to these trace files) 
+should be discussed on to the newsgroup <a href="news://news.mozilla.org:119/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a> <BR>
+<HR>
+$Id$
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

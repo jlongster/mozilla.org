@@ -1,0 +1,155 @@
+<?php
+
+$html_title = 'Build Instructions for PSM 2';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>Build Instructions for PSM 2</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Main technical contact: 
+<A HREF="mailto:kaie@netscape.com?subject=PSM Build Feedback">Kai Engert</A><BR>
+
+Manager: 
+<A HREF="mailto:ssaux@netscape.com?subject=PSM Feedback">Stephane Saux</A></FONT></i>
+</center>
+<BR>
+Following these instructions will cause mozilla to build PSM 2 along with
+all of the other components one usually gets with the build.
+
+<h3>Unix Build Instructions</h3>
+
+
+<ol>
+	<li>Add the following line to your .mozconfig file:
+            <pre>ac_add_options --enable-crypto</pre>
+	<li>Pull and build Mozilla as described at <a href="http://www.mozilla.org/build/unix.html">
+Mozilla Unix Build Instructions</a><BR><BR>
+
+	
+	<li>The PSM files will be found here:<BR><BR>
+	<pre>
+     /dist/bin/libnssckbi.so
+              /components/libpipnss.so
+              /components/libpippki.so
+              /chrome/pippki.jar
+              /chrome/pipnss.jar
+     
+        </pre>
+            After a successful Solaris 32 bit Sparc build, the following files
+            are also a part of PSM 2.
+        <pre>
+     /dist/bin/libfreebl_hybrid_3.so
+              /libfreebl_pure32_3.so
+        </pre>
+            After a successful HP-UX 32 bit build, the following files are 
+            also a part of PSM 2.
+        <pre>
+     /dist/bin/libfreebl_hybrid_3.sl
+              /libfreebl_pure32_3.sl
+        </pre>
+</ol>
+
+
+<h3>Windows Build Instructions</h3>
+
+<p>Pull and build Mozilla as described at <a href="http://www.mozilla.org/build/win32.html">
+Mozilla Win32 Build Instructions</a>
+<p>
+Make sure you have read the general Win32 build instructions.
+The general win32 Mozilla build instructions say you CAN optionally use a MOZCONFIG file.
+Well, for building PSM / the crypto modules, you MUST use one.
+<p>
+Use the <a href="http://webtools.mozilla.org/build/config.cgi">UNIX build configurator</a> to create a configuration that suits your needs, and make sure you have the --enable-crypto option checked.
+Create a file that contains your build options created by the configurator.
+Or, in the most simple scenario, where everything else should use default settings, the contents of your file (name it something like my-mozconfig) can look like this:
+<p>
+<table border=1><tr><td>
+<pre>
+# sh
+# Build configuration script
+#
+# See http://www.mozilla.org/build/unix.html for build instructions.
+#
+
+# Options for 'configure' (same as command-line options).
+ac_add_options --enable-crypto
+</pre>
+</td></tr></table>
+<p>In your environment, make the MOZCONFIG environment variable point to your file. Use something like
+<pre>
+set MOZCONFIG=c:\mozilla-build\my-mozconfig
+</pre>
+
+
+<h4>Windows Trouble Shooting</h4>
+<ol>
+    <li>When compiling, my build breaks with the following output:
+<pre>
+cp mpi/mpi_x86.asm .
+ml.exe -FoWIN32_D.OBJ/mpi_x86.obj -Cp -Sn -Zi -coff -IC:/mozilla/dist/include/ns
+pr  -I../../../../dist/public/security -I../../../../dist/private/security -I../
+../../../dist/include -c mpi_x86.asm
+process_begin: CreateProcess((null), ml.exe -FoWIN32_D.OBJ/mpi_x86.obj -Cp -Sn -
+Zi -coff -IC:/mozilla/dist/include/nspr -I../../../../dist/public/security -I../
+../../../dist/private/security -I../../../../dist/include -c mpi_x86.asm, ...) f
+ailed.
+make (e=2): The system cannot find the file specified.
+gmake.exe[1]: *** [WIN32_D.OBJ/mpi_x86.obj] Error 2
+gmake.exe[1]: Leaving directory `C:/mozilla/security/nss/lib/freebl'
+gmake.exe: *** [install] Error 2
+gmake.exe: Leaving directory `C:/mozilla/security/nss/lib'
+NMAKE : fatal error U1077: 'gmake.exe' : return code '0x2'
+Stop.
+NMAKE : fatal error U1077: 'C:\PROGRA~1\MICROS~1\VC98\BIN\NMAKE.EXE' : return code '0x2'
+Stop.
+NMAKE : fatal error U1077: 'C:\PROGRA~1\MICROS~1\VC98\BIN\NMAKE.EXE' : return code '0x2'
+Stop.
+NMAKE : fatal error U1077: 'C:\PROGRA~1\MICROS~1\VC98\BIN\NMAKE.EXE' : return code '0x2'
+Stop.
+</pre>
+    The problem here is that MASM (ml.exe) is either not installed on your 
+    system or is not in your path.  If ml.exe is installed on your system, 
+    then make sure it is in your path.  If it is not, then see the 
+    <a href="http://www.mozilla.org/projects/security/pki/nss/buildnss_32_orig.html#windows">NSS Build Instructions</a>
+    on where to get MASM.
+
+</ol>
+
+
+<h3>Macintosh Build Instructions</h3>
+See <a href="http://www.mozilla.org/build/mac.html">Building Mac Mozilla</a>
+for instructions on setting up your Macintosh development environment.
+<ol>
+	<li>In your build preferences, add the following line:<BR><BR>
+
+	<tt>options psm 1</tt><BR><BR>
+
+	<li>Run the perl script at <tt>mozilla:build:mac:build_scripts:BuildMozilla[Debug].pl</tt><BR><BR>
+
+	<li>The PSM files will be found here:<BR><BR>
+        <pre>
+        mozilla:dist:viewer[_debug]:Components:PIPNSS[Debug].shlb
+                                   :Components:PIPPKI[Debug].shlb
+                                   :Chrome:pipnss.jar
+                                   :Chrome:pippki.jar
+                                   :Essential Files:NSSckbi[Debug].shlb
+        </pre>
+
+</ol>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

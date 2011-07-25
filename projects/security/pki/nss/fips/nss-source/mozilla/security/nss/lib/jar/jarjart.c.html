@@ -1,0 +1,378 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> /*
+<b><a name="38">   38</a></b>  *  JARJART
+<b><a name="39">   39</a></b>  *
+<b><a name="40">   40</a></b>  *  JAR functions used by Jartool
+<b><a name="41">   41</a></b>  */
+<b><a name="42">   42</a></b> 
+<b><a name="43">   43</a></b> /* This allows manifest files above 64k to be
+<b><a name="44">   44</a></b>    processed on non-win16 platforms */
+<b><a name="45">   45</a></b> 
+<b><a name="46">   46</a></b> #include "jar.h"
+<b><a name="47">   47</a></b> #include "jarint.h"
+<b><a name="48">   48</a></b> #include "jarjart.h"
+<b><a name="49">   49</a></b> #include "blapi.h"        /* JAR is supposed to be above the line!! */
+<b><a name="50">   50</a></b> #include "pk11func.h"        /* PK11 wrapper funcs are all above the line. */
+<b><a name="51">   51</a></b> #include "certdb.h"
+<b><a name="52">   52</a></b> 
+<b><a name="53">   53</a></b> /* from certdb.h */
+<b><a name="54">   54</a></b> #define <a href="#54">CERTDB_USER</a> (1&lt;&lt;6)
+<b><a name="55">   55</a></b> 
+<b><a name="56">   56</a></b> /*
+<b><a name="57">   57</a></b>  *  S O B _ l i s t _ c e r t s
+<b><a name="58">   58</a></b>  *
+<b><a name="59">   59</a></b>  *  Return a list of newline separated certificate nicknames
+<b><a name="60">   60</a></b>  *  (this function used by the Jartool)
+<b><a name="61">   61</a></b>  * 
+<b><a name="62">   62</a></b>  */
+<b><a name="63">   63</a></b> 
+<b><a name="64">   64</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#64">jar_list_cert_callback</a> 
+<b><a name="65">   65</a></b>      (<a href="../<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>db/<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>t.h.dep.html#CERTCertificate">CERTCertificate</a> *<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#k">k</a>, void *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>)
+<b><a name="66">   66</a></b>   {
+<b><a name="67">   67</a></b>   char *name;
+<b><a name="68">   68</a></b>   char **ugly_list;
+<b><a name="69">   69</a></b> 
+<b><a name="70">   70</a></b>   int trusted;
+<b><a name="71">   71</a></b> 
+<b><a name="72">   72</a></b>   ugly_list = (char **) <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;
+<b><a name="73">   73</a></b> 
+<b><a name="74">   74</a></b>   if (<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>)
+<b><a name="75">   75</a></b>     {
+<b><a name="76">   76</a></b>     name = <a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#nickname">nickname</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#nickname"><sup>[1]</sup></a>;
+<b><a name="77">   77</a></b> 
+<b><a name="78">   78</a></b>     trusted = <a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>-&gt;trust-&gt;objectSigningFlags &amp; <a href="../certdb/certdb.h.dep.html#CERTDB_USER">CERTDB_USER</a><a href="../jar/jarjart.c.dep.html#CERTDB_USER"><sup>[1]</sup></a><a href="../jar/jarver.c.dep.html#CERTDB_USER"><sup>[2]</sup></a><a href="../softoken/pcertt.h.dep.html#CERTDB_USER"><sup>[3]</sup></a>;
+<b><a name="79">   79</a></b> 
+<b><a name="80">   80</a></b>     /* Add this name or email to list */
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b>     if (name &amp;&amp; trusted)
+<b><a name="83">   83</a></b>       {
+<b><a name="84">   84</a></b>       *ugly_list = (char*)<a href="../util/secport.c.dep.html#PORT_Realloc">PORT_Realloc</a>
+<b><a name="85">   85</a></b>            (*ugly_list, <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a> (*ugly_list) + <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a> (name) + 2);
+<b><a name="86">   86</a></b> 
+<b><a name="87">   87</a></b>       if (*ugly_list)
+<b><a name="88">   88</a></b>         {
+<b><a name="89">   89</a></b>         if (**ugly_list)
+<b><a name="90">   90</a></b>           <a href="../util/secport.h.dep.html#PORT_Strcat">PORT_Strcat</a> (*ugly_list, "\<a href="../mozilla/nsprpub/pr/src/misc/prdtoa.c.dep.html#n">n</a><a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#n"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#n"><sup>[2]</sup></a><a href="../mozilla/dbm/src/snprintf.c.dep.html#n"><sup>[3]</sup></a></a>");
+<b><a name="91">   91</a></b> 
+<b><a name="92">   92</a></b>         <a href="../util/secport.h.dep.html#PORT_Strcat">PORT_Strcat</a> (*ugly_list, name);
+<b><a name="93">   93</a></b>         }
+<b><a name="94">   94</a></b>       }
+<b><a name="95">   95</a></b>     }
+<b><a name="96">   96</a></b> 
+<b><a name="97">   97</a></b>   return (<a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>);
+<b><a name="98">   98</a></b>   }
+<b><a name="99">   99</a></b> 
+<b><a name="100">  100</a></b> /*
+<b><a name="101">  101</a></b>  *  S O B _ J A R _ l i s t _ c e r t s
+<b><a name="102">  102</a></b>  *
+<b><a name="103">  103</a></b>  *  Return a linfeed separated ascii list of certificate
+<b><a name="104">  104</a></b>  *  nicknames for the Jartool.
+<b><a name="105">  105</a></b>  *
+<b><a name="106">  106</a></b>  */
+<b><a name="107">  107</a></b> 
+<b><a name="108">  108</a></b> char *<a href="#108">JAR_JAR_list_certs</a> (void)
+<b><a name="109">  109</a></b>   {
+<b><a name="110">  110</a></b>   <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> = SECFailure;
+<b><a name="111">  111</a></b>   <a href="../certdb/certt.h.dep.html#CERTCertDBHandle">CERTCertDBHandle</a></a> *certdb;
+<b><a name="112">  112</a></b>   <a href="../certdb/certt.h.dep.html#CERTCertList">CERTCertList</a> *certs;
+<b><a name="113">  113</a></b>   <a href="../certdb/certt.h.dep.html#CERTCertListNode">CERTCertListNode</a> *node;
+<b><a name="114">  114</a></b> 
+<b><a name="115">  115</a></b>   char *ugly_list;
+<b><a name="116">  116</a></b> 
+<b><a name="117">  117</a></b>   certdb = <a href="../jar/jarver.c.dep.html#JAR_open_database">JAR_open_database</a>();
+<b><a name="118">  118</a></b> 
+<b><a name="119">  119</a></b>   /* a little something */
+<b><a name="120">  120</a></b>   ugly_list = (char*)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a> (16);
+<b><a name="121">  121</a></b> 
+<b><a name="122">  122</a></b>   if (ugly_list)
+<b><a name="123">  123</a></b>     {
+<b><a name="124">  124</a></b>     *ugly_list = 0;
+<b><a name="125">  125</a></b> 
+<b><a name="126">  126</a></b>     certs = <a href="../pk11wrap/pk11cert.c.dep.html#PK11_ListCerts">PK11_ListCerts</a>(PK11CertListUnique, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>/* pwarg*/);
+<b><a name="127">  127</a></b>     if (certs)
+<b><a name="128">  128</a></b>       {
+<b><a name="129">  129</a></b>         for (node = <a href="../certdb/certt.h.dep.html#CERT_LIST_HEAD">CERT_LIST_HEAD</a>(certs); !<a href="../certdb/certt.h.dep.html#CERT_LIST_END">CERT_LIST_END</a>(node,certs);
+<b><a name="130">  130</a></b>                                 node = <a href="../certdb/certt.h.dep.html#CERT_LIST_NEXT">CERT_LIST_NEXT</a>(node))
+<b><a name="131">  131</a></b>            {
+<b><a name="132">  132</a></b>             <a href="../jar/jarjart.c.dep.html#jar_list_<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>_callback">jar_list_<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>_callback</a>(node-&gt;<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, (void *)&amp;ugly_list);
+<b><a name="133">  133</a></b>            }
+<b><a name="134">  134</a></b>         <a href="../certdb/certdb.c.dep.html#CERT_DestroyCertList">CERT_DestroyCertList</a>(certs);
+<b><a name="135">  135</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> = <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="136">  136</a></b>        }
+<b><a name="137">  137</a></b>     }
+<b><a name="138">  138</a></b> 
+<b><a name="139">  139</a></b>   <a href="../jar/jarver.c.dep.html#JAR_close_database">JAR_close_database</a> (certdb);
+<b><a name="140">  140</a></b> 
+<b><a name="141">  141</a></b>   return (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> != <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>) ? <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> : ugly_list;
+<b><a name="142">  142</a></b>   }
+<b><a name="143">  143</a></b> 
+<b><a name="144">  144</a></b> int <a href="#144">JAR_JAR_validate_archive</a> (char *<a href="../mozilla/nsprpub/pr/tests/stat.c.dep.html#filename">filename</a></a>)
+<b><a name="145">  145</a></b>   {
+<b><a name="146">  146</a></b>   <a href="../jar/jar.h.dep.html#JAR">JAR</a> *jar;
+<b><a name="147">  147</a></b>   int <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> = -1;
+<b><a name="148">  148</a></b> 
+<b><a name="149">  149</a></b>   jar = <a href="../jar/jar.c.dep.html#JAR_new">JAR_new</a>();
+<b><a name="150">  150</a></b> 
+<b><a name="151">  151</a></b>   if (jar)
+<b><a name="152">  152</a></b>     {
+<b><a name="153">  153</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> = <a href="../jar/jarfile.c.dep.html#JAR_pass_archive">JAR_pass_archive</a> (jar, jarArchGuess, <a href="../mozilla/nsprpub/pr/tests/stat.c.dep.html#filename">filename</a></a>, "");
+<b><a name="154">  154</a></b> 
+<b><a name="155">  155</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> == 0)
+<b><a name="156">  156</a></b>       <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> = jar-&gt;valid;
+<b><a name="157">  157</a></b> 
+<b><a name="158">  158</a></b>     <a href="../jar/jar.c.dep.html#JAR_destroy">JAR_destroy</a> (jar);
+<b><a name="159">  159</a></b>     }
+<b><a name="160">  160</a></b> 
+<b><a name="161">  161</a></b>   return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a>;
+<b><a name="162">  162</a></b>   }
+<b><a name="163">  163</a></b> 
+<b><a name="164">  164</a></b> char *<a href="#164">JAR_JAR_get_error</a> (int <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a>)
+<b><a name="165">  165</a></b>   {
+<b><a name="166">  166</a></b>   return <a href="../jar/jar.c.dep.html#JAR_get_error">JAR_get_error</a> (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a>);
+<b><a name="167">  167</a></b>   }
+<b><a name="168">  168</a></b> 
+<b><a name="169">  169</a></b> /*
+<b><a name="170">  170</a></b>  *  S O B _ J A R _  h a s h
+<b><a name="171">  171</a></b>  *
+<b><a name="172">  172</a></b>  *  Hash algorithm interface for use by the Jartool. Since we really
+<b><a name="173">  173</a></b>  *  don't know the private sizes of the context, and Java does need to
+<b><a name="174">  174</a></b>  *  know this number, allocate 512 bytes for it.
+<b><a name="175">  175</a></b>  *
+<b><a name="176">  176</a></b>  *  In april 1997 hashes in this file were changed to call PKCS11,
+<b><a name="177">  177</a></b>  *  as FIPS requires that when a smartcard has failed validation, 
+<b><a name="178">  178</a></b>  *  hashes are not to be performed. But because of the difficulty of
+<b><a name="179">  179</a></b>  *  preserving pointer context between calls to the JAR_JAR hashing
+<b><a name="180">  180</a></b>  *  functions, the hash routines are called directly, though after
+<b><a name="181">  181</a></b>  *  checking to see if hashing is allowed.
+<b><a name="182">  182</a></b>  *
+<b><a name="183">  183</a></b>  */
+<b><a name="184">  184</a></b> 
+<b><a name="185">  185</a></b> void *<a href="#185">JAR_JAR_new_hash</a> (int alg)
+<b><a name="186">  186</a></b>   {
+<b><a name="187">  187</a></b>   void *<a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>;
+<b><a name="188">  188</a></b> 
+<b><a name="189">  189</a></b>   <a href="../freebl/blapit.h.dep.html#MD5Context">MD5Context</a> *<a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a>;
+<b><a name="190">  190</a></b>   <a href="../freebl/blapit.h.dep.html#SHA1Context">SHA1Context</a> *<a href="../util/secoid.c.dep.html#sha1">sha1</a>;
+<b><a name="191">  191</a></b> 
+<b><a name="192">  192</a></b>   /* this is a hack because this whole PORT_ZAlloc stuff looks scary */
+<b><a name="193">  193</a></b> 
+<b><a name="194">  194</a></b>   if (!<a href="../pk11wrap/pk11cxt.c.dep.html#PK11_HashOK">PK11_HashOK</a> (alg == 1 ? SEC_OID_MD5 : SEC_OID_SHA1))
+<b><a name="195">  195</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="196">  196</a></b> 
+<b><a name="197">  197</a></b>   <a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a> = <a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a> (512);
+<b><a name="198">  198</a></b> 
+<b><a name="199">  199</a></b>   if (<a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>)
+<b><a name="200">  200</a></b>     {
+<b><a name="201">  201</a></b>     switch (alg)
+<b><a name="202">  202</a></b>       {
+<b><a name="203">  203</a></b>       case 1:  /* MD5 */
+<b><a name="204">  204</a></b>                <a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a> = (<a href="../freebl/blapit.h.dep.html#MD5Context">MD5Context</a> *) <a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>;
+<b><a name="205">  205</a></b>                <a href="../freebl/md5.c.dep.html#MD5_Begin">MD5_Begin</a> (<a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a>);
+<b><a name="206">  206</a></b>                break;
+<b><a name="207">  207</a></b> 
+<b><a name="208">  208</a></b>       case 2:  /* SHA1 */
+<b><a name="209">  209</a></b>                <a href="../util/secoid.c.dep.html#sha1">sha1</a> = (<a href="../freebl/blapit.h.dep.html#SHA1Context">SHA1Context</a> *) <a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>;
+<b><a name="210">  210</a></b>                <a href="../freebl/sha_fast.c.dep.html#SHA1_Begin">SHA1_Begin</a> (<a href="../util/secoid.c.dep.html#sha1">sha1</a>);
+<b><a name="211">  211</a></b>                break;
+<b><a name="212">  212</a></b>       }
+<b><a name="213">  213</a></b>     }
+<b><a name="214">  214</a></b> 
+<b><a name="215">  215</a></b>   return <a href="../mozilla/nsprpub/pr/tests/concur.c.dep.html#context">context</a>;
+<b><a name="216">  216</a></b>   }
+<b><a name="217">  217</a></b> 
+<b><a name="218">  218</a></b> void *<a href="#218">JAR_JAR_hash</a> (int alg, void *cookie, int <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>, void *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>)
+<b><a name="219">  219</a></b>   {
+<b><a name="220">  220</a></b>   <a href="../freebl/blapit.h.dep.html#MD5Context">MD5Context</a> *<a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a>;
+<b><a name="221">  221</a></b>   <a href="../freebl/blapit.h.dep.html#SHA1Context">SHA1Context</a> *<a href="../util/secoid.c.dep.html#sha1">sha1</a>;
+<b><a name="222">  222</a></b> 
+<b><a name="223">  223</a></b>   /* this is a hack because this whole PORT_ZAlloc stuff looks scary */
+<b><a name="224">  224</a></b> 
+<b><a name="225">  225</a></b>   if (!<a href="../pk11wrap/pk11cxt.c.dep.html#PK11_HashOK">PK11_HashOK</a> (alg == 1 ? SEC_OID_MD5 : SEC_OID_SHA1))
+<b><a name="226">  226</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="227">  227</a></b> 
+<b><a name="228">  228</a></b>   if (<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a> &gt; 0)
+<b><a name="229">  229</a></b>     {
+<b><a name="230">  230</a></b>     switch (alg)
+<b><a name="231">  231</a></b>       {
+<b><a name="232">  232</a></b>       case 1:  /* MD5 */
+<b><a name="233">  233</a></b>                <a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a> = (<a href="../freebl/blapit.h.dep.html#MD5Context">MD5Context</a> *) cookie;
+<b><a name="234">  234</a></b>                <a href="../freebl/md5.c.dep.html#MD5_Update">MD5_Update</a> (<a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a>, (unsigned char*)<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>);
+<b><a name="235">  235</a></b>                break;
+<b><a name="236">  236</a></b> 
+<b><a name="237">  237</a></b>       case 2:  /* SHA1 */
+<b><a name="238">  238</a></b>                <a href="../util/secoid.c.dep.html#sha1">sha1</a> = (<a href="../freebl/blapit.h.dep.html#SHA1Context">SHA1Context</a> *) cookie;
+<b><a name="239">  239</a></b>                <a href="../freebl/sha_fast.c.dep.html#SHA1_Update">SHA1_Update</a> (<a href="../util/secoid.c.dep.html#sha1">sha1</a>, (unsigned char*)<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>);
+<b><a name="240">  240</a></b>                break;
+<b><a name="241">  241</a></b>       }
+<b><a name="242">  242</a></b>     }
+<b><a name="243">  243</a></b> 
+<b><a name="244">  244</a></b>   return cookie;
+<b><a name="245">  245</a></b>   }
+<b><a name="246">  246</a></b> 
+<b><a name="247">  247</a></b> void *<a href="#247">JAR_JAR_end_hash</a> (int alg, void *cookie)
+<b><a name="248">  248</a></b>   {
+<b><a name="249">  249</a></b>   int <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>;
+<b><a name="250">  250</a></b>   unsigned char *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>;
+<b><a name="251">  251</a></b>   char *ascii; 
+<b><a name="252">  252</a></b> 
+<b><a name="253">  253</a></b>   <a href="../freebl/blapit.h.dep.html#MD5Context">MD5Context</a> *<a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a>;
+<b><a name="254">  254</a></b>   <a href="../freebl/blapit.h.dep.html#SHA1Context">SHA1Context</a> *<a href="../util/secoid.c.dep.html#sha1">sha1</a>;
+<b><a name="255">  255</a></b> 
+<b><a name="256">  256</a></b>   unsigned int md5_length;
+<b><a name="257">  257</a></b>   unsigned char md5_digest [<a href="../cryptohi/hasht.h.dep.html#MD5_LENGTH">MD5_LENGTH</a><a href="../freebl/blapit.h.dep.html#MD5_LENGTH"><sup>[1]</sup></a>];
+<b><a name="258">  258</a></b> 
+<b><a name="259">  259</a></b>   unsigned int sha1_length;
+<b><a name="260">  260</a></b>   unsigned char sha1_digest [<a href="../cryptohi/hasht.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a><a href="../freebl/blapit.h.dep.html#SHA1_LENGTH"><sup>[1]</sup></a>];
+<b><a name="261">  261</a></b> 
+<b><a name="262">  262</a></b>   /* this is a hack because this whole PORT_ZAlloc stuff looks scary */
+<b><a name="263">  263</a></b> 
+<b><a name="264">  264</a></b>   if (!<a href="../pk11wrap/pk11cxt.c.dep.html#PK11_HashOK">PK11_HashOK</a> (alg == 1 ? SEC_OID_MD5 : SEC_OID_SHA1)) 
+<b><a name="265">  265</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b>   switch (alg)
+<b><a name="268">  268</a></b>     {
+<b><a name="269">  269</a></b>     case 1:  /* MD5 */
+<b><a name="270">  270</a></b> 
+<b><a name="271">  271</a></b>              <a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a> = (<a href="../freebl/blapit.h.dep.html#MD5Context">MD5Context</a> *) cookie;
+<b><a name="272">  272</a></b> 
+<b><a name="273">  273</a></b>              <a href="../freebl/<a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a>.c.dep.html#MD5_End">MD5_End</a> (<a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a>, <a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a>_digest, &amp;<a href="../freebl/mpi/mpi-test.c.dep.html#md5">md5</a><a href="../util/secoid.c.dep.html#md5"><sup>[1]</sup></a>_length, <a href="../cryptohi/hasht.h.dep.html#MD5_LENGTH">MD5_LENGTH</a><a href="../freebl/blapit.h.dep.html#MD5_LENGTH"><sup>[1]</sup></a>);
+<b><a name="274">  274</a></b>              /* MD5_DestroyContext (md5, PR_TRUE); */
+<b><a name="275">  275</a></b> 
+<b><a name="276">  276</a></b>              <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = md5_digest;
+<b><a name="277">  277</a></b>              <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a> = md5_<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>;
+<b><a name="278">  278</a></b> 
+<b><a name="279">  279</a></b>              break;
+<b><a name="280">  280</a></b> 
+<b><a name="281">  281</a></b>     case 2:  /* SHA1 */
+<b><a name="282">  282</a></b> 
+<b><a name="283">  283</a></b>              <a href="../util/secoid.c.dep.html#sha1">sha1</a> = (<a href="../freebl/blapit.h.dep.html#SHA1Context">SHA1Context</a> *) cookie;
+<b><a name="284">  284</a></b> 
+<b><a name="285">  285</a></b>              <a href="../freebl/sha_fast.c.dep.html#SHA1_End">SHA1_End</a> (<a href="../util/secoid.c.dep.html#sha1">sha1</a>, <a href="../util/secoid.c.dep.html#sha1">sha1</a>_digest, &amp;<a href="../util/secoid.c.dep.html#sha1">sha1</a>_length, <a href="../cryptohi/hasht.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a><a href="../freebl/blapit.h.dep.html#SHA1_LENGTH"><sup>[1]</sup></a>);
+<b><a name="286">  286</a></b>              /* SHA1_DestroyContext (sha1, PR_TRUE); */
+<b><a name="287">  287</a></b> 
+<b><a name="288">  288</a></b>              <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = sha1_digest;
+<b><a name="289">  289</a></b>              <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a> = sha1_<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>;
+<b><a name="290">  290</a></b> 
+<b><a name="291">  291</a></b>              break;
+<b><a name="292">  292</a></b> 
+<b><a name="293">  293</a></b>     default: return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="294">  294</a></b>     }
+<b><a name="295">  295</a></b> 
+<b><a name="296">  296</a></b>   /* Instead of destroy context, since we created it */
+<b><a name="297">  297</a></b>   /* PORT_Free (cookie); */
+<b><a name="298">  298</a></b> 
+<b><a name="299">  299</a></b>   ascii = <a href="../util/nssb64e.c.dep.html#BTOA_DataToAscii">BTOA_DataToAscii</a>(<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#length">length</a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#length"><sup>[1]</sup></a><a href="../mozilla/dbm/src/memmove.c.dep.html#length"><sup>[2]</sup></a>);
+<b><a name="300">  300</a></b> 
+<b><a name="301">  301</a></b>   return ascii ? <a href="../util/secport.c.dep.html#PORT_Strdup">PORT_Strdup</a> (ascii) : <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="302">  302</a></b>   }
+<b><a name="303">  303</a></b> 
+<b><a name="304">  304</a></b> /*
+<b><a name="305">  305</a></b>  *  S O B _ J A R _ s i g n _ a r c h i v e
+<b><a name="306">  306</a></b>  *
+<b><a name="307">  307</a></b>  *  A simple API to sign a JAR archive.
+<b><a name="308">  308</a></b>  *
+<b><a name="309">  309</a></b>  */
+<b><a name="310">  310</a></b> 
+<b><a name="311">  311</a></b> int <a href="#311">JAR_JAR_sign_archive</a> 
+<b><a name="312">  312</a></b>       (char *<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#nickname">nickname</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#nickname"><sup>[1]</sup></a>, char *<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>, char *sf, char *outsig)
+<b><a name="313">  313</a></b>   {
+<b><a name="314">  314</a></b>   char *out_fn;
+<b><a name="315">  315</a></b> 
+<b><a name="316">  316</a></b>   int <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> = <a href="../jar/jar.h.dep.html#JAR_ERR_GENERAL">JAR_ERR_GENERAL</a>;
+<b><a name="317">  317</a></b>   <a href="../jar/jarint.h.dep.html#JAR_FILE">JAR_FILE</a></a></a></a> sf_fp; 
+<b><a name="318">  318</a></b>   <a href="../jar/jarint.h.dep.html#JAR_FILE">JAR_FILE</a></a></a></a> out_fp;
+<b><a name="319">  319</a></b> 
+<b><a name="320">  320</a></b>   <a href="../certdb/certt.h.dep.html#CERTCertDBHandle">CERTCertDBHandle</a></a> *certdb;
+<b><a name="321">  321</a></b>   void *keydb;
+<b><a name="322">  322</a></b> 
+<b><a name="323">  323</a></b>   <a href="../<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>db/<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>t.h.dep.html#CERTCertificate">CERTCertificate</a> *<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>;
+<b><a name="324">  324</a></b> 
+<b><a name="325">  325</a></b>   /* open cert and key databases */
+<b><a name="326">  326</a></b> 
+<b><a name="327">  327</a></b>   certdb = <a href="../jar/jarver.c.dep.html#JAR_open_database">JAR_open_database</a>();
+<b><a name="328">  328</a></b>   if (certdb == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="329">  329</a></b>     return <a href="../jar/jar.h.dep.html#JAR_ERR_GENERAL">JAR_ERR_GENERAL</a>;
+<b><a name="330">  330</a></b> 
+<b><a name="331">  331</a></b>   keydb = <a href="../jar/jarsign.c.dep.html#jar_open_key_database">jar_open_key_database</a>();
+<b><a name="332">  332</a></b>   if (keydb == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="333">  333</a></b>     return <a href="../jar/jar.h.dep.html#JAR_ERR_GENERAL">JAR_ERR_GENERAL</a>;
+<b><a name="334">  334</a></b> 
+<b><a name="335">  335</a></b>   out_fn = <a href="../util/secport.c.dep.html#PORT_Strdup">PORT_Strdup</a> (sf);
+<b><a name="336">  336</a></b> 
+<b><a name="337">  337</a></b>   if (out_fn == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> || <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a> (sf) &lt; 5)
+<b><a name="338">  338</a></b>     return <a href="../jar/jar.h.dep.html#JAR_ERR_GENERAL">JAR_ERR_GENERAL</a>;
+<b><a name="339">  339</a></b> 
+<b><a name="340">  340</a></b>   sf_fp = <a href="../jar/jarint.h.dep.html#JAR_FOPEN">JAR_FOPEN</a></a></a></a> (sf, "rb");
+<b><a name="341">  341</a></b>   out_fp = <a href="../jar/jarint.h.dep.html#JAR_FOPEN">JAR_FOPEN</a></a></a></a> (outsig, "wb");
+<b><a name="342">  342</a></b> 
+<b><a name="343">  343</a></b>   <a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a> = <a href="../certdb/stanpcertdb.c.dep.html#CERT_FindCertByNickname">CERT_FindCertByNickname</a> (<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>db, <a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#nickname">nickname</a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#nickname"><sup>[1]</sup></a>);
+<b><a name="344">  344</a></b> 
+<b><a name="345">  345</a></b>   if (<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a> &amp;&amp; sf_fp &amp;&amp; out_fp)
+<b><a name="346">  346</a></b>     {
+<b><a name="347">  347</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a> = <a href="../jar/jarsign.c.dep.html#jar_create_pk7">jar_create_pk7</a> (<a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>db, keydb, <a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#cert">cert</a>, <a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>, sf_fp, out_fp);
+<b><a name="348">  348</a></b>     }
+<b><a name="349">  349</a></b> 
+<b><a name="350">  350</a></b>   /* remove password from prying eyes */
+<b><a name="351">  351</a></b>   <a href="../util/secport.h.dep.html#PORT_Memset">PORT_Memset</a> (<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>, 0, <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a> (<a href="../mozilla/security/nss/cmd/SSLsample/client.c.dep.html#password">password</a><a href="../mozilla/security/nss/cmd/SSLsample/server.c.dep.html#password"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#password"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#password"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/tstclnt/tstclnt.c.dep.html#password"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/vfychain/vfychain.c.dep.html#password"><sup>[5]</sup></a><a href="../mozilla/security/nss/cmd/vfyserv/vfyserv.c.dep.html#password"><sup>[6]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslc.c.dep.html#password"><sup>[7]</sup></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/sslt.c.dep.html#password"><sup>[8]</sup></a>));
+<b><a name="352">  352</a></b> 
+<b><a name="353">  353</a></b>   <a href="../jar/jarint.h.dep.html#JAR_FCLOSE">JAR_FCLOSE</a></a></a></a> (sf_fp);
+<b><a name="354">  354</a></b>   <a href="../jar/jarint.h.dep.html#JAR_FCLOSE">JAR_FCLOSE</a></a></a></a> (out_fp);
+<b><a name="355">  355</a></b> 
+<b><a name="356">  356</a></b>   <a href="../jar/jarver.c.dep.html#JAR_close_database">JAR_close_database</a> (certdb);
+<b><a name="357">  357</a></b>   <a href="../jar/jarsign.c.dep.html#jar_close_key_database">jar_close_key_database</a> (keydb);
+<b><a name="358">  358</a></b> 
+<b><a name="359">  359</a></b>   return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#status">status</a>;
+<b><a name="360">  360</a></b>   }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

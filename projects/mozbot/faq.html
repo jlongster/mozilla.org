@@ -1,0 +1,161 @@
+<?php
+
+$html_title = 'Mozbot FAQ';
+$page_title = 'Mozbot FAQ';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="DC.subject" content="Mozbot Frequently Asked Questions">
+<meta name="DC.title" content="Mozbot Frequently Asked Questions">
+<meta name="DC.description" content="Answers to frequently asked questions regarding mozbot">
+<meta name="DC.date.created" content="2000-11-14T17:01:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2005-03-27T09:54:03+11:00" scheme="W3CDTF">
+<link rel="up" href="./">
+<link href="mozbot.css" rel="stylesheet">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+  <p><a href="./">Index</a>:
+      <a href="download.html">Download</a>,
+      <a href="http://bonsai.mozilla.org/cvsquery.cgi?treeid=default&amp;module=all&amp;branch=HEAD&amp;branchtype=match&amp;dir=mozilla%2Fwebtools%2Fmozbot&amp;file=&amp;filetype=match&amp;who=&amp;whotype=match&amp;sortby=Date&amp;hours=2&amp;date=all&amp;mindate=&amp;maxdate=&amp;cvsroot=%2Fcvsroot">Change Log</a>,
+      FAQ,
+      <a href="docs/">Documentation</a>,
+      <a href="roadmap.html">Roadmap</a>,
+      <a href="hacking.html">Hacking</a>.
+  </p>
+  <dl>
+
+   <dt>What is mozbot?</dt>
+
+   <dd>Mozbot is an IRC <a
+   href="http://www.tuxedo.org/~esr/jargon/html/entry/bot.html">bot</a>.
+   Originally designed specifically for the irc.mozilla.org community,
+   it has <a
+   href="http://bonsai.mozilla.org/cvsquery.cgi?treeid=default&amp;module=all&amp;branch=HEAD&amp;branchtype=match&amp;dir=mozilla%2Fwebtools%2Fmozbot&amp;file=&amp;filetype=match&amp;who=&amp;whotype=match&amp;sortby=Date&amp;hours=2&amp;date=all&amp;mindate=&amp;maxdate=&amp;cvsroot=%2Fcvsroot">grown</a>
+   into a multipurpose bot with many features.</dd>
+
+
+   <dt>What does it do?</dt>
+
+   <dd>Quite a bit! Mozbot provides helpful services to the developer
+   communities using other Mozilla webtools, such as displaying
+   information on bug reports from <a
+   href="http://www.bugzilla.org">Bugzilla</a>, displaying changes in the <a
+   href="../tinderbox/">Tinderbox</a> status, and reporting the
+   sheriff of the tree. Mozbot also provides several important
+   services to keep IRC working well, such as giving ops to trusted
+   users and keeping channels open and the right people in control.
+   There are also Infobot and Quizbot modules. For more information,
+   see the <a href="docs/#modules">modules</a> documentation.</dd>
+
+
+   <dt>Modules?</dt>
+
+   <dd>Mozbot is important because it allows developers to write bot
+   modules in perl using the mozbot APIs. If you are interested in
+   writing modules, take a look at our <a href="hacking.html">Introduction to
+   Hacking Mozbot</a>. Modules can be installed and updated on the
+   fly, without shutting down the bot.</dd>
+
+
+   <dt>So, I want mozbot to auto-op people in my channel, how can
+   I?</dt>
+
+   <dd>See the <a href="docs/oping.html">God module</a>
+   documentation.</dd>
+
+
+   <dt>Where can I get the source/get involved?</dt>
+
+   <dd>Mozbot is written in Perl and is free software under the terms
+   of the MPL. Mozbot is <a href="download.html#cvs">available through
+   CVS</a>. If you want to write modules or fix bugs, take a look at
+   our <a href="hacking.html">Introduction to Hacking Mozbot</a> and
+   come chat to us in <a
+   href="irc://irc.mozilla.org/%23mozwebtools">#mozwebtools</a>.
+
+
+   <dt id="localAddr">Mozbot doesn't connect to the IRC server on my dual-homed box.</dt>
+
+   <dd>Open up your config file and append
+   <code>localAddr=192.168.0.1</code> where the IP address is that of
+   the interface to use. You must be using <a
+   href="http://search.cpan.org/search?dist=Net-IRC">Net::IRC</a> 0.71
+   or above for this to work.</dd>
+
+   <dd>See <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=93186"
+   title="mozbot may not connect on dual-homed boxes">bug 93186</a>
+   for more details.</dd>
+
+
+   <dt>Mozbot doesn't connect to the IRC server on my unnamed box.</dt>
+
+   <dd>Give your host a hostname.</dd>
+
+
+   <dt>So far we're not getting many responses from the new bot...
+   what's something simple to try?</dt>
+
+   <dd>First thing to do is to load some modules. To do this you'll
+   need to authenticate as an administrator. You can read all about
+   that in the <a
+   href="http://lxr.mozilla.org/mozilla/source/webtools/mozbot/INSTALL#165">installation
+   instructions</a>. Once you've done that, say <kbd>/msg mozbot load
+   Greeting</kbd>, where <code>Greeting</code> is the name of a module
+   to load. You can see the list of standard modules on the <a
+   href="docs/">documentation page</a>.</dd>
+
+
+   <dt>Mozbot keeps getting kicked for flooding.</dt>
+
+   <dd>Increase the <code>throttleTime</code> variable in the Admin
+   module. For example, this is how Hixie increased the throttle time
+   of his bot called oopsbot:
+<pre>
+  &lt;Hixie&gt; <kbd>oopsbot: vars Admin throttleTime</kbd>
+&lt;oopsbot&gt; Variable 'throttleTime' in module 'Admin' is set to: '1.3'
+  &lt;Hixie&gt; <kbd>oopsbot: vars Admin throttleTime '1.6'</kbd>
+&lt;oopsbot&gt; Variable 'throttleTime' in module 'Admin' has changed.
+</pre>
+   There is no correct value for this variable; different servers use
+   different algorithms to determine who is speaking too much. Tweak
+   it until you are happy with the compromise between your bot's
+   response time and its likelyhood of getting kicked during heavy
+   use. (Note: You have to be authenticated as bot admin for this to
+   work. See the <a
+   href="http://lxr.mozilla.org/mozilla/source/webtools/mozbot/INSTALL#165">installation
+   instructions</a> for details.)
+   </dd>
+
+
+   <dt>What platforms does mozbot run on?</dt>
+
+   <dd>It's been seen running on most flavours of Linux, BSD and
+   MacOSX. On Windows, there are serious issues with any module that
+   tries to fork(). That includes basically any module that uses FTP
+   or tries to go to a website. Patches welcome! :-)</dd>
+
+
+   <dt>I just found a bug in mozbot, where do I report it?</dt>
+
+   <dd><a
+   href="http://bugzilla.mozilla.org/enter_bug.cgi?reporter=ian%40hixie.ch&amp;product=Webtools&amp;version=other&amp;component=Mozbot&amp;rep_platform=PC&amp;op_sys=Linux&amp;priority=--&amp;bug_severity=normal&amp;assigned_to=&amp;cc=&amp;bug_file_loc=&amp;short_desc=&amp;comment=STEPS+TO+REPRODUCE%0D%0A+++1.+%0D%0A+++2.+%0D%0A+++3.%0D%0A%0D%0ASEEN+WITH%0D%0A+++Server%3A+%0D%0A+++Bot%3A+&amp;maketemplate=Remember+values+as+bookmarkable+template&amp;form_name=enter_bug">In
+   Bugzilla.</a> Please include as many details as possible.</dd>
+
+
+  </dl>
+
+  <p>Return to <a href="./">index</a>.</p>
+
+ 
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

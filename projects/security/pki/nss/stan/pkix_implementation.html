@@ -1,0 +1,253 @@
+<?php
+
+$html_title = 'PKIX Implementation';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+ <br>
+ 
+<h2>Implementation of libpkix</h2>
+ <br>
+ Refer to this <a
+ href="http://lxr.mozilla.org/security/source/security/nss/lib/pkix/doc/name_rules.html">doc</a>.<br>
+ <br>
+ The purpose of the PKIX library is to handle the encoding and decoding of 
+PKIX types.&nbsp; The document referenced above describes the general layout 
+of the API.<br>
+ <br>
+ Here is a sample, taken from nsspkix.h, of some basic methods for a PKIX 
+Cert type:<br>
+ <br>
+ <code>NSS_EXTERN NSSPKIXCert *<br>
+ NSSPKIXCert_Decode<br>
+ (<br>
+ &nbsp; NSSArena *arenaOpt,<br>
+ &nbsp; NSSBER *ber<br>
+ );<br>
+ <br>
+ NSS_EXTERN NSSPKIXCert *<br>
+ NSSPKIXCert_Create<br>
+ (<br>
+ &nbsp; NSSArena *arenaOpt,<br>
+ &nbsp; NSSPKIXTBSCert *tbsCert,<br>
+ &nbsp; NSSPKIXAlgorithmIdentifier *algID,<br>
+ &nbsp; NSSItem *signature<br>
+ );<br>
+ <br>
+ NSS_EXTERN NSSPKIXTBSCert *<br>
+ NSSPKIXCert_GetTBSCert<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert,<br>
+ &nbsp; NSSArena *arenaOpt<br>
+ );<br>
+ <br>
+ NSS_EXTERN PRStatus<br>
+ NSSPKIXCert_SetTBSCert<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert,<br>
+ &nbsp; NSSPKIXTBSCert *tbsCert<br>
+ );<br>
+ <br>
+ NSS_EXTERN NSSItem *<br>
+ NSSPKIXCert_GetSignature<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert,<br>
+ &nbsp; NSSItem *rvOpt,<br>
+ &nbsp; NSSArena *arenaOpt<br>
+ );<br>
+ <br>
+ NSS_EXTERN PRStatus<br>
+ NSSPKIXCert_SetSignature<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert,<br>
+ &nbsp; NSSItem *signature<br>
+ );<br>
+ <br>
+ NSS_EXTERN NSSPKIXCert *<br>
+ NSSPKIXCert_Duplicate<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert,<br>
+ &nbsp; NSSArena *arenaOpt<br>
+ );<br>
+ </code><br>
+ <br>
+ There is very little implementation of this library.&nbsp; But in what is 
+there, the following policy is clearly intended:<br>
+ <br>
+ 
+<ol>
+   <li>Any return types are fully allocated.&nbsp; Functions that return
+types always take an optional arena argument.&nbsp; In the above example,
+both     <code>NSSPKIXCert_Decode</code> and the <code>NSSPKIXCert_GetXXX</code> 
+methods return newly allocated types.<br>
+     <br>
+   </li>
+   <li>Any function taking a type as an argument, intending to use that type, 
+will copy the type before absorbing it.&nbsp; This policy applies to the 
+   <code>NSSPKIXCert_Create</code> and <code>NSSPKIXCert_SetXXX</code> 
+methods above.<br>
+   </li>
+ 
+</ol>
+ <br>
+ While these policy rules are clean and consistent, they make for terribly 
+inefficient code, IMO.&nbsp; Here is an example of code that may be used to
+verify a signature of a DER cert:<br>
+ <br>
+ <code>&nbsp; NSSItem *sig;<br>
+ &nbsp; NSSItem derCert = {...};<br>
+ &nbsp; NSSArena *arena = nssArena_Create();<br>
+ &nbsp; NSSPKIXCert *cert = NSSPKIXCert_Decode(arena, &amp;derCert);<br>
+ &nbsp; sig = NSSPKIXCert_GetSignature(cert, NULL, arena);<br>
+ &nbsp; ...</code><br>
+ <br>
+ If the policy described above is followed, the arena now has two copies
+of the same signature.&nbsp; In fact, any time a <code>Get</code> method
+is called for a subtype, a new copy is created.<br>
+ <br>
+ The same thing happens in reverse (using <code>Set</code> methods to build 
+a cert).&nbsp; In fact, if you work this out to its conclusion, it is almost 
+absurd.&nbsp; If you begin with a single arena to build a cert in, each subtype 
+will have n copies of itself within the arena, where n is its depth in the 
+ASN.1 heirarchy.<br>
+ <br>
+ I would submit that it is rare for applications to actually wish to use
+all of the PKIX parts independently.&nbsp; Their goal is usually to build
+up a high-level type from subtypes, or to peek into a few subtypes of a type.&nbsp; 
+Thus, I would propose the following policy:<br>
+ <br>
+ 
+<ol>
+   <li><code>Decode</code> methods always copy the BER/DER passed to them.<br>
+     <br>
+   </li>
+   <li><code>Create</code>, <code>Set</code>, and <code>Get</code> methods 
+never copy their arguments.&nbsp; <code>Get</code> methods do not take arenas 
+as an argument.&nbsp; A value returned by <code>Get</code> is assumed to be
+owned by the higher-level type.&nbsp; A value sent to <code>Create</code> 
+or <code>Set</code> is assumed to be taken over by the higher-level type.&nbsp; 
+The caller can choose to protect the independence of such values by using 
+    <code>Duplicate</code> methods.<br>
+   </li>
+ 
+</ol>
+ <br>
+ Thus, I would rewrite the above API as:<br>
+ <br>
+ <code>NSS_EXTERN NSSPKIXCert *<br>
+ NSSPKIXCert_Decode<br>
+ (<br>
+ &nbsp; NSSArena *arenaOpt,<br>
+ &nbsp; const NSSBER *ber<br>
+ );<br>
+ <br>
+ NSS_EXTERN NSSPKIXCert *<br>
+ NSSPKIXCert_Create<br>
+ (<br>
+ &nbsp; NSSArena *arenaOpt,<br>
+ &nbsp; NSSPKIXTBSCert *tbsCert,<br>
+ &nbsp; NSSPKIXAlgorithmIdentifier *algID,<br>
+ &nbsp; NSSItem *signature<br>
+ );<br>
+ <br>
+ NSS_EXTERN NSSPKIXTBSCert *<br>
+ NSSPKIXCert_GetTBSCert<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert<br>
+ );<br>
+ <br>
+ NSS_EXTERN PRStatus<br>
+ NSSPKIXCert_SetTBSCert<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert,<br>
+ &nbsp; NSSPKIXTBSCert *tbsCert<br>
+ );<br>
+ <br>
+ NSS_EXTERN NSSItem *<br>
+ NSSPKIXCert_GetSignature<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert<br>
+ );<br>
+ <br>
+ NSS_EXTERN PRStatus<br>
+ NSSPKIXCert_SetSignature<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert,<br>
+ &nbsp; NSSItem *signature<br>
+ );<br>
+ <br>
+ NSS_EXTERN NSSPKIXCert *<br>
+ NSSPKIXCert_Duplicate<br>
+ (<br>
+ &nbsp; const NSSPKIXCert *cert,<br>
+ &nbsp; NSSArena *arenaOpt<br>
+ );<br>
+ <br>
+ </code>Note the use of <code>const</code> to indicate that the argument
+will be copied.<br>
+ <br>
+ In addition, all of the types have an <code>Encode</code> method.&nbsp;
+An sample function is:<br>
+ <code><br>
+ NSS_EXTERN NSSBER *<br>
+ NSSPKIXCert_Encode<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert,<br>
+ &nbsp; NSSASN1EncodingType encoding,<br>
+ &nbsp; NSSBER *rvOpt,<br>
+ &nbsp; NSSArena *arenaOpt<br>
+ );</code><br>
+ <br>
+ Again, it is assumed that the return value is newly created.&nbsp; However, 
+imagine that an application has created the type from its encoding (using 
+<code>Decode</code>).&nbsp; This means the type already knows the encoding, 
+so it seems wasteful to have to copy it.&nbsp; I think there should be additional 
+methods for each type, <code>GetBEREncoding</code> and <code>SetBERDecoding</code>:<br>
+ <br>
+ <code>NSS_EXTERN NSSBER *<br>
+ NSSPKIXCert_GetBEREncoding<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert<br>
+ );<br>
+ <br>
+ NSS_EXTERN PRStatus<br>
+ NSSPKIXCert_SetBEREncoding<br>
+ (<br>
+ &nbsp; NSSPKIXCert *cert,<br>
+ &nbsp; NSSBER *ber<br>
+ );</code><br>
+ <br>
+ As in the <code>Set</code> methods above, <code>SetBEREncoding</code> is 
+assumed to take control of the BER passed to it, and <code>GetBEREncoding</code> 
+returns a buffer owned by the passed type. <br>
+<br>
+Lastly, PKIX types are currently defined like this:<br>
+<br>
+<code>struct NSSPKIXCertStr {<br>
+&nbsp; NSSArena *arena;<br>
+&nbsp; PRBool i_allocated_arena;<br>
+&nbsp; NSSDER *der;<br>
+&nbsp; NSSPKIXTBSCert *tbsCert;<br>
+&nbsp; NSSPKIXAlgorithmIdentifier *signatureAlgorithm;<br>
+&nbsp; NSSItem *signature;<br>
+};</code><br>
+<br>
+Again, I don't think this is very efficient. &nbsp;For each subtype, a pointer
+must be allocated. &nbsp;Also, I don't believe the ASN.1 decoder can create
+pointers, so I'm not sure into what we would be decoding. &nbsp;I think we
+should not use pointers for the subtypes, then do partial decoding down one
+level. &nbsp;For example, when decoding an <code>NSSPKIXCert</code>,
+from the full BER we would extract the values <code>cert-&gt;tbsCert.ber</code>,
+<code>cert-&gt;signatureAlgorithm.ber</code>, and <code>cert-&gt;signature</code>.
+&nbsp;As the caller moves down the heirarchy, more parts are decoded.<br>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

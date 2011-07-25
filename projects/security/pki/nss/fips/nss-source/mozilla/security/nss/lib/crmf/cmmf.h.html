@@ -1,0 +1,1140 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* -*- Mode: C; tab-width: 8 -*-*/
+<b><a name="2">    2</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="3">    3</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="4">    4</a></b>  *
+<b><a name="5">    5</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="6">    6</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="7">    7</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="8">    8</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="9">    9</a></b>  *
+<b><a name="10">   10</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="11">   11</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="12">   12</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="13">   13</a></b>  * License.
+<b><a name="14">   14</a></b>  *
+<b><a name="15">   15</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Initial Developer of the Original Code is
+<b><a name="18">   18</a></b>  * Netscape Communications Corporation.
+<b><a name="19">   19</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="20">   20</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="21">   21</a></b>  *
+<b><a name="22">   22</a></b>  * Contributor(s):
+<b><a name="23">   23</a></b>  *
+<b><a name="24">   24</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="25">   25</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="26">   26</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="27">   27</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="28">   28</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="29">   29</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="30">   30</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="31">   31</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="32">   32</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="33">   33</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="34">   34</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="35">   35</a></b>  *
+<b><a name="36">   36</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="37">   37</a></b> 
+<b><a name="38">   38</a></b> #ifndef <a href="../crmf/cmmf.h.dep.html#_CMMF_H_">_CMMF_H_</a>
+<b><a name="39">   39</a></b> #define <a href="#39">_CMMF_H_</a>
+<b><a name="40">   40</a></b> /*
+<b><a name="41">   41</a></b>  * These are the functions exported by the security library for 
+<b><a name="42">   42</a></b>  * implementing Certificate Management Message Formats (CMMF).
+<b><a name="43">   43</a></b>  *
+<b><a name="44">   44</a></b>  * This API is designed against July 1998 CMMF draft.  Please read this
+<b><a name="45">   45</a></b>  * draft before trying to use this API in an application that use CMMF.
+<b><a name="46">   46</a></b>  */
+<b><a name="47">   47</a></b> #include "seccomon.h"
+<b><a name="48">   48</a></b> #include "cmmft.h"
+<b><a name="49">   49</a></b> #include "crmf.h"
+<b><a name="50">   50</a></b> 
+<b><a name="51">   51</a></b> <a href="../util/seccomon.h.dep.html#SEC_BEGIN_PROTOS">SEC_BEGIN_PROTOS</a></a>
+<b><a name="52">   52</a></b> 
+<b><a name="53">   53</a></b> /******************* Creation Functions *************************/
+<b><a name="54">   54</a></b> 
+<b><a name="55">   55</a></b> /*
+<b><a name="56">   56</a></b>  * FUNCTION: CMMF_CreateCertRepContent
+<b><a name="57">   57</a></b>  * INPUTS:
+<b><a name="58">   58</a></b>  *    NONE
+<b><a name="59">   59</a></b>  * NOTES:
+<b><a name="60">   60</a></b>  *    This function will create an empty CMMFCertRepContent Structure.  
+<b><a name="61">   61</a></b>  *    The client of the library must set the CMMFCertResponses.
+<b><a name="62">   62</a></b>  *    Call CMMF_CertRepContentSetCertResponse to accomplish this task.
+<b><a name="63">   63</a></b>  *    If the client of the library also wants to include the chain of 
+<b><a name="64">   64</a></b>  *    CA certs required to make the certificates in CMMFCertResponse valid, 
+<b><a name="65">   65</a></b>  *    then the user must also set the caPubs field of CMMFCertRepContent.
+<b><a name="66">   66</a></b>  *    Call CMMF_CertRepContentSetCAPubs to accomplish this.  After setting
+<b><a name="67">   67</a></b>  *    the desired fields, the user can then call CMMF_EncodeCertRepContent 
+<b><a name="68">   68</a></b>  *    to DER-encode the CertRepContent.
+<b><a name="69">   69</a></b>  * RETURN:
+<b><a name="70">   70</a></b>  *    A pointer to the CMMFCertRepContent.  A NULL return value indicates 
+<b><a name="71">   71</a></b>  *    an error in allocating memory or failure to initialize the structure.
+<b><a name="72">   72</a></b>  */
+<b><a name="73">   73</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFCertRepContent">CMMFCertRepContent</a>* <a href="#73">CMMF_CreateCertRepContent</a>(void);
+<b><a name="74">   74</a></b> 
+<b><a name="75">   75</a></b> /*
+<b><a name="76">   76</a></b>  * FUNCTION: CMMF_CreateCertRepContentFromDER
+<b><a name="77">   77</a></b>  * INPUTS
+<b><a name="78">   78</a></b>  *    db
+<b><a name="79">   79</a></b>  *        The certificate database where the certificates will be placed.
+<b><a name="80">   80</a></b>  *        The certificates will be placed in the temporary database associated
+<b><a name="81">   81</a></b>  *        with the handle. 
+<b><a name="82">   82</a></b>  *    buf
+<b><a name="83">   83</a></b>  *        A buffer to the DER-encoded CMMFCertRepContent
+<b><a name="84">   84</a></b>  *    len
+<b><a name="85">   85</a></b>  *        The length in bytes of the buffer 'buf'
+<b><a name="86">   86</a></b>  * NOTES:
+<b><a name="87">   87</a></b>  *    This function passes the buffer to the ASN1 decoder and creates a
+<b><a name="88">   88</a></b>  *    CMMFCertRepContent structure.  The user must call 
+<b><a name="89">   89</a></b>  *    CMMF_DestroyCertRepContent after the return value is no longer needed.
+<b><a name="90">   90</a></b>  *
+<b><a name="91">   91</a></b>  * RETURN:
+<b><a name="92">   92</a></b>  *    A pointer to the CMMFCertRepContent structure.  A NULL return
+<b><a name="93">   93</a></b>  *    value indicates the library was unable to parse the DER.
+<b><a name="94">   94</a></b>  */
+<b><a name="95">   95</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFCertRepContent">CMMFCertRepContent</a>* 
+<b><a name="96">   96</a></b>        <a href="#96">CMMF_CreateCertRepContentFromDER</a>(<a href="../cert<a href="../mozilla/security/nss/cmd/crmftest/testcrmf.c.dep.html#db">db</a>/certt.h.dep.html#CERTCertDBHandle">CERTCertDBHandle</a></a> *<a href="../mozilla/security/nss/cmd/crmftest/testcrmf.c.dep.html#db">db</a>, 
+<b><a name="97">   97</a></b>                                         const char       *<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#buf">buf</a><a href="../mozilla/nsprpub/pr/tests/append.c.dep.html#buf"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/nameshm1.c.dep.html#buf"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#buf"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#buf"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#buf"><sup>[5]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#buf"><sup>[8]</sup></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#buf"><sup>[9]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#buf"><sup>[12]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#buf"><sup>[13]</sup></a></a></a></a></a></a>, 
+<b><a name="98">   98</a></b>                                         long              <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="99">   99</a></b> 
+<b><a name="100">  100</a></b> /*
+<b><a name="101">  101</a></b>  * FUNCTION: CMMF_CreateCertResponse
+<b><a name="102">  102</a></b>  * INPUTS:
+<b><a name="103">  103</a></b>  *    inCertReqId
+<b><a name="104">  104</a></b>  *        The Certificate Request Id this response is for.
+<b><a name="105">  105</a></b>  * NOTES:
+<b><a name="106">  106</a></b>  *    This creates a CMMFCertResponse.  This response should correspond
+<b><a name="107">  107</a></b>  *    to a request that was received via CRMF.  From the CRMF message you
+<b><a name="108">  108</a></b>  *    can get the Request Id to pass in as inCertReqId, in essence binding 
+<b><a name="109">  109</a></b>  *    a CMRFCertRequest message to the CMMFCertResponse created by this
+<b><a name="110">  110</a></b>  *    function.  If no requuest id is associated with the response to create
+<b><a name="111">  111</a></b>  *    then the user should pass in -1 for 'inCertReqId'.
+<b><a name="112">  112</a></b>  *
+<b><a name="113">  113</a></b>  * RETURN:
+<b><a name="114">  114</a></b>  *    A pointer to the new CMMFCertResponse corresponding to the request id 
+<b><a name="115">  115</a></b>  *    passed in.  A NULL return value indicates an error while trying to 
+<b><a name="116">  116</a></b>  *    create the CMMFCertResponse.
+<b><a name="117">  117</a></b>  */
+<b><a name="118">  118</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFCertResponse">CMMFCertResponse</a>* <a href="#118">CMMF_CreateCertResponse</a>(long inCertReqId);
+<b><a name="119">  119</a></b> 
+<b><a name="120">  120</a></b> /*
+<b><a name="121">  121</a></b>  * FUNCTION: CMMF_CreateKeyRecRepContent
+<b><a name="122">  122</a></b>  * INPUTS:
+<b><a name="123">  123</a></b>  *    NONE
+<b><a name="124">  124</a></b>  * NOTES:
+<b><a name="125">  125</a></b>  *    This function creates a new empty CMMFKeyRecRepContent structure.
+<b><a name="126">  126</a></b>  *    At the very minimum, the user  must call 
+<b><a name="127">  127</a></b>  *    CMMF_KeyRecRepContentSetPKIStatusInfoStatus field to have an
+<b><a name="128">  128</a></b>  *    encodable structure.  Depending on what the response is, the user may
+<b><a name="129">  129</a></b>  *    have to set other fields as well to properly build up the structure so
+<b><a name="130">  130</a></b>  *    that it can be encoded.  Refer to the CMMF draft for how to properly
+<b><a name="131">  131</a></b>  *    set up a CMMFKeyRecRepContent. This is the structure that an RA returns
+<b><a name="132">  132</a></b>  *    to an end entity when doing key recovery.
+<b><a name="133">  133</a></b> 
+<b><a name="134">  134</a></b>  *    The user must call CMMF_DestroyKeyRecRepContent when the return value
+<b><a name="135">  135</a></b>  *    is no longer needed.
+<b><a name="136">  136</a></b>  * RETURN:
+<b><a name="137">  137</a></b>  *    A pointer to the empty CMMFKeyRecRepContent.  A return value of NULL
+<b><a name="138">  138</a></b>  *    indicates an error in allocating memory or initializing the structure.
+<b><a name="139">  139</a></b>  */
+<b><a name="140">  140</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *<a href="#140">CMMF_CreateKeyRecRepContent</a>(void);
+<b><a name="141">  141</a></b> 
+<b><a name="142">  142</a></b> /*
+<b><a name="143">  143</a></b>  * FUNCTION: CMMF_CreateKeyRecRepContentFromDER
+<b><a name="144">  144</a></b>  * INPUTS:
+<b><a name="145">  145</a></b>  *    db
+<b><a name="146">  146</a></b>  *        The handle for the certificate database where the decoded 
+<b><a name="147">  147</a></b>  *        certificates will be placed.  The decoded certificates will
+<b><a name="148">  148</a></b>  *        be placed in the temporary database associated with the 
+<b><a name="149">  149</a></b>  *        handle.
+<b><a name="150">  150</a></b>  *    buf
+<b><a name="151">  151</a></b>  *        A buffer contatining the DER-encoded CMMFKeyRecRepContent
+<b><a name="152">  152</a></b>  *    len
+<b><a name="153">  153</a></b>  *        The length in bytes of the buffer 'buf'
+<b><a name="154">  154</a></b>  * NOTES
+<b><a name="155">  155</a></b>  *    This function passes the buffer to the ASN1 decoder and creates a 
+<b><a name="156">  156</a></b>  *    CMMFKeyRecRepContent structure.
+<b><a name="157">  157</a></b>  *
+<b><a name="158">  158</a></b>  * RETURN:
+<b><a name="159">  159</a></b>  *    A pointer to the CMMFKeyRecRepContent structure.  A NULL return
+<b><a name="160">  160</a></b>  *    value indicates the library was unable to parse the DER.
+<b><a name="161">  161</a></b>  */
+<b><a name="162">  162</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a>* 
+<b><a name="163">  163</a></b>        <a href="#163">CMMF_CreateKeyRecRepContentFromDER</a>(<a href="../cert<a href="../mozilla/security/nss/cmd/crmftest/testcrmf.c.dep.html#db">db</a>/certt.h.dep.html#CERTCertDBHandle">CERTCertDBHandle</a></a> *<a href="../mozilla/security/nss/cmd/crmftest/testcrmf.c.dep.html#db">db</a>,
+<b><a name="164">  164</a></b>                                           const char       *<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#buf">buf</a><a href="../mozilla/nsprpub/pr/tests/append.c.dep.html#buf"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/nameshm1.c.dep.html#buf"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#buf"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#buf"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#buf"><sup>[5]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#buf"><sup>[8]</sup></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#buf"><sup>[9]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#buf"><sup>[12]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#buf"><sup>[13]</sup></a></a></a></a></a></a>,
+<b><a name="165">  165</a></b>                                           long              <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="166">  166</a></b> 
+<b><a name="167">  167</a></b> /*
+<b><a name="168">  168</a></b>  * FUNCTION: CMMF_CreatePOPODecKeyChallContent
+<b><a name="169">  169</a></b>  * INPUTS:
+<b><a name="170">  170</a></b>  *    NONE
+<b><a name="171">  171</a></b>  * NOTES:
+<b><a name="172">  172</a></b>  *    This function creates an empty CMMFPOPODecKeyChallContent.  The user
+<b><a name="173">  173</a></b>  *    must add the challenges individually specifying the random number to
+<b><a name="174">  174</a></b>  *    be used and the public key to be used when creating each individual 
+<b><a name="175">  175</a></b>  *    challenge.  User can accomplish this by calling the function 
+<b><a name="176">  176</a></b>  *    CMMF_POPODecKeyChallContentSetNextChallenge.
+<b><a name="177">  177</a></b>  * RETURN:
+<b><a name="178">  178</a></b>  *    A pointer to a CMMFPOPODecKeyChallContent structure.  Ther user can
+<b><a name="179">  179</a></b>  *    then call CMMF_EncodePOPODecKeyChallContent passing in the return
+<b><a name="180">  180</a></b>  *    value from this function after setting all of the challenges.  A 
+<b><a name="181">  181</a></b>  *    return value of NULL indicates an error while creating the 
+<b><a name="182">  182</a></b>  *    CMMFPOPODecKeyChallContent structure.
+<b><a name="183">  183</a></b>  */
+<b><a name="184">  184</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyChallContent">CMMFPOPODecKeyChallContent</a>*
+<b><a name="185">  185</a></b>        <a href="#185">CMMF_CreatePOPODecKeyChallContent</a>(void);
+<b><a name="186">  186</a></b> 
+<b><a name="187">  187</a></b> /*
+<b><a name="188">  188</a></b>  * FUNCTION: CMMF_CreatePOPODecKeyChallContentFromDER
+<b><a name="189">  189</a></b>  * INPUTS
+<b><a name="190">  190</a></b>  *    buf
+<b><a name="191">  191</a></b>  *        A buffer containing the DER-encoded CMMFPOPODecKeyChallContent
+<b><a name="192">  192</a></b>  *    len
+<b><a name="193">  193</a></b>  *        The length in bytes of the buffer 'buf'
+<b><a name="194">  194</a></b>  * NOTES:
+<b><a name="195">  195</a></b>  *    This function passes the buffer to the ASN1 decoder and creates a
+<b><a name="196">  196</a></b>  *    CMMFPOPODecKeyChallContent structure.  
+<b><a name="197">  197</a></b>  *
+<b><a name="198">  198</a></b>  * RETURN:
+<b><a name="199">  199</a></b>  *    A pointer to the CMMFPOPODecKeyChallContent structure.  A NULL return
+<b><a name="200">  200</a></b>  *    value indicates the library was unable to parse the DER.
+<b><a name="201">  201</a></b>  */
+<b><a name="202">  202</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyChallContent">CMMFPOPODecKeyChallContent</a>*
+<b><a name="203">  203</a></b>        <a href="#203">CMMF_CreatePOPODecKeyChallContentFromDER</a>(const char *<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#buf">buf</a><a href="../mozilla/nsprpub/pr/tests/append.c.dep.html#buf"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/nameshm1.c.dep.html#buf"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#buf"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#buf"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#buf"><sup>[5]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#buf"><sup>[8]</sup></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#buf"><sup>[9]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#buf"><sup>[12]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#buf"><sup>[13]</sup></a></a></a></a></a></a>, long <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="204">  204</a></b> 
+<b><a name="205">  205</a></b> /*
+<b><a name="206">  206</a></b>  * FUNCTION: CMMF_CreatePOPODecKeyRespContentFromDER
+<b><a name="207">  207</a></b>  * INPUTS:
+<b><a name="208">  208</a></b>  *    buf
+<b><a name="209">  209</a></b>  *        A buffer contatining the DER-encoded CMMFPOPODecKeyRespContent
+<b><a name="210">  210</a></b>  *    len
+<b><a name="211">  211</a></b>  *        The length in bytes of the buffer 'buf'
+<b><a name="212">  212</a></b>  * NOTES
+<b><a name="213">  213</a></b>  *    This function passes the buffer to the ASN1 decoder and creates a 
+<b><a name="214">  214</a></b>  *    CMMFPOPODecKeyRespContent structure.
+<b><a name="215">  215</a></b>  *
+<b><a name="216">  216</a></b>  * RETURN:
+<b><a name="217">  217</a></b>  *    A pointer to the CMMFPOPODecKeyRespContent structure.  A NULL return
+<b><a name="218">  218</a></b>  *    value indicates the library was unable to parse the DER.
+<b><a name="219">  219</a></b>  */
+<b><a name="220">  220</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyRespContent">CMMFPOPODecKeyRespContent</a>*
+<b><a name="221">  221</a></b>        <a href="#221">CMMF_CreatePOPODecKeyRespContentFromDER</a>(const char *<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#buf">buf</a><a href="../mozilla/nsprpub/pr/tests/append.c.dep.html#buf"><sup>[1]</sup></a><a href="../mozilla/nsprpub/pr/tests/nameshm1.c.dep.html#buf"><sup>[2]</sup></a><a href="../mozilla/nsprpub/pr/tests/randseed.c.dep.html#buf"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#buf"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#buf"><sup>[5]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#buf"><sup>[8]</sup></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#buf"><sup>[9]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#buf"><sup>[12]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#buf"><sup>[13]</sup></a></a></a></a></a></a>, long <a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>);
+<b><a name="222">  222</a></b> 
+<b><a name="223">  223</a></b> /************************** Set Functions *************************/
+<b><a name="224">  224</a></b> 
+<b><a name="225">  225</a></b> /*
+<b><a name="226">  226</a></b>  * FUNCTION: CMMF_CertRepContentSetCertResponses
+<b><a name="227">  227</a></b>  * INPUTS:
+<b><a name="228">  228</a></b>  *    inCertRepContent
+<b><a name="229">  229</a></b>  *        The CMMFCertRepContent to operate on.
+<b><a name="230">  230</a></b>  *    inCertResponses
+<b><a name="231">  231</a></b>  *        An array of pointers to CMMFCertResponse structures to 
+<b><a name="232">  232</a></b>  *        add to the CMMFCertRepContent structure.
+<b><a name="233">  233</a></b>  *    inNumResponses
+<b><a name="234">  234</a></b>  *        The length of the array 'inCertResponses'
+<b><a name="235">  235</a></b>  * NOTES:
+<b><a name="236">  236</a></b>  *    This function will add the CMMFCertResponse structure to the 
+<b><a name="237">  237</a></b>  *    CMMFCertRepContent passed in.  The CMMFCertResponse field of 
+<b><a name="238">  238</a></b>  *    CMMFCertRepContent is required, so the client must call this function
+<b><a name="239">  239</a></b>  *    before calling CMMF_EncodeCertRepContent.  If the user calls 
+<b><a name="240">  240</a></b>  *    CMMF_EncodeCertRepContent before calling this function, 
+<b><a name="241">  241</a></b>  *    CMMF_EncodeCertRepContent will fail.
+<b><a name="242">  242</a></b>  *
+<b><a name="243">  243</a></b>  * RETURN:
+<b><a name="244">  244</a></b>  *    SECSuccess if adding the CMMFCertResponses to the CMMFCertRepContent
+<b><a name="245">  245</a></b>  *    structure was successful.  Any other return value indicates an error
+<b><a name="246">  246</a></b>  *    while trying to add the CMMFCertResponses.
+<b><a name="247">  247</a></b>  */
+<b><a name="248">  248</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="249">  249</a></b>       <a href="#249">CMMF_CertRepContentSetCertResponses</a>(<a href="../crmf/cmmft.h.dep.html#CMMFCertRepContent">CMMFCertRepContent</a> *inCertRepContent,
+<b><a name="250">  250</a></b>                                           <a href="../crmf/cmmft.h.dep.html#CMMFCertResponse">CMMFCertResponse</a>  **inCertResponses,
+<b><a name="251">  251</a></b>                                           int                 inNumResponses);
+<b><a name="252">  252</a></b> 
+<b><a name="253">  253</a></b> /*
+<b><a name="254">  254</a></b>  * FUNCTION: CMMF_CertRepContentSetCAPubs
+<b><a name="255">  255</a></b>  * INPUTS:
+<b><a name="256">  256</a></b>  *    inCertRepContent
+<b><a name="257">  257</a></b>  *        The CMMFCertRepContent to operate on.
+<b><a name="258">  258</a></b>  *    inCAPubs
+<b><a name="259">  259</a></b>  *        The certificate list which makes up the chain of CA certificates
+<b><a name="260">  260</a></b>  *        required to make the issued cert valid.
+<b><a name="261">  261</a></b>  * NOTES:
+<b><a name="262">  262</a></b>  *    This function will set the the certificates in the CA chain as part
+<b><a name="263">  263</a></b>  *    of the CMMFCertRepContent.  This field is an optional member of the 
+<b><a name="264">  264</a></b>  *    CMMFCertRepContent structure, so the client is not required to call
+<b><a name="265">  265</a></b>  *    this function before calling CMMF_EncodeCertRepContent.
+<b><a name="266">  266</a></b>  *
+<b><a name="267">  267</a></b>  * RETURN:
+<b><a name="268">  268</a></b>  *    SECSuccess if adding the 'inCAPubs' to the CERTRepContent was successful.
+<b><a name="269">  269</a></b>  *    Any other return value indicates an error while adding 'inCAPubs' to the 
+<b><a name="270">  270</a></b>  *    CMMFCertRepContent structure.
+<b><a name="271">  271</a></b>  * 
+<b><a name="272">  272</a></b>  */
+<b><a name="273">  273</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="274">  274</a></b>        <a href="#274">CMMF_CertRepContentSetCAPubs</a> (<a href="../crmf/cmmft.h.dep.html#CMMFCertRepContent">CMMFCertRepContent</a>  *inCertRepContent,
+<b><a name="275">  275</a></b>                                      <a href="../certdb/certt.h.dep.html#CERTCertList">CERTCertList</a>        *inCAPubs);
+<b><a name="276">  276</a></b> 
+<b><a name="277">  277</a></b> /*
+<b><a name="278">  278</a></b>  * FUNCTION: CMMF_CertResponseSetPKIStatusInfoStatus
+<b><a name="279">  279</a></b>  * INPUTS:
+<b><a name="280">  280</a></b>  *    inCertResp
+<b><a name="281">  281</a></b>  *        The CMMFCertResponse to operate on.
+<b><a name="282">  282</a></b>  *     inPKIStatus
+<b><a name="283">  283</a></b>  *        The value to set for the PKIStatusInfo.status field.
+<b><a name="284">  284</a></b>  * NOTES:
+<b><a name="285">  285</a></b>  *    This function will set the CertResponse.status.status field of 
+<b><a name="286">  286</a></b>  *    the CMMFCertResponse structure.  (View the definition of CertResponse
+<b><a name="287">  287</a></b>  *    in the CMMF draft to see exactly which value this talks about.)  This
+<b><a name="288">  288</a></b>  *    field is a required member of the structure, so the user must call this
+<b><a name="289">  289</a></b>  *    function in order to have a CMMFCertResponse that can be encoded.
+<b><a name="290">  290</a></b>  *
+<b><a name="291">  291</a></b>  * RETURN:
+<b><a name="292">  292</a></b>  *    SECSuccess if setting the field with the passed in value was successful.
+<b><a name="293">  293</a></b>  *    Any other return value indicates an error while trying to set the field.
+<b><a name="294">  294</a></b>  */
+<b><a name="295">  295</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="296">  296</a></b>      <a href="#296">CMMF_CertResponseSetPKIStatusInfoStatus</a> (<a href="../crmf/cmmft.h.dep.html#CMMFCertResponse">CMMFCertResponse</a> *inCertResp,
+<b><a name="297">  297</a></b>                                               <a href="../crmf/cmmft.h.dep.html#CMMFPKIStatus">CMMFPKIStatus</a>     inPKIStatus);
+<b><a name="298">  298</a></b> 
+<b><a name="299">  299</a></b> /*
+<b><a name="300">  300</a></b>  * FUNCTION: CMMF_CertResponseSetCertificate
+<b><a name="301">  301</a></b>  * INPUTS:
+<b><a name="302">  302</a></b>  *    inCertResp
+<b><a name="303">  303</a></b>  *        The CMMFCertResponse to operate on.
+<b><a name="304">  304</a></b>  *    inCertificate
+<b><a name="305">  305</a></b>  *        The certificate to add to the 
+<b><a name="306">  306</a></b>  *        CertResponse.CertifiedKeyPair.certOrEncCert.certificate field.
+<b><a name="307">  307</a></b>  * NOTES:
+<b><a name="308">  308</a></b>  *    This function will take the certificate and make it a member of the
+<b><a name="309">  309</a></b>  *    CMMFCertResponse.  The certificate should be the actual certificate
+<b><a name="310">  310</a></b>  *    being issued via the response.
+<b><a name="311">  311</a></b>  *
+<b><a name="312">  312</a></b>  * RETURN:
+<b><a name="313">  313</a></b>  *    SECSuccess if adding the certificate to the response was successful.
+<b><a name="314">  314</a></b>  *    Any other return value indicates an error in adding the certificate to
+<b><a name="315">  315</a></b>  *    the CertResponse.
+<b><a name="316">  316</a></b>  */
+<b><a name="317">  317</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="318">  318</a></b>        <a href="#318">CMMF_CertResponseSetCertificate</a> (<a href="../crmf/cmmft.h.dep.html#CMMFCertResponse">CMMFCertResponse</a> *inCertResp,
+<b><a name="319">  319</a></b>                                         <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a>  *inCertificate);
+<b><a name="320">  320</a></b> 
+<b><a name="321">  321</a></b> /*
+<b><a name="322">  322</a></b>  * FUNCTION: CMMF_KeyRecRepContentSetPKIStatusInfoStatus
+<b><a name="323">  323</a></b>  * INPUTS: 
+<b><a name="324">  324</a></b>  *    inKeyRecRep
+<b><a name="325">  325</a></b>  *        The CMMFKeyRecRepContent to operate on.
+<b><a name="326">  326</a></b>  *    inPKIStatus
+<b><a name="327">  327</a></b>  *        The value to set the PKIStatusInfo.status field to.
+<b><a name="328">  328</a></b>  * NOTES:
+<b><a name="329">  329</a></b>  *    This function sets the only required field for the KeyRecRepContent.
+<b><a name="330">  330</a></b>  *    In most cases, the user will set this field and other fields of the
+<b><a name="331">  331</a></b>  *    structure to properly create the CMMFKeyRecRepContent structure.  
+<b><a name="332">  332</a></b>  *    Refer to the CMMF draft to see which fields need to be set in order
+<b><a name="333">  333</a></b>  *    to create the desired CMMFKeyRecRepContent.
+<b><a name="334">  334</a></b>  * 
+<b><a name="335">  335</a></b>  * RETURN:
+<b><a name="336">  336</a></b>  *    SECSuccess if setting the PKIStatusInfo.status field was successful.
+<b><a name="337">  337</a></b>  *    Any other return value indicates an error in setting the field.
+<b><a name="338">  338</a></b>  */
+<b><a name="339">  339</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="340">  340</a></b> <a href="#340">CMMF_KeyRecRepContentSetPKIStatusInfoStatus</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *inKeyRecRep,
+<b><a name="341">  341</a></b>                                             <a href="../crmf/cmmft.h.dep.html#CMMFPKIStatus">CMMFPKIStatus</a>         inPKIStatus);
+<b><a name="342">  342</a></b> 
+<b><a name="343">  343</a></b> /*
+<b><a name="344">  344</a></b>  * FUNCTION: CMMF_KeyRecRepContentSetNewSignCert
+<b><a name="345">  345</a></b>  * INPUTS:
+<b><a name="346">  346</a></b>  *    inKeyRecRep
+<b><a name="347">  347</a></b>  *        The CMMFKeyRecRepContent to operate on.
+<b><a name="348">  348</a></b>  *    inNewSignCert
+<b><a name="349">  349</a></b>  *        The new signing cert to add to the CMMFKeyRecRepContent structure.
+<b><a name="350">  350</a></b>  * NOTES:
+<b><a name="351">  351</a></b>  *    This function sets the new signeing cert in the CMMFKeyRecRepContent
+<b><a name="352">  352</a></b>  *    structure.
+<b><a name="353">  353</a></b>  *
+<b><a name="354">  354</a></b>  * RETURN:
+<b><a name="355">  355</a></b>  *    SECSuccess if setting the new signing cert was successful.  Any other 
+<b><a name="356">  356</a></b>  *    return value indicates an error occurred while trying to add the
+<b><a name="357">  357</a></b>  *    new signing certificate.
+<b><a name="358">  358</a></b>  */
+<b><a name="359">  359</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="360">  360</a></b>        <a href="#360">CMMF_KeyRecRepContentSetNewSignCert</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *inKeyRecRep,
+<b><a name="361">  361</a></b>                                            <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a>     *inNewSignCert);
+<b><a name="362">  362</a></b> 
+<b><a name="363">  363</a></b> /*
+<b><a name="364">  364</a></b>  * FUNCTION: CMMF_KeyRecRepContentSetCACerts
+<b><a name="365">  365</a></b>  * INPUTS:
+<b><a name="366">  366</a></b>  *    inKeyRecRep
+<b><a name="367">  367</a></b>  *        The CMMFKeyRecRepContent to operate on.
+<b><a name="368">  368</a></b>  *    inCACerts
+<b><a name="369">  369</a></b>  *        The list of CA certificates required to construct a valid 
+<b><a name="370">  370</a></b>  *        certificate chain with the certificates that will be returned
+<b><a name="371">  371</a></b>  *        to the end user via this KeyRecRepContent.
+<b><a name="372">  372</a></b>  * NOTES:
+<b><a name="373">  373</a></b>  *    This function sets the caCerts that are required to form a chain with the
+<b><a name="374">  374</a></b>  *    end entity certificates that are being re-issued in this 
+<b><a name="375">  375</a></b>  *    CMMFKeyRecRepContent structure.
+<b><a name="376">  376</a></b>  *
+<b><a name="377">  377</a></b>  * RETURN:
+<b><a name="378">  378</a></b>  *    SECSuccess if adding the caCerts was successful.  Any other return value
+<b><a name="379">  379</a></b>  *    indicates an error while tring to add the caCerts.
+<b><a name="380">  380</a></b>  */
+<b><a name="381">  381</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="382">  382</a></b>        <a href="#382">CMMF_KeyRecRepContentSetCACerts</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *inKeyRecRep,
+<b><a name="383">  383</a></b>                                        <a href="../certdb/certt.h.dep.html#CERTCertList">CERTCertList</a>         *inCACerts);
+<b><a name="384">  384</a></b> 
+<b><a name="385">  385</a></b> /*
+<b><a name="386">  386</a></b>  * FUNCTION: CMMF_KeyRecRepContentSetCertifiedKeyPair
+<b><a name="387">  387</a></b>  * INPUTS:
+<b><a name="388">  388</a></b>  *    inKeyRecRep
+<b><a name="389">  389</a></b>  *        The CMMFKeyRecRepContent to operate on.
+<b><a name="390">  390</a></b>  *    inCert
+<b><a name="391">  391</a></b>  *        The certificate to add to the CMMFKeyRecRepContent structure.
+<b><a name="392">  392</a></b>  *    inPrivKey
+<b><a name="393">  393</a></b>  *        The private key associated with the certificate above passed in.
+<b><a name="394">  394</a></b>  *    inPubKey
+<b><a name="395">  395</a></b>  *        The public key to use for wrapping the private key.
+<b><a name="396">  396</a></b>  * NOTES:
+<b><a name="397">  397</a></b>  *    This function adds another certificate-key pair to the 
+<b><a name="398">  398</a></b>  *    CMMFKeyRecRepcontent structure.  There may be more than one 
+<b><a name="399">  399</a></b>  *    certificate-key pair in the structure, so the user must call this 
+<b><a name="400">  400</a></b>  *    function multiple times to add more than one cert-key pair.
+<b><a name="401">  401</a></b>  *
+<b><a name="402">  402</a></b>  * RETURN:
+<b><a name="403">  403</a></b>  *    SECSuccess if adding the certified key pair was successful.  Any other
+<b><a name="404">  404</a></b>  *    return value indicates an error in adding certified key pair to 
+<b><a name="405">  405</a></b>  *    CMMFKeyRecRepContent structure.
+<b><a name="406">  406</a></b>  */
+<b><a name="407">  407</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="408">  408</a></b>     <a href="#408">CMMF_KeyRecRepContentSetCertifiedKeyPair</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *inKeyRecRep,
+<b><a name="409">  409</a></b>                                              <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a>      *inCert,
+<b><a name="410">  410</a></b>                                              <a href="../cryptohi/keythi.h.dep.html#SECKEYPrivateKey">SECKEYPrivateKey</a>     *inPrivKey,
+<b><a name="411">  411</a></b>                                              <a href="../cryptohi/keythi.h.dep.html#SECKEYPublicKey">SECKEYPublicKey</a>      *inPubKey);
+<b><a name="412">  412</a></b> 
+<b><a name="413">  413</a></b> /*
+<b><a name="414">  414</a></b>  * FUNCTION: CMMF_POPODecKeyChallContentSetNextChallenge
+<b><a name="415">  415</a></b>  * INPUTS:
+<b><a name="416">  416</a></b>  *    inDecKeyChall
+<b><a name="417">  417</a></b>  *        The CMMFPOPODecKeyChallContent to operate on.
+<b><a name="418">  418</a></b>  *    inRandom
+<b><a name="419">  419</a></b>  *        The random number to use when generating the challenge,
+<b><a name="420">  420</a></b>  *    inSender
+<b><a name="421">  421</a></b>  *        The GeneralName representation of the sender of the challenge.
+<b><a name="422">  422</a></b>  *    inPubKey
+<b><a name="423">  423</a></b>  *        The public key to use when encrypting the challenge.
+<b><a name="424">  424</a></b>  *    passwdArg
+<b><a name="425">  425</a></b>  *        This value will be passed to the function used for getting a
+<b><a name="426">  426</a></b>  *        password.  The password for getting a password should be registered
+<b><a name="427">  427</a></b>  *        by calling PK11_SetPasswordFunc before this function is called. 
+<b><a name="428">  428</a></b>  *        If no password callback is registered and the library needs to 
+<b><a name="429">  429</a></b>  *        authenticate to the slot for any reason, this function will fail.
+<b><a name="430">  430</a></b>  * NOTES:
+<b><a name="431">  431</a></b>  *    This function adds a challenge to the end of the list of challenges
+<b><a name="432">  432</a></b>  *    contained by 'inDecKeyChall'.  Refer to the CMMF draft on how the
+<b><a name="433">  433</a></b>  *    the random number passed in and the sender's GeneralName are used
+<b><a name="434">  434</a></b>  *    to generate the challenge and witness fields of the challenge.  This
+<b><a name="435">  435</a></b>  *    library will use SHA1 as the one-way function for generating the 
+<b><a name="436">  436</a></b>  *    witess field of the challenge.
+<b><a name="437">  437</a></b>  *
+<b><a name="438">  438</a></b>  * RETURN:
+<b><a name="439">  439</a></b>  *    SECSuccess if generating the challenge and adding to the end of list
+<b><a name="440">  440</a></b>  *    of challenges was successful.  Any other return value indicates an error
+<b><a name="441">  441</a></b>  *    while trying to generate the challenge.
+<b><a name="442">  442</a></b>  */
+<b><a name="443">  443</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="444">  444</a></b> <a href="#444">CMMF_POPODecKeyChallContentSetNextChallenge</a>
+<b><a name="445">  445</a></b>                                    (<a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyChallContent">CMMFPOPODecKeyChallContent</a> *inDecKeyChall,
+<b><a name="446">  446</a></b>                                     long                        inRandom,
+<b><a name="447">  447</a></b>                                     <a href="../certdb/certt.h.dep.html#CERTGeneralName">CERTGeneralName</a>            *inSender,
+<b><a name="448">  448</a></b>                                     <a href="../cryptohi/keythi.h.dep.html#SECKEYPublicKey">SECKEYPublicKey</a>            *inPubKey,
+<b><a name="449">  449</a></b>                                     void                       *passwdArg);
+<b><a name="450">  450</a></b> 
+<b><a name="451">  451</a></b> 
+<b><a name="452">  452</a></b> /************************** Encoding Functions *************************/
+<b><a name="453">  453</a></b> 
+<b><a name="454">  454</a></b> /*
+<b><a name="455">  455</a></b>  * FUNCTION: CMMF_EncodeCertRepContent
+<b><a name="456">  456</a></b>  * INPUTS:
+<b><a name="457">  457</a></b>  *    inCertRepContent
+<b><a name="458">  458</a></b>  *        The CMMFCertRepContent to DER-encode.
+<b><a name="459">  459</a></b>  *    inCallback
+<b><a name="460">  460</a></b>  *        A callback function that the ASN1 encoder will call whenever it 
+<b><a name="461">  461</a></b>  *        wants to write out DER-encoded bytes.  Look at the defintion of 
+<b><a name="462">  462</a></b>  *        CRMFEncoderOutputCallback in crmft.h for a description of the
+<b><a name="463">  463</a></b>  *        parameters to the function.
+<b><a name="464">  464</a></b>  *    inArg
+<b><a name="465">  465</a></b>  *        An opaque pointer to a user-supplied argument that will be passed
+<b><a name="466">  466</a></b>  *        to the callback funtion whenever the function is called.
+<b><a name="467">  467</a></b>  * NOTES:
+<b><a name="468">  468</a></b>  *    The CMMF library will use the same DER-encoding scheme as the CRMF 
+<b><a name="469">  469</a></b>  *    library.  In other words, when reading CRMF comments that pertain to
+<b><a name="470">  470</a></b>  *    encoding, those comments apply to the CMMF libray as well.  
+<b><a name="471">  471</a></b>  *    The callback function will be called multiple times, each time supplying
+<b><a name="472">  472</a></b>  *    the next chunk of DER-encoded bytes.  The user must concatenate the 
+<b><a name="473">  473</a></b>  *    output of each successive call to the callback in order to get the
+<b><a name="474">  474</a></b>  *    entire DER-encoded CMMFCertRepContent structure.
+<b><a name="475">  475</a></b>  *
+<b><a name="476">  476</a></b>  * RETURN:
+<b><a name="477">  477</a></b>  *    SECSuccess if encoding the CMMFCertRepContent was successful.  Any 
+<b><a name="478">  478</a></b>  *    other return value indicates an error while decoding the structure.
+<b><a name="479">  479</a></b>  */
+<b><a name="480">  480</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="481">  481</a></b>        <a href="#481">CMMF_EncodeCertRepContent</a> (<a href="../crmf/cmmft.h.dep.html#CMMFCertRepContent">CMMFCertRepContent</a>        *inCertRepContent,
+<b><a name="482">  482</a></b>                                   <a href="../crmf/crmft.h.dep.html#CRMFEncoderOutputCallback">CRMFEncoderOutputCallback</a>  inCallback,
+<b><a name="483">  483</a></b>                                   void                      *inArg);
+<b><a name="484">  484</a></b> 
+<b><a name="485">  485</a></b> /*
+<b><a name="486">  486</a></b>  * FUNCTION: CMMF_EncodeKeyRecRepContent
+<b><a name="487">  487</a></b>  * INPUTS:
+<b><a name="488">  488</a></b>  *    inKeyRecRep
+<b><a name="489">  489</a></b>  *        The CMMFKeyRepContent to DER-encode.
+<b><a name="490">  490</a></b>  *    inCallback
+<b><a name="491">  491</a></b>  *        A callback function that the ASN1 encoder will call whenever it 
+<b><a name="492">  492</a></b>  *        wants to write out DER-encoded bytes.  Look at the defintion of 
+<b><a name="493">  493</a></b>  *        CRMFEncoderOutputCallback in crmft.h for a description of the
+<b><a name="494">  494</a></b>  *        parameters to the function.
+<b><a name="495">  495</a></b>  *    inArg
+<b><a name="496">  496</a></b>  *        An opaque pointer to a user-supplied argument that will be passed
+<b><a name="497">  497</a></b>  *        to the callback funtion whenever the function is called.
+<b><a name="498">  498</a></b>  * NOTES:
+<b><a name="499">  499</a></b>  *    The CMMF library will use the same DER-encoding scheme as the CRMF 
+<b><a name="500">  500</a></b>  *    library.  In other words, when reading CRMF comments that pertain to
+<b><a name="501">  501</a></b>  *    encoding, those comments apply to the CMMF libray as well.  
+<b><a name="502">  502</a></b>  *    The callback function will be called multiple times, each time supplying
+<b><a name="503">  503</a></b>  *    the next chunk of DER-encoded bytes.  The user must concatenate the 
+<b><a name="504">  504</a></b>  *    output of each successive call to the callback in order to get the
+<b><a name="505">  505</a></b>  *    entire DER-encoded CMMFCertRepContent structure.
+<b><a name="506">  506</a></b>  *
+<b><a name="507">  507</a></b>  * RETURN:
+<b><a name="508">  508</a></b>  *    SECSuccess if encoding the CMMFKeyRecRepContent was successful.  Any 
+<b><a name="509">  509</a></b>  *    other return value indicates an error while decoding the structure.
+<b><a name="510">  510</a></b>  */
+<b><a name="511">  511</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="512">  512</a></b>        <a href="#512">CMMF_EncodeKeyRecRepContent</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a>      *inKeyRecRep,
+<b><a name="513">  513</a></b>                                    <a href="../crmf/crmft.h.dep.html#CRMFEncoderOutputCallback">CRMFEncoderOutputCallback</a>  inCallback,
+<b><a name="514">  514</a></b>                                    void                      *inArg);
+<b><a name="515">  515</a></b> 
+<b><a name="516">  516</a></b> /*
+<b><a name="517">  517</a></b>  * FUNCTION: CMMF_EncodePOPODecKeyChallContent
+<b><a name="518">  518</a></b>  * INPUTS:
+<b><a name="519">  519</a></b>  *    inDecKeyChall
+<b><a name="520">  520</a></b>  *        The CMMFDecKeyChallContent to operate on.
+<b><a name="521">  521</a></b>  *    inCallback
+<b><a name="522">  522</a></b>  *        A callback function that the ASN1 encoder will call whenever it 
+<b><a name="523">  523</a></b>  *        wants to write out DER-encoded bytes.  Look at the defintion of 
+<b><a name="524">  524</a></b>  *        CRMFEncoderOutputCallback in crmft.h for a description of the
+<b><a name="525">  525</a></b>  *        parameters to the function.
+<b><a name="526">  526</a></b>  *    inArg
+<b><a name="527">  527</a></b>  *        An opaque pointer to a user-supplied argument that will be passed
+<b><a name="528">  528</a></b>  *        to the callback function whenever the function is called.
+<b><a name="529">  529</a></b>  * NOTES:
+<b><a name="530">  530</a></b>  *    The CMMF library will use the same DER-encoding scheme as the CRMF 
+<b><a name="531">  531</a></b>  *    library.  In other words, when reading CRMF comments that pertain to
+<b><a name="532">  532</a></b>  *    encoding, those comments apply to the CMMF libray as well.  
+<b><a name="533">  533</a></b>  *    The callback function will be called multiple times, each time supplying
+<b><a name="534">  534</a></b>  *    the next chunk of DER-encoded bytes.  The user must concatenate the 
+<b><a name="535">  535</a></b>  *    output of each successive call to the callback in order to get the
+<b><a name="536">  536</a></b>  *    entire DER-encoded CMMFCertRepContent structure.
+<b><a name="537">  537</a></b>  *    The DER will be an encoding of the type POPODecKeyChallContents, which
+<b><a name="538">  538</a></b>  *    is just a sequence of challenges.
+<b><a name="539">  539</a></b>  *
+<b><a name="540">  540</a></b>  * RETURN:
+<b><a name="541">  541</a></b>  *    SECSuccess if encoding was successful.  Any other return value indicates
+<b><a name="542">  542</a></b>  *    an error in trying to encode the Challenges.
+<b><a name="543">  543</a></b>  */
+<b><a name="544">  544</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="545">  545</a></b> <a href="#545">CMMF_EncodePOPODecKeyChallContent</a>(<a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyChallContent">CMMFPOPODecKeyChallContent</a> *inDecKeyChall,
+<b><a name="546">  546</a></b>                                   <a href="../crmf/crmft.h.dep.html#CRMFEncoderOutputCallback">CRMFEncoderOutputCallback</a> inCallback,
+<b><a name="547">  547</a></b>                                   void                     *inArg);
+<b><a name="548">  548</a></b> 
+<b><a name="549">  549</a></b> /*
+<b><a name="550">  550</a></b>  * FUNCTION: CMMF_EncodePOPODecKeyRespContent
+<b><a name="551">  551</a></b>  * INPUTS:
+<b><a name="552">  552</a></b>  *    inDecodedRand
+<b><a name="553">  553</a></b>  *        An array of integers to encode as the responses to 
+<b><a name="554">  554</a></b>  *        CMMFPOPODecKeyChallContent.  The integers must be in the same order
+<b><a name="555">  555</a></b>  *        as the challenges extracted from CMMFPOPODecKeyChallContent.
+<b><a name="556">  556</a></b>  *    inNumRand
+<b><a name="557">  557</a></b>  *        The number of random integers contained in the array 'inDecodedRand'
+<b><a name="558">  558</a></b>  *    inCallback
+<b><a name="559">  559</a></b>  *        A callback function that the ASN1 encoder will call whenever it 
+<b><a name="560">  560</a></b>  *        wants to write out DER-encoded bytes.  Look at the defintion of 
+<b><a name="561">  561</a></b>  *        CRMFEncoderOutputCallback in crmft.h for a description of the
+<b><a name="562">  562</a></b>  *        parameters to the function.
+<b><a name="563">  563</a></b>  *    inArg
+<b><a name="564">  564</a></b>  *        An opaque pointer to a user-supplied argument that will be passed
+<b><a name="565">  565</a></b>  *        to the callback funtion whenever the function is called.
+<b><a name="566">  566</a></b>  * NOTES:
+<b><a name="567">  567</a></b>  *    The CMMF library will use the same DER-encoding scheme as the CRMF 
+<b><a name="568">  568</a></b>  *    library.  In other words, when reading CRMF comments that pertain to
+<b><a name="569">  569</a></b>  *    encoding, those comments apply to the CMMF libray as well.  
+<b><a name="570">  570</a></b>  *    The callback function will be called multiple times, each time supplying
+<b><a name="571">  571</a></b>  *    the next chunk of DER-encoded bytes.  The user must concatenate the 
+<b><a name="572">  572</a></b>  *    output of each successive call to the callback in order to get the
+<b><a name="573">  573</a></b>  *    entire DER-encoded  POPODecKeyRespContent.
+<b><a name="574">  574</a></b>  *
+<b><a name="575">  575</a></b>  * RETURN:
+<b><a name="576">  576</a></b>  *    SECSuccess if encoding was successful.  Any other return value indicates
+<b><a name="577">  577</a></b>  *    an error in trying to encode the Challenges.
+<b><a name="578">  578</a></b>  */
+<b><a name="579">  579</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="580">  580</a></b>       <a href="#580">CMMF_EncodePOPODecKeyRespContent</a>(long                     *inDecodedRand,
+<b><a name="581">  581</a></b>                                        int                       inNumRand,
+<b><a name="582">  582</a></b>                                        <a href="../crmf/crmft.h.dep.html#CRMFEncoderOutputCallback">CRMFEncoderOutputCallback</a> inCallback,
+<b><a name="583">  583</a></b>                                        void                     *inArg); 
+<b><a name="584">  584</a></b> 
+<b><a name="585">  585</a></b> /***************  Accessor function  ***********************************/
+<b><a name="586">  586</a></b> 
+<b><a name="587">  587</a></b> /*
+<b><a name="588">  588</a></b>  * FUNCTION: CMMF_CertRepContentGetCAPubs
+<b><a name="589">  589</a></b>  * INPUTS:
+<b><a name="590">  590</a></b>  *    inCertRepContent
+<b><a name="591">  591</a></b>  *        The CMMFCertRepContent to extract the caPubs from.
+<b><a name="592">  592</a></b>  * NOTES:
+<b><a name="593">  593</a></b>  *    This function will return a copy of the list of certificates that
+<b><a name="594">  594</a></b>  *    make up the chain of CA's required to make the cert issued valid.
+<b><a name="595">  595</a></b>  *    The user must call CERT_DestroyCertList on the return value when 
+<b><a name="596">  596</a></b>  *    done using the return value.  
+<b><a name="597">  597</a></b>  *
+<b><a name="598">  598</a></b>  *    Only call this function on a CertRepContent that has been decoded.
+<b><a name="599">  599</a></b>  *    The client must call CERT_DestroyCertList when the certificate list
+<b><a name="600">  600</a></b>  *    is no longer needed. 
+<b><a name="601">  601</a></b>  *
+<b><a name="602">  602</a></b>  *    The certs in the list will not be in the temporary database.  In order
+<b><a name="603">  603</a></b>  *    to make these certificates a part of the permanent CA internal database,
+<b><a name="604">  604</a></b>  *    the user must collect the der for all of these certs and call 
+<b><a name="605">  605</a></b>  *    CERT_ImportCAChain.  Afterwards the certs will be part of the permanent
+<b><a name="606">  606</a></b>  *    database.
+<b><a name="607">  607</a></b>  *    
+<b><a name="608">  608</a></b>  * RETURN:
+<b><a name="609">  609</a></b>  *    A pointer to the CERTCertList representing the CA chain associated 
+<b><a name="610">  610</a></b>  *    with the issued cert.  A NULL return value indicates  that no CA Pubs
+<b><a name="611">  611</a></b>  *    were available in the CMMFCertRepContent structure. 
+<b><a name="612">  612</a></b>  */
+<b><a name="613">  613</a></b> extern <a href="../certdb/certt.h.dep.html#CERTCertList">CERTCertList</a>* 
+<b><a name="614">  614</a></b>        <a href="#614">CMMF_CertRepContentGetCAPubs</a> (<a href="../crmf/cmmft.h.dep.html#CMMFCertRepContent">CMMFCertRepContent</a> *inCertRepContent);
+<b><a name="615">  615</a></b> 
+<b><a name="616">  616</a></b> 
+<b><a name="617">  617</a></b> /*
+<b><a name="618">  618</a></b>  * FUNCTION: CMMF_CertRepContentGetNumResponses
+<b><a name="619">  619</a></b>  * INPUTS:
+<b><a name="620">  620</a></b>  *    inCertRepContent
+<b><a name="621">  621</a></b>  *        The CMMFCertRepContent to operate on.
+<b><a name="622">  622</a></b>  * NOTES:
+<b><a name="623">  623</a></b>  *    This function will return the number of CertResponses that are contained
+<b><a name="624">  624</a></b>  *    by the CMMFCertRepContent passed in.
+<b><a name="625">  625</a></b>  * 
+<b><a name="626">  626</a></b>  * RETURN:
+<b><a name="627">  627</a></b>  *    The number of CMMFCertResponses contained in the structure passed in.
+<b><a name="628">  628</a></b>  */
+<b><a name="629">  629</a></b> extern int 
+<b><a name="630">  630</a></b>  <a href="#630">CMMF_CertRepContentGetNumResponses</a> (<a href="../crmf/cmmft.h.dep.html#CMMFCertRepContent">CMMFCertRepContent</a> *inCertRepContent);
+<b><a name="631">  631</a></b> 
+<b><a name="632">  632</a></b> /*
+<b><a name="633">  633</a></b>  * FUNCTION: CMMF_CertRepContentGetResponseAtIndex
+<b><a name="634">  634</a></b>  * INPUTS:
+<b><a name="635">  635</a></b>  *    inCertRepContent
+<b><a name="636">  636</a></b>  *        The CMMFCertRepContent to operate on.
+<b><a name="637">  637</a></b>  *    inIndex
+<b><a name="638">  638</a></b>  *        The index of the CMMFCertResponse the user wants a copy of.
+<b><a name="639">  639</a></b>  * NOTES:
+<b><a name="640">  640</a></b>  *    This funciton creates a copy of the CMMFCertResponse at the index 
+<b><a name="641">  641</a></b>  *    corresponding to the parameter 'inIndex'.  Indexing is done like a
+<b><a name="642">  642</a></b>  *    traditional C array, ie the valid indexes are (0...numResponses-1).
+<b><a name="643">  643</a></b>  *    The user must call CMMF_DestroyCertResponse after the return value is 
+<b><a name="644">  644</a></b>  *    no longer needed.
+<b><a name="645">  645</a></b>  *
+<b><a name="646">  646</a></b>  * RETURN:
+<b><a name="647">  647</a></b>  *    A pointer to the CMMFCertResponse at the index corresponding to 
+<b><a name="648">  648</a></b>  *    'inIndex'.  A return value of NULL indicates an error in copying 
+<b><a name="649">  649</a></b>  *    the CMMFCertResponse.
+<b><a name="650">  650</a></b>  */
+<b><a name="651">  651</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFCertResponse">CMMFCertResponse</a>*
+<b><a name="652">  652</a></b> <a href="#652">CMMF_CertRepContentGetResponseAtIndex</a> (<a href="../crmf/cmmft.h.dep.html#CMMFCertRepContent">CMMFCertRepContent</a> *inCertRepContent,
+<b><a name="653">  653</a></b>                                        int                 inIndex);
+<b><a name="654">  654</a></b> 
+<b><a name="655">  655</a></b> /*
+<b><a name="656">  656</a></b>  * FUNCTION: CMMF_CertResponseGetCertReqId
+<b><a name="657">  657</a></b>  * INPUTS:
+<b><a name="658">  658</a></b>  *    inCertResp
+<b><a name="659">  659</a></b>  *        The CMMFCertResponse to operate on.
+<b><a name="660">  660</a></b>  * NOTES:
+<b><a name="661">  661</a></b>  *    This function returns the CertResponse.certReqId from the 
+<b><a name="662">  662</a></b>  *    CMMFCertResponse structure passed in.  If the return value is -1, that
+<b><a name="663">  663</a></b>  *    means there is no associated certificate request with the CertResponse.
+<b><a name="664">  664</a></b>  * RETURN:
+<b><a name="665">  665</a></b>  *    A long representing the id of the certificate request this 
+<b><a name="666">  666</a></b>  *    CMMFCertResponse corresponds to.  A return value of -1 indicates an
+<b><a name="667">  667</a></b>  *    error in extracting the value of the integer.
+<b><a name="668">  668</a></b>  */
+<b><a name="669">  669</a></b> extern long <a href="#669">CMMF_CertResponseGetCertReqId</a>(<a href="../crmf/cmmft.h.dep.html#CMMFCertResponse">CMMFCertResponse</a> *inCertResp);
+<b><a name="670">  670</a></b> 
+<b><a name="671">  671</a></b> /*
+<b><a name="672">  672</a></b>  * FUNCTION: CMMF_CertResponseGetPKIStatusInfoStatus
+<b><a name="673">  673</a></b>  * INPUTS:
+<b><a name="674">  674</a></b>  *    inCertResp
+<b><a name="675">  675</a></b>  *        The CMMFCertResponse to operate on.
+<b><a name="676">  676</a></b>  * NOTES:
+<b><a name="677">  677</a></b>  *    This function returns the CertResponse.status.status field of the 
+<b><a name="678">  678</a></b>  *    CMMFCertResponse structure.
+<b><a name="679">  679</a></b>  *
+<b><a name="680">  680</a></b>  * RETURN:
+<b><a name="681">  681</a></b>  *    The enumerated value corresponding to the PKIStatus defined in the CMMF
+<b><a name="682">  682</a></b>  *    draft.  See the CMMF draft for the definition of PKIStatus.  See crmft.h
+<b><a name="683">  683</a></b>  *    for the definition of CMMFPKIStatus.
+<b><a name="684">  684</a></b>  */
+<b><a name="685">  685</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFPKIStatus">CMMFPKIStatus</a> 
+<b><a name="686">  686</a></b>        <a href="#686">CMMF_CertResponseGetPKIStatusInfoStatus</a>(<a href="../crmf/cmmft.h.dep.html#CMMFCertResponse">CMMFCertResponse</a> *inCertResp);
+<b><a name="687">  687</a></b> 
+<b><a name="688">  688</a></b> /*
+<b><a name="689">  689</a></b>  * FUNCTION: CMMF_CertResponseGetCertificate
+<b><a name="690">  690</a></b>  * INPUTS:
+<b><a name="691">  691</a></b>  *    inCertResp
+<b><a name="692">  692</a></b>  *        The Certificate Response to operate on.
+<b><a name="693">  693</a></b>  *    inCertdb
+<b><a name="694">  694</a></b>  *        This is the certificate database where the function will place the
+<b><a name="695">  695</a></b>  *        newly issued certificate.
+<b><a name="696">  696</a></b>  * NOTES:
+<b><a name="697">  697</a></b>  *    This function retrieves the CertResponse.certifiedKeyPair.certificate
+<b><a name="698">  698</a></b>  *    from the CMMFCertResponse.  The user will get a copy of that certificate
+<b><a name="699">  699</a></b>  *    so  the user must call CERT_DestroyCertificate when the return value is 
+<b><a name="700">  700</a></b>  *    no longer needed.  The certificate returned will be in the temporary 
+<b><a name="701">  701</a></b>  *    certificate database.
+<b><a name="702">  702</a></b>  *
+<b><a name="703">  703</a></b>  * RETURN:
+<b><a name="704">  704</a></b>  *    A pointer to a copy of the certificate contained within the 
+<b><a name="705">  705</a></b>  *    CMMFCertResponse.  A return value of NULL indicates an error while trying
+<b><a name="706">  706</a></b>  *    to make a copy of the certificate.
+<b><a name="707">  707</a></b>  */
+<b><a name="708">  708</a></b> extern <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a>*
+<b><a name="709">  709</a></b>        <a href="#709">CMMF_CertResponseGetCertificate</a>(<a href="../crmf/cmmft.h.dep.html#CMMFCertResponse">CMMFCertResponse</a> *inCertResp,
+<b><a name="710">  710</a></b>                                        <a href="../certdb/certt.h.dep.html#CERTCertDBHandle">CERTCertDBHandle</a></a> *inCertdb);
+<b><a name="711">  711</a></b> 
+<b><a name="712">  712</a></b> /*
+<b><a name="713">  713</a></b>  * FUNCTION: CMMF_KeyRecRepContentGetPKIStatusInfoStatus
+<b><a name="714">  714</a></b>  * INPUTS:
+<b><a name="715">  715</a></b>  *    inKeyRecRep
+<b><a name="716">  716</a></b>  *        The CMMFKeyRecRepContent structure to operate on.
+<b><a name="717">  717</a></b>  * NOTES:
+<b><a name="718">  718</a></b>  *    This function retrieves the KeyRecRepContent.status.status field of 
+<b><a name="719">  719</a></b>  *    the CMMFKeyRecRepContent structure.
+<b><a name="720">  720</a></b>  * RETURN:
+<b><a name="721">  721</a></b>  *    The CMMFPKIStatus corresponding to the value held in the 
+<b><a name="722">  722</a></b>  *    CMMFKeyRecRepContent structure.
+<b><a name="723">  723</a></b>  */
+<b><a name="724">  724</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFPKIStatus">CMMFPKIStatus</a> 
+<b><a name="725">  725</a></b> <a href="#725">CMMF_KeyRecRepContentGetPKIStatusInfoStatus</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *inKeyRecRep);
+<b><a name="726">  726</a></b> 
+<b><a name="727">  727</a></b> /*
+<b><a name="728">  728</a></b>  * FUNCTION: CMMF_KeyRecRepContentGetNewSignCert
+<b><a name="729">  729</a></b>  * INPUTS:
+<b><a name="730">  730</a></b>  *    inKeyRecRep
+<b><a name="731">  731</a></b>  *        The CMMFKeyRecRepContent to operate on.
+<b><a name="732">  732</a></b>  * NOTES:
+<b><a name="733">  733</a></b>  *    This function retrieves the KeyRecRepContent.newSignCert field of the
+<b><a name="734">  734</a></b>  *    CMMFKeyRecRepContent structure.  The user must call 
+<b><a name="735">  735</a></b>  *    CERT_DestroyCertificate when the return value is no longer needed. The
+<b><a name="736">  736</a></b>  *    returned certificate will be in the temporary database.  The user 
+<b><a name="737">  737</a></b>  *    must then place the certificate permanently in whatever token the
+<b><a name="738">  738</a></b>  *    user determines is the proper destination.  A return value of NULL
+<b><a name="739">  739</a></b>  *    indicates the newSigCert field was not present.
+<b><a name="740">  740</a></b>  */
+<b><a name="741">  741</a></b> extern <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a>*
+<b><a name="742">  742</a></b>        <a href="#742">CMMF_KeyRecRepContentGetNewSignCert</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *inKeyRecRep);
+<b><a name="743">  743</a></b> 
+<b><a name="744">  744</a></b> /*
+<b><a name="745">  745</a></b>  * FUNCTION: CMMF_KeyRecRepContentGetCACerts
+<b><a name="746">  746</a></b>  * INPUTS:
+<b><a name="747">  747</a></b>  *    inKeyRecRep
+<b><a name="748">  748</a></b>  *        The CMMFKeyRecRepContent to operate on.
+<b><a name="749">  749</a></b>  * NOTES:
+<b><a name="750">  750</a></b>  *    This function returns a CERTCertList which contains all of the 
+<b><a name="751">  751</a></b>  *    certficates that are in the sequence KeyRecRepContent.caCerts
+<b><a name="752">  752</a></b>  *    User must call CERT_DestroyCertList when the return value is no longer 
+<b><a name="753">  753</a></b>  *    needed.  All of these certificates will be placed in the tempoaray
+<b><a name="754">  754</a></b>  *    database.
+<b><a name="755">  755</a></b>  *
+<b><a name="756">  756</a></b>  * RETURN:
+<b><a name="757">  757</a></b>  *    A pointer to the list of caCerts contained in the CMMFKeyRecRepContent
+<b><a name="758">  758</a></b>  *    structure.  A return value of NULL indicates the library was not able to 
+<b><a name="759">  759</a></b>  *    make a copy of the certifcates.  This may be because there are no caCerts
+<b><a name="760">  760</a></b>  *    included in the CMMFKeyRecRepContent strucure or an internal error.  Call
+<b><a name="761">  761</a></b>  *    CMMF_KeyRecRepContentHasCACerts to find out if there are any caCerts 
+<b><a name="762">  762</a></b>  *    included in 'inKeyRecRep'.
+<b><a name="763">  763</a></b>  */
+<b><a name="764">  764</a></b> extern <a href="../certdb/certt.h.dep.html#CERTCertList">CERTCertList</a>*
+<b><a name="765">  765</a></b>        <a href="#765">CMMF_KeyRecRepContentGetCACerts</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *inKeyRecRep);
+<b><a name="766">  766</a></b> 
+<b><a name="767">  767</a></b> /*
+<b><a name="768">  768</a></b>  * FUNCTION: CMMF_KeyRecRepContentGetNumKeyPairs
+<b><a name="769">  769</a></b>  * INPUTS:
+<b><a name="770">  770</a></b>  *    inKeyRecRep
+<b><a name="771">  771</a></b>  *        The CMMFKeyRecRepContent to operate on.
+<b><a name="772">  772</a></b>  * RETURN:
+<b><a name="773">  773</a></b>  *    This function returns the number of CMMFCertifiedKeyPair structures that
+<b><a name="774">  774</a></b>  *    that are stored in the KeyRecRepContent structure.
+<b><a name="775">  775</a></b>  */
+<b><a name="776">  776</a></b> extern int 
+<b><a name="777">  777</a></b>        <a href="#777">CMMF_KeyRecRepContentGetNumKeyPairs</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *inKeyRecRep);
+<b><a name="778">  778</a></b> 
+<b><a name="779">  779</a></b> /*
+<b><a name="780">  780</a></b>  * FUNCTION: CMMF_KeyRecRepContentGetCertKeyAtIndex
+<b><a name="781">  781</a></b>  * INPUTS:
+<b><a name="782">  782</a></b>  *    inKeyRecRepContent
+<b><a name="783">  783</a></b>  *        The CMMFKeyRecRepContent to operate on.
+<b><a name="784">  784</a></b>  *    inIndex
+<b><a name="785">  785</a></b>  *        The index of the desired CMMFCertifiedKeyPair
+<b><a name="786">  786</a></b>  * NOTES:
+<b><a name="787">  787</a></b>  *    This function retrieves the CMMFCertifiedKeyPair structure at the index
+<b><a name="788">  788</a></b>  *    'inIndex'.  Valid indexes are 0...(numKeyPairs-1)  The user must call 
+<b><a name="789">  789</a></b>  *    CMMF_DestroyCertifiedKeyPair when the return value is no longer needed.
+<b><a name="790">  790</a></b>  *
+<b><a name="791">  791</a></b>  * RETURN:
+<b><a name="792">  792</a></b>  *    A pointer to the Certified Key Pair at the desired index.  A return value
+<b><a name="793">  793</a></b>  *    of NULL indicates an error in extracting the Certified Key Pair at the 
+<b><a name="794">  794</a></b>  *    desired index.
+<b><a name="795">  795</a></b>  */
+<b><a name="796">  796</a></b> extern <a href="../crmf/cmmft.h.dep.html#CMMFCertifiedKeyPair">CMMFCertifiedKeyPair</a>*
+<b><a name="797">  797</a></b>       <a href="#797">CMMF_KeyRecRepContentGetCertKeyAtIndex</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *inKeyRecRep,
+<b><a name="798">  798</a></b>                                              int                   inIndex);
+<b><a name="799">  799</a></b> 
+<b><a name="800">  800</a></b> /*
+<b><a name="801">  801</a></b>  * FUNCTION: CMMF_CertifiedKeyPairGetCertificate
+<b><a name="802">  802</a></b>  * INPUTS:
+<b><a name="803">  803</a></b>  *    inCertKeyPair
+<b><a name="804">  804</a></b>  *        The CMMFCertifiedKeyPair to operate on.
+<b><a name="805">  805</a></b>  *    inCertdb
+<b><a name="806">  806</a></b>  *        The database handle for the database you want this certificate
+<b><a name="807">  807</a></b>  *        to wind up in.
+<b><a name="808">  808</a></b>  * NOTES:
+<b><a name="809">  809</a></b>  *    This function retrieves the certificate at 
+<b><a name="810">  810</a></b>  *    CertifiedKeyPair.certOrEncCert.certificate
+<b><a name="811">  811</a></b>  *    The user must call CERT_DestroyCertificate when the return value is no
+<b><a name="812">  812</a></b>  *    longer needed.  The user must import this certificate as a token object
+<b><a name="813">  813</a></b>  *    onto PKCS#11 slot in order to make it a permanent object.  The returned
+<b><a name="814">  814</a></b>  *    certificate will be in the temporary database.
+<b><a name="815">  815</a></b>  * 
+<b><a name="816">  816</a></b>  * RETURN:
+<b><a name="817">  817</a></b>  *    A pointer to the certificate contained within the certified key pair.
+<b><a name="818">  818</a></b>  *    A return value of NULL indicates an error in creating the copy of the 
+<b><a name="819">  819</a></b>  *    certificate.
+<b><a name="820">  820</a></b>  */
+<b><a name="821">  821</a></b> extern <a href="../certdb/certt.h.dep.html#CERTCertificate">CERTCertificate</a>*
+<b><a name="822">  822</a></b>       <a href="#822">CMMF_CertifiedKeyPairGetCertificate</a>(<a href="../crmf/cmmft.h.dep.html#CMMFCertifiedKeyPair">CMMFCertifiedKeyPair</a> *inCertKeyPair,
+<b><a name="823">  823</a></b>                                           <a href="../certdb/certt.h.dep.html#CERTCertDBHandle">CERTCertDBHandle</a></a>     *inCertdb);
+<b><a name="824">  824</a></b> 
+<b><a name="825">  825</a></b> /*
+<b><a name="826">  826</a></b>  * FUNCTION: CMMF_POPODecKeyChallContentGetNumChallenges
+<b><a name="827">  827</a></b>  * INPUTS:
+<b><a name="828">  828</a></b>  *    inKeyChallCont
+<b><a name="829">  829</a></b>  *        The CMMFPOPODecKeyChallContent to operate on.
+<b><a name="830">  830</a></b>  * RETURN:
+<b><a name="831">  831</a></b>  *    This function returns the number of CMMFChallenges are contained in 
+<b><a name="832">  832</a></b>  *    the CMMFPOPODecKeyChallContent structure.
+<b><a name="833">  833</a></b>  */
+<b><a name="834">  834</a></b> extern int <a href="#834">CMMF_POPODecKeyChallContentGetNumChallenges</a>
+<b><a name="835">  835</a></b>                                   (<a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyChallContent">CMMFPOPODecKeyChallContent</a> *inKeyChallCont);
+<b><a name="836">  836</a></b> 
+<b><a name="837">  837</a></b> /*
+<b><a name="838">  838</a></b>  * FUNCTION: CMMF_POPODecKeyChallContentGetPublicValue
+<b><a name="839">  839</a></b>  * ---------------------------------------------------
+<b><a name="840">  840</a></b>  * INPUTS:
+<b><a name="841">  841</a></b>  *    inKeyChallCont
+<b><a name="842">  842</a></b>  *        The CMMFPOPODecKeyChallContent to operate on.
+<b><a name="843">  843</a></b>  *    inIndex
+<b><a name="844">  844</a></b>  *        The index of the Challenge within inKeyChallCont to operate on.
+<b><a name="845">  845</a></b>  *        Indexes start from 0, ie the Nth Challenge corresponds to index
+<b><a name="846">  846</a></b>  *        N-1.
+<b><a name="847">  847</a></b>  * NOTES:
+<b><a name="848">  848</a></b>  * This function retrieves the public value stored away in the Challenge at
+<b><a name="849">  849</a></b>  * index inIndex of inKeyChallCont.
+<b><a name="850">  850</a></b>  * RETURN:
+<b><a name="851">  851</a></b>  * A pointer to a SECItem containing the public value.  User must call 
+<b><a name="852">  852</a></b>  * SECITEM_FreeItem on the return value when the value is no longer necessary.
+<b><a name="853">  853</a></b>  * A return value of NULL indicates an error while retrieving the public value.
+<b><a name="854">  854</a></b>  */
+<b><a name="855">  855</a></b> extern <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* <a href="#855">CMMF_POPODecKeyChallContentGetPublicValue</a>
+<b><a name="856">  856</a></b>                                    (<a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyChallContent">CMMFPOPODecKeyChallContent</a> *inKeyChallCont,
+<b><a name="857">  857</a></b>                                     int                         inIndex);
+<b><a name="858">  858</a></b> 
+<b><a name="859">  859</a></b> 
+<b><a name="860">  860</a></b> /*
+<b><a name="861">  861</a></b>  * FUNCTION: CMMF_POPODecKeyChallContentGetRandomNumber
+<b><a name="862">  862</a></b>  * INPUTS:
+<b><a name="863">  863</a></b>  *    inChallContent
+<b><a name="864">  864</a></b>  *        The CMMFPOPODecKeyChallContent to operate on.
+<b><a name="865">  865</a></b>  *    inIndex
+<b><a name="866">  866</a></b>  *        The index of the challenge to look at.  Valid indexes are 0 through
+<b><a name="867">  867</a></b>  *        (CMMF_POPODecKeyChallContentGetNumChallenges(inChallContent) - 1).
+<b><a name="868">  868</a></b>  *    inDest
+<b><a name="869">  869</a></b>  *        A pointer to a user supplied buffer where the library
+<b><a name="870">  870</a></b>  *        can place a copy of the random integer contatained in the
+<b><a name="871">  871</a></b>  *        challenge.
+<b><a name="872">  872</a></b>  * NOTES:
+<b><a name="873">  873</a></b>  *    This function returns the value held in the decrypted Rand structure
+<b><a name="874">  874</a></b>  *    corresponding to the random integer.  The user must call 
+<b><a name="875">  875</a></b>  *    CMMF_POPODecKeyChallContentDecryptChallenge before calling this function.  Call 
+<b><a name="876">  876</a></b>  *    CMMF_ChallengeIsDecrypted to find out if the challenge has been 
+<b><a name="877">  877</a></b>  *    decrypted.
+<b><a name="878">  878</a></b>  *
+<b><a name="879">  879</a></b>  * RETURN:
+<b><a name="880">  880</a></b>  *    SECSuccess indicates the witness field has been previously decrypted
+<b><a name="881">  881</a></b>  *    and the value for the random integer was successfully placed at *inDest.
+<b><a name="882">  882</a></b>  *    Any other return value indicates an error and that the value at *inDest
+<b><a name="883">  883</a></b>  *    is not a valid value.
+<b><a name="884">  884</a></b>  */
+<b><a name="885">  885</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#885">CMMF_POPODecKeyChallContentGetRandomNumber</a>
+<b><a name="886">  886</a></b>                                       (<a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyChallContent">CMMFPOPODecKeyChallContent</a> *inKeyChallCont,
+<b><a name="887">  887</a></b>                                        int                          inIndex,
+<b><a name="888">  888</a></b>                                        long                        *inDest);
+<b><a name="889">  889</a></b> 
+<b><a name="890">  890</a></b> /*
+<b><a name="891">  891</a></b>  * FUNCTION: CMMF_POPODecKeyRespContentGetNumResponses
+<b><a name="892">  892</a></b>  * INPUTS:
+<b><a name="893">  893</a></b>  *    inRespCont
+<b><a name="894">  894</a></b>  *        The POPODecKeyRespContent to operate on.
+<b><a name="895">  895</a></b>  * RETURN:
+<b><a name="896">  896</a></b>  * This function returns the number of responses contained in inRespContent.
+<b><a name="897">  897</a></b>  */
+<b><a name="898">  898</a></b> extern int 
+<b><a name="899">  899</a></b>  <a href="#899">CMMF_POPODecKeyRespContentGetNumResponses</a>(<a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyRespContent">CMMFPOPODecKeyRespContent</a> *inRespCont);
+<b><a name="900">  900</a></b> 
+<b><a name="901">  901</a></b> /*
+<b><a name="902">  902</a></b>  * FUNCTION: CMMF_POPODecKeyRespContentGetResponse
+<b><a name="903">  903</a></b>  * INPUTS:
+<b><a name="904">  904</a></b>  *    inRespCont
+<b><a name="905">  905</a></b>  *        The POPODecKeyRespContent to operate on.
+<b><a name="906">  906</a></b>  *    inIndex
+<b><a name="907">  907</a></b>  *        The index of the response to retrieve.
+<b><a name="908">  908</a></b>  *        The Nth response is at index N-1, ie the 1st response is at index 0,
+<b><a name="909">  909</a></b>  *        the 2nd response is at index 1, and so on.
+<b><a name="910">  910</a></b>  *    inDest
+<b><a name="911">  911</a></b>  *        A pointer to a pre-allocated buffer where the library can put the 
+<b><a name="912">  912</a></b>  *        value of the response located at inIndex.
+<b><a name="913">  913</a></b>  * NOTES:
+<b><a name="914">  914</a></b>  * The function returns the response contained at index inIndex.  
+<b><a name="915">  915</a></b>  * CMMFPOPODecKeyRespContent is a structure that the server will generally 
+<b><a name="916">  916</a></b>  * get in response to a CMMFPOPODecKeyChallContent.  The server will expect
+<b><a name="917">  917</a></b>  * to see the responses in the same order as it constructed them in 
+<b><a name="918">  918</a></b>  * the CMMFPOPODecKeyChallContent structure.
+<b><a name="919">  919</a></b>  * RETURN:
+<b><a name="920">  920</a></b>  * SECSuccess if getting the response at the desired index was successful.  Any
+<b><a name="921">  921</a></b>  * other return value indicates an errror.
+<b><a name="922">  922</a></b>  */
+<b><a name="923">  923</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="924">  924</a></b>      <a href="#924">CMMF_POPODecKeyRespContentGetResponse</a> (<a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyRespContent">CMMFPOPODecKeyRespContent</a> *inRespCont,
+<b><a name="925">  925</a></b>                                             int                        inIndex,
+<b><a name="926">  926</a></b>                                             long                      *inDest);
+<b><a name="927">  927</a></b> 
+<b><a name="928">  928</a></b> /************************* Destructor Functions ******************************/
+<b><a name="929">  929</a></b> 
+<b><a name="930">  930</a></b> /*
+<b><a name="931">  931</a></b>  * FUNCTION: CMMF_DestroyCertResponse
+<b><a name="932">  932</a></b>  * INPUTS:
+<b><a name="933">  933</a></b>  *    inCertResp
+<b><a name="934">  934</a></b>  *        The CMMFCertResponse to destroy.
+<b><a name="935">  935</a></b>  * NOTES:
+<b><a name="936">  936</a></b>  *    This function frees all the memory associated with the CMMFCertResponse
+<b><a name="937">  937</a></b>  *    passed in.
+<b><a name="938">  938</a></b>  * RETURN:
+<b><a name="939">  939</a></b>  *    SECSuccess if freeing the memory was successful.  Any other return value
+<b><a name="940">  940</a></b>  *    indicates an error while freeing the memory.
+<b><a name="941">  941</a></b>  */
+<b><a name="942">  942</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#942">CMMF_DestroyCertResponse</a>(<a href="../crmf/cmmft.h.dep.html#CMMFCertResponse">CMMFCertResponse</a> *inCertResp);
+<b><a name="943">  943</a></b> 
+<b><a name="944">  944</a></b> /*
+<b><a name="945">  945</a></b>  * FUNCTION: CMMF_DestroyCertRepContent
+<b><a name="946">  946</a></b>  * INPUTS:
+<b><a name="947">  947</a></b>  *    inCertRepContent
+<b><a name="948">  948</a></b>  *        The CMMFCertRepContent to destroy
+<b><a name="949">  949</a></b>  * NOTES:
+<b><a name="950">  950</a></b>  *    This function frees the memory associated with the CMMFCertRepContent
+<b><a name="951">  951</a></b>  *    passed in.
+<b><a name="952">  952</a></b>  * RETURN:
+<b><a name="953">  953</a></b>  *    SECSuccess if freeing all the memory associated with the 
+<b><a name="954">  954</a></b>  *    CMMFCertRepContent passed in is successful.  Any other return value 
+<b><a name="955">  955</a></b>  *    indicates an error while freeing the memory.
+<b><a name="956">  956</a></b>  */
+<b><a name="957">  957</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="958">  958</a></b>        <a href="#958">CMMF_DestroyCertRepContent</a> (<a href="../crmf/cmmft.h.dep.html#CMMFCertRepContent">CMMFCertRepContent</a> *inCertRepContent);
+<b><a name="959">  959</a></b> 
+<b><a name="960">  960</a></b> /*
+<b><a name="961">  961</a></b>  * FUNCTION: CMMF_DestroyKeyRecRepContent
+<b><a name="962">  962</a></b>  * INPUTS:
+<b><a name="963">  963</a></b>  *    inKeyRecRep
+<b><a name="964">  964</a></b>  *        The CMMFKeyRecRepContent to destroy.
+<b><a name="965">  965</a></b>  * NOTES:
+<b><a name="966">  966</a></b>  *    This function destroys all the memory associated with the 
+<b><a name="967">  967</a></b>  *    CMMFKeyRecRepContent passed in.
+<b><a name="968">  968</a></b>  *
+<b><a name="969">  969</a></b>  * RETURN:
+<b><a name="970">  970</a></b>  *    SECSuccess if freeing all the memory is successful.  Any other return 
+<b><a name="971">  971</a></b>  *    value indicates an error in freeing the memory.
+<b><a name="972">  972</a></b>  */
+<b><a name="973">  973</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="974">  974</a></b>        <a href="#974">CMMF_DestroyKeyRecRepContent</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *inKeyRecRep);
+<b><a name="975">  975</a></b> 
+<b><a name="976">  976</a></b> /*
+<b><a name="977">  977</a></b>  * FUNCTION: CMMF_DestroyCertifiedKeyPair
+<b><a name="978">  978</a></b>  * INPUTS:
+<b><a name="979">  979</a></b>  *    inCertKeyPair
+<b><a name="980">  980</a></b>  *        The CMMFCertifiedKeyPair to operate on.
+<b><a name="981">  981</a></b>  * NOTES: 
+<b><a name="982">  982</a></b>  *    This function frees up all the memory associated with 'inCertKeyPair'
+<b><a name="983">  983</a></b>  *
+<b><a name="984">  984</a></b>  * RETURN:
+<b><a name="985">  985</a></b>  *    SECSuccess if freeing all the memory associated with 'inCertKeyPair'
+<b><a name="986">  986</a></b>  *    is successful.  Any other return value indicates an error while trying
+<b><a name="987">  987</a></b>  *    to free the memory.
+<b><a name="988">  988</a></b>  */
+<b><a name="989">  989</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="990">  990</a></b>        <a href="#990">CMMF_DestroyCertifiedKeyPair</a>(<a href="../crmf/cmmft.h.dep.html#CMMFCertifiedKeyPair">CMMFCertifiedKeyPair</a> *inCertKeyPair);
+<b><a name="991">  991</a></b> 
+<b><a name="992">  992</a></b> /*
+<b><a name="993">  993</a></b>  * FUNCTION: CMMF_DestroyPOPODecKeyRespContent
+<b><a name="994">  994</a></b>  * INPUTS:
+<b><a name="995">  995</a></b>  *    inDecKeyResp
+<b><a name="996">  996</a></b>  *        The CMMFPOPODecKeyRespContent structure to free.
+<b><a name="997">  997</a></b>  * NOTES:
+<b><a name="998">  998</a></b>  *    This function frees up all the memory associate with the 
+<b><a name="999">  999</a></b>  *    CMMFPOPODecKeyRespContent.
+<b><a name="1000"> 1000</a></b>  *
+<b><a name="1001"> 1001</a></b>  * RETURN:
+<b><a name="1002"> 1002</a></b>  *    SECSuccess if freeing up all the memory associated with the
+<b><a name="1003"> 1003</a></b>  *    CMMFPOPODecKeyRespContent structure is successful.  Any other
+<b><a name="1004"> 1004</a></b>  *    return value indicates an error while freeing the memory.
+<b><a name="1005"> 1005</a></b>  */
+<b><a name="1006"> 1006</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="1007"> 1007</a></b>        <a href="#1007">CMMF_DestroyPOPODecKeyRespContent</a>(<a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyRespContent">CMMFPOPODecKeyRespContent</a> *inDecKeyResp);
+<b><a name="1008"> 1008</a></b> 
+<b><a name="1009"> 1009</a></b> 
+<b><a name="1010"> 1010</a></b> /************************** Miscellaneous Functions *************************/
+<b><a name="1011"> 1011</a></b>  
+<b><a name="1012"> 1012</a></b> /*
+<b><a name="1013"> 1013</a></b>  * FUNCTION: CMMF_CertifiedKeyPairUnwrapPrivKey
+<b><a name="1014"> 1014</a></b>  * INPUTS:
+<b><a name="1015"> 1015</a></b>  *    inCertKeyPair
+<b><a name="1016"> 1016</a></b>  *        The CMMFCertifiedKeyPair to operate on.
+<b><a name="1017"> 1017</a></b>  *    inPrivKey
+<b><a name="1018"> 1018</a></b>  *        The private key to use to un-wrap the private key
+<b><a name="1019"> 1019</a></b>  *    inNickName
+<b><a name="1020"> 1020</a></b>  *        This is the nickname that will be associated with the private key
+<b><a name="1021"> 1021</a></b>  *        to be unwrapped.
+<b><a name="1022"> 1022</a></b>  *    inSlot
+<b><a name="1023"> 1023</a></b>  *        The PKCS11 slot where the unwrapped private key should end up.
+<b><a name="1024"> 1024</a></b>  *    inCertdb
+<b><a name="1025"> 1025</a></b>  *        The Certificate database with which the new key will be associated.
+<b><a name="1026"> 1026</a></b>  *    destPrivKey
+<b><a name="1027"> 1027</a></b>  *        A pointer to memory where the library can place a pointer to the
+<b><a name="1028"> 1028</a></b>  *        private key after importing the key onto the specified slot.
+<b><a name="1029"> 1029</a></b>  *    wincx
+<b><a name="1030"> 1030</a></b>  *        An opaque pointer that the library will use in a callback function
+<b><a name="1031"> 1031</a></b>  *        to get the password if necessary.
+<b><a name="1032"> 1032</a></b>  *    
+<b><a name="1033"> 1033</a></b>  * NOTES:
+<b><a name="1034"> 1034</a></b>  *    This function uses the private key passed in to unwrap the private key
+<b><a name="1035"> 1035</a></b>  *    contained within the CMMFCertifiedKeyPair structure. After this 
+<b><a name="1036"> 1036</a></b>  *    function successfully returns, the private key has been unwrapped and
+<b><a name="1037"> 1037</a></b>  *    placed in the specified slot. 
+<b><a name="1038"> 1038</a></b>  *
+<b><a name="1039"> 1039</a></b>  * RETURN:
+<b><a name="1040"> 1040</a></b>  *    SECSuccess if unwrapping the private key was successful.  Any other 
+<b><a name="1041"> 1041</a></b>  *    return value indicates an error while trying to un-wrap the private key.
+<b><a name="1042"> 1042</a></b>  */
+<b><a name="1043"> 1043</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="1044"> 1044</a></b>        <a href="#1044">CMMF_CertifiedKeyPairUnwrapPrivKey</a>(<a href="../crmf/cmmft.h.dep.html#CMMFCertifiedKeyPair">CMMFCertifiedKeyPair</a> *inKeyPair,
+<b><a name="1045"> 1045</a></b>                                           <a href="../cryptohi/keythi.h.dep.html#SECKEYPrivateKey">SECKEYPrivateKey</a>     *inPrivKey,
+<b><a name="1046"> 1046</a></b>                                           <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>              *inNickName,
+<b><a name="1047"> 1047</a></b>                                           <a href="../pk11wrap/secmodt.h.dep.html#PK11SlotInfo">PK11SlotInfo</a>         *inSlot,
+<b><a name="1048"> 1048</a></b>                                           <a href="../certdb/certt.h.dep.html#CERTCertDBHandle">CERTCertDBHandle</a></a>     *inCertdb,
+<b><a name="1049"> 1049</a></b>                                           <a href="../cryptohi/keythi.h.dep.html#SECKEYPrivateKey">SECKEYPrivateKey</a>    **destPrivKey,
+<b><a name="1050"> 1050</a></b>                                           void                 *wincx);
+<b><a name="1051"> 1051</a></b> 
+<b><a name="1052"> 1052</a></b> /*
+<b><a name="1053"> 1053</a></b>  * FUNCTION: CMMF_KeyRecRepContentHasCACerts
+<b><a name="1054"> 1054</a></b>  * INPUTS:
+<b><a name="1055"> 1055</a></b>  *    inKeyRecRecp
+<b><a name="1056"> 1056</a></b>  *        The CMMFKeyRecRepContent to operate on.
+<b><a name="1057"> 1057</a></b>  * RETURN:
+<b><a name="1058"> 1058</a></b>  *    This function returns PR_TRUE if there are one or more certificates in 
+<b><a name="1059"> 1059</a></b>  *    the sequence KeyRecRepContent.caCerts within the CMMFKeyRecRepContent
+<b><a name="1060"> 1060</a></b>  *    structure.  The function will return PR_FALSE if there are 0 certificate
+<b><a name="1061"> 1061</a></b>  *    in the above mentioned sequence.
+<b><a name="1062"> 1062</a></b>  */
+<b><a name="1063"> 1063</a></b> extern <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> 
+<b><a name="1064"> 1064</a></b>        <a href="#1064">CMMF_KeyRecRepContentHasCACerts</a>(<a href="../crmf/cmmft.h.dep.html#CMMFKeyRecRepContent">CMMFKeyRecRepContent</a> *inKeyRecRep);
+<b><a name="1065"> 1065</a></b> 
+<b><a name="1066"> 1066</a></b> /*
+<b><a name="1067"> 1067</a></b>  * FUNCTION: CMMF_POPODecKeyChallContDecryptChallenge
+<b><a name="1068"> 1068</a></b>  * INPUTS:
+<b><a name="1069"> 1069</a></b>  *    inChalCont
+<b><a name="1070"> 1070</a></b>  *        The CMMFPOPODecKeyChallContent to operate on.
+<b><a name="1071"> 1071</a></b>  *    inIndex
+<b><a name="1072"> 1072</a></b>  *        The index of the Challenge to operate on.  The 1st Challenge is
+<b><a name="1073"> 1073</a></b>  *        at index 0, the second at index 1 and so forth.
+<b><a name="1074"> 1074</a></b>  *    inPrivKey
+<b><a name="1075"> 1075</a></b>  *        The private key to use to decrypt the witness field.
+<b><a name="1076"> 1076</a></b>  * NOTES:
+<b><a name="1077"> 1077</a></b>  *    This function uses the private key to decrypt the challenge field
+<b><a name="1078"> 1078</a></b>  *    contained in the appropriate challenge.  Make sure the private key matches 
+<b><a name="1079"> 1079</a></b>  *    the public key that was used to encrypt the witness.  Use 
+<b><a name="1080"> 1080</a></b>  *    CMMF_POPODecKeyChallContentGetPublicValue to get the public value of
+<b><a name="1081"> 1081</a></b>  *    the key used to encrypt the witness and then use that to determine the
+<b><a name="1082"> 1082</a></b>  *    appropriate private key.  This can be done by calling PK11_MakeIDFromPubKey
+<b><a name="1083"> 1083</a></b>  *    and then passing that return value to PK11_FindKeyByKeyID.  The creator of 
+<b><a name="1084"> 1084</a></b>  *    the challenge will most likely be an RA that has the public key
+<b><a name="1085"> 1085</a></b>  *    from a Cert request.  So the private key should be the private key
+<b><a name="1086"> 1086</a></b>  *    associated with public key in that request.  This function will also
+<b><a name="1087"> 1087</a></b>  *    verify the witness field of the challenge.  This function also verifies
+<b><a name="1088"> 1088</a></b>  *    that the sender and witness hashes match within the challenge.
+<b><a name="1089"> 1089</a></b>  *
+<b><a name="1090"> 1090</a></b>  * RETURN:
+<b><a name="1091"> 1091</a></b>  *    SECSuccess if decrypting the witness field was successful.  This does
+<b><a name="1092"> 1092</a></b>  *    not indicate that the decrypted data is valid, since the private key 
+<b><a name="1093"> 1093</a></b>  *    passed in may not be the actual key needed to properly decrypt the 
+<b><a name="1094"> 1094</a></b>  *    witness field.  Meaning that there is a decrypted structure now, but
+<b><a name="1095"> 1095</a></b>  *    may be garbage because the private key was incorrect.
+<b><a name="1096"> 1096</a></b>  *    Any other return value indicates the function could not complete the
+<b><a name="1097"> 1097</a></b>  *    decryption process.
+<b><a name="1098"> 1098</a></b>  */
+<b><a name="1099"> 1099</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="1100"> 1100</a></b>   <a href="#1100">CMMF_POPODecKeyChallContDecryptChallenge</a>(<a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyChallContent">CMMFPOPODecKeyChallContent</a> *inChalCont,
+<b><a name="1101"> 1101</a></b>                                            int                         inIndex,
+<b><a name="1102"> 1102</a></b>                                            <a href="../cryptohi/keythi.h.dep.html#SECKEYPrivateKey">SECKEYPrivateKey</a>           *inPrivKey);
+<b><a name="1103"> 1103</a></b> 
+<b><a name="1104"> 1104</a></b> /*
+<b><a name="1105"> 1105</a></b>  * FUNCTION: CMMF_DestroyPOPODecKeyChallContent
+<b><a name="1106"> 1106</a></b>  * INPUTS:
+<b><a name="1107"> 1107</a></b>  *    inDecKeyCont
+<b><a name="1108"> 1108</a></b>  *        The CMMFPOPODecKeyChallContent to free
+<b><a name="1109"> 1109</a></b>  * NOTES:
+<b><a name="1110"> 1110</a></b>  *    This function frees up all the memory associated with the 
+<b><a name="1111"> 1111</a></b>  *    CMMFPOPODecKeyChallContent 
+<b><a name="1112"> 1112</a></b>  * RETURN:
+<b><a name="1113"> 1113</a></b>  *    SECSuccess if freeing up all the memory associatd with the 
+<b><a name="1114"> 1114</a></b>  *    CMMFPOPODecKeyChallContent is successful.  Any other return value
+<b><a name="1115"> 1115</a></b>  *    indicates an error while freeing the memory.
+<b><a name="1116"> 1116</a></b>  *
+<b><a name="1117"> 1117</a></b>  */
+<b><a name="1118"> 1118</a></b> extern <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="1119"> 1119</a></b>  <a href="#1119">CMMF_DestroyPOPODecKeyChallContent</a> (<a href="../crmf/cmmft.h.dep.html#CMMFPOPODecKeyChallContent">CMMFPOPODecKeyChallContent</a> *inDecKeyCont);
+<b><a name="1120"> 1120</a></b> 
+<b><a name="1121"> 1121</a></b> <a href="../certdb/certt.h.dep.html#SEC_END_PROTOS">SEC_END_PROTOS</a><a href="../util/secasn1.h.dep.html#SEC_END_PROTOS"><sup>[1]</sup></a><a href="../util/seccomon.h.dep.html#SEC_END_PROTOS"><sup>[2]</sup></a></a>
+<b><a name="1122"> 1122</a></b> #endif /* _CMMF_H_ */
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

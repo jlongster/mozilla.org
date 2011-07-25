@@ -1,0 +1,383 @@
+<?php
+
+$html_title = 'NSPR 2.0: Layered I/O';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<PRE>
+
+<B>  1</B> /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+<B>  2</B> /*
+<B>  3</B>  * The contents of this file are subject to the Netscape Public License
+<B>  4</B>  * Version 1.0 (the "NPL"); you may not use this file except in
+<B>  5</B>  * compliance with the NPL.  You may obtain a copy of the NPL at
+<B>  6</B>  * http://www.mozilla.org/NPL/
+<B>  7</B>  * 
+<B>  8</B>  * Software distributed under the NPL is distributed on an "AS IS" basis,
+<B>  9</B>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the NPL
+<B> 10</B>  * for the specific language governing rights and limitations under the
+<B> 11</B>  * NPL.
+<B> 12</B>  * 
+<B> 13</B>  * The Initial Developer of this code under the NPL is Netscape
+<B> 14</B>  * Communications Corporation.  Portions created by Netscape are
+<B> 15</B>  * Copyright (C) 1998 Netscape Communications Corporation.  All Rights
+<B> 16</B>  * Reserved.
+<B> 17</B>  */
+<B> 18</B> 
+<B> 19</B> #include "prio.h"
+<B> 20</B> #include "prprf.h"
+<B> 21</B> #include "prlog.h"
+<B> 22</B> #include "prnetdb.h"
+<B> 23</B> #include "prthread.h"
+<B> 24</B> 
+<B> 25</B> #include "plerror.h"
+<B> 26</B> #include "plgetopt.h"
+<B> 27</B> #include "prwin16.h"
+<B> 28</B> 
+<B> 29</B> #include <stdlib.h>
+<B> 30</B> 
+<B> 31</B> /*
+<B> 32</B> ** Testing layering of I/O
+<B> 33</B> **
+<B> 34</B> **      The layered server
+<B> 35</B> ** A thread that acts as a server. It creates a TCP listener with a dummy
+<B> 36</B> ** layer pushed on top. Then listens for incoming connections. Each connection
+<B> 37</B> ** request for connection will be layered as well, accept one request, echo
+<B> 38</B> ** it back and close.
+<B> 39</B> **
+<B> 40</B> **      The layered client
+<B> 41</B> ** Pretty much what you'd expect.
+<B> 42</B> */
+<B> 43</B> 
+<B> 44</B> static PRFileDesc *logFile;
+<B> 45</B> static PRDescIdentity identity;
+<B> 46</B> static PRNetAddr server_address;
+<B> 47</B> 
+<B> 48</B> static PRIOMethods myMethods;
+<B> 49</B> 
+<B> 50</B> typedef enum Verbosity {silent, quiet, chatty, noisy} Verbosity;
+<B> 51</B> 
+<B> 52</B> static PRIntn minor_iterations = 5;
+<B> 53</B> static PRIntn major_iterations = 1;
+<B> 54</B> static Verbosity verbosity = quiet;
+<B> 55</B> static PRUint16 default_port = 12273;
+<B> 56</B> 
+<B> 57</B> static PRFileDesc *PushLayer(PRFileDesc *stack)
+<B> 58</B> {
+<B> 59</B>     PRFileDesc *layer = PR_CreateIOLayerStub(identity, &myMethods);
+<B> 60</B>     PRStatus rv = PR_PushIOLayer(stack, PR_GetLayersIdentity(stack), layer);
+<B> 61</B>     if (verbosity > quiet)
+<B> 62</B>         PR_fprintf(logFile, "Pushed layer(0x%x) onto stack(0x%x)\n", layer, stack);
+<B> 63</B>     PR_ASSERT(PR_SUCCESS == rv);
+<B> 64</B>     return stack;
+<B> 65</B> }  /* PushLayer */
+<B> 66</B> 
+<B> 67</B> #if 0
+<B> 68</B> static PRFileDesc *PopLayer(PRFileDesc *stack)
+<B> 69</B> {
+<B> 70</B>     PRFileDesc *popped = PR_PopIOLayer(stack, identity);
+<B> 71</B>     if (verbosity > quiet)
+<B> 72</B>         PR_fprintf(logFile, "Popped layer(0x%x) from stack(0x%x)\n", popped, stack);
+<B> 73</B>     popped->dtor(popped);
+<B> 74</B>     
+<B> 75</B>     return stack;
+<B> 76</B> }  /* PopLayer */
+<B> 77</B> #endif
+<B> 78</B> 
+<B> 79</B> static void PR_CALLBACK Client(void *arg)
+<B> 80</B> {
+<B> 81</B>     PRStatus rv;
+<B> 82</B>     PRUint8 buffer[100];
+<B> 83</B>     PRIntn empty_flags = 0;
+<B> 84</B>     PRIntn bytes_read, bytes_sent;
+<B> 85</B>     PRFileDesc *stack = (PRFileDesc*)arg;
+<B> 86</B> 
+<B> 87</B>     rv = PR_Connect(stack, &server_address, PR_INTERVAL_NO_TIMEOUT);
+<B> 88</B>     PR_ASSERT(PR_SUCCESS == rv);
+<B> 89</B>     while (minor_iterations-- > 0)
+<B> 90</B>     {
+<B> 91</B>         bytes_sent = PR_Send(
+<B> 92</B>             stack, buffer, sizeof(buffer), empty_flags, PR_INTERVAL_NO_TIMEOUT);
+<B> 93</B>         PR_ASSERT(sizeof(buffer) == bytes_sent);
+<B> 94</B>         if (verbosity > chatty)
+<B> 95</B>             PR_fprintf(logFile, "Client sending %d bytes\n", bytes_sent);
+<B> 96</B>         bytes_read = PR_Recv(
+<B> 97</B>             stack, buffer, bytes_sent, empty_flags, PR_INTERVAL_NO_TIMEOUT);
+<B> 98</B>         if (verbosity > chatty)
+<B> 99</B>             PR_fprintf(logFile, "Client receiving %d bytes\n", bytes_read);
+<B>100</B>         PR_ASSERT(bytes_read == bytes_sent);
+<B>101</B>     }
+<B>102</B> 
+<B>103</B>     if (verbosity > quiet)
+<B>104</B>         PR_fprintf(logFile, "Client shutting down stack\n");
+<B>105</B>     
+<B>106</B>     rv = PR_Shutdown(stack, PR_SHUTDOWN_BOTH); PR_ASSERT(PR_SUCCESS == rv);
+<B>107</B> }  /* Client */
+<B>108</B> 
+<B>109</B> static void PR_CALLBACK Server(void *arg)
+<B>110</B> {
+<B>111</B>     PRStatus rv;
+<B>112</B>     PRUint8 buffer[100];
+<B>113</B>     PRFileDesc *service;
+<B>114</B>     PRUintn empty_flags = 0;
+<B>115</B>     PRIntn bytes_read, bytes_sent;
+<B>116</B>     PRFileDesc *stack = (PRFileDesc*)arg;
+<B>117</B>     PRNetAddr any_address, client_address;
+<B>118</B> 
+<B>119</B>     rv = PR_InitializeNetAddr(PR_IpAddrAny, default_port, &any_address);
+<B>120</B>     PR_ASSERT(PR_SUCCESS == rv);
+<B>121</B> 
+<B>122</B>     rv = PR_Bind(stack, &any_address); PR_ASSERT(PR_SUCCESS == rv);
+<B>123</B>     rv = PR_Listen(stack, 10); PR_ASSERT(PR_SUCCESS == rv);
+<B>124</B> 
+<B>125</B>     service = PR_Accept(stack, &client_address, PR_INTERVAL_NO_TIMEOUT);
+<B>126</B>     if (verbosity > quiet)
+<B>127</B>         PR_fprintf(logFile, "Server accepting connection\n");
+<B>128</B> 
+<B>129</B>     do
+<B>130</B>     {
+<B>131</B>         bytes_read = PR_Recv(
+<B>132</B>             service, buffer, sizeof(buffer), empty_flags, PR_INTERVAL_NO_TIMEOUT);
+<B>133</B>         if (0 != bytes_read)
+<B>134</B>         {
+<B>135</B>             if (verbosity > chatty)
+<B>136</B>                 PR_fprintf(logFile, "Server receiving %d bytes\n", bytes_read);
+<B>137</B>             PR_ASSERT(bytes_read > 0);
+<B>138</B>             bytes_sent = PR_Send(
+<B>139</B>                 service, buffer, bytes_read, empty_flags, PR_INTERVAL_NO_TIMEOUT);
+<B>140</B>             if (verbosity > chatty)
+<B>141</B>                 PR_fprintf(logFile, "Server sending %d bytes\n", bytes_sent);
+<B>142</B>             PR_ASSERT(bytes_read == bytes_sent);
+<B>143</B>         }
+<B>144</B> 
+<B>145</B>     } while (0 != bytes_read);
+<B>146</B> 
+<B>147</B>     if (verbosity > quiet)
+<B>148</B>         PR_fprintf(logFile, "Server shutting down and closing stack\n");
+<B>149</B>     rv = PR_Shutdown(service, PR_SHUTDOWN_BOTH); PR_ASSERT(PR_SUCCESS == rv);
+<B>150</B>     rv = PR_Close(service); PR_ASSERT(PR_SUCCESS == rv);
+<B>151</B> 
+<B>152</B> }  /* Server */
+<B>153</B> 
+<B>154</B> static PRInt32 PR_CALLBACK MyRecv(
+<B>155</B>     PRFileDesc *fd, void *buf, PRInt32 amount,
+<B>156</B>     PRIntn flags, PRIntervalTime timeout)
+<B>157</B> {
+<B>158</B>     char *b = (char*)buf;
+<B>159</B>     PRFileDesc *lo = fd->lower;
+<B>160</B>     PRInt32 rv, readin = 0, request;
+<B>161</B>     rv = lo->methods->recv(lo, &request, sizeof(request), flags, timeout);
+<B>162</B>     if (verbosity > chatty) PR_fprintf(
+<B>163</B>         logFile, "MyRecv sending permission for %d bytes\n", request);
+<B>164</B>     if (0 < rv)
+<B>165</B>     {
+<B>166</B>         if (verbosity > chatty) PR_fprintf(
+<B>167</B>             logFile, "MyRecv received permission request for %d bytes\n", request);
+<B>168</B>         rv = lo->methods->send(
+<B>169</B>             lo, &request, sizeof(request), flags, timeout);
+<B>170</B>         if (0 < rv)
+<B>171</B>         {
+<B>172</B>             if (verbosity > chatty) PR_fprintf(
+<B>173</B>                 logFile, "MyRecv sending permission for %d bytes\n", request);
+<B>174</B>             while (readin < request)
+<B>175</B>             {
+<B>176</B>                 rv = lo->methods->recv(
+<B>177</B>                     lo, b + readin, amount - readin, flags, timeout);
+<B>178</B>                 if (rv <= 0) break;
+<B>179</B>                 if (verbosity > chatty) PR_fprintf(
+<B>180</B>                     logFile, "MyRecv received %d bytes\n", rv);
+<B>181</B>                 readin += rv;
+<B>182</B>             }
+<B>183</B>             rv = readin;
+<B>184</B>         }
+<B>185</B>     }
+<B>186</B>     return rv;
+<B>187</B> }  /* MyRecv */
+<B>188</B> 
+<B>189</B> static PRInt32 PR_CALLBACK MySend(
+<B>190</B>     PRFileDesc *fd, const void *buf, PRInt32 amount,
+<B>191</B>     PRIntn flags, PRIntervalTime timeout)
+<B>192</B> {
+<B>193</B>     PRFileDesc *lo = fd->lower;
+<B>194</B>     const char *b = (const char*)buf;
+<B>195</B>     PRInt32 rv, wroteout = 0, request;
+<B>196</B>     if (verbosity > chatty) PR_fprintf(
+<B>197</B>         logFile, "MySend asking permission to send %d bytes\n", amount);
+<B>198</B>     rv = lo->methods->send(lo, &amount, sizeof(amount), flags, timeout);
+<B>199</B>     if (0 < rv)
+<B>200</B>     {
+<B>201</B>         rv = lo->methods->recv(
+<B>202</B>             lo, &request, sizeof(request), flags, timeout);
+<B>203</B>         if (0 < rv)
+<B>204</B>         {
+<B>205</B>             PR_ASSERT(request == amount);
+<B>206</B>             if (verbosity > chatty) PR_fprintf(
+<B>207</B>                 logFile, "MySend got permission to send %d bytes\n", request);
+<B>208</B>             while (wroteout < request)
+<B>209</B>             {
+<B>210</B>                 rv = lo->methods->send(
+<B>211</B>                     lo, b + wroteout, request - wroteout, flags, timeout);
+<B>212</B>                 if (rv <= 0) break;
+<B>213</B>                 if (verbosity > chatty) PR_fprintf(
+<B>214</B>                     logFile, "MySend wrote %d bytes\n", rv);
+<B>215</B>                 wroteout += rv;
+<B>216</B>             }
+<B>217</B>             rv = amount;
+<B>218</B>         }
+<B>219</B>     }
+<B>220</B>     return rv;
+<B>221</B> }  /* MySend */
+<B>222</B> 
+<B>223</B> static Verbosity ChangeVerbosity(Verbosity verbosity, PRIntn delta)
+<B>224</B> {
+<B>225</B>     PRIntn verbage = (PRIntn)verbosity + delta;
+<B>226</B>     if (verbage < (PRIntn)silent) verbage = (PRIntn)silent;
+<B>227</B>     else if (verbage > (PRIntn)noisy) verbage = (PRIntn)noisy;
+<B>228</B>     return (Verbosity)verbage;
+<B>229</B> }  /* ChangeVerbosity */
+<B>230</B> 
+<B>231</B> PRIntn main(PRIntn argc, char **argv)
+<B>232</B> {
+<B>233</B>     PRStatus rv;
+<B>234</B>     PRIntn mits;
+<B>235</B>     PLOptStatus os;
+<B>236</B>     PRFileDesc *client, *service;
+<B>237</B>     const char *server_name = NULL;
+<B>238</B>     const PRIOMethods *stubMethods;
+<B>239</B>     PRThread *client_thread, *server_thread;
+<B>240</B>     PRThreadScope thread_scope = PR_LOCAL_THREAD;
+<B>241</B>     PLOptState *opt = PL_CreateOptState(argc, argv, "dqGC:c:p:");
+<B>242</B>     while (PL_OPT_EOL != (os = PL_GetNextOpt(opt)))
+<B>243</B>     {
+<B>244</B>         if (PL_OPT_BAD == os) continue;
+<B>245</B>         switch (opt->option)
+<B>246</B>         {
+<B>247</B>         case 0:
+<B>248</B>             server_name = opt->value;
+<B>249</B>             break;
+<B>250</B>         case 'd':  /* debug mode */
+<B>251</B>             if (verbosity < noisy)
+<B>252</B>                 verbosity = ChangeVerbosity(verbosity, 1);
+<B>253</B>             break;
+<B>254</B>         case 'q':  /* debug mode */
+<B>255</B>             if (verbosity > silent)
+<B>256</B>                 verbosity = ChangeVerbosity(verbosity, -1);
+<B>257</B>             break;
+<B>258</B>         case 'G':  /* use global threads */
+<B>259</B>             thread_scope = PR_GLOBAL_THREAD;
+<B>260</B>             break;
+<B>261</B>         case 'C':  /* number of threads waiting */
+<B>262</B>             major_iterations = atoi(opt->value);
+<B>263</B>             break;
+<B>264</B>         case 'c':  /* number of client threads */
+<B>265</B>             minor_iterations = atoi(opt->value);
+<B>266</B>             break;
+<B>267</B>         case 'p':  /* default port */
+<B>268</B>             default_port = atoi(opt->value);
+<B>269</B>             break;
+<B>270</B>         default:
+<B>271</B>             break;
+<B>272</B>         }
+<B>273</B>     }
+<B>274</B>     PL_DestroyOptState(opt);
+<B>275</B>     PR_STDIO_INIT();
+<B>276</B> 
+<B>277</B>     logFile = PR_GetSpecialFD(PR_StandardError);
+<B>278</B> 
+<B>279</B>     identity = PR_GetUniqueIdentity("Dummy");
+<B>280</B>     stubMethods = PR_GetDefaultIOMethods();
+<B>281</B> 
+<B>282</B>     /*
+<B>283</B>     ** The protocol we're going to implement is one where in order to initiate
+<B>284</B>     ** a send, the sender must first solicit permission. Therefore, every
+<B>285</B>     ** send is really a send - receive - send sequence.
+<B>286</B>     */
+<B>287</B>     myMethods = *stubMethods;  /* first get the entire batch */
+<B>288</B>     myMethods.recv = MyRecv;  /* then override the ones we care about */
+<B>289</B>     myMethods.send = MySend;  /* then override the ones we care about */
+<B>290</B> 
+<B>291</B>     if (NULL == server_name)
+<B>292</B>         rv = PR_InitializeNetAddr(
+<B>293</B>             PR_IpAddrLoopback, default_port, &server_address);
+<B>294</B>     else
+<B>295</B>     {
+<B>296</B>         rv = PR_StringToNetAddr(server_name, &server_address);
+<B>297</B>         PR_ASSERT(PR_SUCCESS == rv);
+<B>298</B>         rv = PR_InitializeNetAddr(
+<B>299</B>             PR_IpAddrNull, default_port, &server_address);
+<B>300</B>     }
+<B>301</B>     PR_ASSERT(PR_SUCCESS == rv);
+<B>302</B> 
+<B>303</B>     /* one type w/o layering */
+<B>304</B> 
+<B>305</B>     mits = minor_iterations;
+<B>306</B>     while (major_iterations-- > 0)
+<B>307</B>     {
+<B>308</B>         if (verbosity > silent)
+<B>309</B>             PR_fprintf(logFile, "Beginning non-layered test\n");
+<B>310</B>         client = PR_NewTCPSocket(); PR_ASSERT(NULL != client);
+<B>311</B>         service = PR_NewTCPSocket(); PR_ASSERT(NULL != service);
+<B>312</B> 
+<B>313</B>         minor_iterations = mits;
+<B>314</B>         server_thread = PR_CreateThread(
+<B>315</B>             PR_USER_THREAD, Server, service,
+<B>316</B>             PR_PRIORITY_HIGH, thread_scope,
+<B>317</B>             PR_JOINABLE_THREAD, 16 * 1024);
+<B>318</B>         PR_ASSERT(NULL != server_thread);
+<B>319</B> 
+<B>320</B>         client_thread = PR_CreateThread(
+<B>321</B>             PR_USER_THREAD, Client, client,
+<B>322</B>             PR_PRIORITY_NORMAL, thread_scope,
+<B>323</B>             PR_JOINABLE_THREAD, 16 * 1024);
+<B>324</B>         PR_ASSERT(NULL != client_thread);
+<B>325</B> 
+<B>326</B>         rv = PR_JoinThread(client_thread);
+<B>327</B>         PR_ASSERT(PR_SUCCESS == rv);
+<B>328</B>         rv = PR_JoinThread(server_thread);
+<B>329</B>         PR_ASSERT(PR_SUCCESS == rv);
+<B>330</B> 
+<B>331</B>         rv = PR_Close(client); PR_ASSERT(PR_SUCCESS == rv);
+<B>332</B>         rv = PR_Close(service); PR_ASSERT(PR_SUCCESS == rv);
+<B>333</B>         if (verbosity > silent)
+<B>334</B>             PR_fprintf(logFile, "Ending non-layered test\n");
+<B>335</B> 
+<B>336</B>         /* with layering */
+<B>337</B>         if (verbosity > silent)
+<B>338</B>             PR_fprintf(logFile, "Beginning layered test\n");
+<B>339</B>         client = PR_NewTCPSocket(); PR_ASSERT(NULL != client);
+<B>340</B>         service = PR_NewTCPSocket(); PR_ASSERT(NULL != service);
+<B>341</B> 
+<B>342</B>         minor_iterations = mits;
+<B>343</B>         server_thread = PR_CreateThread(
+<B>344</B>             PR_USER_THREAD, Server, PushLayer(service),
+<B>345</B>             PR_PRIORITY_HIGH, thread_scope,
+<B>346</B>             PR_JOINABLE_THREAD, 16 * 1024);
+<B>347</B>         PR_ASSERT(NULL != server_thread);
+<B>348</B> 
+<B>349</B>         client_thread = PR_CreateThread(
+<B>350</B>             PR_USER_THREAD, Client, PushLayer(client),
+<B>351</B>             PR_PRIORITY_NORMAL, thread_scope,
+<B>352</B>             PR_JOINABLE_THREAD, 16 * 1024);
+<B>353</B>         PR_ASSERT(NULL != client_thread);
+<B>354</B> 
+<B>355</B>         rv = PR_JoinThread(client_thread);
+<B>356</B>         PR_ASSERT(PR_SUCCESS == rv);
+<B>357</B>         rv = PR_JoinThread(server_thread);
+<B>358</B>         PR_ASSERT(PR_SUCCESS == rv);
+<B>359</B> 
+<B>360</B>         rv = PR_Close(client); PR_ASSERT(PR_SUCCESS == rv);
+<B>361</B>         rv = PR_Close(service); PR_ASSERT(PR_SUCCESS == rv);
+<B>362</B>         if (verbosity > silent)
+<B>363</B>             PR_fprintf(logFile, "Ending layered test\n");
+<B>364</B>     }
+<B
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

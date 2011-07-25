@@ -1,0 +1,361 @@
+<?php
+
+$html_title = 'NSPR: Build System and Supported Platforms';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="GENERATOR" content="Mozilla/4.7 [en]C-AOLNSCP  (WinNT; U) [Netscape]">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<h1>
+NSPR: Build System and Supported Platforms</h1>
+
+<blockquote><b>Note:</b> This was written in 1998. Platforms and releases
+have changed since then. See the release notes for current data.</blockquote>
+
+<p><br>NSPR has been implemented on over 20 platforms. A platform may have
+more than one implementation strategy of its multi threading and I/O facilities.
+This article explains the NSPR build system and how to specify a particular
+implementation strategy, compiler or compiler switches, or the target OS
+for your build on each platform.
+<h2>
+Implementation Strategies</h2>
+Threads are at the core of NSPR, and the I/O functions are tied to the
+multi threading facilities because many I/O functions may block the calling
+threads. NSPR has multiple implementation strategies of its multi threading
+and I/O functions. The various implementation strategies can be organized
+into the hierarchy below:
+<ul>
+<li>
+<b>Classic NSPR </b>(This is our first code base, hence the term "classic
+NSPR"):</li>
+</ul>
+
+<ul>
+<ul>
+<li>
+<b>Local threads only</b>: All threads are user-level threads implemented
+by NSPR.</li>
+
+<li>
+<b>Global threads only</b>: All threads are native threads supplied by
+the OS vendor. For example, Solaris UI (Unix International) threads and
+Win32 threads.</li>
+
+<li>
+<b>Combined</b>: NSPR multiplexes user-level threads on top of native,
+kernel-level threads. This is also called the MxN model. At present, there
+are three implementations of the combined model.</li>
+
+<ul>
+<li>
+IRIX: sprocs + NSPR user-level threads</li>
+
+<li>
+Windows NT: Win32 threads + NT fibers</li>
+
+<li>
+<b>Pthreads-user</b>: kernel-level pthreads + NSPR user-level threads</li>
+</ul>
+</ul>
+
+<li>
+<b>Pthreads</b>: All threads are pthreads. The relevant code is in <tt>mozilla/nsprpub/pr/src/pthreads</tt>
+(threads and I/O).</li>
+</ul>
+Classic NSPR and pthreads have relatively disjoint code bases in the threads
+and I/O areas:
+<ul>
+<li>
+Classic NSPR: <tt>mozilla/nsprpub/pr/src/threads/combined</tt> (threads),
+<tt>mozilla/nsprpub/pr/src/io</tt> (I/O)</li>
+
+<li>
+Pthreads: <tt>mozilla/nsprpub/pr/src/pthreads</tt> (threads and I/O)</li>
+</ul>
+Note that some files under <tt>mozilla/nsprpub/pr/src/io</tt> are shared
+by both classic NSPR and pthreads. Consult <tt>mozilla/nsprpub/pr/src/Makefile</tt>
+for the definitive list of files used by each implementation strategy (see
+the definition of the makefile variable <tt>OBJS</tt>).
+<h2>
+Compilers</h2>
+For ease of integration with third-party libraries, which may use native
+threads, NSPR uses the native threads whenever possible. As a result, native
+compilers are used to build NSPR on most platforms because they have better
+debugging support for native threads. The only exception is Solaris, where
+both cc and gcc are used.
+<h2>
+NSPR Build System</h2>
+On Unix and Win32, NSPR build system is based on GNU make. (GNU make can
+be obtained by anonymous ftp from <tt><a href="ftp://prep.ai.mit.edu/pub/gnu/">ftp://prep.ai.mit.edu/pub/gnu/</a></tt>.)
+On Mac, NSPR uses Metrowork's CodeWarrior Mac project files.
+<p>Inside Netscape, we use GNU make 3.74 on Unix, but our makefiles should
+work fine under newer versions of GNU make. On Win32, we use an internal
+Win32 port of GNU make 3.74 and a homegrown stripped-down version of Bourne
+shell called <tt>shmsdos.exe</tt>. Our own Win32 port of GNU make and <tt>shmsdos.exe</tt>
+are distributed with the NSPR source. Our makefiles also work under the
+official Win32 port of GNU make (3.75 and above) and the Korn shell <tt>sh.exe</tt>
+in MKS Toolkit.
+<p>Every directory in NSPR has a makefile named <tt>Makefile</tt>, which
+includes the makefile fragments in <tt>mozilla/nsprpub/config</tt>. NSPR
+makefiles implement the common Netscape makefile targets such as <tt>export</tt>,
+<tt>libs</tt>,
+and <tt>install</tt>. However, some makefiles targets are no-op in NSPR
+because they are not necessary for NSPR.
+<p>To build NSPR, change directory to the root of our source tree
+<br><tt>cd mozilla/nsprpub</tt>
+<br>and then issue the command
+<br><tt>gmake</tt>
+<br>Make will recursively go into all the subdirectories and the right
+things will happen.
+<p>The table below lists the common NSPR makefile targets.
+<br><a href="nspbuild.htm"></a>&nbsp;
+<table BORDER COLS=2 WIDTH="100%" >
+<tr>
+<td><tt>all</tt></td>
+
+<td>The default target. Same as <tt>export</tt> <tt>libs</tt> <tt>install</tt>.</td>
+</tr>
+
+<tr>
+<td><tt>export</tt></td>
+
+<td>Do a complete build.</td>
+</tr>
+
+<tr>
+<td><tt>libs</tt></td>
+
+<td>No-op.</td>
+</tr>
+
+<tr>
+<td><tt>install</tt></td>
+
+<td>No-op.</td>
+</tr>
+
+<tr>
+<td><tt>depend</tt></td>
+
+<td>No-op. <b>This means that NSPR makefiles do not have header file dependencies.</b></td>
+</tr>
+
+<tr>
+<td><tt>clean</tt></td>
+
+<td>Remove <tt>.o</tt> files.</td>
+</tr>
+
+<tr>
+<td><tt>clobber</tt></td>
+
+<td>Remove <tt>.o</tt> files, libraries, and executable programs.</td>
+</tr>
+
+<tr>
+<td><tt>realclean</tt></td>
+
+<td>Remove all generated files and directories.</td>
+</tr>
+
+<tr>
+<td><tt>clobber_all</tt></td>
+
+<td>Same as <tt>realclean</tt>.</td>
+</tr>
+</table>
+
+<p>The table below lists common makefile variables that one can specify
+on the command line to customize a build..
+<br>&nbsp;
+<table BORDER COLS=2 WIDTH="100%" >
+<tr>
+<td><tt>BUILD_OPT</tt></td>
+
+<td>Optimized build (default: debug build).</td>
+</tr>
+
+<tr>
+<td><tt>OS_TARGET</tt></td>
+
+<td>Set to the target OS (<tt>WIN95</tt> or <tt>WIN16</tt>) when doing
+cross-compilation on NT (default: same as the host OS).</td>
+</tr>
+
+<tr>
+<td><tt>NS_USE_GCC</tt></td>
+
+<td>Use gcc and g++ (default: native compilers).</td>
+</tr>
+
+<tr>
+<td><tt>USE_PTHREADS</tt></td>
+
+<td>Build pthreads version.</td>
+</tr>
+
+<tr>
+<td><tt>CLASSIC_NSPR</tt></td>
+
+<td>Build classic NSPR version (usually local threads only).</td>
+</tr>
+
+<tr>
+<td><tt>PTHREADS_USER</tt></td>
+
+<td>Build pthreads-user version.</td>
+</tr>
+
+<tr>
+<td><tt>LOCAL_THREADS_ONLY</tt></td>
+
+<td>Build local threads only version.</td>
+</tr>
+
+<tr>
+<td><tt>USE_DEBUG_RTL</tt></td>
+
+<td>On Win32, compile with <tt>/MDd</tt> in the debug build (default: <tt>/MD</tt>).
+Optimized build always uses <tt>/MD</tt>.</td>
+</tr>
+
+<tr>
+<td><tt>USE_N32</tt></td>
+
+<td>On IRIX, compile with <tt>-n32</tt> (default: <tt>-32</tt>).</td>
+</tr>
+
+<tr>
+<td><tt>USE_IPV6</tt></td>
+
+<td>Enable IPv6.</td>
+</tr>
+
+<tr>
+<td><tt>MOZILLA_CLIENT</tt></td>
+
+<td>Adjust NSPR build system for Netscape Client (mozilla).</td>
+</tr>
+</table>
+
+<h2>
+Platforms</h2>
+Platforms supported by NSPR can be divided into three categories: Unix,
+Windows, and Mac. At present, NSPR aims to support Netscape Communicator
+5.0 and Server Suitespot 4.0. The platforms on which we build our binary
+releases are listed below.
+<h3>
+Unix</h3>
+AIX: 4.2.1
+<ul>The default implementation strategy is pthreads. Local threads only
+and pthreads-user versions are also available. To build the local threads
+only version, use the command
+<br><tt>gmake CLASSIC_NSPR=1</tt>
+<br>To build the pthreads-user version, use the command
+<br><tt>gmake PTHREADS_USER=1</tt></ul>
+BSD/386: 3.0, 2.1
+<ul>The default implementation strategy is local threads only.</ul>
+Digital Unix: V4.0B
+<ul>The default implementation strategy is pthreads. To build the local
+threads only version, use the command
+<br><tt>gmake CLASSIC_NSPR=1</tt></ul>
+FreeBSD: 2.2
+<ul>The default implementation strategy is local threads only.</ul>
+HP-UX: B.10.10
+<ul>The default implementation strategy is pthreads, or rather DCE threads
+(Posix thread draft 4). To build the local threads only version, use the
+command
+<br><tt>gmake CLASSIC_NSPR=1</tt></ul>
+HP-UX: B.11.00
+<ul>The default implementation strategy is pthreads. Local threads only
+and pthreads-user versions are also available. To build the local threads
+only version, use the command
+<br><tt>gmake CLASSIC_NSPR=1</tt>
+<br>To build the pthreads-user version, use the command
+<br><tt>gmake PTHREADS_USER=1</tt></ul>
+Irix: 6.2
+<ul>The default implementation strategy is combined (MxN). A global thread
+is mapped to an Irix sproc. Local threads are implemented using user-level
+context switching in NSPR. The primordial thread, which executes the <tt>main()</tt>
+function, is a local thread.
+<br>The pthreads version is also available. To build the pthreads version,
+use the command
+<br><tt>gmake USE_PTHREADS=1</tt></ul>
+Linux: 2.0
+<ul>The default implementation strategy is local threads only. The pthreads
+version, based on LinuxThreads, is mostly working. To build the pthreads
+version, use the command
+<br><tt>gmake USE_PTHREADS=1</tt></ul>
+MkLinux/PPC: 2.0
+<ul>The default implementation strategy is local threads only.</ul>
+NCR: 3.0
+<ul>The default implementation strategy is local threads only.</ul>
+NEC: 4.2
+<ul>The default implementation strategy is local threads only.</ul>
+SCO_SV: 3.2
+<ul>The default implementation strategy is local threads only.</ul>
+SINIX: 5.42
+<ul>The default implementation strategy is local threads only.</ul>
+Solaris: 2.5.1 sparc, 2.5.1 x86
+<ul>The default implementation strategy is global threads only, in which
+every NSPR thread is mapped to a native Solaris UI thread. Local threads
+only and pthreads versions are also available. To build the local threads
+only version, use the command
+<br><tt>gmake LOCAL_THREADS_ONLY=1</tt>
+<br>To build the pthreads version, use the command
+<br><tt>gmake USE_PTHREADS=1</tt>
+<br>To build with gcc and g++, use the command
+<br><tt>gmake NS_USE_GCC=1</tt></ul>
+SunOS 4: 4.1.3_U1
+<ul>The default implementation strategy is local threads only.</ul>
+UNIXWARE: 2.1
+<ul>The default implementation strategy is local threads only.</ul>
+
+<h3>
+Windows</h3>
+Windows NT: 3.51, 4.0, Windows 2000
+<ul>The default implementation strategy is combined (MxN). A global thread
+is mapped to a Win32 native thread. A local thread is an NT fiber. The
+primordial thread, which executes main(), is a local thread.
+<p>NSPR requires NT 3.51 Service Pack 5 or NT 4.0 Service Pack 3. The service
+packs can be downloaded from Microsoft's ftp site at <a href="ftp://ftp.microsoft.com/bussys/winnt/winnt-public/fixes/usa">ftp://ftp.microsoft.com/bussys/winnt/winnt-public/fixes/usa</a>.</ul>
+Windows 95, 98, Me
+<ul>The default implementation strategy is global threads only. Note that
+the Windows 9x binary is the generic Win32 binary that runs on both Windows
+9x and NT.
+<br>Windows 9x version of NSPR can be built on an NT machine with the command
+<br><tt>gmake OS_TARGET=WIN95</tt></ul>
+Windows 3.1 (16-bit Windows)
+<ul>The default implementation strategy is local threads only. Windows
+3.1 version of NSPR can be built on an NT machine with the command
+<br><tt>gmake OS_TARGET=WIN16</tt></ul>
+
+<h3>
+Mac</h3>
+
+<ul>The default implementation strategy is local threads only.</ul>
+&nbsp;
+<div align=right>
+<p>
+<hr WIDTH="100%"></div>
+
+<div align=right><i><font size=-1>Last updated: Thu Dec 17 12:14:45 PST
+1998</font></i></div>
+
+<hr WIDTH="100%">
+<center>Copyright &copy; 1998 <a href="http://home.netscape.com/misc/contact_info.html">Netscape
+Communications Corporation</a></center>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

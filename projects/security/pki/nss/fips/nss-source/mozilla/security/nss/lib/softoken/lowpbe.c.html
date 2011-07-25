@@ -1,0 +1,1205 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> #include "plarena.h"
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> #include "seccomon.h"
+<b><a name="40">   40</a></b> #include "secitem.h"
+<b><a name="41">   41</a></b> #include "secport.h"
+<b><a name="42">   42</a></b> #include "hasht.h"
+<b><a name="43">   43</a></b> #include "pkcs11t.h"
+<b><a name="44">   44</a></b> #include "blapi.h"
+<b><a name="45">   45</a></b> #include "hasht.h"
+<b><a name="46">   46</a></b> #include "secasn1.h"
+<b><a name="47">   47</a></b> #include "secder.h"
+<b><a name="48">   48</a></b> #include "lowpbe.h"
+<b><a name="49">   49</a></b> #include "secoid.h"
+<b><a name="50">   50</a></b> #include "alghmac.h"
+<b><a name="51">   51</a></b> #include "softoken.h"
+<b><a name="52">   52</a></b> #include "secerr.h"
+<b><a name="53">   53</a></b> 
+<b><a name="54">   54</a></b> /* template for PKCS 5 PBE Parameter.  This template has been expanded
+<b><a name="55">   55</a></b>  * based upon the additions in PKCS 12.  This should eventually be moved
+<b><a name="56">   56</a></b>  * if RSA updates PKCS 5.
+<b><a name="57">   57</a></b>  */
+<b><a name="58">   58</a></b> static const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#58">NSSPKCS5PBEParameterTemplate</a>[] =
+<b><a name="59">   59</a></b> {
+<b><a name="60">   60</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SEQUENCE">SEC_ASN1_SEQUENCE</a>, 
+<b><a name="61">   61</a></b>         0, NULL, sizeof(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a>) },
+<b><a name="62">   62</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OCTET_STRING">SEC_ASN1_OCTET_STRING</a>, 
+<b><a name="63">   63</a></b>         offsetof(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a>, salt) },
+<b><a name="64">   64</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INTEGER">SEC_ASN1_INTEGER</a>,
+<b><a name="65">   65</a></b>         offsetof(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a>, iteration) },
+<b><a name="66">   66</a></b>     { 0 }
+<b><a name="67">   67</a></b> };
+<b><a name="68">   68</a></b> 
+<b><a name="69">   69</a></b> static const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#69">NSSPKCS5PKCS12V2PBEParameterTemplate</a>[] =
+<b><a name="70">   70</a></b> {   
+<b><a name="71">   71</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SEQUENCE">SEC_ASN1_SEQUENCE</a>, 0, NULL, sizeof(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a>) },
+<b><a name="72">   72</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OCTET_STRING">SEC_ASN1_OCTET_STRING</a>, offsetof(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a>, salt) },
+<b><a name="73">   73</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INTEGER">SEC_ASN1_INTEGER</a>, offsetof(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a>, iteration) },
+<b><a name="74">   74</a></b>     { 0 }
+<b><a name="75">   75</a></b> };
+<b><a name="76">   76</a></b> 
+<b><a name="77">   77</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="78">   78</a></b> <a href="#78">nsspkcs5_HashBuf</a>(const SECHashObject *hashObj, unsigned char *dest,
+<b><a name="79">   79</a></b>                                          unsigned char *src, int len)
+<b><a name="80">   80</a></b> {
+<b><a name="81">   81</a></b>     void *ctx;
+<b><a name="82">   82</a></b>     unsigned int retLen;
+<b><a name="83">   83</a></b> 
+<b><a name="84">   84</a></b>     ctx = hashObj-&gt;create();
+<b><a name="85">   85</a></b>     if(ctx == NULL) {
+<b><a name="86">   86</a></b>         return SECFailure;
+<b><a name="87">   87</a></b>     }
+<b><a name="88">   88</a></b>     hashObj-&gt;begin(ctx);
+<b><a name="89">   89</a></b>     hashObj-&gt;update(ctx, src, len);
+<b><a name="90">   90</a></b>     hashObj-&gt;end(ctx, dest, &amp;retLen, hashObj-&gt;length);
+<b><a name="91">   91</a></b>     hashObj-&gt;destroy(ctx, PR_TRUE);
+<b><a name="92">   92</a></b>     return SECSuccess;
+<b><a name="93">   93</a></b> }
+<b><a name="94">   94</a></b> 
+<b><a name="95">   95</a></b> /* generate bits using any hash
+<b><a name="96">   96</a></b>  */
+<b><a name="97">   97</a></b> static <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="98">   98</a></b> <a href="#98">nsspkcs5_PBKDF1</a>(const SECHashObject *hashObj, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwd, 
+<b><a name="99">   99</a></b>                                                 int iter, PRBool faulty3DES) 
+<b><a name="100">  100</a></b> {
+<b><a name="101">  101</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *hash = NULL, *pre_hash = NULL;
+<b><a name="102">  102</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECFailure;
+<b><a name="103">  103</a></b> 
+<b><a name="104">  104</a></b>     if((salt == NULL) || (pwd == NULL) || (iter &lt; 0)) {
+<b><a name="105">  105</a></b>         return NULL;
+<b><a name="106">  106</a></b>     }
+<b><a name="107">  107</a></b>         
+<b><a name="108">  108</a></b>     hash = (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(sizeof(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>));
+<b><a name="109">  109</a></b>     pre_hash = (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(sizeof(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>));
+<b><a name="110">  110</a></b> 
+<b><a name="111">  111</a></b>     if((hash != NULL) &amp;&amp; (pre_hash != NULL)) {
+<b><a name="112">  112</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>, ph_len;
+<b><a name="113">  113</a></b> 
+<b><a name="114">  114</a></b>         ph_len = hashObj-&gt;length;
+<b><a name="115">  115</a></b>         if((salt-&gt;len + pwd-&gt;len) &gt; hashObj-&gt;length) {
+<b><a name="116">  116</a></b>             ph_len = salt-&gt;len + pwd-&gt;len;
+<b><a name="117">  117</a></b>         }
+<b><a name="118">  118</a></b> 
+<b><a name="119">  119</a></b>         rv = SECFailure;
+<b><a name="120">  120</a></b> 
+<b><a name="121">  121</a></b>         /* allocate buffers */
+<b><a name="122">  122</a></b>         hash-&gt;len = hashObj-&gt;length;
+<b><a name="123">  123</a></b>         hash-&gt;data = (unsigned char *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(hash-&gt;len);
+<b><a name="124">  124</a></b>         pre_hash-&gt;data = (unsigned char *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(ph_len);
+<b><a name="125">  125</a></b> 
+<b><a name="126">  126</a></b>         /* in pbeSHA1TripleDESCBC there was an allocation error that made
+<b><a name="127">  127</a></b>          * it into the caller.  We do not want to propagate those errors
+<b><a name="128">  128</a></b>          * further, so we are doing it correctly, but reading the old method.
+<b><a name="129">  129</a></b>          */
+<b><a name="130">  130</a></b>         if (faulty3DES) {
+<b><a name="131">  131</a></b>             pre_hash-&gt;len = ph_len;
+<b><a name="132">  132</a></b>         } else {
+<b><a name="133">  133</a></b>             pre_hash-&gt;len = salt-&gt;len + pwd-&gt;len;
+<b><a name="134">  134</a></b>         }
+<b><a name="135">  135</a></b> 
+<b><a name="136">  136</a></b>         /* preform hash */
+<b><a name="137">  137</a></b>         if ((hash-&gt;data != NULL) &amp;&amp; (pre_hash-&gt;data != NULL)) {
+<b><a name="138">  138</a></b>             rv = SECSuccess;
+<b><a name="139">  139</a></b>             /* check for 0 length password */
+<b><a name="140">  140</a></b>             if(pwd-&gt;len &gt; 0) {
+<b><a name="141">  141</a></b>                 <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(pre_hash-&gt;data, pwd-&gt;data, pwd-&gt;len);
+<b><a name="142">  142</a></b>             }
+<b><a name="143">  143</a></b>             if(salt-&gt;len &gt; 0) {
+<b><a name="144">  144</a></b>                 <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>((pre_hash-&gt;data+pwd-&gt;len), salt-&gt;data, salt-&gt;len);
+<b><a name="145">  145</a></b>             }
+<b><a name="146">  146</a></b>             for(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; ((<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ter) &amp;&amp; (rv == SECSuccess)); <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="147">  147</a></b>                 rv = <a href="../softoken/lowpbe.c.dep.html#nsspkcs5_HashBuf">nsspkcs5_HashBuf</a>(hashObj, hash-&gt;data, 
+<b><a name="148">  148</a></b>                                         pre_hash-&gt;data, pre_hash-&gt;len);
+<b><a name="149">  149</a></b>                 if(rv != SECFailure) {
+<b><a name="150">  150</a></b>                     pre_hash-&gt;len = hashObj-&gt;length;
+<b><a name="151">  151</a></b>                     <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(pre_hash-&gt;data, hash-&gt;data, hashObj-&gt;length);
+<b><a name="152">  152</a></b>                 }
+<b><a name="153">  153</a></b>             }
+<b><a name="154">  154</a></b>         }
+<b><a name="155">  155</a></b>     }
+<b><a name="156">  156</a></b> 
+<b><a name="157">  157</a></b>     if(pre_hash != NULL) {
+<b><a name="158">  158</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(pre_hash, PR_TRUE);
+<b><a name="159">  159</a></b>     }
+<b><a name="160">  160</a></b> 
+<b><a name="161">  161</a></b>     if((rv != SECSuccess) &amp;&amp; (hash != NULL)) {
+<b><a name="162">  162</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(hash, PR_TRUE);
+<b><a name="163">  163</a></b>         hash = NULL;
+<b><a name="164">  164</a></b>     }
+<b><a name="165">  165</a></b> 
+<b><a name="166">  166</a></b>     return hash;
+<b><a name="167">  167</a></b> }
+<b><a name="168">  168</a></b> 
+<b><a name="169">  169</a></b> /* this bit generation routine is described in PKCS 12 and the proposed
+<b><a name="170">  170</a></b>  * extensions to PKCS 5.  an initial hash is generated following the
+<b><a name="171">  171</a></b>  * instructions laid out in PKCS 5.  If the number of bits generated is
+<b><a name="172">  172</a></b>  * insufficient, then the method discussed in the proposed extensions to
+<b><a name="173">  173</a></b>  * PKCS 5 in PKCS 12 are used.  This extension makes use of the HMAC
+<b><a name="174">  174</a></b>  * function.  And the P_Hash function from the TLS standard.
+<b><a name="175">  175</a></b>  */
+<b><a name="176">  176</a></b> static <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="177">  177</a></b> <a href="#177">nsspkcs5_PFXPBE</a>(const SECHashObject *hashObj, <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe_param,
+<b><a name="178">  178</a></b>                                 <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *init_hash, unsigned int bytes_needed)
+<b><a name="179">  179</a></b> {
+<b><a name="180">  180</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *ret_bits = NULL;
+<b><a name="181">  181</a></b>     int hash_size = 0;
+<b><a name="182">  182</a></b>     uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="183">  183</a></b>     unsigned int hash_iter;
+<b><a name="184">  184</a></b>     unsigned int dig_len;
+<b><a name="185">  185</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECFailure;
+<b><a name="186">  186</a></b>     unsigned char *state = NULL;
+<b><a name="187">  187</a></b>     unsigned int state_len;
+<b><a name="188">  188</a></b>     <a href="../freebl/alghmac.h.dep.html#HMACContext">HMACContext</a> *cx = NULL;
+<b><a name="189">  189</a></b> 
+<b><a name="190">  190</a></b>     hash_size = hashObj-&gt;length;
+<b><a name="191">  191</a></b>     hash_iter = (bytes_needed + (unsigned int)hash_size - 1) / hash_size;
+<b><a name="192">  192</a></b> 
+<b><a name="193">  193</a></b>     /* allocate return buffer */
+<b><a name="194">  194</a></b>     ret_bits = (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>  *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(sizeof(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>));
+<b><a name="195">  195</a></b>     if(ret_bits == NULL)
+<b><a name="196">  196</a></b>         return NULL;
+<b><a name="197">  197</a></b>     ret_bits-&gt;data = (unsigned char *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>((hash_iter * hash_size) + 1);
+<b><a name="198">  198</a></b>     ret_bits-&gt;len = (hash_iter * hash_size);
+<b><a name="199">  199</a></b>     if(ret_bits-&gt;data == NULL) {
+<b><a name="200">  200</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(ret_bits);
+<b><a name="201">  201</a></b>         return NULL;
+<b><a name="202">  202</a></b>     }
+<b><a name="203">  203</a></b> 
+<b><a name="204">  204</a></b>     /* allocate intermediate hash buffer.  8 is for the 8 bytes of
+<b><a name="205">  205</a></b>      * data which are added based on iteration number 
+<b><a name="206">  206</a></b>      */
+<b><a name="207">  207</a></b> 
+<b><a name="208">  208</a></b>     if ((unsigned int)hash_size &gt; pbe_param-&gt;salt.len) {
+<b><a name="209">  209</a></b>         state_len = hash_size;
+<b><a name="210">  210</a></b>     } else {
+<b><a name="211">  211</a></b>         state_len = pbe_param-&gt;salt.len;
+<b><a name="212">  212</a></b>     }
+<b><a name="213">  213</a></b>     state = (unsigned char *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(state_len);
+<b><a name="214">  214</a></b>     if(state == NULL) {
+<b><a name="215">  215</a></b>         rv = SECFailure;
+<b><a name="216">  216</a></b>         goto loser;
+<b><a name="217">  217</a></b>     }
+<b><a name="218">  218</a></b>     if(pbe_param-&gt;salt.len &gt; 0) {
+<b><a name="219">  219</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(state, pbe_param-&gt;salt.data, pbe_param-&gt;salt.len);
+<b><a name="220">  220</a></b>     }
+<b><a name="221">  221</a></b> 
+<b><a name="222">  222</a></b>     cx = <a href="../freebl/alghmac.c.dep.html#HMAC_Create">HMAC_Create</a>(hashObj, init_hash-&gt;data, init_hash-&gt;len, PR_TRUE);
+<b><a name="223">  223</a></b>     if (cx == NULL) {
+<b><a name="224">  224</a></b>         rv = SECFailure;
+<b><a name="225">  225</a></b>         goto loser;
+<b><a name="226">  226</a></b>     }
+<b><a name="227">  227</a></b> 
+<b><a name="228">  228</a></b>     for(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; hash_<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ter; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) { 
+<b><a name="229">  229</a></b> 
+<b><a name="230">  230</a></b>         /* generate output bits */
+<b><a name="231">  231</a></b>         <a href="../freebl/alghmac.c.dep.html#HMAC_Begin">HMAC_Begin</a>(cx);
+<b><a name="232">  232</a></b>         <a href="../freebl/alghmac.c.dep.html#HMAC_Update">HMAC_Update</a>(cx, state, state_len);
+<b><a name="233">  233</a></b>         <a href="../freebl/alghmac.c.dep.html#HMAC_Update">HMAC_Update</a>(cx, pbe_param-&gt;salt.data, pbe_param-&gt;salt.len);
+<b><a name="234">  234</a></b>         rv = <a href="../freebl/alghmac.c.dep.html#HMAC_F<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>n<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>sh">HMAC_F<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>n<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>sh</a>(cx, ret_b<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ts-&gt;data + (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> * hash_s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ze),
+<b><a name="235">  235</a></b>                          &amp;dig_len, hash_size);
+<b><a name="236">  236</a></b>         if (rv != SECSuccess)
+<b><a name="237">  237</a></b>             goto loser;
+<b><a name="238">  238</a></b>         <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>((unsigned int)hash_size == dig_len);
+<b><a name="239">  239</a></b> 
+<b><a name="240">  240</a></b>         /* generate new state */
+<b><a name="241">  241</a></b>         <a href="../freebl/alghmac.c.dep.html#HMAC_Begin">HMAC_Begin</a>(cx);
+<b><a name="242">  242</a></b>         <a href="../freebl/alghmac.c.dep.html#HMAC_Update">HMAC_Update</a>(cx, state, state_len);
+<b><a name="243">  243</a></b>         rv = <a href="../freebl/alghmac.c.dep.html#HMAC_Finish">HMAC_Finish</a>(cx, state, &amp;state_len, state_len);
+<b><a name="244">  244</a></b>         if (rv != SECSuccess)
+<b><a name="245">  245</a></b>             goto loser;
+<b><a name="246">  246</a></b>         <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(state_len == dig_len);
+<b><a name="247">  247</a></b>     }
+<b><a name="248">  248</a></b> 
+<b><a name="249">  249</a></b> loser:
+<b><a name="250">  250</a></b>     if (state != NULL)
+<b><a name="251">  251</a></b>         <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(state, state_len);
+<b><a name="252">  252</a></b>     <a href="../freebl/alghmac.c.dep.html#HMAC_Destroy">HMAC_Destroy</a>(cx, PR_TRUE);
+<b><a name="253">  253</a></b> 
+<b><a name="254">  254</a></b>     if(rv != SECSuccess) {
+<b><a name="255">  255</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(ret_bits, PR_TRUE);
+<b><a name="256">  256</a></b>         ret_bits = NULL;
+<b><a name="257">  257</a></b>     }
+<b><a name="258">  258</a></b> 
+<b><a name="259">  259</a></b>     return ret_bits;
+<b><a name="260">  260</a></b> }
+<b><a name="261">  261</a></b> 
+<b><a name="262">  262</a></b> /* generate bits for the key and iv determination.  if enough bits
+<b><a name="263">  263</a></b>  * are not generated using PKCS 5, then we need to generate more bits
+<b><a name="264">  264</a></b>  * based on the extension proposed in PKCS 12
+<b><a name="265">  265</a></b>  */
+<b><a name="266">  266</a></b> static <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="267">  267</a></b> <a href="#267">nsspkcs5_PBKDF1Extended</a>(const SECHashObject *hashObj,
+<b><a name="268">  268</a></b>          <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe_param, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem, PRBool faulty3DES)
+<b><a name="269">  269</a></b> {
+<b><a name="270">  270</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * hash                 = NULL;
+<b><a name="271">  271</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * newHash                 = NULL;
+<b><a name="272">  272</a></b>     int       bytes_needed;
+<b><a name="273">  273</a></b>     int       bytes_available;
+<b><a name="274">  274</a></b>     
+<b><a name="275">  275</a></b>     bytes_needed = pbe_param-&gt;ivLen + pbe_param-&gt;keyLen;
+<b><a name="276">  276</a></b>     bytes_available = hashObj-&gt;length;
+<b><a name="277">  277</a></b>     
+<b><a name="278">  278</a></b>     hash = <a href="../softoken/lowpbe.c.dep.html#nsspkcs5_PBKDF1">nsspkcs5_PBKDF1</a>(hashObj, &amp;pbe_param-&gt;salt, pwitem, 
+<b><a name="279">  279</a></b>                                                 pbe_param-&gt;iter, faulty3DES);
+<b><a name="280">  280</a></b> 
+<b><a name="281">  281</a></b>     if(hash == NULL) {
+<b><a name="282">  282</a></b>         return NULL;
+<b><a name="283">  283</a></b>     }
+<b><a name="284">  284</a></b> 
+<b><a name="285">  285</a></b>     if(bytes_needed &lt;= bytes_available) {
+<b><a name="286">  286</a></b>         return hash;
+<b><a name="287">  287</a></b>     } 
+<b><a name="288">  288</a></b> 
+<b><a name="289">  289</a></b>     newHash = <a href="../softoken/lowpbe.c.dep.html#nsspkcs5_PFXPBE">nsspkcs5_PFXPBE</a>(hashObj, pbe_param, hash, bytes_needed);
+<b><a name="290">  290</a></b>     if (hash != newHash)
+<b><a name="291">  291</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(hash, PR_TRUE);
+<b><a name="292">  292</a></b>     return newHash;
+<b><a name="293">  293</a></b> }
+<b><a name="294">  294</a></b> 
+<b><a name="295">  295</a></b> #ifdef PBKDF2
+<b><a name="296">  296</a></b> 
+<b><a name="297">  297</a></b> /*
+<b><a name="298">  298</a></b>  * PBDKDF2 is PKCS #5 v2.0 it's currently not used by NSS
+<b><a name="299">  299</a></b>  */
+<b><a name="300">  300</a></b> /*
+<b><a name="301">  301</a></b>  * We This is safe because hLen for all our
+<b><a name="302">  302</a></b>  * HMAC algorithms are multiples of 4.
+<b><a name="303">  303</a></b>  */
+<b><a name="304">  304</a></b> static void
+<b><a name="305">  305</a></b> <a href="#305">xorbytes</a>(unsigned char *dest, unsigned char *src, int len)
+<b><a name="306">  306</a></b> {
+<b><a name="307">  307</a></b> #ifdef PARANOIA
+<b><a name="308">  308</a></b>     while (len--) {
+<b><a name="309">  309</a></b>             *dest = *dest ^ *src;
+<b><a name="310">  310</a></b>         dest++;
+<b><a name="311">  311</a></b>         src++;
+<b><a name="312">  312</a></b>     }
+<b><a name="313">  313</a></b> #else
+<b><a name="314">  314</a></b>     PRUInt32 dest32 = (PRUInt32 *)dest;
+<b><a name="315">  315</a></b>     PRUInt32 src32 = (PRUInt32 *)dest;
+<b><a name="316">  316</a></b>     while (len -= sizeof(PRUInt32)) {
+<b><a name="317">  317</a></b>             *dest32 = *dest32 ^ *src32;
+<b><a name="318">  318</a></b>         dest++;
+<b><a name="319">  319</a></b>         src++;
+<b><a name="320">  320</a></b>     }
+<b><a name="321">  321</a></b> #endif
+<b><a name="322">  322</a></b> }
+<b><a name="323">  323</a></b> 
+<b><a name="324">  324</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="325">  325</a></b> <a href="#325">nsspkcs5_PBKFD2_F</a>(const SECHashObject *hashobj, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt,
+<b><a name="326">  326</a></b>                         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>terat<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ons, uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>, uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned char *T)
+<b><a name="327">  327</a></b> {
+<b><a name="328">  328</a></b>     int j;
+<b><a name="329">  329</a></b>     <a href="../freebl/alghmac.h.dep.html#HMACContext">HMACContext</a> *cx = NULL;
+<b><a name="330">  330</a></b>     unsigned int hLen = hashObject-&gt;length
+<b><a name="331">  331</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECFailure;
+<b><a name="332">  332</a></b>     unsigned char *last = NULL;
+<b><a name="333">  333</a></b>     int lastLength = salt-&gt;len + 4;
+<b><a name="334">  334</a></b> 
+<b><a name="335">  335</a></b>     cx=<a href="../freebl/alghmac.c.dep.html#HMAC_Create">HMAC_Create</a>(hashobj,pwitem-&gt;data,pwitem-&gt;len,PR_TRUE);
+<b><a name="336">  336</a></b>     if (cx == NULL) {
+<b><a name="337">  337</a></b>         goto loser;
+<b><a name="338">  338</a></b>     }
+<b><a name="339">  339</a></b>     <a href="../util/secport.h.dep.html#PORT_Memset">PORT_Memset</a>(T,0,hLen);
+<b><a name="340">  340</a></b>     realLastLength= MAX(lastLength,hLen);
+<b><a name="341">  341</a></b>     last = <a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(realLastLength);
+<b><a name="342">  342</a></b>     if (last == NULL) {
+<b><a name="343">  343</a></b>         goto loser;
+<b><a name="344">  344</a></b>     }
+<b><a name="345">  345</a></b>     <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(last,salt.data,salt.len);
+<b><a name="346">  346</a></b>     last[salt-&gt;len  ] = (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt;&gt; 24) &amp; 0xff;
+<b><a name="347">  347</a></b>     last[salt-&gt;len+1] = (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt;&gt; 16) &amp; 0xff;
+<b><a name="348">  348</a></b>     last[salt-&gt;len+2] = (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt;&gt; 8) &amp; 0xff;
+<b><a name="349">  349</a></b>     last[salt-&gt;len+3] =    <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>  &amp; 0xff;
+<b><a name="350">  350</a></b> 
+<b><a name="351">  351</a></b>     /* NOTE: we need at least one iteration to return success! */
+<b><a name="352">  352</a></b>     for (j=0; j &lt; interations; j++) {
+<b><a name="353">  353</a></b>         rv =<a href="../freebl/alghmac.c.dep.html#HMAC_Begin">HMAC_Begin</a>(cx);
+<b><a name="354">  354</a></b>         if (rv !=SECSuccess) {
+<b><a name="355">  355</a></b>            break;
+<b><a name="356">  356</a></b>         }
+<b><a name="357">  357</a></b>         <a href="../freebl/alghmac.c.dep.html#HMAC_Update">HMAC_Update</a>(cx,last,lastLength);
+<b><a name="358">  358</a></b>         rv =<a href="../freebl/alghmac.c.dep.html#HMAC_Finish">HMAC_Finish</a>(cx,last,&amp;lastLength,hLen);
+<b><a name="359">  359</a></b>         if (rv !=SECSuccess) {
+<b><a name="360">  360</a></b>            break;
+<b><a name="361">  361</a></b>         }
+<b><a name="362">  362</a></b>         do_xor(T,last,hLen);
+<b><a name="363">  363</a></b>     }
+<b><a name="364">  364</a></b> loser:
+<b><a name="365">  365</a></b>     if (cx) {
+<b><a name="366">  366</a></b>         HMAC_DestroyContext(cx, PR_TRUE);
+<b><a name="367">  367</a></b>     }
+<b><a name="368">  368</a></b>     if (last) {
+<b><a name="369">  369</a></b>         <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(last,reaLastLength);
+<b><a name="370">  370</a></b>     }
+<b><a name="371">  371</a></b>     return rv;
+<b><a name="372">  372</a></b> }
+<b><a name="373">  373</a></b> 
+<b><a name="374">  374</a></b> static <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="375">  375</a></b> <a href="#375">nsspkcs5_PBKFD2</a>(const SECHashObject *hashObj, <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe_param, 
+<b><a name="376">  376</a></b>                                                         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem)
+<b><a name="377">  377</a></b> {
+<b><a name="378">  378</a></b>     unsigned int dkLen = bytesNeeded;
+<b><a name="379">  379</a></b>     unsigned int hLen = hashObject-&gt;length
+<b><a name="380">  380</a></b>     unsigned int l = (dkLen+hLen-1) / hLen;
+<b><a name="381">  381</a></b>     unsigned char *rp;
+<b><a name="382">  382</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *result;
+<b><a name="383">  383</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt = pbe_param-&gt;salt;
+<b><a name="384">  384</a></b>     int interations = pbe_param-&gt;iter;
+<b><a name="385">  385</a></b>     int bytesNeeded = pbe_param-&gt;keyLen;
+<b><a name="386">  386</a></b> 
+<b><a name="387">  387</a></b>     result = <a href="../util/secitem.c.dep.html#SECITEM_AllocItem">SECITEM_AllocItem</a>(NULL,NULL,l*hLen);
+<b><a name="388">  388</a></b>     if (result == NULL) {
+<b><a name="389">  389</a></b>         return NULL;
+<b><a name="390">  390</a></b>     }
+<b><a name="391">  391</a></b> 
+<b><a name="392">  392</a></b>     T = <a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(hLen);
+<b><a name="393">  393</a></b>     if (T == NULL) {
+<b><a name="394">  394</a></b>         goto loser;
+<b><a name="395">  395</a></b>     }
+<b><a name="396">  396</a></b> 
+<b><a name="397">  397</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0,rp=results-&gt;data; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; l ; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++, rp +=hLen) {
+<b><a name="398">  398</a></b>         rv = <a href="../softoken/lowpbe.c.dep.html#nsspkcs5_PBKFD2_F">nsspkcs5_PBKFD2_F</a>(hashobj,pw<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>tem,salt,<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>terat<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ons,<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>,T);
+<b><a name="399">  399</a></b>         if (rv != SECSuccess) {
+<b><a name="400">  400</a></b>             break;
+<b><a name="401">  401</a></b>         }
+<b><a name="402">  402</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(rp,T,hLen);
+<b><a name="403">  403</a></b>     }
+<b><a name="404">  404</a></b> 
+<b><a name="405">  405</a></b> loser:
+<b><a name="406">  406</a></b>     if (T) {
+<b><a name="407">  407</a></b>         <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(T);
+<b><a name="408">  408</a></b>     }
+<b><a name="409">  409</a></b>     if (rv != SECSuccess) {
+<b><a name="410">  410</a></b>         SECITEM_FreeITEM(result,PR_TRUE);
+<b><a name="411">  411</a></b>         result = NULL;
+<b><a name="412">  412</a></b>     } else {
+<b><a name="413">  413</a></b>         result-&gt;len = dkLen;
+<b><a name="414">  414</a></b>     }
+<b><a name="415">  415</a></b>         
+<b><a name="416">  416</a></b>     return result;
+<b><a name="417">  417</a></b> }
+<b><a name="418">  418</a></b> #endif
+<b><a name="419">  419</a></b> 
+<b><a name="420">  420</a></b> #define <a href="#420">HMAC_BUFFER</a> 64
+<b><a name="421">  421</a></b> #define <a href="#421">NSSPBE_ROUNDUP</a>(x,y) ((((x)+((y)-1))/(y))*(y))
+<b><a name="422">  422</a></b> #define <a href="#422">NSSPBE_MIN</a>(x,y) ((x) &lt; (y) ? (x) : (y))
+<b><a name="423">  423</a></b> /*
+<b><a name="424">  424</a></b>  * This is the extended PBE function defined by the final PKCS #12 spec.
+<b><a name="425">  425</a></b>  */
+<b><a name="426">  426</a></b> static <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="427">  427</a></b> <a href="#427">nsspkcs5_PKCS12PBE</a>(const SECHashObject *hashObject, 
+<b><a name="428">  428</a></b>                    <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe_param, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem, 
+<b><a name="429">  429</a></b>                    <a href="../softoken/lowpbe.h.dep.html#PBEBitGenID">PBEBitGenID</a> bitGenPurpose, unsigned int bytesNeeded)
+<b><a name="430">  430</a></b> {
+<b><a name="431">  431</a></b>     PRArenaPool *arena = NULL;
+<b><a name="432">  432</a></b>     unsigned int SLen,PLen;
+<b><a name="433">  433</a></b>     unsigned int hashLength = hashObject-&gt;length;
+<b><a name="434">  434</a></b>     unsigned char *<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, *<a href="../freebl/mksp.c.dep.html#P">P</a>;
+<b><a name="435">  435</a></b>     SEC<a href="../freebl/md5.c.dep.html#I">I</a>tem *<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a> = NULL, <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, D, <a href="../freebl/md5.c.dep.html#I">I</a>;
+<b><a name="436">  436</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt = &amp;pbe_param-&gt;salt;
+<b><a name="437">  437</a></b>     uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt c,<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0;
+<b><a name="438">  438</a></b>     unsigned int hashLen;
+<b><a name="439">  439</a></b>     int iter;
+<b><a name="440">  440</a></b>     unsigned char *iterBuf;
+<b><a name="441">  441</a></b>     void *hash = NULL;
+<b><a name="442">  442</a></b> 
+<b><a name="443">  443</a></b>     arena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../util/secdert.h.dep.html#DER_DEFAULT_CHUNKSIZE">DER_DEFAULT_CHUNKSIZE</a>);
+<b><a name="444">  444</a></b>     if(!arena) {
+<b><a name="445">  445</a></b>         return NULL;
+<b><a name="446">  446</a></b>     }
+<b><a name="447">  447</a></b> 
+<b><a name="448">  448</a></b>     /* how many hash object lengths are needed */
+<b><a name="449">  449</a></b>     c = (bytesNeeded + (hashLength-1))/hashLength;
+<b><a name="450">  450</a></b> 
+<b><a name="451">  451</a></b>     /* initialize our buffers */
+<b><a name="452">  452</a></b>     D.len = <a href="../softoken/lowpbe.c.dep.html#HMAC_BUFFER">HMAC_BUFFER</a>;
+<b><a name="453">  453</a></b>     /* B and D are the same length, use one alloc go get both */
+<b><a name="454">  454</a></b>     D.data = (unsigned char*)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, D.len*2);
+<b><a name="455">  455</a></b>     <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>.len = D.len;
+<b><a name="456">  456</a></b>     <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>.data = D.data + D.len;
+<b><a name="457">  457</a></b> 
+<b><a name="458">  458</a></b>     /* if all goes well, A will be returned, so don't use our temp arena */
+<b><a name="459">  459</a></b>     <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a> = SECITEM_<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>llocItem(NULL,NULL,c*hashLength);
+<b><a name="460">  460</a></b>     if (<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a> == NULL) {
+<b><a name="461">  461</a></b>         goto loser;
+<b><a name="462">  462</a></b>     }
+<b><a name="463">  463</a></b>     
+<b><a name="464">  464</a></b>     SLen = <a href="../softoken/lowpbe.c.dep.html#NSSPBE_ROUNDUP">NSSPBE_ROUNDUP</a>(salt-&gt;len,<a href="../softoken/lowpbe.c.dep.html#HMAC_BUFFER">HMAC_BUFFER</a>);
+<b><a name="465">  465</a></b>     PLen = <a href="../softoken/lowpbe.c.dep.html#NSSPBE_ROUNDUP">NSSPBE_ROUNDUP</a>(pwitem-&gt;len,<a href="../softoken/lowpbe.c.dep.html#HMAC_BUFFER">HMAC_BUFFER</a>);
+<b><a name="466">  466</a></b>     <a href="../freebl/md5.c.dep.html#I">I</a>.len = SLen+PLen;
+<b><a name="467">  467</a></b>     <a href="../freebl/md5.c.dep.html#I">I</a>.data = (unsigned char*)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, <a href="../freebl/md5.c.dep.html#I">I</a>.len);
+<b><a name="468">  468</a></b>     if (<a href="../freebl/md5.c.dep.html#I">I</a>.data == NULL) {
+<b><a name="469">  469</a></b>         goto loser;
+<b><a name="470">  470</a></b>     }
+<b><a name="471">  471</a></b> 
+<b><a name="472">  472</a></b>     /* S &amp; P are only used to initialize I */
+<b><a name="473">  473</a></b>     <a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a> = <a href="../freebl/md5.c.dep.html#I">I</a>.data;
+<b><a name="474">  474</a></b>     <a href="../freebl/mksp.c.dep.html#P">P</a> = <a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a> + <a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>Len;
+<b><a name="475">  475</a></b> 
+<b><a name="476">  476</a></b>     <a href="../util/secport.h.dep.html#PORT_Memset">PORT_Memset</a>(D.data, (char)bitGenPurpose, D.len);
+<b><a name="477">  477</a></b>     if (SLen) {
+<b><a name="478">  478</a></b>         for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; SLen; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> += salt-&gt;len) {
+<b><a name="479">  479</a></b>             <a href="../ut<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>l/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>+<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>, salt-&gt;data, <a href="../softoken/lowpbe.c.dep.html#N<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a><a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>PBE_MIN">N<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a><a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>PBE_MIN</a>(<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>Len-<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>,salt-&gt;len));
+<b><a name="480">  480</a></b>         }
+<b><a name="481">  481</a></b>     } 
+<b><a name="482">  482</a></b>     if (PLen) {
+<b><a name="483">  483</a></b>         for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; PLen; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> += pw<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>tem-&gt;len) {
+<b><a name="484">  484</a></b>             <a href="../freebl/mksp.c.dep.html#P">P</a>ORT_Memcpy(<a href="../freebl/mksp.c.dep.html#P">P</a>+<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>, pw<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>tem-&gt;data, <a href="../softoken/lowpbe.c.dep.html#NSS<a href="../freebl/mksp.c.dep.html#P">P</a>BE_MIN">NSS<a href="../freebl/mksp.c.dep.html#P">P</a>BE_MIN</a>(<a href="../freebl/mksp.c.dep.html#P">P</a>Len-<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>,pw<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>tem-&gt;len));
+<b><a name="485">  485</a></b>         }
+<b><a name="486">  486</a></b>     } 
+<b><a name="487">  487</a></b> 
+<b><a name="488">  488</a></b>     iterBuf = (unsigned char*)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena,hashLength);
+<b><a name="489">  489</a></b>     if (iterBuf == NULL) {
+<b><a name="490">  490</a></b>         goto loser;
+<b><a name="491">  491</a></b>     }
+<b><a name="492">  492</a></b> 
+<b><a name="493">  493</a></b>     hash = hashObject-&gt;create();
+<b><a name="494">  494</a></b>     if(!hash) {
+<b><a name="495">  495</a></b>         goto loser;
+<b><a name="496">  496</a></b>     }
+<b><a name="497">  497</a></b>     /* calculate the PBE now */
+<b><a name="498">  498</a></b>     for(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; c; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="499">  499</a></b>         int Bidx;        /* must be signed or the for loop won't terminate */
+<b><a name="500">  500</a></b>         unsigned int k, j;
+<b><a name="501">  501</a></b>         uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned char *<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a><a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>-&gt;data+<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>*hashLength;
+<b><a name="502">  502</a></b> 
+<b><a name="503">  503</a></b> 
+<b><a name="504">  504</a></b>         for(iter = 0; iter &lt; pbe_param-&gt;iter; iter++) {
+<b><a name="505">  505</a></b>             hashObject-&gt;begin(hash);
+<b><a name="506">  506</a></b> 
+<b><a name="507">  507</a></b>             if (iter) {
+<b><a name="508">  508</a></b>                 hashObject-&gt;update(hash, iterBuf, hashLen);
+<b><a name="509">  509</a></b>             } else {
+<b><a name="510">  510</a></b>                 hashObject-&gt;update(hash, D.data, D.len);
+<b><a name="511">  511</a></b>                 hashObject-&gt;update(hash, <a href="../freebl/md5.c.dep.html#I">I</a>.data, <a href="../freebl/md5.c.dep.html#I">I</a>.len); 
+<b><a name="512">  512</a></b>             }
+<b><a name="513">  513</a></b> 
+<b><a name="514">  514</a></b>             hashObject-&gt;end(hash, iterBuf, &amp;hashLen, hashObject-&gt;length);
+<b><a name="515">  515</a></b>             if(hashLen != hashObject-&gt;length) {
+<b><a name="516">  516</a></b>                 break;
+<b><a name="517">  517</a></b>             }
+<b><a name="518">  518</a></b>         }
+<b><a name="519">  519</a></b> 
+<b><a name="520">  520</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(Ai, iterBuf, hashLength);
+<b><a name="521">  521</a></b>         for (<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>idx = 0; <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>idx &lt; <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>.len; <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>idx += hashLength) {
+<b><a name="522">  522</a></b>             <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>.data+<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>idx,iter<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>uf,NSSP<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>E_MIN(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>.len-<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>idx,hashLength));
+<b><a name="523">  523</a></b>         }
+<b><a name="524">  524</a></b> 
+<b><a name="525">  525</a></b>         k = <a href="../freebl/md5.c.dep.html#I">I</a>.len/<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>.len;
+<b><a name="526">  526</a></b>         for(j = 0; j &lt; k; j++) {
+<b><a name="527">  527</a></b>             unsigned int q, carryBit;
+<b><a name="528">  528</a></b>             unsigned char *<a href="../freebl/md5.c.dep.html#I">I</a>j = <a href="../freebl/md5.c.dep.html#I">I</a>.data + j*<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>.len;
+<b><a name="529">  529</a></b> 
+<b><a name="530">  530</a></b>             /* (Ij = Ij+B+1) */
+<b><a name="531">  531</a></b>             for (<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>idx = (<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>.len-1), q=1, carry<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>it=0; <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>idx &gt;= 0; <a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>idx--,q=0) {
+<b><a name="532">  532</a></b>                 q += (unsigned int)Ij[Bidx];
+<b><a name="533">  533</a></b>                 q += (unsigned int)<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>.data[<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>idx];
+<b><a name="534">  534</a></b>                 q += carryBit;
+<b><a name="535">  535</a></b> 
+<b><a name="536">  536</a></b>                 carryBit = (q &gt; 0xff);
+<b><a name="537">  537</a></b>                 Ij[Bidx] = (unsigned char)(q &amp; 0xff);
+<b><a name="538">  538</a></b>             }
+<b><a name="539">  539</a></b>         }
+<b><a name="540">  540</a></b>     }
+<b><a name="541">  541</a></b> loser:
+<b><a name="542">  542</a></b>     if (hash) {
+<b><a name="543">  543</a></b>             hashObject-&gt;destroy(hash, PR_TRUE);
+<b><a name="544">  544</a></b>     }
+<b><a name="545">  545</a></b>     if(arena) {
+<b><a name="546">  546</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(arena, PR_TRUE);
+<b><a name="547">  547</a></b>     }
+<b><a name="548">  548</a></b> 
+<b><a name="549">  549</a></b>     if (<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>) {
+<b><a name="550">  550</a></b>         /* if i != c, then we didn't complete the loop above and must of failed
+<b><a name="551">  551</a></b>          * somwhere along the way */
+<b><a name="552">  552</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> != c) {
+<b><a name="553">  553</a></b>             <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(<a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>,PR_TRUE);
+<b><a name="554">  554</a></b>             <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a> = NULL;
+<b><a name="555">  555</a></b>         } else {
+<b><a name="556">  556</a></b>                 <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>-&gt;len = bytesNeeded;
+<b><a name="557">  557</a></b>         }
+<b><a name="558">  558</a></b>     }
+<b><a name="559">  559</a></b>     
+<b><a name="560">  560</a></b>     return <a href="../freebl/aeskeywrap.c.dep.html#A">A</a></a></a></a>;
+<b><a name="561">  561</a></b> }
+<b><a name="562">  562</a></b> 
+<b><a name="563">  563</a></b> /*
+<b><a name="564">  564</a></b>  * generate key as per PKCS 5
+<b><a name="565">  565</a></b>  */
+<b><a name="566">  566</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="567">  567</a></b> <a href="#567">nsspkcs5_ComputeKeyAndIV</a>(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe_param, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem,
+<b><a name="568">  568</a></b>                       <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *iv, PRBool faulty3DES)
+<b><a name="569">  569</a></b> {
+<b><a name="570">  570</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *hash = NULL, *key = NULL;
+<b><a name="571">  571</a></b>     const SECHashObject *hashObj;
+<b><a name="572">  572</a></b>     PRBool getIV = PR_FALSE;
+<b><a name="573">  573</a></b> 
+<b><a name="574">  574</a></b>     if((pbe_param == NULL) || (pwitem == NULL)) {
+<b><a name="575">  575</a></b>         return NULL;
+<b><a name="576">  576</a></b>     }
+<b><a name="577">  577</a></b> 
+<b><a name="578">  578</a></b>     key = <a href="../util/secitem.c.dep.html#SECITEM_AllocItem">SECITEM_AllocItem</a>(NULL,NULL,pbe_param-&gt;keyLen);
+<b><a name="579">  579</a></b>     if (key == NULL) {
+<b><a name="580">  580</a></b>         return NULL;
+<b><a name="581">  581</a></b>     }
+<b><a name="582">  582</a></b> 
+<b><a name="583">  583</a></b>     if ((pbe_param-&gt;ivLen) &amp;&amp; (iv-&gt;data == NULL)) {
+<b><a name="584">  584</a></b>         getIV = PR_TRUE;
+<b><a name="585">  585</a></b>             iv-&gt;data = (unsigned char *)<a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(pbe_param-&gt;ivLen);
+<b><a name="586">  586</a></b>             if (iv-&gt;data == NULL) {
+<b><a name="587">  587</a></b>             goto loser;
+<b><a name="588">  588</a></b>         }
+<b><a name="589">  589</a></b>         iv-&gt;len = pbe_param-&gt;ivLen;
+<b><a name="590">  590</a></b>     }
+<b><a name="591">  591</a></b> 
+<b><a name="592">  592</a></b>     hashObj = <a href="../freebl/rawhash.c.dep.html#HASH_GetRawHashObject">HASH_GetRawHashObject</a>(pbe_param-&gt;hashType);
+<b><a name="593">  593</a></b>     switch (pbe_param-&gt;pbeType) {
+<b><a name="594">  594</a></b>     case NSSPKCS5_PBKDF1:
+<b><a name="595">  595</a></b>         hash = <a href="../softoken/lowpbe.c.dep.html#nsspkcs5_PBKDF1Extended">nsspkcs5_PBKDF1Extended</a>(hashObj,pbe_param,pwitem,faulty3DES);
+<b><a name="596">  596</a></b>         if (hash == NULL) {
+<b><a name="597">  597</a></b>             goto loser;
+<b><a name="598">  598</a></b>         }
+<b><a name="599">  599</a></b>         <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(hash-&gt;len &gt;= key-&gt;len+iv-&gt;len);
+<b><a name="600">  600</a></b>         if (getIV) {
+<b><a name="601">  601</a></b>             <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(iv-&gt;data, hash-&gt;data+(hash-&gt;len - iv-&gt;len),iv-&gt;len);
+<b><a name="602">  602</a></b>         }
+<b><a name="603">  603</a></b>             break;
+<b><a name="604">  604</a></b> #ifdef PBKDF2
+<b><a name="605">  605</a></b>     case NSSPKCS5_PBKDF2:
+<b><a name="606">  606</a></b>         hash = nsspkcs5_PBKDF2(hashObj,pbe_param,pwitem);
+<b><a name="607">  607</a></b>         <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(!getIV);
+<b><a name="608">  608</a></b>             break;
+<b><a name="609">  609</a></b> #endif
+<b><a name="610">  610</a></b>     case NSSPKCS5_PKCS12_V2:
+<b><a name="611">  611</a></b>         if (getIV) {
+<b><a name="612">  612</a></b>             hash = <a href="../softoken/lowpbe.c.dep.html#nsspkcs5_PKCS12PBE">nsspkcs5_PKCS12PBE</a>(hashObj,pbe_param,pwitem,
+<b><a name="613">  613</a></b>                                                 pbeBitGenCipherIV,iv-&gt;len);
+<b><a name="614">  614</a></b>             if (hash == NULL) {
+<b><a name="615">  615</a></b>                 goto loser;
+<b><a name="616">  616</a></b>             }
+<b><a name="617">  617</a></b>             <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(iv-&gt;data,hash-&gt;data,iv-&gt;len);
+<b><a name="618">  618</a></b>             <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(hash,PR_TRUE);
+<b><a name="619">  619</a></b>             hash = NULL;
+<b><a name="620">  620</a></b>         }
+<b><a name="621">  621</a></b>         hash = <a href="../softoken/lowpbe.c.dep.html#nsspkcs5_PKCS12PBE">nsspkcs5_PKCS12PBE</a>(hashObj,pbe_param,pwitem,
+<b><a name="622">  622</a></b>                                                 pbe_param-&gt;keyID,key-&gt;len);
+<b><a name="623">  623</a></b>     default:
+<b><a name="624">  624</a></b>         break;
+<b><a name="625">  625</a></b>     }
+<b><a name="626">  626</a></b> 
+<b><a name="627">  627</a></b>     if (hash == NULL) {
+<b><a name="628">  628</a></b>         goto loser;
+<b><a name="629">  629</a></b>     }
+<b><a name="630">  630</a></b> 
+<b><a name="631">  631</a></b>     if (pbe_param-&gt;is2KeyDES) {
+<b><a name="632">  632</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(key-&gt;data, hash-&gt;data, (key-&gt;len * 2) / 3);
+<b><a name="633">  633</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(&amp;(key-&gt;data[(key-&gt;len  * 2) / 3]), key-&gt;data,
+<b><a name="634">  634</a></b>                     key-&gt;len / 3);
+<b><a name="635">  635</a></b>     } else {
+<b><a name="636">  636</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(key-&gt;data, hash-&gt;data, key-&gt;len);
+<b><a name="637">  637</a></b>     }
+<b><a name="638">  638</a></b> 
+<b><a name="639">  639</a></b>     <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(hash, PR_TRUE);
+<b><a name="640">  640</a></b>     return key;
+<b><a name="641">  641</a></b> 
+<b><a name="642">  642</a></b> loser:
+<b><a name="643">  643</a></b>     if (getIV &amp;&amp; iv-&gt;data) {
+<b><a name="644">  644</a></b>         <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(iv-&gt;data,iv-&gt;len);
+<b><a name="645">  645</a></b>         iv-&gt;data = NULL;
+<b><a name="646">  646</a></b>     }
+<b><a name="647">  647</a></b> 
+<b><a name="648">  648</a></b>     <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(key, PR_TRUE);
+<b><a name="649">  649</a></b>     return NULL;
+<b><a name="650">  650</a></b> }
+<b><a name="651">  651</a></b> 
+<b><a name="652">  652</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="653">  653</a></b> <a href="#653">nsspkcs5_FillInParam</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm, <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe_param)
+<b><a name="654">  654</a></b> {
+<b><a name="655">  655</a></b>     PRBool skipType = PR_FALSE;
+<b><a name="656">  656</a></b> 
+<b><a name="657">  657</a></b>     pbe_param-&gt;keyLen = 5;
+<b><a name="658">  658</a></b>     pbe_param-&gt;ivLen = 8;
+<b><a name="659">  659</a></b>     pbe_param-&gt;hashType = HASH_AlgSHA1;
+<b><a name="660">  660</a></b>     pbe_param-&gt;pbeType = NSSPKCS5_PBKDF1;
+<b><a name="661">  661</a></b>     pbe_param-&gt;encAlg = SEC_OID_RC2_CBC;
+<b><a name="662">  662</a></b>     pbe_param-&gt;is2KeyDES = PR_FALSE;
+<b><a name="663">  663</a></b>     switch(algorithm) {
+<b><a name="664">  664</a></b>     /* DES3 Algorithms */
+<b><a name="665">  665</a></b>     case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_2KEY_TRIPLE_DES_CBC:
+<b><a name="666">  666</a></b>         pbe_param-&gt;is2KeyDES = PR_TRUE;
+<b><a name="667">  667</a></b>         /* fall through */
+<b><a name="668">  668</a></b>     case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_3KEY_TRIPLE_DES_CBC:
+<b><a name="669">  669</a></b>         pbe_param-&gt;pbeType = NSSPKCS5_PKCS12_V2;
+<b><a name="670">  670</a></b>         /* fall through */
+<b><a name="671">  671</a></b>     case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_TRIPLE_DES_CBC:
+<b><a name="672">  672</a></b>         pbe_param-&gt;keyLen = 24;
+<b><a name="673">  673</a></b>         pbe_param-&gt;encAlg = SEC_OID_DES_EDE3_CBC;
+<b><a name="674">  674</a></b>         break;
+<b><a name="675">  675</a></b> 
+<b><a name="676">  676</a></b>     /* DES Algorithms */
+<b><a name="677">  677</a></b>     case SEC_OID_PKCS5_PBE_WITH_MD2_AND_DES_CBC:
+<b><a name="678">  678</a></b>             pbe_param-&gt;hashType = HASH_AlgMD2;
+<b><a name="679">  679</a></b>         goto finish_des;
+<b><a name="680">  680</a></b>     case SEC_OID_PKCS5_PBE_WITH_MD5_AND_DES_CBC:
+<b><a name="681">  681</a></b>             pbe_param-&gt;hashType = HASH_AlgMD5;
+<b><a name="682">  682</a></b>         /* fall through */
+<b><a name="683">  683</a></b>     case SEC_OID_PKCS5_PBE_WITH_SHA1_AND_DES_CBC:
+<b><a name="684">  684</a></b> finish_des:
+<b><a name="685">  685</a></b>         pbe_param-&gt;keyLen = 8;
+<b><a name="686">  686</a></b>         pbe_param-&gt;encAlg =  SEC_OID_DES_CBC;
+<b><a name="687">  687</a></b>         break;
+<b><a name="688">  688</a></b> 
+<b><a name="689">  689</a></b>     /* RC2 Algorithms */
+<b><a name="690">  690</a></b>     case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_128_BIT_RC2_CBC:
+<b><a name="691">  691</a></b>         pbe_param-&gt;keyLen = 16;
+<b><a name="692">  692</a></b>         /* fall through */
+<b><a name="693">  693</a></b>     case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_40_BIT_RC2_CBC:
+<b><a name="694">  694</a></b>         pbe_param-&gt;pbeType = NSSPKCS5_PKCS12_V2;
+<b><a name="695">  695</a></b>         break;
+<b><a name="696">  696</a></b>     case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_128_BIT_RC2_CBC:
+<b><a name="697">  697</a></b>         pbe_param-&gt;keyLen = 16;
+<b><a name="698">  698</a></b>         /* fall through */
+<b><a name="699">  699</a></b>     case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_40_BIT_RC2_CBC:
+<b><a name="700">  700</a></b>         break;
+<b><a name="701">  701</a></b> 
+<b><a name="702">  702</a></b>     /* RC4 algorithms */
+<b><a name="703">  703</a></b>     case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_128_BIT_RC4:
+<b><a name="704">  704</a></b>         skipType = PR_TRUE;
+<b><a name="705">  705</a></b>         /* fall through */
+<b><a name="706">  706</a></b>     case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_128_BIT_RC4:
+<b><a name="707">  707</a></b>         pbe_param-&gt;keyLen = 16;
+<b><a name="708">  708</a></b>         /* fall through */
+<b><a name="709">  709</a></b>     case SEC_OID_PKCS12_V2_PBE_WITH_SHA1_AND_40_BIT_RC4:
+<b><a name="710">  710</a></b>         if (!skipType) {
+<b><a name="711">  711</a></b>                 pbe_param-&gt;pbeType = NSSPKCS5_PKCS12_V2;
+<b><a name="712">  712</a></b>         }
+<b><a name="713">  713</a></b>         /* fall through */
+<b><a name="714">  714</a></b>     case SEC_OID_PKCS12_PBE_WITH_SHA1_AND_40_BIT_RC4:
+<b><a name="715">  715</a></b>         pbe_param-&gt;ivLen = 0;
+<b><a name="716">  716</a></b>         pbe_param-&gt;encAlg =  SEC_OID_RC4;
+<b><a name="717">  717</a></b>         break;
+<b><a name="718">  718</a></b>     default:
+<b><a name="719">  719</a></b>         return SECFailure;
+<b><a name="720">  720</a></b>     }
+<b><a name="721">  721</a></b> 
+<b><a name="722">  722</a></b>     return SECSuccess;
+<b><a name="723">  723</a></b> }
+<b><a name="724">  724</a></b> 
+<b><a name="725">  725</a></b> /* decode the algid and generate a PKCS 5 parameter from it
+<b><a name="726">  726</a></b>  */
+<b><a name="727">  727</a></b> <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *
+<b><a name="728">  728</a></b> <a href="#728">nsspkcs5_NewParam</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> alg, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt, int iterator)
+<b><a name="729">  729</a></b> {
+<b><a name="730">  730</a></b>     PRArenaPool *arena = NULL;
+<b><a name="731">  731</a></b>     <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe_param = NULL;
+<b><a name="732">  732</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECFailure;
+<b><a name="733">  733</a></b> 
+<b><a name="734">  734</a></b>     arena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../util/secasn1t.h.dep.html#SEC_ASN1_DEFAULT_ARENA_SIZE">SEC_ASN1_DEFAULT_ARENA_SIZE</a>);
+<b><a name="735">  735</a></b>     if (arena == NULL)
+<b><a name="736">  736</a></b>         return NULL;
+<b><a name="737">  737</a></b> 
+<b><a name="738">  738</a></b>     /* allocate memory for the parameter */
+<b><a name="739">  739</a></b>     pbe_param = (<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, 
+<b><a name="740">  740</a></b>         sizeof(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a>));
+<b><a name="741">  741</a></b> 
+<b><a name="742">  742</a></b>     if (pbe_param == NULL) {
+<b><a name="743">  743</a></b>         goto loser;
+<b><a name="744">  744</a></b>     }
+<b><a name="745">  745</a></b> 
+<b><a name="746">  746</a></b>     pbe_param-&gt;poolp = arena;
+<b><a name="747">  747</a></b> 
+<b><a name="748">  748</a></b>     rv = <a href="../softoken/lowpbe.c.dep.html#nsspkcs5_FillInParam">nsspkcs5_FillInParam</a>(alg, pbe_param);
+<b><a name="749">  749</a></b>     if (rv != SECSuccess) {
+<b><a name="750">  750</a></b>         goto loser;
+<b><a name="751">  751</a></b>     }
+<b><a name="752">  752</a></b> 
+<b><a name="753">  753</a></b>     pbe_param-&gt;iter = iterator;
+<b><a name="754">  754</a></b>     if (salt) {
+<b><a name="755">  755</a></b>         rv = <a href="../util/secitem.c.dep.html#SECITEM_CopyItem">SECITEM_CopyItem</a>(arena,&amp;pbe_param-&gt;salt,salt);
+<b><a name="756">  756</a></b>     }
+<b><a name="757">  757</a></b> 
+<b><a name="758">  758</a></b>     /* default key gen */
+<b><a name="759">  759</a></b>     pbe_param-&gt;keyID = pbeBitGenCipherKey;
+<b><a name="760">  760</a></b> 
+<b><a name="761">  761</a></b> loser:
+<b><a name="762">  762</a></b>     if (rv != SECSuccess) {
+<b><a name="763">  763</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(arena, PR_TRUE);
+<b><a name="764">  764</a></b>         pbe_param = NULL;
+<b><a name="765">  765</a></b>     }
+<b><a name="766">  766</a></b> 
+<b><a name="767">  767</a></b>     return pbe_param;
+<b><a name="768">  768</a></b> }
+<b><a name="769">  769</a></b> 
+<b><a name="770">  770</a></b> /* decode the algid and generate a PKCS 5 parameter from it
+<b><a name="771">  771</a></b>  */
+<b><a name="772">  772</a></b> <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *
+<b><a name="773">  773</a></b> <a href="#773">nsspkcs5_AlgidToParam</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid)
+<b><a name="774">  774</a></b> {
+<b><a name="775">  775</a></b>     <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe_param = NULL;
+<b><a name="776">  776</a></b>     <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm;
+<b><a name="777">  777</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECFailure;
+<b><a name="778">  778</a></b> 
+<b><a name="779">  779</a></b>     if (algid == NULL) {
+<b><a name="780">  780</a></b>         return NULL;
+<b><a name="781">  781</a></b>     }
+<b><a name="782">  782</a></b> 
+<b><a name="783">  783</a></b>     algorithm = <a href="../util/secalgid.c.dep.html#SECOID_GetAlgorithmTag">SECOID_GetAlgorithmTag</a>(algid);
+<b><a name="784">  784</a></b>     if (algorithm == SEC_OID_UNKNOWN) {
+<b><a name="785">  785</a></b>         goto loser;
+<b><a name="786">  786</a></b>     }
+<b><a name="787">  787</a></b> 
+<b><a name="788">  788</a></b>     pbe_param = <a href="../softoken/lowpbe.c.dep.html#nsspkcs5_NewParam">nsspkcs5_NewParam</a>(algorithm, NULL, 1);
+<b><a name="789">  789</a></b>     if (pbe_param == NULL) {
+<b><a name="790">  790</a></b>         goto loser;
+<b><a name="791">  791</a></b>     }
+<b><a name="792">  792</a></b> 
+<b><a name="793">  793</a></b>     /* decode parameter */
+<b><a name="794">  794</a></b>     rv = SECFailure;
+<b><a name="795">  795</a></b>     switch (pbe_param-&gt;pbeType) {
+<b><a name="796">  796</a></b>     case NSSPKCS5_PBKDF1:
+<b><a name="797">  797</a></b>         rv = <a href="../util/secasn1d.c.dep.html#SEC_ASN1DecodeItem">SEC_ASN1DecodeItem</a>(pbe_param-&gt;poolp, pbe_param, 
+<b><a name="798">  798</a></b>             <a href="../softoken/lowpbe.c.dep.html#NSSPKCS5PBEParameterTemplate">NSSPKCS5PBEParameterTemplate</a>, &amp;algid-&gt;<a href="../softoken/pk11pars.h.dep.html#parameters">parameters</a>);
+<b><a name="799">  799</a></b>         break;
+<b><a name="800">  800</a></b>     case NSSPKCS5_PKCS12_V2:
+<b><a name="801">  801</a></b>         rv = <a href="../util/secasn1d.c.dep.html#SEC_ASN1DecodeItem">SEC_ASN1DecodeItem</a>(pbe_param-&gt;poolp, pbe_param, 
+<b><a name="802">  802</a></b>                 <a href="../softoken/lowpbe.c.dep.html#NSSPKCS5PKCS12V2PBEParameterTemplate">NSSPKCS5PKCS12V2PBEParameterTemplate</a>, &amp;algid-&gt;<a href="../softoken/pk11pars.h.dep.html#parameters">parameters</a>);
+<b><a name="803">  803</a></b>         break;
+<b><a name="804">  804</a></b>     case NSSPKCS5_PBKDF2:
+<b><a name="805">  805</a></b>         break;
+<b><a name="806">  806</a></b>     }
+<b><a name="807">  807</a></b> 
+<b><a name="808">  808</a></b> loser:
+<b><a name="809">  809</a></b>     if (rv == SECSuccess) {
+<b><a name="810">  810</a></b>             pbe_param-&gt;iter = <a href="../util/dersubr.c.dep.html#DER_GetInteger">DER_GetInteger</a>(&amp;pbe_param-&gt;iteration);
+<b><a name="811">  811</a></b>     } else {
+<b><a name="812">  812</a></b>         <a href="../softoken/lowpbe.c.dep.html#nsspkcs5_DestroyPBEParameter">nsspkcs5_DestroyPBEParameter</a>(pbe_param);
+<b><a name="813">  813</a></b>         pbe_param = NULL;
+<b><a name="814">  814</a></b>     }
+<b><a name="815">  815</a></b> 
+<b><a name="816">  816</a></b>     return pbe_param;
+<b><a name="817">  817</a></b> }
+<b><a name="818">  818</a></b> 
+<b><a name="819">  819</a></b> /* destroy a pbe parameter.  it assumes that the parameter was 
+<b><a name="820">  820</a></b>  * generated using the appropriate create function and therefor
+<b><a name="821">  821</a></b>  * contains an arena pool.
+<b><a name="822">  822</a></b>  */
+<b><a name="823">  823</a></b> void 
+<b><a name="824">  824</a></b> <a href="#824">nsspkcs5_DestroyPBEParameter</a>(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe_param)
+<b><a name="825">  825</a></b> {
+<b><a name="826">  826</a></b>     if (pbe_param != NULL) {
+<b><a name="827">  827</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(pbe_param-&gt;poolp, PR_FALSE);
+<b><a name="828">  828</a></b>     }
+<b><a name="829">  829</a></b> }
+<b><a name="830">  830</a></b> 
+<b><a name="831">  831</a></b> 
+<b><a name="832">  832</a></b> /* crypto routines */
+<b><a name="833">  833</a></b> /* perform DES encryption and decryption.  these routines are called
+<b><a name="834">  834</a></b>  * by nsspkcs5_CipherData.  In the case of an error, NULL is returned.
+<b><a name="835">  835</a></b>  */
+<b><a name="836">  836</a></b> static <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="837">  837</a></b> <a href="#837">sec_pkcs5_des</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *key, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *iv, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *src, PRBool triple_des, 
+<b><a name="838">  838</a></b>                                                                 PRBool encrypt)
+<b><a name="839">  839</a></b> {
+<b><a name="840">  840</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dest;
+<b><a name="841">  841</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dup_src;
+<b><a name="842">  842</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECFailure;
+<b><a name="843">  843</a></b>     int <a href="../freebl/sha512.c.dep.html#pad">pad</a>;
+<b><a name="844">  844</a></b> 
+<b><a name="845">  845</a></b>     if((src == NULL) || (key == NULL) || (iv == NULL))
+<b><a name="846">  846</a></b>         return NULL;
+<b><a name="847">  847</a></b> 
+<b><a name="848">  848</a></b>     dup_src = <a href="../util/secitem.c.dep.html#SECITEM_DupItem">SECITEM_DupItem</a>(src);
+<b><a name="849">  849</a></b>     if(dup_src == NULL) {
+<b><a name="850">  850</a></b>         return NULL;
+<b><a name="851">  851</a></b>     }
+<b><a name="852">  852</a></b> 
+<b><a name="853">  853</a></b>     if(encrypt != PR_FALSE) {
+<b><a name="854">  854</a></b>         void *dummy;
+<b><a name="855">  855</a></b> 
+<b><a name="856">  856</a></b>         dummy = <a href="../softoken/padbuf.c.dep.html#DES_PadBuffer">DES_PadBuffer</a>(NULL, dup_src-&gt;data, 
+<b><a name="857">  857</a></b>             dup_src-&gt;len, &amp;dup_src-&gt;len);
+<b><a name="858">  858</a></b>         if(dummy == NULL) {
+<b><a name="859">  859</a></b>             <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(dup_src, PR_TRUE);
+<b><a name="860">  860</a></b>             return NULL;
+<b><a name="861">  861</a></b>         }
+<b><a name="862">  862</a></b>         dup_src-&gt;data = (unsigned char*)dummy;
+<b><a name="863">  863</a></b>     }
+<b><a name="864">  864</a></b> 
+<b><a name="865">  865</a></b>     dest = (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(sizeof(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>));
+<b><a name="866">  866</a></b>     if(dest != NULL) {
+<b><a name="867">  867</a></b>         /* allocate with over flow */
+<b><a name="868">  868</a></b>         dest-&gt;data = (unsigned char *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(dup_src-&gt;len + 64);
+<b><a name="869">  869</a></b>         if(dest-&gt;data != NULL) {
+<b><a name="870">  870</a></b>             <a href="../freebl/blapit.h.dep.html#DESContext">DESContext</a> *ctxt;
+<b><a name="871">  871</a></b>             ctxt = <a href="../freebl/desblapi.c.dep.html#DES_CreateContext">DES_CreateContext</a>(key-&gt;data, iv-&gt;data, 
+<b><a name="872">  872</a></b>                         (triple_des ? <a href="../freebl/blapit.h.dep.html#NSS_DES_EDE3_CBC">NSS_DES_EDE3_CBC</a> : <a href="../freebl/blapit.h.dep.html#NSS_DES_CBC">NSS_DES_CBC</a>), 
+<b><a name="873">  873</a></b>                         encrypt);
+<b><a name="874">  874</a></b>         
+<b><a name="875">  875</a></b>             if(ctxt != NULL) {
+<b><a name="876">  876</a></b>                 rv = (encrypt ? <a href="../freebl/desblapi.c.dep.html#DES_Encrypt">DES_Encrypt</a> : <a href="../freebl/desblapi.c.dep.html#DES_Decrypt">DES_Decrypt</a>)(
+<b><a name="877">  877</a></b>                         ctxt, dest-&gt;data, &amp;dest-&gt;len,
+<b><a name="878">  878</a></b>                         dup_src-&gt;len + 64, dup_src-&gt;data, dup_src-&gt;len);
+<b><a name="879">  879</a></b> 
+<b><a name="880">  880</a></b>                 /* remove padding -- assumes 64 bit blocks */
+<b><a name="881">  881</a></b>                 if((encrypt == PR_FALSE) &amp;&amp; (rv == SECSuccess)) {
+<b><a name="882">  882</a></b>                     <a href="../freebl/sha512.c.dep.html#pad">pad</a> = dest-&gt;data[dest-&gt;len-1];
+<b><a name="883">  883</a></b>                     if((<a href="../freebl/sha512.c.dep.html#pad">pad</a> &gt; 0) &amp;&amp; (<a href="../freebl/sha512.c.dep.html#pad">pad</a> &lt;= 8)) {
+<b><a name="884">  884</a></b>                         if(dest-&gt;data[dest-&gt;len-<a href="../freebl/sha512.c.dep.html#pad">pad</a>] != <a href="../freebl/sha512.c.dep.html#pad">pad</a>) {
+<b><a name="885">  885</a></b>                             rv = SECFailure;
+<b><a name="886">  886</a></b>                             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_PASSWORD);
+<b><a name="887">  887</a></b>                         } else {
+<b><a name="888">  888</a></b>                             dest-&gt;len -= <a href="../freebl/sha512.c.dep.html#pad">pad</a>;
+<b><a name="889">  889</a></b>                         }
+<b><a name="890">  890</a></b>                     } else {
+<b><a name="891">  891</a></b>                         rv = SECFailure;
+<b><a name="892">  892</a></b>                         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_PASSWORD);
+<b><a name="893">  893</a></b>                     }
+<b><a name="894">  894</a></b>                 }
+<b><a name="895">  895</a></b>                 <a href="../freebl/desblapi.c.dep.html#DES_DestroyContext">DES_DestroyContext</a>(ctxt, PR_TRUE);
+<b><a name="896">  896</a></b>             }
+<b><a name="897">  897</a></b>         }
+<b><a name="898">  898</a></b>     }
+<b><a name="899">  899</a></b> 
+<b><a name="900">  900</a></b>     if(rv == SECFailure) {
+<b><a name="901">  901</a></b>         if(dest != NULL) {
+<b><a name="902">  902</a></b>             <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(dest, PR_TRUE);
+<b><a name="903">  903</a></b>         }
+<b><a name="904">  904</a></b>         dest = NULL;
+<b><a name="905">  905</a></b>     }
+<b><a name="906">  906</a></b> 
+<b><a name="907">  907</a></b>     if(dup_src != NULL) {
+<b><a name="908">  908</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(dup_src, PR_TRUE);
+<b><a name="909">  909</a></b>     }
+<b><a name="910">  910</a></b> 
+<b><a name="911">  911</a></b>     return dest;
+<b><a name="912">  912</a></b> }
+<b><a name="913">  913</a></b> 
+<b><a name="914">  914</a></b> /* perform rc2 encryption/decryption if an error occurs, NULL is returned
+<b><a name="915">  915</a></b>  */
+<b><a name="916">  916</a></b> static <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="917">  917</a></b> <a href="#917">sec_pkcs5_rc2</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *key, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *iv, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *src, PRBool dummy, 
+<b><a name="918">  918</a></b>                                                                 PRBool encrypt)
+<b><a name="919">  919</a></b> {
+<b><a name="920">  920</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dest;
+<b><a name="921">  921</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dup_src;
+<b><a name="922">  922</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECFailure;
+<b><a name="923">  923</a></b>     int <a href="../freebl/sha512.c.dep.html#pad">pad</a>;
+<b><a name="924">  924</a></b> 
+<b><a name="925">  925</a></b>     if((src == NULL) || (key == NULL) || (iv == NULL)) {
+<b><a name="926">  926</a></b>         return NULL;
+<b><a name="927">  927</a></b>     }
+<b><a name="928">  928</a></b> 
+<b><a name="929">  929</a></b>     dup_src = <a href="../util/secitem.c.dep.html#SECITEM_DupItem">SECITEM_DupItem</a>(src);
+<b><a name="930">  930</a></b>     if(dup_src == NULL) {
+<b><a name="931">  931</a></b>         return NULL;
+<b><a name="932">  932</a></b>     }
+<b><a name="933">  933</a></b> 
+<b><a name="934">  934</a></b>     if(encrypt != PR_FALSE) {
+<b><a name="935">  935</a></b>         void *dummy;
+<b><a name="936">  936</a></b> 
+<b><a name="937">  937</a></b>         dummy = <a href="../softoken/padbuf.c.dep.html#DES_PadBuffer">DES_PadBuffer</a>(NULL, dup_src-&gt;data, 
+<b><a name="938">  938</a></b>                               dup_src-&gt;len, &amp;dup_src-&gt;len);
+<b><a name="939">  939</a></b>         if(dummy == NULL) {
+<b><a name="940">  940</a></b>             <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(dup_src, PR_TRUE);
+<b><a name="941">  941</a></b>             return NULL;
+<b><a name="942">  942</a></b>         }
+<b><a name="943">  943</a></b>         dup_src-&gt;data = (unsigned char*)dummy;
+<b><a name="944">  944</a></b>     }
+<b><a name="945">  945</a></b> 
+<b><a name="946">  946</a></b>     dest = (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(sizeof(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>));
+<b><a name="947">  947</a></b>     if(dest != NULL) {
+<b><a name="948">  948</a></b>         dest-&gt;data = (unsigned char *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(dup_src-&gt;len + 64);
+<b><a name="949">  949</a></b>         if(dest-&gt;data != NULL) {
+<b><a name="950">  950</a></b>             <a href="../freebl/blapit.h.dep.html#RC2Context">RC2Context</a> *ctxt;
+<b><a name="951">  951</a></b> 
+<b><a name="952">  952</a></b>             ctxt = <a href="../freebl/alg2268.c.dep.html#RC2_CreateContext">RC2_CreateContext</a>(key-&gt;data, key-&gt;len, iv-&gt;data,
+<b><a name="953">  953</a></b>                                                  <a href="../freebl/blapit.h.dep.html#NSS_RC2_CBC">NSS_RC2_CBC</a>, key-&gt;len);
+<b><a name="954">  954</a></b> 
+<b><a name="955">  955</a></b>             if(ctxt != NULL) {
+<b><a name="956">  956</a></b>                 rv = (encrypt ? <a href="../freebl/alg2268.c.dep.html#RC2_Encrypt">RC2_Encrypt</a>: <a href="../freebl/alg2268.c.dep.html#RC2_Decrypt">RC2_Decrypt</a>)(
+<b><a name="957">  957</a></b>                         ctxt, dest-&gt;data, &amp;dest-&gt;len,
+<b><a name="958">  958</a></b>                         dup_src-&gt;len + 64, dup_src-&gt;data, dup_src-&gt;len);
+<b><a name="959">  959</a></b> 
+<b><a name="960">  960</a></b>                 /* assumes 8 byte blocks  -- remove padding */        
+<b><a name="961">  961</a></b>                 if((rv == SECSuccess) &amp;&amp; (encrypt != PR_TRUE)) {
+<b><a name="962">  962</a></b>                     <a href="../freebl/sha512.c.dep.html#pad">pad</a> = dest-&gt;data[dest-&gt;len-1];
+<b><a name="963">  963</a></b>                     if((<a href="../freebl/sha512.c.dep.html#pad">pad</a> &gt; 0) &amp;&amp; (<a href="../freebl/sha512.c.dep.html#pad">pad</a> &lt;= 8)) {
+<b><a name="964">  964</a></b>                         if(dest-&gt;data[dest-&gt;len-<a href="../freebl/sha512.c.dep.html#pad">pad</a>] != <a href="../freebl/sha512.c.dep.html#pad">pad</a>) {
+<b><a name="965">  965</a></b>                             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_PASSWORD);
+<b><a name="966">  966</a></b>                             rv = SECFailure;
+<b><a name="967">  967</a></b>                         } else {
+<b><a name="968">  968</a></b>                             dest-&gt;len -= <a href="../freebl/sha512.c.dep.html#pad">pad</a>;
+<b><a name="969">  969</a></b>                         }
+<b><a name="970">  970</a></b>                     } else {
+<b><a name="971">  971</a></b>                         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_PASSWORD);
+<b><a name="972">  972</a></b>                         rv = SECFailure;
+<b><a name="973">  973</a></b>                     }
+<b><a name="974">  974</a></b>                 }
+<b><a name="975">  975</a></b> 
+<b><a name="976">  976</a></b>             }
+<b><a name="977">  977</a></b>         }
+<b><a name="978">  978</a></b>     }
+<b><a name="979">  979</a></b> 
+<b><a name="980">  980</a></b>     if((rv != SECSuccess) &amp;&amp; (dest != NULL)) {
+<b><a name="981">  981</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(dest, PR_TRUE);
+<b><a name="982">  982</a></b>         dest = NULL;
+<b><a name="983">  983</a></b>     }
+<b><a name="984">  984</a></b> 
+<b><a name="985">  985</a></b>     if(dup_src != NULL) {
+<b><a name="986">  986</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(dup_src, PR_TRUE);
+<b><a name="987">  987</a></b>     }
+<b><a name="988">  988</a></b> 
+<b><a name="989">  989</a></b>     return dest;
+<b><a name="990">  990</a></b> }
+<b><a name="991">  991</a></b> 
+<b><a name="992">  992</a></b> /* perform rc4 encryption and decryption */
+<b><a name="993">  993</a></b> static <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="994">  994</a></b> <a href="#994">sec_pkcs5_rc4</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *key, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *iv, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *src, PRBool dummy_op,
+<b><a name="995">  995</a></b>                                                                  PRBool encrypt)
+<b><a name="996">  996</a></b> {
+<b><a name="997">  997</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dest;
+<b><a name="998">  998</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECFailure;
+<b><a name="999">  999</a></b> 
+<b><a name="1000"> 1000</a></b>     if((src == NULL) || (key == NULL) || (iv == NULL)) {
+<b><a name="1001"> 1001</a></b>         return NULL;
+<b><a name="1002"> 1002</a></b>     }
+<b><a name="1003"> 1003</a></b> 
+<b><a name="1004"> 1004</a></b>     dest = (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(sizeof(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>));
+<b><a name="1005"> 1005</a></b>     if(dest != NULL) {
+<b><a name="1006"> 1006</a></b>         dest-&gt;data = (unsigned char *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(sizeof(unsigned char) *
+<b><a name="1007"> 1007</a></b>             (src-&gt;len + 64));
+<b><a name="1008"> 1008</a></b>         if(dest-&gt;data != NULL) {
+<b><a name="1009"> 1009</a></b>             <a href="../freebl/blapit.h.dep.html#RC4Context">RC4Context</a> *ctxt;
+<b><a name="1010"> 1010</a></b> 
+<b><a name="1011"> 1011</a></b>             ctxt = <a href="../freebl/arcfour.c.dep.html#RC4_CreateContext">RC4_CreateContext</a>(key-&gt;data, key-&gt;len);
+<b><a name="1012"> 1012</a></b>             if(ctxt) { 
+<b><a name="1013"> 1013</a></b>                 rv = (encrypt ? <a href="../freebl/arcfour.c.dep.html#RC4_Encrypt">RC4_Encrypt</a> : <a href="../freebl/arcfour.c.dep.html#RC4_Decrypt">RC4_Decrypt</a>)(
+<b><a name="1014"> 1014</a></b>                                 ctxt, dest-&gt;data, &amp;dest-&gt;len,
+<b><a name="1015"> 1015</a></b>                                 src-&gt;len + 64, src-&gt;data, src-&gt;len);
+<b><a name="1016"> 1016</a></b>                 <a href="../freebl/arcfour.c.dep.html#RC4_DestroyContext">RC4_DestroyContext</a>(ctxt, PR_TRUE);
+<b><a name="1017"> 1017</a></b>             }
+<b><a name="1018"> 1018</a></b>         }
+<b><a name="1019"> 1019</a></b>     }
+<b><a name="1020"> 1020</a></b> 
+<b><a name="1021"> 1021</a></b>     if((rv != SECSuccess) &amp;&amp; (dest)) {
+<b><a name="1022"> 1022</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(dest, PR_TRUE);
+<b><a name="1023"> 1023</a></b>         dest = NULL;
+<b><a name="1024"> 1024</a></b>     }
+<b><a name="1025"> 1025</a></b> 
+<b><a name="1026"> 1026</a></b>     return dest;
+<b><a name="1027"> 1027</a></b> }
+<b><a name="1028"> 1028</a></b> /* function pointer template for crypto functions */
+<b><a name="1029"> 1029</a></b> typedef <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *(* <a href="#1029">pkcs5_crypto_func</a>)(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *key, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *iv,
+<b><a name="1030"> 1030</a></b>                                          <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *src, PRBool op1, PRBool op2);
+<b><a name="1031"> 1031</a></b> 
+<b><a name="1032"> 1032</a></b> /* performs the cipher operation on the src and returns the result.
+<b><a name="1033"> 1033</a></b>  * if an error occurs, NULL is returned. 
+<b><a name="1034"> 1034</a></b>  *
+<b><a name="1035"> 1035</a></b>  * a null length password is allowed.  this corresponds to encrypting
+<b><a name="1036"> 1036</a></b>  * the data with ust the salt.
+<b><a name="1037"> 1037</a></b>  */
+<b><a name="1038"> 1038</a></b> /* change this to use PKCS 11? */
+<b><a name="1039"> 1039</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="1040"> 1040</a></b> <a href="#1040">nsspkcs5_CipherData</a>(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe_param, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem, 
+<b><a name="1041"> 1041</a></b>                     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *src, PRBool encrypt, PRBool *update)
+<b><a name="1042"> 1042</a></b> {
+<b><a name="1043"> 1043</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *key = NULL, iv;
+<b><a name="1044"> 1044</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dest = NULL;
+<b><a name="1045"> 1045</a></b>     PRBool tripleDES = PR_TRUE;
+<b><a name="1046"> 1046</a></b>     <a href="../softoken/lowpbe.c.dep.html#pkcs5_crypto_func">pkcs5_crypto_func</a> cryptof;
+<b><a name="1047"> 1047</a></b> 
+<b><a name="1048"> 1048</a></b>     iv.data = NULL;
+<b><a name="1049"> 1049</a></b> 
+<b><a name="1050"> 1050</a></b>     if (update) { 
+<b><a name="1051"> 1051</a></b>         *update = PR_FALSE;
+<b><a name="1052"> 1052</a></b>     }
+<b><a name="1053"> 1053</a></b> 
+<b><a name="1054"> 1054</a></b>     if ((pwitem == NULL) || (src == NULL)) {
+<b><a name="1055"> 1055</a></b>         return NULL;
+<b><a name="1056"> 1056</a></b>     }
+<b><a name="1057"> 1057</a></b> 
+<b><a name="1058"> 1058</a></b>     /* get key, and iv */
+<b><a name="1059"> 1059</a></b>     key = <a href="../softoken/lowpbe.c.dep.html#nsspkcs5_ComputeKeyAndIV">nsspkcs5_ComputeKeyAndIV</a>(pbe_param, pwitem, &amp;iv, PR_FALSE);
+<b><a name="1060"> 1060</a></b>     if(key == NULL) {
+<b><a name="1061"> 1061</a></b>         return NULL;
+<b><a name="1062"> 1062</a></b>     }
+<b><a name="1063"> 1063</a></b> 
+<b><a name="1064"> 1064</a></b>     switch(pbe_param-&gt;encAlg) {
+<b><a name="1065"> 1065</a></b>     case SEC_OID_DES_EDE3_CBC:
+<b><a name="1066"> 1066</a></b>         cryptof = <a href="../softoken/lowpbe.c.dep.html#sec_pkcs5_des">sec_pkcs5_des</a>;
+<b><a name="1067"> 1067</a></b>         tripleDES = PR_TRUE;
+<b><a name="1068"> 1068</a></b>         break;
+<b><a name="1069"> 1069</a></b>     case SEC_OID_DES_CBC:
+<b><a name="1070"> 1070</a></b>         cryptof = <a href="../softoken/lowpbe.c.dep.html#sec_pkcs5_des">sec_pkcs5_des</a>;
+<b><a name="1071"> 1071</a></b>         tripleDES = PR_FALSE;
+<b><a name="1072"> 1072</a></b>         break;
+<b><a name="1073"> 1073</a></b>     case SEC_OID_RC2_CBC:
+<b><a name="1074"> 1074</a></b>         cryptof = <a href="../softoken/lowpbe.c.dep.html#sec_pkcs5_rc2">sec_pkcs5_rc2</a>;
+<b><a name="1075"> 1075</a></b>         break;
+<b><a name="1076"> 1076</a></b>     case SEC_OID_RC4:
+<b><a name="1077"> 1077</a></b>         cryptof = <a href="../softoken/lowpbe.c.dep.html#sec_pkcs5_rc4">sec_pkcs5_rc4</a>;
+<b><a name="1078"> 1078</a></b>         break;
+<b><a name="1079"> 1079</a></b>     default:
+<b><a name="1080"> 1080</a></b>         cryptof = NULL;
+<b><a name="1081"> 1081</a></b>         break;
+<b><a name="1082"> 1082</a></b>     }
+<b><a name="1083"> 1083</a></b> 
+<b><a name="1084"> 1084</a></b>     if (cryptof == NULL) {
+<b><a name="1085"> 1085</a></b>         goto loser;
+<b><a name="1086"> 1086</a></b>     }
+<b><a name="1087"> 1087</a></b> 
+<b><a name="1088"> 1088</a></b>     dest = (*cryptof)(key, &amp;iv, src, tripleDES, encrypt);
+<b><a name="1089"> 1089</a></b>     /* 
+<b><a name="1090"> 1090</a></b>      * it's possible for some keys and keydb's to claim to
+<b><a name="1091"> 1091</a></b>      * be triple des when they're really des. In this case
+<b><a name="1092"> 1092</a></b>      * we simply try des. If des works we set the update flag
+<b><a name="1093"> 1093</a></b>      * so the key db knows it needs to update all it's entries.
+<b><a name="1094"> 1094</a></b>      *  The case can only happen on decrypted of a 
+<b><a name="1095"> 1095</a></b>      *  SEC_OID_DES_EDE3_CBD.
+<b><a name="1096"> 1096</a></b>      */
+<b><a name="1097"> 1097</a></b>     if ((dest == NULL) &amp;&amp; (encrypt == PR_FALSE) &amp;&amp; 
+<b><a name="1098"> 1098</a></b>                                 (pbe_param-&gt;encAlg == SEC_OID_DES_EDE3_CBC)) {
+<b><a name="1099"> 1099</a></b>         dest = (*cryptof)(key, &amp;iv, src, PR_FALSE, encrypt);
+<b><a name="1100"> 1100</a></b>         if (update &amp;&amp; (dest != NULL)) *update = PR_TRUE;
+<b><a name="1101"> 1101</a></b>     }
+<b><a name="1102"> 1102</a></b> 
+<b><a name="1103"> 1103</a></b> loser:
+<b><a name="1104"> 1104</a></b>     if (key != NULL) {
+<b><a name="1105"> 1105</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(key, PR_TRUE);
+<b><a name="1106"> 1106</a></b>     }
+<b><a name="1107"> 1107</a></b>     if (iv.data != NULL) {
+<b><a name="1108"> 1108</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_ZfreeItem">SECITEM_ZfreeItem</a>(&amp;iv, PR_FALSE);
+<b><a name="1109"> 1109</a></b>     }
+<b><a name="1110"> 1110</a></b> 
+<b><a name="1111"> 1111</a></b>     return dest;
+<b><a name="1112"> 1112</a></b> }
+<b><a name="1113"> 1113</a></b> 
+<b><a name="1114"> 1114</a></b> /* creates a algorithm ID containing the PBE algorithm and appropriate
+<b><a name="1115"> 1115</a></b>  * parameters.  the required parameter is the algorithm.  if salt is
+<b><a name="1116"> 1116</a></b>  * not specified, it is generated randomly.  if IV is specified, it overrides
+<b><a name="1117"> 1117</a></b>  * the PKCS 5 generation of the IV.  
+<b><a name="1118"> 1118</a></b>  *
+<b><a name="1119"> 1119</a></b>  * the returned SECAlgorithmID should be destroyed using 
+<b><a name="1120"> 1120</a></b>  * SECOID_DestroyAlgorithmID
+<b><a name="1121"> 1121</a></b>  */
+<b><a name="1122"> 1122</a></b> <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *
+<b><a name="1123"> 1123</a></b> <a href="#1123">nsspkcs5_CreateAlgorithmID</a>(PRArenaPool *arena, <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm, 
+<b><a name="1124"> 1124</a></b>                                         <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe_param)
+<b><a name="1125"> 1125</a></b> {
+<b><a name="1126"> 1126</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid, *ret_algid = NULL;
+<b><a name="1127"> 1127</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> der_param;
+<b><a name="1128"> 1128</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECFailure;
+<b><a name="1129"> 1129</a></b>     void *dummy = NULL;
+<b><a name="1130"> 1130</a></b> 
+<b><a name="1131"> 1131</a></b>     if (arena == NULL) {
+<b><a name="1132"> 1132</a></b>         return NULL;
+<b><a name="1133"> 1133</a></b>     }
+<b><a name="1134"> 1134</a></b> 
+<b><a name="1135"> 1135</a></b>     der_param.data = NULL;
+<b><a name="1136"> 1136</a></b>     der_param.len = 0;
+<b><a name="1137"> 1137</a></b> 
+<b><a name="1138"> 1138</a></b>     /* generate the algorithm id */
+<b><a name="1139"> 1139</a></b>     algid = (<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, sizeof(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>));
+<b><a name="1140"> 1140</a></b>     if (algid == NULL) {
+<b><a name="1141"> 1141</a></b>         goto loser;
+<b><a name="1142"> 1142</a></b>     }
+<b><a name="1143"> 1143</a></b> 
+<b><a name="1144"> 1144</a></b>     if (pbe_param-&gt;iteration.data == NULL) {
+<b><a name="1145"> 1145</a></b>         dummy = <a href="../util/secasn1e.c.dep.html#SEC_ASN1EncodeInteger">SEC_ASN1EncodeInteger</a>(pbe_param-&gt;poolp,&amp;pbe_param-&gt;iteration,
+<b><a name="1146"> 1146</a></b>                                                                 pbe_param-&gt;iter);
+<b><a name="1147"> 1147</a></b>         if (dummy == NULL) {
+<b><a name="1148"> 1148</a></b>             goto loser;
+<b><a name="1149"> 1149</a></b>         }
+<b><a name="1150"> 1150</a></b>     }
+<b><a name="1151"> 1151</a></b>     switch (pbe_param-&gt;pbeType) {
+<b><a name="1152"> 1152</a></b>     case NSSPKCS5_PBKDF1:
+<b><a name="1153"> 1153</a></b>         dummy = <a href="../util/secasn1e.c.dep.html#SEC_ASN1EncodeItem">SEC_ASN1EncodeItem</a>(arena, &amp;der_param, pbe_param,
+<b><a name="1154"> 1154</a></b>                                         <a href="../softoken/lowpbe.c.dep.html#NSSPKCS5PBEParameterTemplate">NSSPKCS5PBEParameterTemplate</a>);
+<b><a name="1155"> 1155</a></b>         break;
+<b><a name="1156"> 1156</a></b>     case NSSPKCS5_PKCS12_V2:
+<b><a name="1157"> 1157</a></b>         dummy = <a href="../util/secasn1e.c.dep.html#SEC_ASN1EncodeItem">SEC_ASN1EncodeItem</a>(arena, &amp;der_param, pbe_param,
+<b><a name="1158"> 1158</a></b>                                             <a href="../softoken/lowpbe.c.dep.html#NSSPKCS5PKCS12V2PBEParameterTemplate">NSSPKCS5PKCS12V2PBEParameterTemplate</a>);
+<b><a name="1159"> 1159</a></b>         break;
+<b><a name="1160"> 1160</a></b>     default:
+<b><a name="1161"> 1161</a></b>         break;
+<b><a name="1162"> 1162</a></b>     }
+<b><a name="1163"> 1163</a></b> 
+<b><a name="1164"> 1164</a></b>     if (dummy == NULL) {
+<b><a name="1165"> 1165</a></b>         goto loser;
+<b><a name="1166"> 1166</a></b>     }
+<b><a name="1167"> 1167</a></b>         
+<b><a name="1168"> 1168</a></b>     rv = <a href="../util/secalgid.c.dep.html#SECOID_SetAlgorithmID">SECOID_SetAlgorithmID</a>(arena, algid, algorithm, &amp;der_param);
+<b><a name="1169"> 1169</a></b>     if (rv != SECSuccess) {
+<b><a name="1170"> 1170</a></b>         goto loser;
+<b><a name="1171"> 1171</a></b>     }
+<b><a name="1172"> 1172</a></b> 
+<b><a name="1173"> 1173</a></b>     ret_algid = (<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(sizeof(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>));
+<b><a name="1174"> 1174</a></b>     if (ret_algid == NULL) {
+<b><a name="1175"> 1175</a></b>         goto loser;
+<b><a name="1176"> 1176</a></b>     }
+<b><a name="1177"> 1177</a></b> 
+<b><a name="1178"> 1178</a></b>     rv = <a href="../util/secalgid.c.dep.html#SECOID_CopyAlgorithmID">SECOID_CopyAlgorithmID</a>(NULL, ret_algid, algid);
+<b><a name="1179"> 1179</a></b>     if (rv != SECSuccess) {
+<b><a name="1180"> 1180</a></b>         <a href="../util/secalgid.c.dep.html#SECOID_DestroyAlgorithmID">SECOID_DestroyAlgorithmID</a>(ret_algid, PR_TRUE);
+<b><a name="1181"> 1181</a></b>         ret_algid = NULL;
+<b><a name="1182"> 1182</a></b>     }
+<b><a name="1183"> 1183</a></b> 
+<b><a name="1184"> 1184</a></b> loser:        
+<b><a name="1185"> 1185</a></b> 
+<b><a name="1186"> 1186</a></b>     return ret_algid;
+<b><a name="1187"> 1187</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

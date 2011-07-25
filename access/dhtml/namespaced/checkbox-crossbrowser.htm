@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="http://www.w3.org/StyleSheets/TR/base"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 Strict//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:wairole="http://www.w3.org/2005/01/wai-rdf/GUIRoleTaxonomy#"
+      xmlns:aaa="http://www.w3.org/2005/07/aaa">
+<head>
+<title>DHTML Checkbox</title>
+
+<script type="text/javascript" >
+//<![CDATA[
+// set up a mapping of the namespace URIs with the name that is used - must match the xmlns mappings above
+var nsMapping = new Array();
+nsMapping["http://www.w3.org/2005/07/aaa"] = "aaa:";
+
+/* public getAttrNS()
+*	Wrapper function to call element.getAttributeNS() where it is supported and
+*	element.getAttrbitute() otherwise.
+*	@param element - the element to get attributes for
+*	@param nameSpace - the name space to use when making the getAttritbuteNS() call
+*	@param attr - the attribute to get
+*	@return the result of the appropriate call.
+*/
+function getAttrNS(element, nameSpace, attr) {
+	var result = null;
+
+	if (element.getAttributeNS) {
+		result = element.getAttributeNS(nameSpace, attr);
+		//alert("getAttributeNS() result is " + result);
+	}
+	else if (element.getAttribute) {
+		// for user agents that do not support getAttributeNS(), use the name space parameter  to map to the appropriate
+		// prefix. This will make the attribute names match up with those returned from the getAttributeNS() calls.
+		// The nsMapping array (above) must be set up properly so that the strings in the array match the actual namespaces
+		// in the xmlns parameters in the html element of the page.
+
+		result = element.getAttribute(nsMapping[nameSpace] + attr);
+
+	}
+
+	return result;
+}
+
+/* @method public setAttrNS()
+*	Wrapper function to call element.setAttributeNS() where it is supported and
+*	element.setAttrbitute() otherwise.
+*	@param element - the element to set attributes on
+*	@param nameSpace - the name space to use when making the setAttritbuteNS() call
+*	@param attr - the attribute to set
+*	@param attrValue - the value of the attribute
+*
+*	@return the result of the appropriate call.
+*/
+function setAttrNS(element, nameSpace, attr, attrValue) {
+	var result = null;
+
+	if (element.setAttributeNS) {
+		result = element.setAttributeNS(nameSpace, attr, attrValue);
+	}
+	else if (element.setAttribute) {
+		// for user agents that do not support setAttributeNS(), use the name space parameter  to map to the appropriate
+		// prefix. This will make the attribute names match up with those set from the setAttributeNS() calls.
+		// The nsMapping array (above) must be set up properly so that the strings in the array match the actual namespaces
+		// in the xmlns parameters in the html element of the page.
+
+		result = element.setAttribute((nsMapping[nameSpace] + attr), attrValue);
+	}
+	return result;
+}
+
+/* @method public hasAttrNS()
+*	Wrapper function to determine in an element has a particular attribute set.  Calls element.hasAttributeNS() where
+*   it is supported, otherwise calls getAttrNS() to see if anything is returned.
+*	@param element - the element to test attributes upon
+*	@param nameSpace - the name space to use when making the appropriate call
+*	@param attr - the attribute to test for
+*	@return boolean indicating if attribute exists on the element (true) or not (false)
+*/
+function hasAttrNS(element, nameSpace, attr) {
+	var bHasAttr = false;
+
+try {
+	if (typeof element.hasAttributeNS != "undefined") {
+		bHasAttr = element.hasAttributeNS(nameSpace, attr);
+	}
+	else {
+		// if hasAttributeNS() is not supported, call the getAttrNS() wrapper function to see if an attribute
+		// is returned.
+		var theAttr = getAttrNS(element, nameSpace, attr);
+		if (theAttr) {
+			bHasAttr = true;
+		}
+		// else - already initialized to false
+	}
+} catch (error) {
+	debugOut("error in hasAttrNS, here is element: " + element);
+}
+	return bHasAttr;
+}
+
+function removeAttrNS(element, nameSpace, attr) {
+	try {
+		if (typeof element.removeAttributeNS != "undefined") {
+			element.removeAttributeNS(nameSpace, attr);
+		}
+		else {
+			element.removeAttribute(nsMapping[nameSpace] + attr);
+		}
+    } catch (error ) {
+    	debugOut("error in removeAttrNS called on " + element);
+    }
+}
+/*
+* @method public getTarget() - helper function to extract the element which fired the event from the event object.
+*	@param event - event object
+*	@return - the appropriate target based on the varibles supported in the event object.
+*/
+function getTarget(event) {
+	var target = null;
+	if (event.target) {
+		target = event.target;
+	}
+	else if (event.srcElement) {
+		target = event.srcElement;
+	}
+	return target;
+}
+/*******************  End of wrapper functions **********************/
+var CHECK = "checked.gif";
+var UNCHECK = "unchecked.gif";
+var ELEMENT_NODE = 1;  // IE does not understand Node.ELEMENT_NODE nor nodeObj.ELEMENT_NODE
+// Mouse and keyboard event handlers for controls
+function checkBoxEvent(event)
+{
+   var bEventContinue = true; // Browser can still use event
+    try {
+   		if ((event.type == "click" && event.button == 0) ||
+   		   (event.type == "keydown" && event.keyCode == 32)) {
+       	// Toggle checkbox
+    	var checkbox = getTarget(event);
+    	var checkImg = null;
+    	// event could be coming from img
+    	if (checkbox.nodeType == ELEMENT_NODE && checkbox.tagName.toUpperCase() == "IMG") {
+    		checkImg = checkbox;
+    		checkbox = checkbox.parentNode;
+    	}
+    	else { //event coming from span
+    	   	 for (var i=0; i < checkbox.childNodes.length;  i++) {
+    		 	checkImg = checkbox.childNodes[i];
+    			if (checkImg.nodeType == ELEMENT_NODE && checkImg.tagName.toUpperCase() == "IMG") {
+    	 			break;
+    		 	}
+    		 }
+    	}
+    	 if (getAttrNS(checkbox, "http://www.w3.org/2005/07/aaa", "checked") == "true") {
+    	   removeAttrNS(checkbox, "http://www.w3.org/2005/07/aaa", "checked");
+    	   checkImg.src = UNCHECK;
+    	 }
+    	else {
+    	  setAttrNS(checkbox, "http://www.w3.org/2005/07/aaa", "checked", "true");
+    	  checkImg.src = CHECK;
+    	}
+    	bEventContinue = false;  // Do not continue propagating event
+      }
+   } catch (error) {
+	 bEventContinue = true;
+   }
+  return bEventContinue;
+}
+//]]>
+</script>
+</head>
+
+<body role="wairole:application">
+  <p>Here's a checkbox that you can click on.</p>
+
+  <div>
+	  <span class="checkbox" id="chbox1" role="wairole:checkbox" aaa:checked="true" tabindex="0"
+			onkeydown="return checkBoxEvent(event);" onclick="return checkBoxEvent(event);" ><img src="checked.gif" role="wairole:presentation"   alt="" />
+			Include decorative fruit basket
+	  </span>
+  </div>
+
+  <p>
+
+    <a href="http://www.google.com">Random Google link</a>
+  </p>
+
+
+</body>
+</html>
+

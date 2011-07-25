@@ -1,0 +1,2882 @@
+<?php
+
+$html_title = 'SSL Functions
+';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<FONT SIZE=-1><A HREF="index.html">Table of Contents</A> | <A HREF="ssltyp.html">Previous</A>
+ | <A HREF="sslcrt.html">Next</A>
+ | <A HREF="bklast.html">Index</A>
+</FONT><BR><BR>
+
+
+<BR>
+<HR>
+<A NAME="1022819">
+<P></A><CENTER><H2>Chapter 4<BR>
+<A NAME="1047959">
+SSL Functions</A></H2></CENTER>
+<A NAME="1047960">
+This chapter describes the core SSL functions.</A></P>
+<A NAME="1047964">
+<A HREF="sslfnc.html#1022864">SSL Initialization Functions</A><br><A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A><br><A HREF="sslfnc.html#1163855">SSL Configuration Functions</A><br><A HREF="sslfnc.html#1127321">SSL Communication Functions</A><br><A HREF="sslfnc.html#1127893">SSL Functions Used by Callbacks</A><br><A HREF="sslfnc.html#1061582">SSL Handshake Functions</A><br><A HREF="sslfnc.html#1095840">NSS Shutdown Function</A><br><A HREF="sslfnc.html#1198429">Deprecated Functions</A></A></P>
+
+<H2><A NAME="SSL Initialization Functions"></A>
+<A NAME="1022864">
+ SSL Initialization Functions
+</A></H2><A NAME="1090069">
+This section describes the initialization functions that are specific to SSL. For a complete list of NSS initialization functions, see <A HREF="sslintro.html#1027662">Initialization</A>.</A></P>
+<A NAME="1116142">
+Note that at least one of the functions listed in <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A> must also be called during NSS initialization.</A></P>
+<A NAME="1090078">
+<A HREF="sslfnc.html#1067601"><CODE>NSS_Init</CODE></A><br><A HREF="sslfnc.html#1237143"><CODE>NSS_InitReadWrite</CODE></A><br><A HREF="sslfnc.html#1234224"><CODE>NSS_NoDB_Init</CODE></A><br><A HREF="sslfnc.html#1068466"><CODE>SSL_OptionSetDefault</CODE></A><br><A HREF="sslfnc.html#1204897"><CODE>SSL_OptionGetDefault</CODE></A><br><A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A><br><A HREF="sslfnc.html#1208119"><CODE>SSL_CipherPrefGetDefault</CODE></A><br><A HREF="sslfnc.html#1138601"><CODE>SSL_ClearSessionCache</CODE></A><br><A HREF="sslfnc.html#1143851"><CODE>SSL_ConfigServerSessionIDCache</CODE></A><br><A HREF="sslfnc.html#1142625"><CODE>SSL_ConfigMPServerSIDCache</CODE></A><br><A HREF="sslfnc.html#1162055"><CODE>SSL_InheritMPServerSIDCache</CODE></A></A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1067601">
+ NSS_Init
+</A></H4>
+
+<A NAME="1067602">
+Sets up configuration files and performs other tasks required to run Network Security Services. Database files are opened read-only.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1067603">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1067604">#include "nss.h" </A></PRE><PRE><A NAME="1067605">SECStatus NSS_Init(char *configdir);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1067606">
+ Parameter
+</A></H5>
+
+<A NAME="1067612">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1067609">
+<CODE>configdir</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1067611">
+A pointer to a string containing the pathname of the directory where the certificate, key, and security module databases reside.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1067613">
+ Returns
+</A></H5>
+
+<A NAME="1067614">
+The function returns one of these value<VAR>s</VAR>:</A></P>
+<ul><P><LI><A NAME="1067615">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<P><LI><A NAME="1067618">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127">PR_GetError<CODE></A></CODE> to retrieve the error code.</A></LI>
+</ul><H5><A NAME="Head4;"></A>
+<A NAME="1067619">
+ Description
+</A></H5>
+
+<A NAME="1067620">
+<CODE>NSS_Init</CODE> opens the <CODE>cert</CODE><I>N</I><CODE>.db</CODE>, <CODE>key</CODE><I>N</I><CODE>.db</CODE>, and <CODE>secmod.db</CODE> files (where <I>N</I> is a numeric digit) in the specified directory. <CODE>NSS_Init</CODE> is <I>not</I> idempotent, so call it only once. </A></P>
+<A NAME="1237166">
+<CODE>NSS_Init</CODE> opens the database files read-only. If you are performing operations that require write permission, for example S/MIME operations such as adding a certificate, use <A HREF="sslfnc.html#1237143"><CODE>NSS_InitReadWrite</CODE></A> instead.</A></P>
+<A NAME="1237200">
+Before calling <CODE>NSS_Init</CODE>, your program must call <CODE><A href="../../../../../nspr/reference/html/prinit.html#15734">PR_Init</A></CODE>.</A></P>
+<A NAME="1107512">
+The policy flags for all cipher suites are turned off by default, disallowing all cipher suites. Therefore, an application cannot use NSS to perform any cryptographic operations until after it enables appropriate cipher suites by calling one of the <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A>:</A></P>
+<ul><P><LI><A NAME="1107624">
+<A HREF="sslfnc.html#1228530"><CODE>NSS_SetDomesticPolicy</CODE></A>, <A HREF="sslfnc.html#1100285"><CODE>NSS_SetExportPolicy</CODE></A>, and <A HREF="sslfnc.html#1105952"><CODE>NSS_SetFrancePolicy</CODE></A> configure the cipher suites for domestic, international, and French versions of software products with encryption features.</A></LI>
+<P><LI><A NAME="1107952">
+<A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A> sets policy flags for individual cipher suites, one at a time. This may be helpful if you have an export license that permits more or fewer capabilities than those allowed by the other export policy functions.</A></LI>
+</ul>
+<H4><A NAME="Head3;"></A>
+<A NAME="1237143">
+ NSS_InitReadWrite
+</A></H4>
+
+<A NAME="1236522">
+Sets up configuration files and performs other tasks required to run Network Security Services. Unlike <A HREF="sslfnc.html#1067601"><CODE>NSS_Init</CODE></A>, <CODE>NSS_InitReadWrite</CODE> provides both read and write access to database files.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1236523">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1236524">#include "nss.h" </A></PRE><PRE><A NAME="1236525">SECStatus NSS_InitReadWrite(char *configdir);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1236526">
+ Parameter
+</A></H5>
+
+<A NAME="1236532">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1236529">
+<CODE>configdir</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1236531">
+A pointer to a string containing the pathname of the directory where the certificate, key, and security module databases reside.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1236533">
+ Returns
+</A></H5>
+
+<A NAME="1236534">
+The function returns one of these value<VAR>s</VAR>:</A></P>
+<ul><P><LI><A NAME="1236535">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<P><LI><A NAME="1236538">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127">PR_GetError<CODE></A></CODE> to retrieve the error code.</A></LI>
+</ul><H5><A NAME="Head4;"></A>
+<A NAME="1236539">
+ Description
+</A></H5>
+
+<A NAME="1236540">
+<CODE>NSS_InitReadWrite</CODE> opens the <CODE>cert</CODE><I>N</I><CODE>.db</CODE>, <CODE>key</CODE><I>N</I><CODE>.db</CODE>, and <CODE>secmod.db</CODE> files (where <I>N</I> is a numeric digit) with both read and write permission in the specified directory. <CODE>NSS_InitReadWrite</CODE> is <I>not</I> idempotent, so call it only once.</A></P>
+<A NAME="1237207">
+Use <CODE>NSS_InitReadWrite</CODE> rather than <A HREF="sslfnc.html#1067601"><CODE>NSS_Init</CODE></A> if you are performing operations that require write permission, such as some S/MIME operations.</A></P>
+<A NAME="1236543">
+Before calling <CODE>NSS_InitReadWrite</CODE>, your program must call <CODE><A href="../../../../../nspr/reference/html/prinit.html#15734">PR_Init</A></CODE>.</A></P>
+<A NAME="1236544">
+The policy flags for all cipher suites are turned off by default, disallowing all cipher suites. Therefore, an application cannot use NSS to perform any cryptographic operations until after it enables appropriate cipher suites by calling one of the <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A>.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1234224">
+ NSS_NoDB_Init
+</A></H4>
+
+<A NAME="1235873">
+Performs tasks required to run Network Security Services without setting up configuration files. <B>Important:</B> This NSS function is not intended for use with SSL, which requires that the certificate and key database files be opened. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1234275">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1234276">#include "nss.h" </A></PRE><PRE><A NAME="1234277">SECStatus NSS_NoDB_Init(char *reserved);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1234278">
+ Parameter
+</A></H5>
+
+<A NAME="1234284">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1234281">
+<CODE>reserved</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1234283">
+Should be <CODE>NULL</CODE>..</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1234285">
+ Returns
+</A></H5>
+
+<A NAME="1234286">
+The function returns one of these value<VAR>s</VAR>:</A></P>
+<ul><P><LI><A NAME="1234287">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<P><LI><A NAME="1234290">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127">PR_GetError<CODE></A></CODE> to retrieve the error code.</A></LI>
+</ul><H5><A NAME="Head4;"></A>
+<A NAME="1234291">
+ Description
+</A></H5>
+
+<A NAME="1234292">
+<CODE>NSS_NoDB_Init</CODE> opens only the temporary database and the internal PKCS #112 module. Unlike <CODE><A HREF="sslfnc.html#1067601">NSS_Init</A></CODE>, <CODE>NSS_NoDB_Init</CODE> allows applications that do not have access to storage for databases to run raw crypto, hashing, and certificate functions.</A></P>
+<A NAME="1234976">
+<CODE>NSS_NoDB_Init</CODE> is <I>not</I> idempotent, so call it only once. </A></P>
+<A NAME="1234295">
+Before calling <CODE>NSS_NoDB_Init</CODE>, your program must call <CODE><A href="../../../../../nspr/reference/html/prinit.html#15734">PR_Init</A></CODE>.</A></P>
+<A NAME="1234296">
+The policy flags for all cipher suites are turned off by default, disallowing all cipher suites. Therefore, an application cannot use NSS to perform any cryptographic operations until after it enables appropriate cipher suites by calling one of the <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A>.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1068466">
+ SSL_OptionSetDefault
+</A></H4>
+
+<A NAME="1068467">
+Changes the default value of a specified SSL option for all subsequently opened sockets as long as the current application program is running.</A></P>
+<A NAME="1206352">
+<CODE>SSL_OptionSetDefault</CODE> replaces the deprecated function <A HREF="sslfnc.html#1206365"><CODE>SSL_EnableDefault</CODE></A>.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1068468">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1206331">#include "ssl.h"</A></PRE><PRE><A NAME="1068470">SECStatus SSL_OptionSetDefault(PRInt32 option, PRBool on);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1202769">
+ Parameters
+</A></H5>
+
+<A NAME="1202798">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1202772">
+<CODE>option</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1202774">
+One of the following values (except as noted, the factory setting is "off"):</A></P><ul></P><LI><A NAME="1202775">
+<CODE>SSL_SECURITY</CODE> enables use of security protocol. Factory setting is on. WARNING: If you turn this option off, the session will not be an SSL session and will not have certificate-based authentication, tamper detection, or encryption.</A></P><LI><A NAME="1202776">
+<CODE>SSL_REQUEST_CERTIFICATE</CODE> is a server option that requests a client to authenticate itself. </A></P><LI><A NAME="1202777">
+<CODE>SSL_REQUIRE_CERTIFICATE</CODE> is a server option that requires a client to authenticate itself (only if <CODE>SSL_REQUEST_CERTIFICATE</CODE> is also on). If client does not provide certificate, the connection terminates. Default state is a third state similar to on, that provides backward compatibility with older Netscape server products.</A></P><LI><A NAME="1202778">
+<CODE>SSL_HANDSHAKE_AS_CLIENT</CODE> controls the behavior of <CODE><A href="../../../../../nspr/reference/html/priofnc.html#18779" >PR_Accept</A></CODE>,. If this option is off, the <CODE>PR_Accept</CODE> configures the SSL socket to handshake as a server.  If it is on, then <CODE>PR_Accept</CODE> configures the SSL socket to handshake as a client, even though it accepted the connection as a TCP server.</A></P><LI><A NAME="1202781">
+<CODE>SSL_HANDSHAKE_AS_SERVER</CODE> controls the behavior of <CODE><A href="../../../../../nspr/reference/html/priofnc.html#18727">PR_Connect</A></CODE>. If this option is off, then <CODE>PR_Connect</CODE> configures the SSL socket to handshake as a client. If it is on, then <CODE>PR_Connect</CODE> configures the SSL socket to handshake as a server, even though it connected as a TCP client. </A></P><LI><A NAME="1202784">
+<CODE>SSL_ENABLE_FDX</CODE> tells the SSL library whether the application will have two threads, one reading and one writing, or just one thread doing reads and writes alternately. The factory setting for this option (which is the default, unless the application changes the default) is off (<CODE>PR_FALSE</CODE>), which means that the application will not do simultaneous reads and writes. An application that wishes to do sumultaneous reads and writes should set this to <CODE>PR_TRUE</CODE>.</A></ul><ul></P><A NAME="1202785">
+In NSS 2.8, the <CODE>SSL_ENABLE_FDX</CODE> option only affects the behavior of non-blocking SSL sockets. See the description below for more information on this option.</A></ul></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1202787">
+</A></P></TD><TD VALIGN=baseline ALIGN=left><ul></P><LI><A NAME="1202789">
+<CODE>SSL_ENABLE_SSL3</CODE> enables the application to communicate with SSL v3. Factory setting is on. If you turn this option off, an attempt to establish a connection with a peer that only understands SSL v3 will fail.</A></P><LI><A NAME="1202790">
+<CODE>SSL_ENABLE_SSL2</CODE> enables the application to communicate with SSL v2. Factory setting is on. If you turn this option off, an attempt to establish a connection with a peer that only understands SSL v2 will fail.</A></P><LI><A NAME="1202791">
+<CODE>SSL_ENABLE_TLS</CODE> is a peer of the <CODE>SSL_ENABLE_SSL2</CODE> and <CODE>SSL_ENABLE_SSL3</CODE> options. The IETF standard Transport Layer Security (TLS) protocol, RFC 2246, is a modified version of SSL3. It uses the SSL version number 3.1, appearing to be a "minor" revision of SSL 3.0. NSS 2.8 supports TLS in addition to SSL2 and SSL3. You can think of it as "<CODE>SSL_ENABLE_SSL3.1</CODE>". See the description below for more information about this option.</A></P><LI><A NAME="1202792">
+<CODE>SSL_V2_COMPATIBLE_HELLO</CODE> tells the SSL library whether or not to send SSL3 client hello messages in SSL2-compatible format. If set to <CODE>PR_TRUE</CODE>, it will; otherwise, it will not. Factory setting is on (<CODE>PR_TRUE</CODE>). See the description below for more information on this option.</A></P><LI><A NAME="1202793">
+<CODE>SSL_NO_CACHE</CODE> disallows use of the session cache. Factory setting is off. If you turn this option on, this socket will be unable to resume a session begun by another socket. When this socket's session is finished, no other socket will be able to resume the session begun by this socket. </A></P><LI><A NAME="1233288">
+<CODE>SSL_ROLLBACK_DETECTION</CODE> disables detection of a rollback attack. Factory setting is on. You must turn this option off to interoperate with TLS clients ( such as certain versions of Microsoft Internet Explorer) that do not conform to the TLS specification regarding rollback attacks. Important: turning this option off means that your code will not comply with the TLS 3.1 and SSL 3.0 specifications regarding rollback attack and will therefore be vulnerable to this form of attack.</A></ul></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1202795">
+<CODE>on</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1202797">
+<CODE>PR_TRUE</CODE> turns option on; <CODE>PR_FALSE</CODE> turns option off.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1202799">
+ Returns
+</A></H5>
+
+<A NAME="1068491">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1068492">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1068495">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1068496">
+ Description
+</A></H5>
+
+<A NAME="1134111">
+This function changes the default values for all subsequently opened sockets as long as the current application program is running. This function must be called once for each default value you want to change from the factory setting. To change a value in a socket that is already open, use <A HREF="sslfnc.html#1086543"><CODE>SSL_OptionSet</CODE></A>.</A></P>
+<A NAME="1134096">
+Keep the following in mind when deciding on the operating parameters you want to use with a particular socket:</A></P>
+<ul><P><LI><A NAME="1068498">
+The default values that you set with this function apply only to the current application session. If the application program is terminated and then restarted, any default values that were reset by this function revert to their original values.</A></LI>
+<P><LI><A NAME="1079629">
+Turning on <CODE>SSL_REQUIRE_CERTIFICATE</CODE> has no effect unless <CODE>SSL_REQUEST_CERTIFICATE </CODE>is also turned on. If you enable <CODE>SSL_REQUEST_CERTIFICATE</CODE>, then you should explicitly enable or disable <CODE>SSL_REQUIRE_CERTIFICATE</CODE> rather than allowing it to default. </A></LI>
+</P><A NAME="1224898">
+Enabling the <CODE>SSL_REQUIRE_CERTIFICATE</CODE> option is not recommended. If the client has no certificate and this option is enabled, the client's connection terminates with an error. The user is likely to think something is wrong with either the client or the server, and is unlikely to realize that the problem is the lack of a certificate. It is better to allow the SSL handshake to complete and then have your application return an error message to the client that informs the user of the need for a certificate.</A><P><P><LI><A NAME="1173455">
+As mentioned in <A HREF="sslintro.html#1027816">Communication</A>, when an application imports a socket into SSL after the TCP connection on that socket has already been established, it must call <CODE>SSL_ResetHandshake</CODE> to determine whether the socket is for a client or server. At first glance this may seem unnecessary, since <CODE>SSL_Enable</CODE> can set <CODE>SSL_HANDSHAKE_AS_CLIENT</CODE> or <CODE>SSL_HANDSHAKE_AS_SERVER</CODE>. However, these settings control the behavior of <A href="../../../../../nspr/reference/html/priofnc.html#18727"><CODE>PR_Connect</A></CODE> and <A href="../../../../../nspr/reference/html/priofnc.html#18779"><CODE>PR_Accept</A></CODE> only; if you don't call one of those functions after importing a non-SSL socket with <CODE>SSL_Import</CODE> (as in the case of an already established TCP connection), SSL still needs to know whether the application is functioning as a client or server. For a complete discussion of the use of <CODE>SSL_HANDSHAKE_AS_CLIENT</CODE> and <CODE>SSL_HANDSHAKE_AS_SERVER</CODE> with <CODE>SSL_EnableDefault</CODE> and <CODE>SSL_Enable</CODE>, see <A HREF="sslfnc.html#1086543">SSL_OptionSet</A>.</A></LI>
+<P><LI><A NAME="1185684">
+The SSL protocol is defined to be able to handle simultaneous two-way communication between applications at each end of an SSL connection. Two-way simultaneous communication is also known as "Full Duplex", abbreviated FDX.  However, most application protocols that use SSL are not two-way simultaneous, but two-way alternate, also known as "Half Dupled"; that is, each end takes turns sending, and each end is either sending, or receiving, but not both at the same time.  </A></LI>
+</P><A NAME="1185685">
+For an application to do full duplex, it would typically have two threads sharing the socket; one doing all the reading and the other doing all the writing.</A><P></P><A NAME="1185708">
+The <CODE>SSL_ENABLE_FDX</CODE> option tells the SSL library whether the application will have two threads, one reading and one writing, or just one thread doing reads and writes alternately.</A><P><P><LI><A NAME="1186310">
+<CODE>SSL_V2_COMPATIBLE_HELLO</CODE> tells the SSL library whether or not to send SSL3 client hello messages in SSL2-compatible format. If an SSL3 client hello message is sent to a server that only understands SSL2 and not SSL3, then the server will interpret the SSL3 client hello as a very large message, and the connection will usually seem to "hang" while the SSL2 server expects more data that will never arrive. For this reason, the SSL3 spec allows SSL3 client hellos to be sent in SSL2 format, and it recommends that SSL3 servers all accept SSL3 client hellos in SSL2 format. When an SSL2-only server receives an SSL3 client hello in SSL2 format, it can (and probably will) negotiate the protocol version correctly, not causing a "hang".</A></LI>
+</P><A NAME="1186321">
+Some applications may wish to force SSL3 client hellos to be sent in SSL3 format, not in SSL2-compatible format.  They might wish to do this if they knew, somehow, that the server does not understand SSL2-compatible client hello messages. </A><P></P><A NAME="1186326">
+Note that calling <CODE>SSL_Enable</CODE> to set <CODE>SSL_V2_COMPATIBLE_HELLO</CODE> to <CODE>PR_FALSE</CODE> implicitly also sets the <CODE>SSL_ENABLE_SSL2</CODE> option to <CODE>PR_FALSE</CODE> for that SSL socket. Calling <CODE>SSL_EnableDefault</CODE> to change the application default setting for <CODE>SSL_V2_COMPATIBLE_HELLO</CODE> to <CODE>PR_FALSE</CODE> implicitly also sets the default value for <CODE>SSL_ENABLE_SSL2</CODE> option to <CODE>PR_FALSE</CODE> for that application.</A><P><P><LI><A NAME="1187660">
+The options <CODE>SSL_ENABLE_SSL2</CODE>, <CODE>SSL_ENABLE_SSL3</CODE>, and <CODE>SSL_ENABLE_TLS </CODE>can each be set to <CODE>PR_TRUE</CODE> or <CODE>PR_FALSE</CODE> independently of each other. NSS 2.8 will negotiate the higest protocol version with the peer application from among the set of protocols that are commonly enabled in both applications. </A></LI>
+</P><A NAME="1187737">
+Note that SSL3 and TLS share the same set of cipher suites. When both SSL3 and TLS are enabled, all SSL3/TLS ciphersuites that are enabled are enabled for both SSL3 and TLS.</A><P></ul>
+<H4><A NAME="Head3;"></A>
+<A NAME="1204897">
+ SSL_OptionGetDefault
+</A></H4>
+
+<A NAME="1204924">
+Gets the value of a specified SSL default option. </A></P>
+<A NAME="1204944">
+<CODE>SSL_OptionGetDefault</CODE> is the complementary function for <A HREF="sslfnc.html#1068466"><CODE>SSL_OptionSetDefault</CODE></A>.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1205850">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1212408">#include "ssl.h"</A></PRE><PRE><A NAME="1205880">SECStatus SSL_OptionGetDefault(PRInt32 option, PRBool *on)</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1206048">
+ Parameters
+</A></H5>
+
+<A NAME="1206097">
+This function has the parameters listed below. <TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1206082">
+<CODE>option</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1206084">
+The value of the option whose default setting you wish to get. For information about the options available and the possible values to pass in this parameter, see the description of the <CODE>option</CODE> parameter under <A HREF="sslfnc.html#1068466"><CODE>SSL_OptionSetDefault</CODE></A>.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1206086">
+<CODE>on</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1206188">
+A pointer to the value of the option specified in the option parameter. <CODE>PR_TRUE</CODE> indicates that the option is on; <CODE>PR_FALSE</CODE> indicates that the option is off.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1206098">
+ Returns
+</A></H5>
+
+<A NAME="1206099">
+The function returns one of these value<VAR>s</VAR>:</A></P>
+<ul><P><LI><A NAME="1206100">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1206103">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1206069">
+ Description
+</A></H5>
+
+<A NAME="1209533">
+<CODE>SSL_CipherPrefGetDefault</CODE> gets the application default preference for the specified SSL2, SSL3, or TLS cipher A cipher suite is used only if the policy allows it and the preference for it is set to <CODE>PR_TRUE</CODE>. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1084747">
+ SSL_CipherPrefSetDefault
+</A></H4>
+
+<A NAME="1084748">
+Enables or disables SSL2 or SSL3 cipher suites (subject to which cipher suites are permitted or disallowed by previous calls to one or more of the <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A>). This function must be called once for each cipher you want to enable or disable by default. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1084749">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1212417">#include "ssl.h"</A></PRE><PRE><A NAME="1084751">SECStatus SSL_CipherPrefSetDefault(PRInt32 cipher, PRBool enabled);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1084752">
+ Parameters
+</A></H5>
+
+<A NAME="1084766">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1084755">
+<CODE>cipher</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1084757">
+One of the following values for SSL2 (factory settings for all are enabled):</A></P><P><A NAME="1084758">
+<CODE>SSL_EN_RC4_128_WITH_MD5<br>SSL_EN_RC4_128_EXPORT40_WITH_MD5<br>SSL_EN_RC2_128_CBC_WITH_MD5<br>SSL_EN_RC2_128_CBC_EXPORT40_WITH_MD5<br>SSL_EN_DES_64_CBC_WITH_MD5<br>SSL_EN_DES_192_EDE3_CBC_WITH_MD5</CODE></A></P><P><A NAME="1084759">
+</A></P><P><A NAME="1084760">
+Or one of the following values for SSL3/TLS (unless indicated otherwise, factory settings for all are enabled):</A></P><P><A NAME="1093245">
+<CODE>TLS_DHE_RSA_WITH_AES_256_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>TLS_DHE_DSS_WITH_AES_256_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>TLS_RSA_WITH_AES_256_CBC_SHA</CODE> (not enabled by default)<br>
+<CODE>SSL_FORTEZZA_DMS_WITH_RC4_128_SHA</CODE><br>
+<CODE>TLS_DHE_DSS_WITH_RC4_128_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>TLS_DHE_RSA_WITH_AES_128_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>TLS_DHE_DSS_WITH_AES_128_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>SSL_RSA_WITH_RC4_128_MD5</CODE><br>
+<CODE>SSL_RSA_WITH_RC4_128_SHA</CODE> (not enabled by default)<br>
+<CODE>TLS_RSA_WITH_AES_128_CBC_SHA</CODE> (not enabled by default)<br>
+<CODE>SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA</CODE><br>
+<CODE>SSL_RSA_WITH_3DES_EDE_CBC_SHA</CODE><br>
+<CODE>SSL_FORTEZZA_DMS_WITH_FORTEZZA_CBC_SHA</CODE><br>
+<CODE>SSL_DHE_RSA_WITH_DES_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>SSL_DHE_DSS_WITH_DES_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>SSL_RSA_FIPS_WITH_DES_CBC_SHA</CODE><br>
+<CODE>SSL_RSA_WITH_DES_CBC_SHA</CODE><br>
+<CODE>TLS_RSA_EXPORT1024_WITH_RC4_56_SHA</CODE><br>
+<CODE>TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA</CODE><br>
+<CODE>SSL_RSA_EXPORT_WITH_RC4_40_MD5</CODE><br>
+<CODE>SSL_RSA_EXPORT_WITH_RC2_CBC_40_MD5</CODE><br>
+<CODE>SSL_FORTEZZA_DMS_WITH_NULL_SHA</CODE><br>
+<CODE>SSL_RSA_WITH_NULL_SHA</CODE> (not enabled by default)<br>
+<CODE>SSL_RSA_WITH_NULL_MD5</CODE> (not enabled by default)
+</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1084763">
+<CODE>enabled</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1084765">
+If nonzero, the specified cipher is enabled. If zero, the cipher is disabled.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1084767">
+ Returns
+</A></H5>
+
+<A NAME="1084768">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1084769">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1116247">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1116248">
+ Description
+</A></H5>
+
+<A NAME="1116249">
+The CipherPrefSetDefault function enables or disables individual cipher suites globally. You typically call this in response to changes in user-controlled settings. You must call this function once for each cipher you want to enable or disable. To enable or disable cipher suites for an individual socket, use <A HREF="sslfnc.html#1214758"><CODE>SSL_CipherPrefSet</CODE></A>.</A></P>
+<A NAME="1219510">
+The set of available SSL cipher suites may grow from release to release of NSS. Applications will find it desirable to determine, at run time, what SSL2 cipher kinds and SSL3 cipher suites are actually implememted in a particular release. Applications may disable any cipher suites that they don't know about (for example, that they cannot present to the user via a GUI).  To that end, NSS provides a table that can be examined at run time.  All aspects of this table are declared in <CODE>ssl.h</CODE>.</A></P>
+<A NAME="1219511">
+<CODE>SSL_ImplementedCiphers[]</CODE> is an external array of unsigned 16-bit integers whose values are either SSL2 cipher kinds or SSL3 cipher suites. The values are the same as the values used to enable or disable a cipher suite via calls to <A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A>, and are defined in <CODE>sslproto.h</CODE>. The number of values in the table is contained in an external 16-bit integer named <CODE>SSL_NumImplementedCiphers</CODE>. The macro <CODE>SSL_IS_SSL2_CIPHER</CODE> can be used to determine whether a particular value is an SSL2 or an SSL3 cipher.</A></P>
+<A NAME="1124282">
+By default, all SSL2 and 12 SSL3/TLS cipher suites are enabled. However, this does not necessarily mean that they are all permitted. The <CODE>SSL_CipherPrefSetDefault</CODE> function cannot override cipher suite policy settings that are not permitted; see <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A> for details. Your application must call one of the export policy functions before it can perform any cryptographic operations.</A></P>
+<A NAME="1207482">
+The <CODE>TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA</CODE> and <CODE>TLS_RSA_EXPORT1024_WITH_RC4_56_SHA</CODE> cipher suites are defined in RFC 2246. They work with both SSL3 and TLS. They use symmetric ciphers with an effective key size of 56 bits. The so-called 56-bit export browsers and servers use these cipher suites.</A></P>
+<A NAME="1207487">
+The cipher suite numbers for the <CODE>SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA</CODE> and <CODE>SSL_RSA_FIPS_WITH_DES_CBC_SHA</CODE> cipher suites have been changed so that they are no longer "experimental" values. If an application attempts to set or set the policy or preference for one of the old FIPS cipher suite numbers, the library recognizes the old number and sets or gets the value for the new cipher suite number instead.</A></P>
+<A NAME="1084775">
+In this release, the three <CODE>SSL_FORTEZZA_</CODE> cipher suites cannot be enabled unless there is a PKCS #11 module available with a FORTEZZA-enabled token. The <CODE>SSL_FORTEZZA_</CODE> cipher suites will be removed in NSS 3.11.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1208119">
+ SSL_CipherPrefGetDefault
+</A></H4>
+
+<A NAME="1208144">
+Gets the current default preference setting for a specified SSL2 or SSL3 cipher suite. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1208148">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1212863">#include "ssl.h"</A></PRE><PRE><A NAME="1208150">SECStatus SSL_CipherPrefSetDefault(PRInt32 cipher, PRBool *enabled);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1208233">
+ Parameters
+</A></H5>
+
+<A NAME="1208251">
+This function has the parameters listed below. <TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1208236">
+cipher</A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1208238">
+The cipher suite whose default preference setting you want to get. For a list of the cipher suites you can specify, see <A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A>.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1208240">
+enabled</A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1208242">
+A pointer to the default value associated with the cipher specified in the <CODE>cipher</CODE> parameter. If nonzero, the specified cipher is enabled. If zero, the cipher is disabled.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1208252">
+ Returns
+</A></H5>
+
+<A NAME="1208253">
+The function returns one of these value<VAR>s</VAR>:</A></P>
+<ul><P><LI><A NAME="1208254">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1208257">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1209473">
+ Description
+</A></H5>
+
+<A NAME="1209474">
+<CODE>SSL_CipherPrefGetDefault</CODE> performs the complementary function to         <CODE>SSL_CipherPrefSetDefault</CODE>. It returns the application process' current default preference value for the specified cipher suite. If the application has not previously set the default preference, <CODE>SSL_CipherPrefGetDefault</CODE> returns the factory setting.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1138601">
+ SSL_ClearSessionCache
+</A></H4>
+
+<A NAME="1138602">
+Empties the SSL client session ID cache.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1138603">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1220816">#include "ssl.h"</A></PRE><PRE><A NAME="1138605">void SSL_ClearSessionCache(void);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1138606">
+ Description
+</A></H5>
+
+<A NAME="1138609">
+You must call <CODE>SSL_ClearSessionCache</CODE> after you use one of the <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A> to change cipher suite policy settings or use <A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A> to enable or disable any cipher suite. Otherwise, the old settings remain in the session cache and will be used instead of the new settings.</A></P>
+<A NAME="1141738">
+This function clears only the client cache. The client cache is not configurable. It is located in RAM (not on disk), and has the following characteristics:</A></P>
+<ul><P><LI><A NAME="1140229">
+maximum number of entries: unlimited</A></LI>
+<P><LI><A NAME="1140230">
+SSL 2.0 timeout value: 100 seconds</A></LI>
+<P><LI><A NAME="1143849">
+SSL 3.0 timeout value: 24 hours</A></LI>
+</ul>
+<BLOCKQUOTE><B>NOTE:</B>
+If an SSL client application does not call <CODE>SSL_ClearSessionCache</CODE>
+before shutdown, <A HREF="sslfnc.html#1061858"><CODE>NSS_Shutdown</CODE></A>
+fails with the error code <CODE>SEC_ERROR_BUSY</CODE>.
+</BLOCKQUOTE>
+<H4><A NAME="Head3;"></A>
+<A NAME="1143851">
+ SSL_ConfigServerSessionIDCache
+</A></H4>
+
+<A NAME="1143852">
+Sets up parameters for and opens the server session cache for a single-process application.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1085382">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1220842">#include "ssl.h"</A></PRE><PRE><A NAME="1225303">SECStatus SSL_ConfigServerSessionIDCache(<br>&nbsp;&nbsp;&nbsp;int maxCacheEntries,<br>&nbsp;&nbsp;&nbsp;PRUint32 timeout,<br>&nbsp;&nbsp;&nbsp;PRUint32 ssl3_timeout,<br>&nbsp;&nbsp;&nbsp;const char *directory); </A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1085385">
+ Parameters
+</A></H5>
+
+<A NAME="1085386">
+This function has the parameters listed below. <TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1085389">
+<CODE>maxCacheEntries</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1085391">
+The maximum number of entries in the cache. If a <CODE>NULL</CODE> value is passed, the server default value of 10,000 is used. </A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1085393">
+<CODE>timeout</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1085395">
+The lifetime in seconds of an SSL2 session. The minimum timeout value is 5 seconds and the maximum is 24 hours. Values outside this range are replaced by the server default value of 100 seconds.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1085397">
+<CODE>ssl3_timeout</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1085399">
+The lifetime in seconds of an SSL3 session. The minimum timeout value is 5 seconds and the maximum is 24 hours. Values outside this range are replaced by the server default value of 24 hours.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1085401">
+<CODE>directory</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1085403">
+A pointer to a string specifying the pathname of the directory that will contain the session cache. If a <CODE>NULL</CODE> value is passed, the server default value is used: <CODE>/tmp</CODE> (Unix) or <CODE>\\temp</CODE> (NT).</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1085404">
+ Returns
+</A></H5>
+
+<A NAME="1085405">
+The function returns one of these value<VAR>s</VAR>:</A></P>
+<ul><P><LI><A NAME="1085406">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1085409">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1085410">
+ Description
+</A></H5>
+
+<A NAME="1085412">
+If you are writing an application that will use SSL sockets that handshake as a 
+server, you must call <CODE>SSL_ConfigServerSessionIDCache</CODE> to configure 
+additional session caches for <EM>server</EM> sessions. If your server application uses 
+multiple processes (instead of or in addition to multiple threads), use 
+<A HREF="sslfnc.html#1142625"><CODE>SSL_ConfigMPServerSIDCache</CODE></A> instead. You must use one of these functions 
+to create a server cache.
+</A>
+</BLOCKQUOTE>
+<A NAME="1142070">
+This function creates two caches: the <I>server session ID cache</I> (also called the server session cache, or server cache), and the <I>client-auth certificate cache</I> (also called the client cert cache, or client auth cache). Both caches are used only for sessions where the program handshakes as a server. The client-auth certificate cache is used to remember the certificates previously presented by clients for client certificate authentication. </A></P>
+<A NAME="1085416">
+Passing a <CODE>NULL</CODE> value or a value that is out of range for any of the parameters 
+causes the server default value to be used in the server cache. The values that 
+you pass affect only the server cache, not the client cache.
+</A>
+</BLOCKQUOTE>
+
+<H3><A NAME="Head2;"></A>
+<A NAME="1154189">
+ Initializing Multi-Processing with a Shared SSL Server Cache 
+</A></H3>
+
+<A NAME="1154193">
+To start a multi-processing application, the initial parent process calls <A HREF="sslfnc.html#1142625"><CODE>SSL_ConfigMPServerSIDCache</CODE></A>, and then creates child processes, by one of these methods: </A></P>
+<ul><P><LI><A NAME="1154194">
+Call <CODE>fork</CODE> and then <CODE>exec</CODE> (Unix) </A></LI>
+<P><LI><A NAME="1154195">
+Call <CODE>CreateProcess</CODE> (Win32)</A></LI>
+<P><LI><A NAME="1154196">
+Call <CODE>PR_CreateProcess</CODE> (both Unix and Win32)</A></LI>
+</ul><A NAME="1154197">
+It is essential that the parent allow the child to inherit the file descriptors. WIN32's <CODE>CreateProcess</CODE> takes an argument that tells it whether or not to permit files to be inherited; this argument must be <CODE>TRUE</CODE>.  </A></P>
+<A NAME="1154198">
+When a new child that has been created by either <CODE>CreateProcess</CODE> or <CODE>exec</CODE> begins, it may have inherited file descriptors (FDs), but not the parent's memory. Therefore, to find out what FDs it has inherited, it must be told about them. To that end, the function <A HREF="sslfnc.html#1142625"><CODE>SSL_ConfigMPServerSIDCache</CODE></A> sets an environment variable named <CODE>SSL_INHERITANCE</CODE>. The value of the variable is a printable ASCII string, containing all the information needed to set up and use the inherited FDs.  </A></P>
+<A NAME="1154202">
+There are two ways to transfer the content of <CODE>SSL_INHERITANCE</CODE> from parent to child:</A></P>
+<ul><P><LI><A NAME="1154203">
+The child inherits the parent's environment, which must include the <CODE>SSL_INHERITANCE</CODE> variable. For the child to inherit the parent's environment you must set a specific argument to <CODE>CreateProcess</CODE> or <CODE>PR_CreateProcess</CODE>. </A></LI>
+<P><LI><A NAME="1154204">
+The parent transmits the content of <CODE>SSL_INHERITANCE</CODE> to the child by some other means, such as on the command line, or in another file or pipe. </A></LI>
+</ul><A NAME="1160413">
+In either case, the child must call <A HREF="sslfnc.html#1162055"><CODE>SSL_InheritMPServerSIDCache</CODE></A> to complete the inheritance of the shared cache FDs/handles. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1142625">
+ SSL_ConfigMPServerSIDCache
+</A></H4>
+
+<A NAME="1142626">
+Sets up parameters for and opens the server session cache for a multi-process application.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1142627">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1142628">#include "ssl.h"</A></PRE><PRE><A NAME="1142629">SECStatus SSL_ConfigMPServerSIDCache(<br>&nbsp;&nbsp;&nbsp;int maxCacheEntries,<br>&nbsp;&nbsp;&nbsp;PRUint32 timeout,<br>&nbsp;&nbsp;&nbsp;PRUint32 ssl3_timeout,<br>&nbsp;&nbsp;&nbsp;const char *directory); </A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1142630">
+ Parameters
+</A></H5>
+
+<A NAME="1142648">
+This function has the parameters listed below. <TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1142633">
+<CODE>maxCacheEntries</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1142635">
+The maximum number of entries in the cache. If a <CODE>NULL</CODE> value is passed, the server default value of 10,000 is used. </A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1142637">
+<CODE>timeout</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1142639">
+The lifetime in seconds of an SSL2 session. The minimum timeout value is 5 seconds and the maximum is 24 hours. Values outside this range are replaced by the server default value of 100 seconds.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1142641">
+<CODE>ssl3_timeout</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1142643">
+The lifetime in seconds of an SSL3 session. The minimum timeout value is 5 seconds and the maximum is 24 hours. Values outside this range are replaced by the server default value of 24 hours.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1142645">
+<CODE>directory</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1142647">
+A pointer to a string specifying the pathname of the directory that will contain the session cache. If a <CODE>NULL</CODE> value is passed, the server default value is used: <CODE>/tmp</CODE> (Unix) or <CODE>\\temp</CODE> (NT).</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1142649">
+ Returns
+</A></H5>
+
+<A NAME="1142650">
+The function returns one of these value<VAR>s</VAR>:</A></P>
+<ul><P><LI><A NAME="1142651">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1142654">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1142655">
+ Description
+</A></H5>
+
+<A NAME="1142656">
+This function is identical to <A HREF="sslfnc.html#1143851"><CODE>SSL_ConfigServerSessionIDCache</CODE></A>, except that it is for use with applications that use multiple processes. You must use one or the other of these functions to create a server cache, not both.</A></P>
+<A NAME="1148381">
+If your application will use multiple processes (instead of, or in addition to, multiple threads), and all of the processes appear to be on the same server (same IP address and port number), then those processes must share a common SSL session cache. The common parent of all the processes must call this function to create the cache before creating the other processes.</A></P>
+<A NAME="1143091">
+An application uses multiple processes <I>only</I> if it uses the Unix function <CODE>fork</CODE>, or the Win32 function <CODE>CreateProcess</CODE>. This is not the same as using multiple threads or multiple processors. Note that an SSL server that uses Fortezza hardware devices is limited to a single process. It can use multiple threads, and thereby make use of multiple processors, but this must all be done from a single process.</A></P>
+<A NAME="1142657">
+This function creates two caches: the <I>server session ID cache</I> (also called the server session cache, or server cache), and the <I>client-auth certificate cache</I> (also called the client cert cache, or client auth cache). Both caches are used only for sessions where the program handshakes as a server. The client-auth certificate cache is used to remember the certificates previously presented by clients for client certificate authentication. </A></P>
+<A NAME="1142659">
+Passing a <CODE>NULL</CODE> value or a value that is out of range for any of the parameters 
+causes the server default value to be used in the server cache. The values that 
+you pass affect only the server cache, not the client cache.
+</A>
+</BLOCKQUOTE>
+<A NAME="1163184">
+Before the cache can be used in the child process, the child process must complete its initialization using <A HREF="sslfnc.html#1162055"><CODE>SSL_InheritMPServerSIDCache</CODE></A>.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1162055">
+ SSL_InheritMPServerSIDCache
+</A></H4>
+
+<A NAME="1162056">
+Ensures the inheritance of file descriptors to a child process.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1221513">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1221514">#include "ssl.h"</A></PRE><PRE><A NAME="1221515">SECStatus SSL_InheritMPServerSIDCache (const char *envString);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1221516">
+ Parameters
+</A></H5>
+
+<A NAME="1162610">
+This function has the following parameter: <TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1162595">
+<CODE>envString</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1162597">
+A pointer to the location of the inheritance information. The value depends on how you are passing the information.</A></P><P><A NAME="1162933">
+</A></P><P><A NAME="1162935">
+If a <CODE>NULL</CODE> value is passed, the function looks for the <CODE>SSL_INHERITANCE</CODE> variable that has been inherited as part of the child's environment. </A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1162413">
+ Returns
+</A></H5>
+
+<A NAME="1162414">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1162415">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1162418">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1162419">
+ Description
+</A></H5>
+
+<A NAME="1162038">
+This function completes the inheritance of file descriptors from a parent to a child process. After the child process is created, it must call this function to complete its initialization.</A></P>
+<A NAME="1163084">
+The value of the <CODE>envString</CODE> argument depends on which of the two possible inheritance schemes you have used. (See <A HREF="sslfnc.html#1154189">Initializing Multi-Processing with a Shared SSL Server Cache</A>.)</A></P>
+<ul><P><LI><A NAME="1163085">
+If the <CODE>SSL_INHERITANCE</CODE> variable has been inherited as part of the child's environment, the child must pass a <CODE>NULL</CODE> pointer as the <CODE>envString</CODE> argument. This causes the function to look in the environment for the variable.</A></LI>
+<P><LI><A NAME="1163086">
+If the parent has transmitted the value of the <CODE>SSL_INHERITANCE</CODE> variable to the child by some other means, the child must pass a pointer to that string as the <CODE>envString</CODE> argument to complete the inheritance.</A></LI>
+</ul><A NAME="1163090">
+When this function returns <CODE>SECSuccess</CODE>, the server cache is ready to be used by the SSL code.</A></P>
+
+<H2><A NAME="SSL Export Policy Functions"></A>
+<A NAME="1098841">
+ SSL Export Policy Functions
+</A></H2><A NAME="1163748">
+The SSL export policy functions determine which cipher suites are <I>permitted</I> for use in an SSL session. They do not determine which cipher suites are actually <I>enabled</I>--that is, turned on and ready to use. To enable or disable a permitted cipher suite, use <A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A>; but bear in mind that <A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A> can't enable any cipher suite that is not explicitly permitted as a result of a call to one of the export policy functions.</A></P>
+<A NAME="1117995">
+By default, none of the cipher suites supported by SSL are permitted. The functions <A HREF="sslfnc.html#1228530"><CODE>NSS_SetDomesticPolicy</CODE></A>, <A HREF="sslfnc.html#1100285"><CODE>NSS_SetExportPolicy</CODE></A>, and <A HREF="sslfnc.html#1105952"><CODE>NSS_SetFrancePolicy</CODE></A> permit the use of approved cipher suites for domestic, international, and French versions, respectively, of software products with encryption features. The policy settings permitted by these functions conform with current U.S. export regulations as understood by Netscape (for products with and without "retail status" as defined by the <A HREF="http://w3.access.gpo.gov/bxa/ear/ear_data.html" TARGET="_top">latest U.S. Export Regulations</A>) and French import regulations.</A></P>
+<A NAME="1103578">
+Under some circumstances, you may be required to abide by the terms of an export license that permits more or fewer capabilities than those allowed by these three functions. In such cases, use <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A> to explicitly enable those cipher suites you may legally export.</A></P>
+<A NAME="1212187">
+For descriptions of cipher suites supported by SSL, see <A HREF="http://developer.mozilla.org/en/Introduction_to_SSL" TARGET="_top">Introduction to SSL</A>.</A></P>
+<A NAME="1122340">
+Applications must call one of the export policy functions before attempting to perform any cryptographic operations:</A></P>
+<A NAME="1228515">
+<A HREF="sslfnc.html#1228530"><CODE>NSS_SetDomesticPolicy</CODE></A><br><A HREF="sslfnc.html#1100285"><CODE>NSS_SetExportPolicy</CODE></A><br><A HREF="sslfnc.html#1105952"><CODE>NSS_SetFrancePolicy</CODE></A><br><A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A></A></P>
+<A NAME="1228547">
+The following function is also described in this section:</A></P>
+<A NAME="1228552">
+<A HREF="sslfnc.html#1210463"><CODE>SSL_CipherPolicyGet</CODE></A></A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1228530">
+ NSS_SetDomesticPolicy
+</A></H4>
+
+<A NAME="1100273">
+Configures cipher suites to conform with current U.S. export regulations related to domestic software products with encryption features. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1100275">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1100276">#include "ssl.h"</A></PRE><PRE><A NAME="1100639">extern SECStatus NSS_SetDomesticPolicy(void);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1100277">
+ Returns
+</A></H5>
+
+<A NAME="1100702">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1100731">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1100734">
+If unsuccessful, returns <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1100278">
+ Description
+</A></H5>
+
+<A NAME="1101005">
+<CODE>NSS_SetDomesticPolicy</CODE> configures all the cipher suites listed under <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A> for software that is <I>not</I> intended for export, and is thus not required to conform with U.S. export regulations related to domestic software products with encryption features. After calling this function, all cipher suites listed are permitted (but not necessarily enabled; see <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A>) for the calling application. </A></P>
+<A NAME="1118130">
+When an SSL connection is established, SSL permits the use of the strongest cipher suites that are both permitted and enabled for the software on both ends of the connection. For example, if a client that has called <CODE>NSS_SetDomesticPolicy</CODE> establishes an SSL connection with a server for which some cipher suites are either not permitted or not enabled (such as an international version of Netscape server software), SSL uses the strongest cipher suites supported by the server that are also supported by the client. </A></P>
+<A NAME="1101459">
+Under some circumstances, you may be required to abide by the terms of an export license that permits more or fewer capabilities than those allowed by <CODE>NSS_SetDomesticPolicy</CODE>. In that case, first call <A HREF="sslfnc.html#1228530"><CODE>NSS_SetDomesticPolicy</CODE></A>, <A HREF="sslfnc.html#1100285"><CODE>NSS_SetExportPolicy</CODE></A>, or <A HREF="sslfnc.html#1105952"><CODE>NSS_SetFrancePolicy</CODE></A>, then call <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A> repeatedly to explicitly allow or disallow cipher suites until only those that you may legally export are permitted. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1122544">
+ Important
+</A></H5>
+
+<A NAME="1122628">
+If you call <CODE>NSS_SetDomesticPolicy</CODE> sometime after initialization to change 
+cipher suite policy settings, you must also call <CODE>SSL_ClearSessionCache</CODE>. 
+Otherwise, the old settings remain in the session cache and will be used instead 
+of the new settings. 
+</A>
+</BLOCKQUOTE>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1100285">
+ NSS_SetExportPolicy
+</A></H4>
+
+<A NAME="1101621">
+Configures the SSL cipher suites to conform with current U.S. export regulations related to international software products with encryption features.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1101604">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1109602">#include "ssl.h"</A></PRE><PRE><A NAME="1100286">extern SECStatus NSS_SetExportPolicy(void);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1101655">
+ Returns
+</A></H5>
+
+<A NAME="1101656">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1101657">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1101660">
+If unsuccessful, returns <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1100287">
+ Description
+</A></H5>
+
+<A NAME="1102307">
+<CODE>NSS_SetExportPolicy</CODE> configures all the cipher suites listed under <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A> to conform with current U.S. export regulations related to international software products with encryption features (as Netscape understands them). Calling this function permits use of cipher suites listed below (but doesn't necessarily enable them; see <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A>). Policy for these suites is set to <CODE>SSL_ALLOWED</CODE> unless otherwise indicated. <CODE>SSL_RESTRICTED</CODE> means the suite can be used by clients only when they are communicating with domestic server software or with international server software that presents a Global ID certificate. For more details on policy settings, see <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A>.</A></P>
+<A NAME="1102568">
+For SSL 2.0:</A></P>
+<ul><P><LI><A NAME="1102934">
+<CODE>SSL_EN_RC4_128_EXPORT40_WITH_MD5</CODE></A></LI>
+<P><LI><A NAME="1103038">
+<CODE>SSL_EN_RC2_128_CBC_EXPORT40_WITH_MD5</CODE></A></LI>
+</ul><A NAME="1102571">
+For SSL 3.0:</A></P>
+<ul><P><LI><A NAME="1119271">
+<CODE>SSL_RSA_WITH_NULL_MD5</CODE></A></LI>
+<P><LI><A NAME="1102519">
+<CODE>SSL_RSA_WITH_RC4_128_MD5 (SSL_RESTRICTED)</CODE></A></LI>
+<P><LI><A NAME="1118523">
+<CODE>SSL_RSA_WITH_3DES_EDE_CBC_SHA (SSL_RESTRICTED)</CODE></A></LI>
+<P><LI><A NAME="1105215">
+<CODE>SSL_RSA_EXPORT_WITH_RC4_40_MD5</CODE></A></LI>
+<P><LI><A NAME="1105216">
+<CODE>SSL_RSA_EXPORT_WITH_RC2_CBC_40_MD5</CODE></A></LI>
+</ul><A NAME="1100288">
+Under some circumstances, you may be required to abide by the terms of an export license that permits more or fewer capabilities than those allowed by <CODE>NSS_SetExportPolicy</CODE>. In that case, you should first call <A HREF="sslfnc.html#1228530"><CODE>NSS_SetDomesticPolicy</CODE></A>, <A HREF="sslfnc.html#1100285"><CODE>NSS_SetExportPolicy</CODE></A>, or <A HREF="sslfnc.html#1105952"><CODE>NSS_SetFrancePolicy</CODE></A>, then call <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A> repeatedly to explicitly allow or disallow cipher suites until only those that you may legally export are permitted. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1122676">
+ Important
+</A></H5>
+
+<A NAME="1122677">
+If you call <CODE>NSS_SetExportPolicy</CODE> sometime after initialization to change 
+cipher suite policy settings, you must also call <CODE>SSL_ClearSessionCache</CODE>. 
+Otherwise, the old settings remain in the session cache and will be used instead 
+of the new settings. 
+</A>
+</BLOCKQUOTE>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1105952">
+ NSS_SetFrancePolicy
+</A></H4>
+
+<A NAME="1105968">
+Configures the SSL cipher suites to conform with French import regulations related to software products with encryption features.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1225378">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1225379">#include "ssl.h"</A></PRE><PRE><A NAME="1225380">SECStatus NSS_SetFrancePolicy(void);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1106028">
+ Returns
+</A></H5>
+
+<A NAME="1106029">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1106030">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1106033">
+If unsuccessful, returns <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1105955">
+ Description
+</A></H5>
+
+<A NAME="1119603">
+<CODE>NSS_SetFrancePolicy</CODE> configures all the cipher suites listed under <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A> to conform with current U.S. export regulations and French import regulations (as Netscape understands them) related to software products with encryption features. Calling this function permits use of cipher suites listed below (but doesn't necessarily enable them; see <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A>). Policy for these suites is set to <CODE>SSL_ALLOWED</CODE>. For more details on policy settings, see <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A>.</A></P>
+<A NAME="1119852">
+For SSL 2.0:</A></P>
+<ul><P><LI><A NAME="1119853">
+<CODE>SSL_EN_RC4_128_EXPORT40_WITH_MD5</CODE></A></LI>
+<P><LI><A NAME="1119854">
+<CODE>SSL_EN_RC2_128_CBC_EXPORT40_WITH_MD5</CODE></A></LI>
+</ul><A NAME="1119855">
+For SSL 3.0:</A></P>
+<ul><P><LI><A NAME="1119856">
+<CODE>SSL_RSA_WITH_NULL_MD5</CODE></A></LI>
+<P><LI><A NAME="1119859">
+<CODE>SSL_RSA_EXPORT_WITH_RC4_40_MD5</CODE></A></LI>
+<P><LI><A NAME="1119860">
+<CODE>SSL_RSA_EXPORT_WITH_RC2_CBC_40_MD5</CODE></A></LI>
+</ul><A NAME="1110037">
+Under some circumstances, you may be required to abide by the terms of an export license that permits more or fewer capabilities than those allowed by <CODE>NSS_SetFrancePolicy</CODE>. In that case, you should first call <A HREF="sslfnc.html#1228530"><CODE>NSS_SetDomesticPolicy</CODE></A>, <A HREF="sslfnc.html#1100285"><CODE>NSS_SetExportPolicy</CODE></A>, or <A HREF="sslfnc.html#1105952"><CODE>NSS_SetFrancePolicy</CODE></A>, then call <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A> repeatedly to explicitly allow or disallow cipher suites until only those that you may legally export are permitted.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1122751">
+ Important
+</A></H5>
+
+<A NAME="1122752">
+If you call <CODE>NSS_SetFrancePolicy</CODE> sometime after initialization to change 
+cipher suite policy settings, you must also call <CODE>SSL_ClearSessionCache</CODE>. 
+Otherwise, the old settings remain in the session cache and will be used instead 
+of the new settings. 
+</A>
+</BLOCKQUOTE>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1104647">
+ SSL_CipherPolicySet
+</A></H4>
+
+<A NAME="1104648">
+Sets policy for the use of individual cipher suites.</A></P>
+<A NAME="1210235">
+<CODE>SSL_CipherPolicySet</CODE> replaces the deprecated function <A HREF="sslfnc.html#1207350"><CODE>SSL_SetPolicy</CODE></A>.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1212911">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1212912">#include "ssl.h"<br>#include "proto.h"</A></PRE><PRE><A NAME="1212913">SECStatus SSL_CipherPolicySet(PRInt32 cipher, PRInt32 policy);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1104652">
+ Parameters
+</A></H5>
+
+<A NAME="1104669">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1104655">
+<CODE>cipher</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1104657">
+A value from one of the following lists.<br></A></P><P><A NAME="1125141">
+Values for SSL2 (all are disallowed by default):</A></P><P><A NAME="1104658">
+ <CODE>SSL_EN_RC4_128_WITH_MD5<br>SSL_EN_RC4_128_EXPORT40_WITH_MD5<br>SSL_EN_RC2_128_CBC_WITH_MD5<br>SSL_EN_RC2_128_CBC_EXPORT40_WITH_MD5<br>SSL_EN_DES_64_CBC_WITH_MD5<br>SSL_EN_DES_192_EDE3_CBC_WITH_MD5<br></CODE></A></P><P><A NAME="1104660">
+Values for SSL3/TLS (all are disallowed by default):</A></P><P><A NAME="1210057">
+<CODE>TLS_DHE_RSA_WITH_AES_256_CBC_SHA</CODE> (client side only)<br>
+<CODE>TLS_DHE_DSS_WITH_AES_256_CBC_SHA</CODE> (client side only)<br>
+<CODE>TLS_RSA_WITH_AES_256_CBC_SHA</CODE><br>
+<CODE>SSL_FORTEZZA_DMS_WITH_RC4_128_SHA</CODE><br>
+<CODE>TLS_DHE_DSS_WITH_RC4_128_SHA</CODE> (client side only)<br>
+<CODE>TLS_DHE_RSA_WITH_AES_128_CBC_SHA</CODE> (client side only)<br>
+<CODE>TLS_DHE_DSS_WITH_AES_128_CBC_SHA</CODE> (client side only)<br>
+<CODE>SSL_RSA_WITH_RC4_128_MD5</CODE><br>
+<CODE>SSL_RSA_WITH_RC4_128_SHA</CODE><br>
+<CODE>TLS_RSA_WITH_AES_128_CBC_SHA</CODE><br>
+<CODE>SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA</CODE> (client side only)<br>
+<CODE>SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA</CODE> (client side only)<br>
+<CODE>SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA</CODE><br>
+<CODE>SSL_RSA_WITH_3DES_EDE_CBC_SHA</CODE><br>
+<CODE>SSL_FORTEZZA_DMS_WITH_FORTEZZA_CBC_SHA</CODE><br>
+<CODE>SSL_DHE_RSA_WITH_DES_CBC_SHA</CODE> (client side only)<br>
+<CODE>SSL_DHE_DSS_WITH_DES_CBC_SHA</CODE> (client side only)<br>
+<CODE>SSL_RSA_FIPS_WITH_DES_CBC_SHA</CODE><br>
+<CODE>SSL_RSA_WITH_DES_CBC_SHA</CODE><br>
+<CODE>TLS_RSA_EXPORT1024_WITH_RC4_56_SHA</CODE><br>
+<CODE>TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA</CODE><br>
+<CODE>SSL_RSA_EXPORT_WITH_RC4_40_MD5</CODE><br>
+<CODE>SSL_RSA_EXPORT_WITH_RC2_CBC_40_MD5</CODE><br>
+<CODE>SSL_FORTEZZA_DMS_WITH_NULL_SHA</CODE><br>
+<CODE>SSL_RSA_WITH_NULL_SHA</CODE><br>
+<CODE>SSL_RSA_WITH_NULL_MD5</CODE>
+</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1104663">
+<CODE>policy</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1104665">
+One of the following values:</A></P><ul></P><LI><A NAME="1104666">
+<CODE>SSL_ALLOWED</CODE>. Cipher is always allowed by U.S. government policy.   </A></P><LI><A NAME="1104667">
+<CODE>SSL_RESTRICTED</CODE>. Cipher is allowed by U.S. government policy for servers with Global ID certificates. </A></P><LI><A NAME="1104668">
+<CODE>SSL_NOT_ALLOWED</CODE>. Cipher is never allowed by U.S. government policy.</A></ul></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1104670">
+ Returns
+</A></H5>
+
+<A NAME="1104671">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1104672">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1104675">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1104676">
+ Description
+</A></H5>
+
+<A NAME="1210161">
+<CODE>SSL_CipherPolicySet</CODE> tells the SSL library that the specified cipher suite is allowed by the application's export license, or is not allowed by the application's export license, or is allowed to be used only with a Step-Up certificate. It overrides the factory default policy for that cipher suite. The default policy for all cipher suites is <CODE>SSL_NOT_ALLOWED</CODE>, meaning that the application's export license does not approve the use of this cipher suite. A U.S. "domestic" version of a product typically sets all cipher suites to <CODE>SSL_ALLOWED</CODE>. This setting is used to separate export and domestic versions of a product, and is not intended to express user cipher preferences. This setting affects all SSL sockets in the application process that are opened after a call to <CODE>SSL_CipherPolicySet</CODE>.</A></P>
+<A NAME="1104677">
+Under some circumstances, you may be required to abide by the terms of an export license that permits more or fewer capabilities than those allowed by <A HREF="sslfnc.html#1228530"><CODE>NSS_SetDomesticPolicy</CODE></A>, <A HREF="sslfnc.html#1100285"><CODE>NSS_SetExportPolicy</CODE></A>, or <A HREF="sslfnc.html#1105952"><CODE>NSS_SetFrancePolicy</CODE></A>. In that case, first call <A HREF="sslfnc.html#1228530"><CODE>NSS_SetDomesticPolicy</CODE></A>, <A HREF="sslfnc.html#1100285"><CODE>NSS_SetExportPolicy</CODE></A>, or <A HREF="sslfnc.html#1105952"><CODE>NSS_SetFrancePolicy</CODE></A>, then call <CODE>SSL_CipherPolicySet</CODE> repeatedly to explicitly allow or disallow cipher suites until only those that you may legally export are permitted.</A></P>
+<A NAME="1110096">
+In a domestic US product, all the cipher suites are (presently) allowed. In an export client product, some cipher suites are always allowed (such as those with 40-bit keys), some are never allowed (such as triple-DES), and some are allowed (such as RC4_128) for use with approved servers, typically servers owned by banks with special Global ID certificates. (For details, see <A HREF="sslfnc.html#1100285"><CODE>NSS_SetExportPolicy</CODE></A> and <A HREF="sslfnc.html#1105952"><CODE>NSS_SetFrancePolicy</CODE></A>.) When an SSL connection is established, SSL uses only cipher suites that have previously been explicitly permitted by a call to one of the SSL export policy functions.</A></P>
+<A NAME="1104678">
+Note that the value <CODE>SSL_RESTRICTED</CODE> (passed in the <CODE>policy</CODE> parameter) is currently used only by SSL clients, which can use it to set policy for connections with servers that have SSL step-up certificates.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1123038">
+ Important
+</A></H5>
+
+<A NAME="1123039">
+If you call <CODE>SSL_CipherPolicySet</CODE> sometime after initialization to change 
+cipher suite policy settings, you must also call <CODE>SSL_ClearSessionCache</CODE>. 
+Otherwise, the old settings remain in the session cache and will be used instead 
+of the new settings. 
+</A>
+</BLOCKQUOTE>
+<H5><A NAME="Head4;"></A>
+<A NAME="1106511">
+ See Also
+</A></H5>
+
+<A NAME="1120368">
+Permitting a cipher suite is not necessarily the same as enabling it. For details, see <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A>.</A></P>
+<A NAME="1163847">
+For descriptions of cipher suites supported by SSL, see <A HREF="http://developer.mozilla.org/en/Introduction_to_SSL" TARGET="_top">Introduction to SSL</A>. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1210463">
+ SSL_CipherPolicyGet
+</A></H4>
+
+<A NAME="1210498">
+Gets the current policy setting for a specified cipher suite.</A></P>
+<A NAME="1228683">
+<CODE>SSL_CipherPolicyGet</CODE> is the complementary function for <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A>.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1210503">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1210504">#include "ssl.h"<br>#include "proto.h"</A></PRE><PRE><A NAME="1210505">SECStatus SSL_CipherPolicyGet(PRInt32 cipher, PRInt32 *policy);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1210506">
+ Parameters
+</A></H5>
+
+<A NAME="1211703">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1211696">
+<CODE>cipher</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1211698">
+A value identifying a cipher suite. For a list of possible values, see <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A>.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1211700">
+policy<CODE></CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1212093">
+A pointer to one of the following values:</A></P><ul></P><LI><A NAME="1212094">
+<CODE>SSL_ALLOWED</CODE>. Cipher is always allowed by U.S. government policy.   </A></P><LI><A NAME="1212095">
+<CODE>SSL_RESTRICTED</CODE>. Cipher is allowed by U.S. government policy for servers with Global ID certificates. <CODE></CODE></A></P><LI><A NAME="1212118">
+<CODE>SSL_NOT_ALLOWED</CODE>. Cipher is never allowed by U.S. government policy.</A></ul></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1214739">
+ Description
+</A></H5>
+
+<A NAME="1214743">
+See the description above for <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A>.</A></P>
+
+<H2><A NAME="SSL Configuration Functions"></A>
+<A NAME="1163855">
+ SSL Configuration Functions
+</A></H2><A NAME="1090054">
+SSL configuration involves several NSPR functions in addition to the SSL functions listed here. For a complete list of configuration functions, see <A HREF="sslintro.html#1027742">Configuration</A>. </A></P>
+<A NAME="1090814">
+<A HREF="sslfnc.html#1090577">SSL Configuration</A><br><A HREF="sslfnc.html#1089578">Callback Configuration</A></A></P>
+
+<H3><A NAME="Head2;"></A>
+<A NAME="1090577">
+ SSL Configuration
+</A></H3>
+
+<A NAME="1090637">
+<A HREF="sslfnc.html#1085950"><CODE>SSL_ImportFD</CODE></A><br><A HREF="sslfnc.html#1086543"><CODE>SSL_OptionSet</CODE></A><br><A HREF="sslfnc.html#1194921"><CODE>SSL_OptionGet</CODE></A><br><A HREF="sslfnc.html#1214758"><CODE>SSL_CipherPrefSet</CODE></A><br><A HREF="sslfnc.html#1214800"><CODE>SSL_CipherPrefGet</CODE></A><br><A HREF="sslfnc.html#1217647"><CODE>SSL_ConfigSecureServer</CODE></A><br><A HREF="sslfnc.html#1087792"><CODE>SSL_SetURL</CODE></A><br><A HREF="sslfnc.html#1088040"><CODE>SSL_SetPKCS11PinArg</CODE></A></A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1085950">
+ SSL_ImportFD
+</A></H4>
+
+<A NAME="1085951">
+Imports an existing NSPR file descriptor into SSL and returns a new SSL socket.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1085952">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1085953">#include "ssl.h"</A></PRE><PRE><A NAME="1085954">PRFileDesc *SSL_ImportFD(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *model,<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1085955">
+ Parameters
+</A></H5>
+
+<A NAME="1085965">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1085958">
+<CODE>model</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1085960">
+A pointer to the model file descriptor.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1085962">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1085964">
+A pointer to the file descriptor for the new SSL socket.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1085966">
+ Returns
+</A></H5>
+
+<A NAME="1085967">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1085968">
+If successful, a pointer to a new socket file descriptor.</A></LI>
+<LI><A NAME="1085969">
+If unsuccessful, <CODE>NULL</CODE>.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1085970">
+ Description
+</A></H5>
+
+<A NAME="1085971">
+Any SSL function that takes a pointer to a file descriptor (socket) as a parameter will have no effect (even though the SSL function may return <CODE>SECSuccess</CODE>) if the socket is not an SSL socket. Sockets do not automatically become secure SSL sockets when they are created by the NSPR functions. You must pass an NSPR socket's file descriptor to <CODE>SSL_ImportFD</CODE> to make it an SSL socket before you call any other SSL function that takes the socket's file descriptor as a parameter</A></P>
+<A NAME="1091276">
+<CODE>SSL_ImportFD</CODE> imports an existing NSPR file descriptor into SSL and returns a new SSL socket file descriptor. If the <CODE>model</CODE> parameter is not <CODE>NULL</CODE>, the configuration of the new file descriptor is copied from the model. If the <CODE>model</CODE> parameter is <CODE>NULL</CODE>, then the default SSL configuration is used.</A></P>
+<A NAME="1120376">
+The new file descriptor returned by <CODE>SSL_ImportFD</CODE> is not necessarily equal to the original NSPR file descriptor. If, after calling <CODE>SSL_ImportFD</CODE>, the file descriptors are not equal, you should perform all operations on the new <CODE>PRFileDesc</CODE> structure, never the old one. Even when it's time to close the file descriptor, always close the new <CODE>PRFileDesc</CODE> structure, never the old one.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1086543">
+ SSL_OptionSet
+</A></H4>
+
+<A NAME="1086544">
+Sets a single configuration parameter of a specified socket. Call once for each parameter you want to change.</A></P>
+<A NAME="1213010">
+<CODE>SSL_OptionSet</CODE> replaces the deprecated function <A HREF="sslfnc.html#1220189"><CODE>SSL_Enable</CODE></A>.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1086545">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1204005">#include "ssl.h"</A></PRE><PRE><A NAME="1086547">SECStatus SSL_OptionSet(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd, <br>&nbsp;&nbsp;&nbsp;PRInt32 option, <br>&nbsp;&nbsp;&nbsp;PRBool on);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1086548">
+ Parameters
+</A></H5>
+
+<A NAME="1086570">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1190115">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1190117">
+Pointer to the NSPR file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1190119">
+<CODE>option</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><A NAME="1190121">
+One of the following values (default values are determined by the use of <A HREF="sslfnc.html#1068466"><CODE>SSL_OptionSetDefault</CODE></A>):</A></P>
+<ul></P><LI><A NAME="1190125">
+<CODE>SSL_SECURITY</CODE> enables use of security protocol. WARNING: If you turn this option off, the session will not be an SSL session and will not have certificate-based authentication, tamper detection, or encryption.</A></P><LI><A NAME="1190126">
+<CODE>SSL_REQUEST_CERTIFICATE</CODE> is a server option that requests a client to authenticate itself. </A></P><LI><A NAME="1190127">
+<CODE>SSL_REQUIRE_CERTIFICATE</CODE> is a server option that requires a client to authenticate itself (only if <CODE>SSL_REQUEST_CERTIFICATE</CODE> is also on). If client does not provide certificate, the connection terminates. </A></P><LI><A NAME="1190128">
+<CODE>SSL_HANDSHAKE_AS_CLIENT</CODE> controls the behavior of <CODE><A href="../../../../../nspr/reference/html/priofnc.html#18779">PR_Accept</A></CODE>,. If this option is off, the <CODE>PR_Accept</CODE> configures the SSL socket to handshake as a server. If it is on, then <CODE>PR_Accept</CODE> configures the SSL socket to handshake as a client, even though it accepted the connection as a TCP server.</A></P><LI><A NAME="1190131">
+<CODE>SSL_HANDSHAKE_AS_SERVER</CODE> controls the behavior of <CODE><A href="../../../../../nspr/reference/html/priofnc.html#18727">PR_Connect</A></CODE>. If this option is off, then <CODE>PR_Connect</CODE> configures the SSL socket to handshake as a client. If it is on, then <CODE>PR_Connect</CODE> configures the SSL socket to handshake as a server, even though it connected as a TCP client. </A></P><LI><A NAME="1192615">
+<CODE>SSL_ENABLE_FDX</CODE> tells the SSL library whether the application will have two threads, one reading and one writing, or just one thread doing reads and writes alternately. The factory setting for this option (which is the default, unless the application changes the default) is off (<CODE>PR_FALSE</CODE>), which means that the application will not do simultaneous reads and writes. An application that needs to do simultaneous reads and writes should set this to <CODE>PR_TRUE</CODE>.</A></ul><ul></P><A NAME="1192616">
+In NSS 2.8, the <CODE>SSL_ENABLE_FDX</CODE> option only affects the behavior of nonblocking SSL sockets. See the description below for more information on this option.</A></ul></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1190928">
+</A></P></TD><TD VALIGN=baseline ALIGN=left><ul></P><LI><A NAME="1191167">
+<CODE>SSL_ENABLE_SSL3</CODE> enables the application to communicate with SSL v3. If you turn this option off, an attempt to establish a connection with a peer that understands only SSL v3 will fail.</A></P><LI><A NAME="1191168">
+<CODE>SSL_ENABLE_SSL2</CODE> enables the application to communicate with SSL v2. If you turn this option off, an attempt to establish a connection with a peer that understands only SSL v2 will fail.</A></P><LI><A NAME="1192687">
+<CODE>SSL_ENABLE_TLS</CODE> is a peer of the <CODE>SSL_ENABLE_SSL2</CODE> and <CODE>SSL_ENABLE_SSL3</CODE> options. The IETF standard Transport Layer Security (TLS) protocol, RFC 2246, is a modified version of SSL3. It uses the SSL version number 3.1, appearing to be a "minor" revision of SSL3.0. NSS 2.8 supports TLS in addition to SSL2 and SSL3. You can think of it as "<CODE>SSL_ENABLE_SSL3.1</CODE>." See the description below for more information about this option.</A></P><LI><A NAME="1234023">
+<CODE>SSL_V2_COMPATIBLE_HELLO</CODE> tells the SSL library whether or not to send SSL3 client hello messages in SSL2-compatible format. If set to <CODE>PR_TRUE</CODE>, it will; otherwise, it will not. See the description below for more information on this option. </A></P><LI><A NAME="1234024">
+<CODE>SSL_NO_CACHE</CODE> disallows use of the session cache. Factory setting is off. If you turn this option on, this socket will be unable to resume a session begun by another socket. When this socket's session is finished, no other socket will be able to resume the session begun by this socket. </A></P><LI><A NAME="1233954">
+<CODE>SSL_ROLLBACK_DETECTION</CODE> disables detection of a rollback attack. Factory setting is on. You must turn this option off to interoperate with TLS clients ( such as certain versions of Microsoft Internet Explorer) that do not conform to the TLS specification regarding rollback attacks. Important: turning this option off means that your code will not comply with the TLS 3.1 and SSL 3.0 specifications regarding rollback attack and will therefore be vulnerable to this form of attack.</A></ul></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1190135">
+<CODE>on</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1190137">
+ <CODE>PR_TRUE</CODE> turns option on; <CODE>PR_FALSE</CODE> turns option off.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1086571">
+ Returns
+</A></H5>
+
+<A NAME="1086572">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1086573">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1086576">
+If unsuccessful, returns <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1086577">
+ Description
+</A></H5>
+
+<A NAME="1193128">
+Keep the following in mind when deciding on the operating parameters you want to use with a particular socket:</A></P>
+<ul><P><LI><A NAME="1193089">
+Turning on <CODE>SSL_REQUIRE_CERTIFICATE</CODE> will have no effect unless <CODE>SSL_REQUEST_CERTIFICATE</CODE> is also turned on. If you enable <CODE>SSL_REQUEST_CERTIFICATE</CODE>, then you should explicitly enable or disable <CODE>SSL_REQUIRE_CERTIFICATE</CODE> rather than allowing it to default. Enabling the <CODE>SSL_REQUIRE_CERTIFICATE</CODE> option is not recommended. If the client has no certificate and this option is enabled, the client's connection terminates with an error. The user is likely to think something is wrong with either the client or the server, and is unlikely to realize that the problem is the lack of a certificate. It is better to allow the SSL handshake to complete and then return an error message to the client that informs the user of the need for a certificate.</A></LI>
+</ul><ul></P><LI><A NAME="1193004">
+The SSL protocol is defined to be able to handle simultaneous two-way communication between applications at each end of an SSL connection. Two-way simultaneous communication is also known as "Full Duplex", abbreviated FDX. However, most application protocols that use SSL are not two-way simultaneous, but two-way alternate, also known as "Half Dupled"; that is, each end takes turns sending, and each end is either sending, or receiving, but not both at the same time. </A></P><A NAME="1193005">
+For an application to do full duplex, it would have two threads sharing the socket; one doing all the reading and the other doing all the writing.</A><P></P><A NAME="1193006">
+The <CODE>SSL_ENABLE_FDX</CODE> option tells the SSL library whether the application will have two threads, one reading and one writing, or just one thread doing reads and writes alternately.</A><P><P><LI><A NAME="1193007">
+If an SSL3 client hello message is sent to a server that only understands SSL2 and not SSL3, then the server will interpret the SSL3 client hello as a very large message, and the connection will usually seem to "hang" while the SSL2 server expects more data that will never arrive. For this reason, the SSL3 spec allows SSL3 client hellos to be sent in SSL2 format, and it recommends that SSL3 servers all accept SSL3 client hellos in SSL2 format. When an SSL2-only server receives an SSL3 client hello in SSL2 format, it can (and probably will) negotiate the protocol version correctly, not causing a "hang".</A></LI>
+</P><A NAME="1193008">
+Some applications may wish to force SSL3 client hellos to be sent in SSL3 format, not in SSL2-compatible format. They might wish to do this if they knew, somehow, that the server does not understand SSL2-compatible client hello messages. </A><P></P><A NAME="1193009">
+<CODE>SSL_V2_COMPATIBLE_HELLO</CODE> tells the SSL library whether or not to send SSL3 client hello messages in SSL2-compatible format. Note that calling <CODE>SSL_OptionSet</CODE> to set <CODE>SSL_V2_COMPATIBLE_HELLO</CODE> to <CODE>PR_FALSE</CODE> implicitly also sets the <CODE>SSL_ENABLE_SSL2</CODE> option to <CODE>PR_FALSE</CODE> for that SSL socket. Calling <CODE>SSL_EnableDefault</CODE> to change the application default setting for <CODE>SSL_V2_COMPATIBLE_HELLO</CODE> to <CODE>PR_FALSE</CODE> implicitly also sets the default value for <CODE>SSL_ENABLE_SSL2</CODE> option to <CODE>PR_FALSE</CODE> for that application.</A><P><P><LI><A NAME="1193010">
+The options <CODE>SSL_ENABLE_SSL2</CODE>, <CODE>SSL_ENABLE_SSL3</CODE>, and <CODE>SSL_ENABLE_TLS </CODE>can each be set to <CODE>PR_TRUE</CODE> or <CODE>PR_FALSE</CODE> independently of each other. NSS 2.8 and later versions will negotiate the highest protocol version with the peer application from among the set of protocols that are commonly enabled in both applications. </A></LI>
+</P><A NAME="1192775">
+Note that SSL3 and TLS share the same set of cipher suites. When both SSL3 and TLS are enabled, all SSL3/TLS cipher suites that are enabled are enabled for both SSL3 and TLS.</A><P></ul><A NAME="1167934">
+As mentioned in <A HREF="sslintro.html#1027816">Communication</A>, when an application imports a socket into SSL after the TCP connection on that socket has already been established, it must call <CODE><A HREF="sslfnc.html#1058001"></CODE>SSL_ResetHandshake<CODE></A></CODE> to indicate whether the socket is for a client or server. At first glance this may seem unnecessary, since <CODE>SSL_OptionSet</CODE> can set <CODE>SSL_HANDSHAKE_AS_CLIENT</CODE> or <CODE>SSL_HANDSHAKE_AS_SERVER</CODE>. However, these settings control the behavior of <A href="../../../../../nspr/reference/html/priofnc.html#18727"><CODE>PR_Connect</A></CODE> and <A href="../../../../../nspr/reference/html/priofnc.html#18779"><CODE>PR_Accept</A></CODE> only; if you don't call one of those functions after importing a non-SSL socket with <CODE>SSL_Import</CODE> (as in the case of an already established TCP connection), SSL still needs to know whether the application is functioning as a client or server.</A></P>
+<A NAME="1164782">
+If a socket file descriptor is imported as an SSL socket before it is connected, it is implicitly configured to handshake as a client or handshake as a server when the connection is made. If the application calls <CODE>PR_Connect</CODE> (connecting as a TCP client), then the SSL socket is (by default) configured to handshake as an SSL client. If the application calls <CODE>PR_Accept</CODE> (connecting the socket as a TCP server) then the SSL socket is (by default) configured to handshake as an SSL server. <CODE>SSL_HANDSHAKE_AS_CLIENT</CODE> and <CODE>SSL_HANDSHAKE_AS_SERVER</CODE> control this implicit configuration.</A></P>
+<A NAME="1171317">
+Both <CODE>SSL_HANDSHAKE_AS_CLIENT</CODE> and <CODE>SSL_HANDSHAKE_AS_SERVER</CODE> are initially set to off--that is, the process default for both values is <CODE>PR_FALSE</CODE> when the process begins. The process default can be changed from the initial values by using <CODE>SSL_EnableDefault</CODE>, and the value for a particular socket can be changed by using <CODE>SSL_OptionSet</CODE>.</A></P>
+<A NAME="1172397">
+When you import a new SSL socket with <CODE>SSL_ImportFD</CODE> using a model file descriptor, the new SSL socket inherits its values for <CODE>SSL_HANDSHAKE_AS_CLIENT</CODE> and <CODE>SSL_HANDSHAKE_AS_SERVER</CODE> from the model file descriptor.</A></P>
+<A NAME="1164395">
+When <CODE>PR_Accept</CODE> accepts a new connection from a listen file descriptor and creates a new file descriptor for the new connection, the listen file descriptor also acts as a model for the new file descriptor, and the new file descriptor inherits its values from the model.</A></P>
+<A NAME="1172632">
+<CODE>SSL_HANDSHAKE_AS_CLIENT</CODE> and <CODE>SSL_HANDSHAKE_AS_SERVER</CODE> cannot both be turned on simultaneously. If you use <CODE>SSL_OptionSet</CODE> to turn one of these on when the other one is already turned on for a particular socket, the function returns with the error code set to <CODE>SEC_ERROR_INVALID_ARGS</CODE>. Likewise, using <CODE>SSL_EnableDefault</CODE> to turn on the global default for one of these when the global default for the other one is already turned for a particular socket generates the same error. However, there is no good reason for these to be mutually exclusive. This restirction will be removed in future releases.</A></P>
+<A NAME="1194919">
+If a socket that is already connected gets imported into SSL after it has been connected (that is, after <CODE>PR_Accept</CODE> or <CODE>PR_Connect</CODE> has returned), then no implicit SSL handshake configuration as a client or server will have been done by <CODE>PR_Connect</CODE> or <CODE>PR_Accept</CODE> on that socket. In this case, a call to <CODE>SSL_ResetHandshake</CODE> is required to explicitly configure the socket to handshake as a client or as a server. If <CODE>SSL_ResetHandshake</CODE> is not called to explicitly configure the socket handshake, a crash is likely to occur when the first I/O operation is done on the socket after it is imported into SSL.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1194921">
+ SSL_OptionGet
+</A></H4>
+
+<A NAME="1195059">
+<CODE>SSL_OptionGet</CODE> gets the value of a specified SSL option on a specified SSL socket.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1214152">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1214457">#include "ssl.h"</A></PRE><PRE><A NAME="1214154">SECStatus SSL_OptionGet(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;PRInt32 option, <br>&nbsp;&nbsp;&nbsp;PRBool *on);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1195405">
+ Parameters
+</A></H5>
+
+<A NAME="1195426">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1195408">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1195410">
+Pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1195412">
+<CODE>option</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1214530">
+The value of the option whose default setting you wish to get. For information about the options available and the possible values to pass in this parameter, see the description of the <CODE>option</CODE> parameter under <A HREF="sslfnc.html#1086543"><CODE>SSL_OptionSet</CODE></A>.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1195836">
+<CODE>on</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1195838">
+ <CODE>PR_TRUE</CODE> indicates the specified option is on; <CODE>PR_FALSE</CODE> indicates it is off.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1196780">
+ Returns
+</A></H5>
+
+<A NAME="1196781">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1196782">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1196785">
+If unsuccessful, returns <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1196786">
+ Description
+</A></H5>
+
+<A NAME="1197121">
+See the description above for <A HREF="sslfnc.html#1086543"><CODE>SSL_OptionSet</CODE></A>.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1214758">
+ SSL_CipherPrefSet
+</A></H4>
+
+<A NAME="1214884">
+<CODE>SSL_CipherPrefSet</CODE> specifies the use of a specified cipher suite on a specified SSL socket.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1214885">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1214886">#include "ssl.h"<br>#include "proto.h"</A></PRE><PRE><A NAME="1214887">SECStatus SSL_CipherPrefSet(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;PRInt32 cipher, <br>&nbsp;&nbsp;&nbsp;PRBool enabled);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1214888">
+ Parameters
+</A></H5>
+
+<A NAME="1214905">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1214891">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1214893">
+Pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1215887">
+<CODE>cipher</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1215889">
+One of the following values for SSL2 (all are enabled by default):</A></P><P><A NAME="1215890">
+<CODE>SSL_EN_RC4_128_WITH_MD5<br>SSL_EN_RC4_128_EXPORT40_WITH_MD5<br>SSL_EN_RC2_128_CBC_WITH_MD5<br>SSL_EN_RC2_128_CBC_EXPORT40_WITH_MD5<br>SSL_EN_DES_64_CBC_WITH_MD5<br>SSL_EN_DES_192_EDE3_CBC_WITH_MD5</CODE></A></P><P><A NAME="1215891">
+</A></P><P><A NAME="1215892">
+Or one of the following values for SSL3/TLS (unless indicated otherwise, all are enabled by default):</A></P><P><A NAME="1215893">
+<CODE>TLS_DHE_RSA_WITH_AES_256_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>TLS_DHE_DSS_WITH_AES_256_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>TLS_RSA_WITH_AES_256_CBC_SHA</CODE> (not enabled by default)<br>
+<CODE>SSL_FORTEZZA_DMS_WITH_RC4_128_SHA</CODE><br>
+<CODE>TLS_DHE_DSS_WITH_RC4_128_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>TLS_DHE_RSA_WITH_AES_128_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>TLS_DHE_DSS_WITH_AES_128_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>SSL_RSA_WITH_RC4_128_MD5</CODE><br>
+<CODE>SSL_RSA_WITH_RC4_128_SHA</CODE> (not enabled by default)<br>
+<CODE>TLS_RSA_WITH_AES_128_CBC_SHA</CODE> (not enabled by default)<br>
+<CODE>SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA</CODE><br>
+<CODE>SSL_RSA_WITH_3DES_EDE_CBC_SHA</CODE><br>
+<CODE>SSL_FORTEZZA_DMS_WITH_FORTEZZA_CBC_SHA</CODE><br>
+<CODE>SSL_DHE_RSA_WITH_DES_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>SSL_DHE_DSS_WITH_DES_CBC_SHA</CODE> (not enabled by default; client side only)<br>
+<CODE>SSL_RSA_FIPS_WITH_DES_CBC_SHA</CODE><br>
+<CODE>SSL_RSA_WITH_DES_CBC_SHA</CODE><br>
+<CODE>TLS_RSA_EXPORT1024_WITH_RC4_56_SHA</CODE><br>
+<CODE>TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA</CODE><br>
+<CODE>SSL_RSA_EXPORT_WITH_RC4_40_MD5</CODE><br>
+<CODE>SSL_RSA_EXPORT_WITH_RC2_CBC_40_MD5</CODE><br>
+<CODE>SSL_FORTEZZA_DMS_WITH_NULL_SHA</CODE><br>
+<CODE>SSL_RSA_WITH_NULL_SHA</CODE> (not enabled by default)<br>
+<CODE>SSL_RSA_WITH_NULL_MD5</CODE> (not enabled by default)
+</CODE></A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1215895">
+<CODE>enabled</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1215897">
+If nonzero, the specified cipher is enabled. If zero, the cipher is disabled.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1214779">
+ Description
+</A></H5>
+
+<A NAME="1215501">
+<CODE>SSL_CipherPrefSet</CODE> is a new function in NSS 2.6 and later. It allows the application to set the user preferences for cipher suites on an individual socket, overriding the default value for the preference (which can be set with <A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A>). If an application needs to set the cipher preferences on an individual socket, it should do so before initiating an SSL handshake, not during an SSL handshake.</A></P>
+<A NAME="1218952">
+For more information on the use of the TLS and FIPS cipher suites, see <A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A>.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1214800">
+ SSL_CipherPrefGet
+</A></H4>
+
+<A NAME="1215950">
+Gets the current preference setting for a specified SSL2 or SSL3 cipher suite.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1215951">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1215952">#include "ssl.h"<br>#include "proto.h"</A></PRE><PRE><A NAME="1219096">SECStatus SSL_CipherPrefGet(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;PRInt32 cipher, <br>&nbsp;&nbsp;&nbsp;PRBool *enabled);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1219127">
+ Parameters
+</A></H5>
+
+<A NAME="1219125">
+This function has the parameters listed below.<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1219332">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1219334">
+Pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1219099">
+cipher<CODE></CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1219101">
+The cipher suite whose default preference setting you want to get. For a list of the cipher suites you can specify, see <A HREF="sslfnc.html#1214758"><CODE>SSL_CipherPrefSet</CODE></A>.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1219103">
+enabled</A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1219105">
+A pointer to the default value associated with the cipher specified in the <CODE>cipher</CODE> parameter. If nonzero, the specified cipher is enabled. If zero, the cipher is disabled.</A></P></TD></TR>
+
+</TABLE>
+
+</A>
+</BLOCKQUOTE>
+<H5><A NAME="Head4;"></A>
+<A NAME="1217643">
+ Description
+</A></H5>
+
+<A NAME="1217644">
+<CODE>SSL_CipherPrefGet</CODE> performs the complementary function to <CODE>SSL_CipherPrefSet</CODE>. It returns the current preference setting for the SSL cipher suite for the socket. If the application has not previously set the cipher preference for this cipher on this socket, the value will be either the process default value or the value inherited from a listen socket or a model socket.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1217647">
+ SSL_ConfigSecureServer
+</A></H4>
+
+<A NAME="1087164">
+Configures a listen socket with the information needed to handshake as an SSL server. <CODE>SSL_ConfigSecureServer</CODE> requires the certificate for the server and the server's private key. The arguments are copied.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1087165">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1087166">#include "ssl.h"</A></PRE><PRE><A NAME="1087167">SECStatus SSL_ConfigSecureServer(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;CERTCertificate *cert,<br>&nbsp;&nbsp;&nbsp;SECKEYPrivateKey *key,<br>&nbsp;&nbsp;&nbsp;SSLKEAType keaType);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1087168">
+ Parameters
+</A></H5>
+
+<A NAME="1087182">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1087171">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1087173">
+A pointer to the file descriptor for the SSL listen socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1087175">
+<CODE>cert</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1087177">
+A pointer to the server's certificate structure.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1087179">
+<CODE>key</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1087181">
+A pointer to the server's private key structure.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1107228">
+<CODE>keaType</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1107230">
+Key exchange type for use with specified certificate and key. These values are currently valid: </A></P><ul></P><LI><A NAME="1122023">
+<CODE>kt_rsa</CODE></A></P><LI><A NAME="1121871">
+<CODE>kt_dh</CODE></A></P><LI><A NAME="1107277">
+<CODE>kt_fortezza</CODE></A></ul></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1087183">
+ Returns
+</A></H5>
+
+<A NAME="1087184">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1087185">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1087188">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1087189">
+ Description
+</A></H5>
+
+<A NAME="1174386">
+Before SSL can handshake as a server on a socket, it must be configured to do so with a call to SSL_ConfigSecureServer (among other things). This function configures a listen socket. Child sockets created by <A href="../../../../../nspr/reference/html/priofnc.html#18779"><CODE>PR_Accept</A></CODE> inherit the configuration. </A></P>
+<A NAME="1127390">
+Servers can be configured with more than one certificate for a given port, and different certificates can support different key-exchange algorithms. To find out what key-exchange algorithm a particular certificate supports, pass the certificate structure to <A HREF="sslcrt.html#1056950"><CODE>NSS_FindCertKEAType</CODE></A>. You can then pass the <CODE>SSLKEAType</CODE> value returned by <CODE>NSS_FindCertKEAType</CODE> in the <CODE>keaType</CODE> parameter of <CODE>SSL_ConfigSecureServer</CODE>. The server uses the specified key-exchange algorithm with the specified certificate and key. </A></P>
+<A NAME="1148755">
+When the <CODE>keaType</CODE> is <CODE>kt_rsa</CODE>, this function generates a step-down key that is supplied as part of the handshake if needed. (A step-down key is needed when the server's public key is stronger than is allowed for export ciphers.) In this case, if the server is expected to continue running for a long time, you should call this function periodically (once a day, for example) to generate a new step-down key.</A></P>
+<A NAME="1127391">
+SSL makes and keeps internal copies (or increments the reference counts, as appropriate) of certificate and key structures. The application should destroy its copies when it has no further use for them by calling <A HREF="sslcrt.html#1050532"><CODE>CERT_DestroyCertificate</CODE></A> and <A HREF="sslkey.html#1051017"><CODE>SECKEY_DestroyPrivateKey</CODE></A>. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1087792">
+ SSL_SetURL
+</A></H4>
+
+<A NAME="1087793">
+Sets the domain name of the intended server in the client's SSL socket. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1087794">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1087795">#include "ssl.h"</A></PRE><PRE><A NAME="1087796">int SSL_SetURL(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd, <br>&nbsp;&nbsp;&nbsp;char *url);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1087797">
+ Parameters 
+</A></H5>
+
+<A NAME="1087807">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1087800">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1087802">
+A pointer to a file descriptor.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1087804">
+<CODE>url</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1087806">
+A pointer to a string specifying the desired server's domain name.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1087808">
+ Returns
+</A></H5>
+
+<A NAME="1087809">
+The function returns one of the following values:</A></P>
+<ul><P><LI><A NAME="1087810">
+If successful, zero.</A></LI>
+<LI><A NAME="1087813">
+If unsuccessful, <CODE>-1</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1130686">
+ Description
+</A></H5>
+
+<A NAME="1130687">
+The client application's certificate authentication callback function needs to compare the domain name in the server's certificate against the domain name of the server the client was attempting to contact. This step is vital because it is the client's <I>only</I> protection against a man-in-the-middle attack. </A></P>
+<A NAME="1087816">
+The client application uses <CODE>SSL_SetURL</CODE> to set the domain name of the desired server before performing the first SSL handshake. The client application's certificate authentication callback function gets this string by calling <A HREF="sslfnc.html#1081175"><CODE>SSL_RevealURL</CODE></A>.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1088040">
+ SSL_SetPKCS11PinArg
+</A></H4>
+
+<A NAME="1088041">
+Sets the argument passed to the password callback function specified by a call to <A HREF="pkfnc.html#1023128"><CODE>PK11_SetPasswordFunc</CODE></A>.<B> </B></A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1221656">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1221657">#include "ssl.h"</A></PRE><PRE><A NAME="1221658">int SSL_SetPKCS11PinArg(PRFileDesc *fd, void *a); </A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1088048">
+ Parameters
+</A></H5>
+
+<A NAME="1088058">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088051">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088053">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088055">
+<CODE>a</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088057">
+A pointer supplied by the application that can be used to pass state information. This value is passed as the third argument of the application's password function. The meaning is determined solely by the application.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1088059">
+ Returns
+</A></H5>
+
+<A NAME="1088060">
+The function returns one of the following values:</A></P>
+<ul><P><LI><A NAME="1088061">
+If successful, zero.</A></LI>
+<LI><A NAME="1088064">
+If unsuccessful, <CODE>-1</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1088065">
+ Description
+</A></H5>
+
+<A NAME="1088066">
+During the course of an SSL operation, it may be necessary for the user to log in to a PKCS #11 token (either a smart card or soft token) to access protected information, such as a private key. Such information is protected with a password that can be retrieved by calling an application-supplied callback function. The callback function is specified in a call to <A HREF="pkfnc.html#1023128"><CODE>PK11_SetPasswordFunc</CODE></A> that takes place during NSS initialization. </A></P>
+<A NAME="1123150">
+Several functions in the NSS libraries use the password callback function to obtain the password before performing operations that involve the protected information. When NSS libraries call the password callback function, the value they pass in as the third parameter is the value of the <CODE>a</CODE> argument to <CODE>PK11_SetPKCS11PinArg</CODE>. The third parameter to the password callback function is application-defined and can be used for any purpose. For example, Communicator uses the parameter to pass information about which window is associated with the modal dialog box requesting the password from the user. </A></P>
+<A NAME="1148228">
+You can obtain the PIN argument by calling <A HREF="sslfnc.html#1123385"><CODE>SSL_RevealPinArg</CODE></A>.</A></P>
+
+<H3><A NAME="Head2;"></A>
+<A NAME="1089578">
+ Callback Configuration
+</A></H3>
+
+<A NAME="1089579">
+At the beginning of an SSL application, it is often necessary to set up callback functions for the SSL API to use when it needs to call the application. These functions are used to request authentication information from the application or to inform the application when a handshake is completed.</A></P>
+<A NAME="1089583">
+<A HREF="sslfnc.html#1088805"><CODE>SSL_AuthCertificateHook</CODE></A><br><A HREF="sslfnc.html#1088888"><CODE>SSL_AuthCertificate</CODE></A><br><A HREF="sslfnc.html#1088928"><CODE>SSL_BadCertHook</CODE></A><br><A HREF="sslfnc.html#1126622"><CODE>SSL_GetClientAuthDataHook</CODE></A><br><A HREF="sslfnc.html#1106762"><CODE>NSS_GetClientAuthData</CODE></A><br><A HREF="sslfnc.html#1112702"><CODE>SSL_HandshakeCallback</CODE></A></A></P>
+<A NAME="1123332">
+Setting up the callback functions described in this section may be optional for some applications. However, all applications must use <A HREF="pkfnc.html#1023128"><CODE>PK11_SetPasswordFunc</CODE></A> to set up the password callback function during NSS initialization.</A></P>
+<A NAME="1126377">
+For examples of the callback functions listed here, see <A HREF="gtstd.html#1005439">Chapter&nbsp;2, "Getting Started With SSL."</A></A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1088805">
+ SSL_AuthCertificateHook
+</A></H4>
+
+<A NAME="1088806">
+Specifies a certificate authentication callback function called to authenticate an incoming certificate.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1088807">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1088808">#include "ssl.h"</A></PRE><PRE><A NAME="1088809">SECStatus SSL_AuthCertificateHook(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;SSLAuthCertificate f,<br>&nbsp;&nbsp;&nbsp;void *arg);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1088810">
+ Parameters
+</A></H5>
+
+<A NAME="1088827">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088813">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088815">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088817">
+<CODE>f</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088819">
+A pointer to the callback function. If <CODE>NULL</CODE>, the default callback function, <A HREF="sslfnc.html#1088888"><CODE>SSL_AuthCertificate</CODE></A>, will be used.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088824">
+<CODE>arg</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088826">
+A pointer supplied by the application that can be used to pass state information. Can be <CODE>NULL</CODE>.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1088828">
+ Returns
+</A></H5>
+
+<A NAME="1088829">
+The function returns one of the following values:</A></P>
+<ul><P><LI><A NAME="1088830">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1088833">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1088834">
+ Description
+</A></H5>
+
+<A NAME="1088835">
+The callback function set up by <CODE>SSL_AuthCertificateHook</CODE> is called to authenticate an incoming certificate. If the <CODE>checksig</CODE> parameter is set to <CODE>PR_TRUE</CODE>, the callback function also verifies the digital signature. </A></P>
+<BLOCKQUOTE><B>NOTE: </B><A NAME="1132358">
+If you do not call<CODE> SSL_AuthCertificateHook</CODE> to supply a certificate 
+authentication callback function, SSL uses the default callback function, 
+<A HREF="sslfnc.html#1088888"><CODE>SSL_AuthCertificate</CODE></A>. 
+</A>
+</BLOCKQUOTE>
+<A NAME="1088836">
+The callback function has the following prototype:</A></P>
+<PRE><A NAME="1088837">typedef SECStatus (*SSLAuthCertificate) (<br>&nbsp;&nbsp;&nbsp;void *arg,<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;PRBool checksig,<br>&nbsp;&nbsp;&nbsp;PRBool isServer);</A></PRE><A NAME="1088855">
+This callback function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088840">
+<CODE>arg</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088842">
+A pointer supplied by the application (in the call to <CODE>SSL_AuthCertificateHook</CODE>) that can be used to pass state information. Can be <CODE>NULL</CODE>. </A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088844">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088846">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088848">
+<CODE>checksig</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088850">
+<CODE>PR_TRUE </CODE>means signatures are to be checked and the certificate chain is to be validated. <CODE>PR_FALSE</CODE> means they are not to be checked. (The value is normally <CODE>PR_TRUE</CODE>.)</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088852">
+<CODE>isServer</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088854">
+<CODE>PR_TRUE</CODE> means the callback function should evaluate the certificate as a server does, treating the remote end as a client. <CODE>PR_FALSE</CODE> means the callback function should evaluate the certificate as a client does, treating the remote end as a server.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<A NAME="1088856">
+The callback function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1088857">
+If authentication is successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1088858">
+If authentication is not successful, <CODE>SECFailure</CODE>. If the callback returns <CODE>SECFailure</CODE>, the callback should indicate the reason for the failure (if possible) by calling <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> with the appropriate error code. 
+</A></LI></ul><A NAME="1088859">
+The callback function obtains the certificate to be authenticated by calling <A HREF="sslfnc.html#1096168"><CODE>SSL_PeerCertificate</CODE></A>.</A></P>
+<A NAME="1088863">
+If <CODE>isServer</CODE> is false, the callback should also check that the domain name in the remote server's certificate matches the desired domain name specified in a previous call to <A HREF="sslfnc.html#1087792"><CODE>SSL_SetURL</CODE></A>. To obtain that domain name, the callback calls <A HREF="sslfnc.html#1081175"><CODE>SSL_RevealURL</CODE></A>. </A></P>
+<A NAME="1088870">
+The callback may need to call one or more PK11 functions to obtain the services of a PKCS #11 module. Some of the PK11 functions require a PIN argument (see <A HREF="sslfnc.html#1088040"><CODE>SSL_SetPKCS11PinArg</CODE></A> for details). To obtain the value that was set with <A HREF="sslfnc.html#1088040"><CODE>SSL_SetPKCS11PinArg</CODE></A>, the callback calls <A HREF="sslfnc.html#1123385"><CODE>SSL_RevealPinArg</CODE></A>. </A></P>
+<A NAME="1088878">
+If the callback returns <CODE>SECFailure</CODE>, the SSL connection is terminated immediately unless the application has supplied a bad-certificate callback function by having previously called <A HREF="sslfnc.html#1088928"><CODE>SSL_BadCertHook</CODE></A>. A bad-certificate callback function gives the application the opportunity to choose to accept the certificate as authentic and authorized even though it failed the check performed by the certificate authentication callback function. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1126522">
+ See Also
+</A></H5>
+
+<A NAME="1126559">
+For examples of certificate authentication callback functions, see the sample code referenced from <A HREF="gtstd.html#1005439">Chapter&nbsp;2, "Getting Started With SSL."</A></A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1088888">
+ SSL_AuthCertificate
+</A></H4>
+
+<A NAME="1088889">
+Default callback function used to authenticate certificates received from the remote end of an SSL connection if the application has not previously called <A HREF="sslfnc.html#1088805"><CODE>SSL_AuthCertificateHook</CODE></A> to specify its own certificate authentication callback function.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1088893">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1088894">#include "ssl.h"</A></PRE><PRE><A NAME="1088895">SECStatus SSL_AuthCertificate(<br>&nbsp;&nbsp;&nbsp;void *arg,<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;PRBool checksig,<br>&nbsp;&nbsp;&nbsp;PRBool isServer);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1088896">
+ Parameters
+</A></H5>
+
+<A NAME="1088914">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088899">
+<CODE>arg</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088901">
+A pointer to the handle of the certificate database to be used in validating the certificate's signature. (This use of the <CODE>arg</CODE> parameter is required for <CODE>SSL_AuthCertificate</CODE>, but not for all implementations of a certificate authentication callback function.)</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088903">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088905">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088907">
+<CODE>checksig</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1126103">
+<CODE>PR_TRUE </CODE>means signatures are to be checked and the certificate chain is to be validated. <CODE>PR_FALSE</CODE> means they are not to be checked. (The value is normally <CODE>PR_TRUE</CODE>.)</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088911">
+<CODE>isServer</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088913">
+<CODE>PR_TRUE</CODE> means the callback function should evaluate the certificate as a server does, treating the remote end is a client. <CODE>PR_FALSE</CODE> means the callback function should evaluate the certificate as a client does, treating the remote end as a server.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1088915">
+ Returns
+</A></H5>
+
+<A NAME="1088916">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1088917">
+If authentication is successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1088918">
+If authentication is not successful, <CODE>SECFailure</CODE>. 
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1088919">
+ Description
+</A></H5>
+
+<A NAME="1088920">
+SSL calls <CODE>SSL_AuthCertificate</CODE> by default (if no other callback function is provided) to authenticate an incoming certificate. If the <CODE>checksig</CODE> parameter is set to <CODE>PR_TRUE</CODE> (which is normally the case), the function also verifies the digital signature and the certificate chain. </A></P>
+<A NAME="1110615">
+If the socket is a client socket, <CODE>SSL_AuthCertificate</CODE> tests the domain name in the SSL socket against the domain name in the server certificate's subject DN:</A></P>
+<ul><P><LI><A NAME="1110647">
+If the domain name in the SSL socket doesn't match the domain name in the server certificate's subject DN, the function fails.</A></LI>
+<P><LI><A NAME="1110672">
+If the SSL socket has not had a domain name set (that is, if <A HREF="sslfnc.html#1087792"><CODE>SSL_SetURL</CODE></A> has not been called) or its domain name is set to an empty string, the function fails.</A></LI>
+</ul>
+
+<A NAME="1088928">
+ SSL_BadCertHook
+</A></H4>
+
+<A NAME="1088932">
+Sets up a callback function to deal with a situation where the <A HREF="sslfnc.html#1088888"><CODE>SSL_AuthCertificate</CODE></A> callback function has failed. This callback function allows the application to override the decision made by the certificate authorization callback and authorize the certificate for use in the SSL connection. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1088933">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1088934">#include "ssl.h"</A></PRE><PRE><A NAME="1088935">SECStatus SSL_BadCertHook(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;SSLBadCertHandler f,<br>&nbsp;&nbsp;&nbsp;void *arg);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1088936">
+ Parameters
+</A></H5>
+
+<A NAME="1088950">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088939">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088941">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088943">
+<CODE>f</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088945">
+A pointer to the application's callback function. </A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088947">
+<CODE>arg</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088949">
+A pointer supplied by the application that can be used to pass state information. Can be <CODE>NULL</CODE>.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1088952">
+ Returns
+</A></H5>
+
+<A NAME="1088953">
+The function returns one of these value<VAR>s</VAR>:</A></P>
+<ul><P><LI><A NAME="1088954">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1088957">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1088958">
+ Description
+</A></H5>
+
+<A NAME="1088959">
+The bad-certificate callback function gives the program an opportunity to do something (for example, log the attempt or authorize the certificate) when certificate authentication is not successful. If such a callback function is not provided by the application, the SSL connection simply fails when certificate authentication is not successful.</A></P>
+<A NAME="1088960">
+The callback function set up by <CODE>SSL_BadCertHook</CODE> has the following prototype:</A></P>
+<PRE><A NAME="1088961">typedef SECStatus (*SSLBadCertHandler)(<br>&nbsp;&nbsp;&nbsp;void *arg,<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd);</A></PRE><A NAME="1088974">
+This callback function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088964">
+<CODE>arg</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088966">
+The <CODE>arg</CODE> parameter passed to <A HREF="sslfnc.html#1088928"><CODE>SSL_BadCertHook</CODE></A>.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1088971">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1088973">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<A NAME="1088975">
+The callback function returns one of these values: </A></P>
+<ul><P><LI><A NAME="1088976">
+<CODE>SECSuccess</CODE>: The callback has chosen to authorize the certificate for use in this SSL connection, despite the fact that it failed the examination by the certificate authentication callback.</A></LI>
+<LI><A NAME="1088977">
+<CODE>SECFailure</CODE>: The certificate is not authorized for this SSL connection. The SSL connection will be terminated immediately.
+</A></LI></ul><A NAME="1088978">
+To obtain the certificate that was rejected by the certificate authentication callback, the bad-certificate callback function calls <A HREF="sslfnc.html#1096168"><CODE>SSL_PeerCertificate</CODE></A>. Since it is called immediately after the certificate authentication callback returns, the bad-certificate callback function can obtain the error code set by the certificate authentication callback by calling <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> immediately, as the first operation it performs. Note: once the bad-certificate callback function returns, the peer certificate is destroyed, and SSL_PeerCertificate will fail. </A></P>
+<A NAME="1126612">
+The callback may need to call one or more PK11 functions to obtain the services of a PKCS #11 module. Some of the PK11 functions require a PIN argument (see <A HREF="sslfnc.html#1088040"><CODE>SSL_SetPKCS11PinArg</CODE></A> for details). To obtain the value previously passed, the callback calls <A HREF="sslfnc.html#1123385"><CODE>SSL_RevealPinArg</CODE></A></A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1126637">
+ See Also
+</A></H5>
+
+<A NAME="1126622">
+ SSL_GetClientAuthDataHook
+</A></H4>
+
+<A NAME="1088993">
+Defines a callback function for SSL to use in a client application when a server asks for client authentication information. This callback function is required if your client application is going to support client authentication. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1088994">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1088995">#include "ssl.h"</A></PRE><PRE><A NAME="1088996">SECStatus SSL_GetClientAuthDataHook(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;SSLGetClientAuthData f,<br>&nbsp;&nbsp;&nbsp;void *a);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1088997">
+ Parameters
+</A></H5>
+
+<A NAME="1089011">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089000">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089002">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089004">
+<CODE>f</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089006">
+A pointer to the application's callback function that delivers the key and certificate. </A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089008">
+<CODE>arg</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089010">
+A pointer supplied by the application that can be used to pass state information. Can be <CODE>NULL</CODE>.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1089012">
+ Returns
+</A></H5>
+
+<A NAME="1089013">
+The function returns one of these values: <B></B></A></P>
+<ul><P><LI><A NAME="1089014">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1089017">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1089018">
+ Description
+</A></H5>
+
+<A NAME="1110978">
+The callback function set with <CODE>SSL_GetClientAuthDataHook</CODE> is used to get information from a client application when authentication is requested by the server. The callback function retrieves the client's private key and certificate. </A></P>
+<A NAME="1110984">
+SSL provides an implementation of this callback function; see <A HREF="sslfnc.html#1106762"><CODE>NSS_GetClientAuthData</CODE></A> for details. Unlike <A HREF="sslfnc.html#1088888"><CODE>SSL_AuthCertificate</CODE></A>, <A HREF="sslfnc.html#1106762"><CODE>NSS_GetClientAuthData</CODE></A> is not a default callback function. You must set it explicitly with <CODE>SSL_GetClientAuthDataHook</CODE> if you want to use it. </A></P>
+<A NAME="1111005">
+The callback function has the following prototype: </A></P>
+<PRE><A NAME="1110979">typedef SECStatus (*SSLGetClientAuthData)(<br>&nbsp;&nbsp;&nbsp;void *arg,<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;CertDistNames *caNames, <br>&nbsp;&nbsp;&nbsp;CERTCertificate **pRetCert,<br>&nbsp;&nbsp;&nbsp;SECKEYPrivateKey **pRetKey);</A></PRE><A NAME="1089042">
+This callback function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089023">
+<CODE>arg</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089025">
+The <CODE>arg</CODE> parameter passed to <CODE>SSL_GetClientAuthDataHook</CODE>. </A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089027">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089029">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089031">
+<CODE>caNames</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089033">
+A pointer to distinguished names of CAs that the server accepts.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089035">
+<CODE>pRetCert</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089037">
+A pointer to a pointer to a certificate structure, for returning the certificate.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089039">
+<CODE>pRetKey</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089041">
+A pointer to a pointer to a key structure, for returning the private key.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1089043">
+ 
+</A></H5>
+
+<A NAME="1089044">
+The callback function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1089045">
+If data returned is valid, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1089046">
+If the function cannot obtain a certificate, <CODE>SECFailure</CODE>.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+</P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1106762">
+ NSS_GetClientAuthData
+</A></H4>
+
+<A NAME="1111069">
+Callback function that a client application can use to get the client's private key and certificate when authentication is requested by a remote server. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1106807">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1111065">#include "ssl.h"</A></PRE><PRE><A NAME="1112354">SECStatus NSS_GetClientAuthData(<br>&nbsp;&nbsp;&nbsp;void * arg,<br>&nbsp;&nbsp;&nbsp;PRFileDesc *socket,<br>&nbsp;&nbsp;&nbsp;struct CERTDistNamesStr *caNames,<br>&nbsp;&nbsp;&nbsp;struct CERTCertificateStr **pRetCert,<br>&nbsp;&nbsp;&nbsp;struct SECKEYPrivateKeyStr **pRetKey);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1106813">
+ Parameters
+</A></H5>
+
+<A NAME="1113996">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1113993">
+<CODE>arg</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1114791">
+The <CODE>arg</CODE> parameter passed to <CODE>SSL_GetClientAuthDataHook</CODE>, which should be a pointer to a <CODE>NULL</CODE>-terminated string containing the nickname of the certificate and key pair to use. If <CODE>arg</CODE> is <CODE>NULL</CODE>, <CODE>NSS_GetClientAuthData</CODE> searches the certificate and key databases for a suitable match and uses the certificate and key pair it finds, if any.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1115433">
+<CODE>socket</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1115435">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1115437">
+<CODE>caNames</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1115439">
+A pointer to distinguished names of CAs that the server accepts.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1115441">
+<CODE>pRetCert</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1115443">
+A pointer to a pointer to a certificate structure, for returning the certificate.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1115445">
+<CODE>pRetKey</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1115447">
+A pointer to a pointer to a key structure, for returning the private key.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1114453">
+ Returns
+</A></H5>
+
+<A NAME="1114454">
+The function returns one of these values: </A></P>
+<ul><P><LI><A NAME="1114455">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1114458">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1114347">
+ Description
+</A></H5>
+
+<A NAME="1113322">
+Unlike <A HREF="sslfnc.html#1088888"><CODE>SSL_AuthCertificate</CODE></A>, <CODE>NSS_GetClientAuthData</CODE> is not a default callback function. You must set it explicitly with <A HREF="sslfnc.html#1126622"><CODE>SSL_GetClientAuthDataHook</CODE></A> for each SSL client socket.</A></P>
+<A NAME="1114636">
+Once <CODE>NSS_GetClientAuthData</CODE> has been set for a client socket, SSL invokes it whenever SSL needs to know what certificate and private key (if any) to use to respond to a request for client authentication.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1112702">
+ SSL_HandshakeCallback
+</A></H4>
+
+<A NAME="1089049">
+Sets up a callback function used by SSL to inform either a client application or a server application when the handshake is completed.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1089050">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1089051">#include "ssl.h"</A></PRE><PRE><A NAME="1089052">SECStatus SSL_HandshakeCallback(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd, <br>&nbsp;&nbsp;&nbsp;SSLHandshakeCallback cb,<br>&nbsp;&nbsp;&nbsp;void *client_data);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1089053">
+ Parameters
+</A></H5>
+
+<A NAME="1089067">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089056">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089058">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089060">
+<CODE>cb</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089062">
+A pointer to the application's callback function. </A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089064">
+<CODE>client_data</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089066">
+A pointer to the value of the <CODE>client_data</CODE> argument that was passed to <CODE>SSL_HandshakeCallback</CODE>.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1089068">
+ Returns
+</A></H5>
+
+<A NAME="1089069">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1089070">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1089073">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1089074">
+ Description
+</A></H5>
+
+<A NAME="1089075">
+The callback function set by <CODE>SSL_HandshakeCallback</CODE> has the following prototype:</A></P>
+<PRE><A NAME="1127151">typedef void (*SSLHandshakeCallback)(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;void *client_data);</A></PRE><A NAME="1127164">
+This callback function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1127154">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1127156">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1127158">
+<CODE>client_data</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1127160">
+A pointer supplied by the application that can be used to pass state information. Can be <CODE>NULL</CODE>.</A></P></TD></TR>
+
+</TABLE>
+ </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1127310">
+ See Also
+</A></H5>
+
+<H2><A NAME="SSL Communication Functions"></A>
+<A NAME="1127321">
+ SSL Communication Functions
+</A></H2><A NAME="1090925">
+Most communication functions are described in the <A href="../../../../../nspr/reference/html/index.html">NSPR Reference</A>. For a complete list of communication functions used by SSL-enabled applications, see <A HREF="sslintro.html#1027816">Communication</A>.</A></P>
+<A NAME="1092556">
+<A HREF="sslfnc.html#1089420"><CODE>SSL_InvalidateSession</CODE></A><br><A HREF="sslfnc.html#1092785"><CODE>SSL_DataPending</CODE></A><br><A HREF="sslfnc.html#1092805"><CODE>SSL_SecurityStatus</CODE></A><br><A HREF="sslfnc.html#1092869"><CODE>SSL_GetSessionID</CODE></A><br><A HREF="sslfnc.html#1124562"><CODE>SSL_SetSockPeerID</CODE></A></A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1089420">
+ SSL_InvalidateSession
+</A></H4>
+
+<A NAME="1089421">
+Removes the current session on a particular SSL socket from the session cache.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1089422">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1089423">#include "ssl.h"</A></PRE><PRE><A NAME="1089424">int SSL_InvalidateSession(PRFileDesc *fd);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1089425">
+ Parameter
+</A></H5>
+
+<A NAME="1089431">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1089428">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1089430">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1089432">
+ Returns
+</A></H5>
+
+<A NAME="1089433">
+The function returns one of these values: </A></P>
+<ul><P><LI><A NAME="1089434">
+If successful, zero.</A></LI>
+<LI><A NAME="1089437">
+If unsuccessful, -1. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1089438">
+ Description
+</A></H5>
+
+<A NAME="1089417">
+After you call <CODE>SSL_InvalidateSession</CODE>, the existing connection using the session can continue, but no new connections can resume this SSL session. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1092785">
+ SSL_DataPending
+</A></H4>
+
+<A NAME="1092786">
+Returns the number of bytes waiting in internal SSL buffers to be read by the local application from the SSL socket.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1092787">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1092788">#include "ssl.h"</A></PRE><PRE><A NAME="1092789">int SSL_DataPending(PRFileDesc *fd);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1092790">
+ Parameter 
+</A></H5>
+
+<A NAME="1092796">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1092793">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1092795">
+A pointer to a file descriptor for a connected SSL socket.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1092797">
+ Returns
+</A></H5>
+
+<A NAME="1092798">
+The function returns an integer:</A></P>
+<ul><P><LI><A NAME="1092799">
+If successful, the function returns the number of bytes waiting in internal SSL buffers for the specified socket.</A></LI>
+<P><LI><A NAME="1092800">
+If <CODE>SSL_SECURITY</CODE> has not been enabled with a call to <A HREF="sslfnc.html#1068466"><CODE>SSL_OptionSetDefault</CODE></A> or <A HREF="sslfnc.html#1086543"><CODE>SSL_OptionSet</CODE></A>, the function returns zero. </A></LI>
+</ul><H5><A NAME="Head4;"></A>
+<A NAME="1092801">
+ Description
+</A></H5>
+
+<A NAME="1092802">
+The <CODE>SSL_DataPending</CODE> function determines whether there is any received and decrypted application data remaining in the SSL socket's receive buffers after a prior read operation. This function does not reveal any information about data that has been received but has not yet been decrypted. Hence, if this function returns zero, that does not necessarily mean that a subsequent call to <A href="../../../../../nspr/reference/html/priofnc.html#17910"><CODE>PR_Read</A></CODE> would block.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1092805">
+ SSL_SecurityStatus
+</A></H4>
+
+<A NAME="1092806">
+Gets information about the security parameters of the current connection. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1092807">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1092808">#include "ssl.h"</A></PRE><PRE><A NAME="1092809">SECStatus SSL_SecurityStatus(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd,<br>&nbsp;&nbsp;&nbsp;int *on,<br>&nbsp;&nbsp;&nbsp;char **cipher,<br>&nbsp;&nbsp;&nbsp;int *keysize,<br>&nbsp;&nbsp;&nbsp;int *secretKeySize,<br>&nbsp;&nbsp;&nbsp;char **issuer,<br>&nbsp;&nbsp;&nbsp;char **subject);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1092810">
+ Parameters
+</A></H5>
+
+<A NAME="1092858">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1092813">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1092815">
+The file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1092817">
+<CODE>on</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1092819">
+A pointer to an integer. On output, the integer will be one of these values:</A></P><ul></P><LI><A NAME="1092820">
+<CODE>SSL_SECURITY_STATUS_ OFF (= 0)</CODE></A></P><LI><A NAME="1092821">
+<CODE>SSL_SECURITY_STATUS_ ON_HIGH (= 1)</CODE></A></P><LI><A NAME="1092822">
+<CODE>SSL_SECURITY_STATUS_ON_LOW (= 2)</CODE></A></ul></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1092824">
+<CODE>cipher</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1092826">
+A pointer to a string pointer. On output, the string pointer references a newly allocated string specifying the name of the cipher. For SSL v2, the string is one of the following:</A></P><A NAME="1092827">
+<CODE>RC4</CODE><P></A><A NAME="1092828">
+<CODE>RC4-Export</CODE><P></A><A NAME="1092829">
+<CODE>RC2-CBC</CODE><P></A><A NAME="1092830">
+<CODE>RC2-CBC-Export</CODE><P></A><A NAME="1092831">
+<CODE>DES-CBC</CODE><P></A><A NAME="1092832">
+<CODE>DES-EDE3-CBC</CODE><P></A><P><A NAME="1092833">
+</A></P><P><A NAME="1094891">
+For SSL v3, the string is one of the following: </A></P><A NAME="1092834">
+<CODE>RC4</CODE> <P></A><A NAME="1092835">
+<CODE>RC4-40</CODE> <P></A><A NAME="1092836">
+<CODE>RC2-CBC</CODE> <P></A><A NAME="1092837">
+<CODE>RC2-CBC-40</CODE> <P></A><A NAME="1092838">
+<CODE>DES-CBC</CODE> <P></A><A NAME="1092839">
+<CODE>3DES-EDE-CBC</CODE> <P></A><A NAME="1123896">
+<CODE>DES-CBC-40</CODE> <P></A><A NAME="1094640">
+<CODE>FORTEZZA</CODE> <P></A></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1092843">
+<CODE>keySize</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1092845">
+A pointer to an integer. On output, the integer is the session key size used, in bits.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1092847">
+<CODE>secretKeySize</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1092849">
+A pointer to an integer. On output, the integer indicates the size, in bits, of the secret portion of the session key used (also known as the "effective key size"). The secret key size is never greater than the session key size.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1092851">
+<CODE>issuer</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1115813">
+A pointer to a string pointer. On output, the string pointer references a newly allocated string specifying the DN of the issuer of the certificate at the other end of the connection, in RFC1485 format. If no certificate is supplied, the string is "<CODE>no certificate</CODE>."</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1092855">
+<CODE>subject</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1092857">
+A pointer to a string pointer specifying the distinguished name of the certificate at the other end of the connection, in RFC1485 format. If no certificate is supplied, the string is "<CODE>no certificate</CODE>."</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1092859">
+ Returns
+</A></H5>
+
+<A NAME="1092860">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1092861">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1092864">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1092865">
+ Description
+</A></H5>
+
+<A NAME="1115835">
+The <CODE>SSL_SecurityStatus</CODE> function fills in values only if you supply pointers to values of the appropriate type. Pointers passed can be <CODE>NULL</CODE>, in which case the function does not supply values. When you are finished with them, you should free all the returned values using <A href="../../../../../nspr/reference/html/prmem2.html#21499"><CODE>PR_Free</A></CODE>. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1092869">
+ SSL_GetSessionID
+</A></H4>
+
+<A NAME="1092870">
+Returns a <A HREF="ssltyp.html#1026076"><CODE>SECItem</CODE></A> structure containing the SSL session ID associated with a file descriptor.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1092871">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1092872">#include "ssl.h"</A></PRE><PRE><A NAME="1092873">SECItem *SSL_GetSessionID(PRFileDesc *fd);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1092874">
+ Parameter
+</A></H5>
+
+<A NAME="1092880">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1092877">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1092879">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1092881">
+ Returns
+</A></H5>
+
+<A NAME="1092882">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1092883">
+If successful, a pointer to <CODE>SECItem</CODE> structure containing the SSL session ID associated with the file descriptor passed in <CODE>fd</CODE>.</A></LI>
+<A NAME="1092884">
+If unsuccessful, <CODE>NULL</CODE>.<P></A></ul><H5><A NAME="Head4;"></A>
+<A NAME="1149047">
+ Description
+</A></H5>
+
+<A NAME="1149086">
+This function returns a <A HREF="ssltyp.html#1026076"><CODE>SECItem</CODE></A> structure containing the SSL session ID associated with the file descriptor <CODE>fd</CODE>. When the application is finished with the <CODE>SECItem</CODE> structure returned by this function, it should free the structure by calling <CODE>SECITEM_FreeItem(item, PR_TRUE)</CODE>.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1124562">
+ SSL_SetSockPeerID
+</A></H4>
+
+<A NAME="1124571">
+Associates a peer ID with a socket to facilitate looking up the SSL session when it is tunneling through a proxy.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1124624">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1231259">#include "ssl.h"</A></PRE><PRE><A NAME="1124605">int SSL_SetSockPeerID(PRFileDesc *fd, char *peerID);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1124782">
+ Parameters
+</A></H5>
+
+<A NAME="1124788">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1124785">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1124787">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1124825">
+<CODE>peerID</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1124827">
+An ID number assigned by the application to keep track of the SSL session associated with the peer.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1124789">
+ Returns
+</A></H5>
+
+<A NAME="1124790">
+The function returns one of these values: </A></P>
+<ul><P><LI><A NAME="1124791">
+If successful, zero.</A></LI>
+<LI><A NAME="1124794">
+If unsuccessful, -1. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1127887">
+ Description
+</A></H5>
+
+<A NAME="1127890">
+SSL peers frequently reconnect after a relatively short time has passed. To avoid the overhead of repeating the full SSL handshake in situations like this, the SSL protocol supports the use of a session cache, which retains information about each connection for some predetermined length of time. For example, a client session cache includes the hostname and port number of each server the client connects with, plus additional information such as the master secret generated during the SSL handshake. </A></P>
+<A NAME="1128163">
+For a direct connection with a server, the hostname and port number are sufficient for the client to identify the server as one for which it has an entry in its session cache. However, the situation is more complicated if the client is on an intranet and is connecting to a server on the Internet through a proxy. In this case, the client first connects to the proxy, and the client and proxy exchange messages specified by the proxy protocol that allow the proxy, in turn, to connect to the requested server on behalf of the client. This arrangement is known as SSL tunneling.</A></P>
+<A NAME="1128016">
+Client session cache entries for SSL connections that tunnel through a particular proxy all have the same hostname and port number--that is, the hostname and port number of the proxy. To determine whether a particular server with which the client is attempting to connect has an entry in the session cache, the session cache needs some additional information that identifies that server. This additional identifying information is known as a peer ID. The peer ID is associated with a socket, and must be set before the SSL handshake occurs--that is, before the SSL handshake is initiated by a call to a function such as <CODE><A href="../../../../../nspr/reference/html/priofnc.html#17910">PR_Read</A></CODE> or <A HREF="sslfnc.html#1133431"><CODE>SSL_ForceHandshake</CODE></A>. To set the peer ID, you use <CODE>SSL_SetSockPeerID</CODE>.</A></P>
+<A NAME="1128510">
+In summary, SSL uses three pieces of information to identify a server's entry in the client session cache: the hostname, port number, and peer ID. In the case of a client that is tunneling through a proxy, the hostname and port number identify the proxy, and the peer ID identifies the desired server. Netscape recommends that the client set the peer ID to a string that consists of the server's hostname and port number, like this: "<CODE>www.hostname.com:387</CODE>". This convention guarantees that each server has a unique entry in the client session cache.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1128614">
+ See Also
+</A></H5>
+
+<A NAME="1128636">
+For information about configuring the session cache for a server, see <A HREF="sslfnc.html#1143851"><CODE>SSL_ConfigServerSessionIDCache</CODE></A>. </A></P>
+
+<H2><A NAME="SSL Functions Used by Callbacks"></A>
+<A NAME="1127893">
+ SSL Functions Used by Callbacks
+</A></H2><A NAME="1133491">
+<A HREF="sslfnc.html#1096168"><CODE>SSL_PeerCertificate</CODE></A><br><A HREF="sslfnc.html#1081175"><CODE>SSL_RevealURL</CODE></A><br><A HREF="sslfnc.html#1123385"><CODE>SSL_RevealPinArg</CODE></A></A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1096168">
+ SSL_PeerCertificate 
+</A></H4>
+
+<A NAME="1081216">
+Returns a pointer to the certificate structure for the certificate received from the remote end of the SSL connection. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1081218">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1081219">#include "ssl.h"</A></PRE><PRE><A NAME="1221996">CERTCertificate *SSL_PeerCertificate(PRFileDesc *fd); </A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1081221">
+ Parameter
+</A></H5>
+
+<A NAME="1081518">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1081511">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1081513">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1081226">
+ Returns
+</A></H5>
+
+<A NAME="1081227">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1081642">
+If successful, a pointer to a certificate structure.</A></LI>
+<P><LI><A NAME="1081228">
+If unsuccessful, <CODE>NULL</CODE>. </A></LI>
+</ul><H5><A NAME="Head4;"></A>
+<A NAME="1081229">
+ Description
+</A></H5>
+
+<A NAME="1123398">
+The <CODE>SSL_PeerCertificate</CODE> function is used by certificate authentication and bad-certificate callback functions to obtain the certificate under scrutiny. If the client calls <CODE>SSL_PeerCertificate</CODE>, it always returns the server's certificate. If the server calls <CODE>SSL_PeerCertificate</CODE>, it may return <CODE>NULL</CODE> if client authentication is not enabled or if the client had no certificate when asked. </A></P>
+<A NAME="1136356">
+SSL makes and keeps internal copies (or increments the reference counts, as appropriate) of certificate and key structures. The application should destroy its copies when it has no further use for them by calling <A HREF="sslcrt.html#1050532"><CODE>CERT_DestroyCertificate</CODE></A> and <A HREF="sslkey.html#1051017"><CODE>SECKEY_DestroyPrivateKey</CODE></A>. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1081175">
+ SSL_RevealURL
+</A></H4>
+
+<A NAME="1081953">
+Returns a pointer to a newly allocated string containing the domain name of the desired server. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1081955">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1081956">#include "ssl.h"</A></PRE><PRE><A NAME="1222024">char *SSL_RevealURL(PRFileDesc *fd); </A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1081958">
+ Parameter
+</A></H5>
+
+<A NAME="1082262">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1082259">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1082261">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1081963">
+ Returns
+</A></H5>
+
+<A NAME="1081964">
+The function returns one of the following values:</A></P>
+<ul><P><LI><A NAME="1082392">
+If successful, returns a pointer to a newly allocated string containing the domain name of the desired server. </A></LI>
+<P><LI><A NAME="1081966">
+If unsuccessful, <CODE>NULL</CODE>. </A></LI>
+</ul><H5><A NAME="Head4;"></A>
+<A NAME="1081967">
+ Description
+</A></H5>
+
+<A NAME="1123381">
+The <CODE>SSL_RevealURL</CODE> function is used by certificate authentication callback function to obtain the domain name of the desired SSL server for the purpose of comparing it with the domain name in the certificate presented by the server actually contacted. When the callback function is finished with the string returned, the string should be freed with a call to <A href="../../../../../nspr/reference/html/prmem2.html#21499" ><CODE>PR_Free</A></CODE>.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1123385">
+ SSL_RevealPinArg 
+</A></H4>
+
+<A NAME="1123386">
+Returns the <CODE>PKCS11PinArg</CODE> value associated with the socket. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1081689">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1081690">#include "ssl.h"</A></PRE><PRE><A NAME="1222050">void *SSL_RevealPinArg(PRFileDesc *fd); </A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1081692">
+ Parameter
+</A></H5>
+
+<A NAME="1081923">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1081920">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1081922">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1081924">
+ Returns
+</A></H5>
+
+<A NAME="1081925">
+The function returns one of the following values:</A></P>
+<ul><P><LI><A NAME="1081926">
+If successful, the <CODE>PKCS11PinArg</CODE> value associated with the socket. </A></LI>
+<P><LI><A NAME="1081700">
+If unsuccessful, <CODE>NULL</CODE>. </A></LI>
+</ul><H5><A NAME="Head4;"></A>
+<A NAME="1081945">
+ Description
+</A></H5>
+
+<A NAME="1081702">
+The <CODE>SSL_RevealPinArg</CODE> function is used by callback functions to obtain the PIN argument that NSS passes to certain functions. The PIN argument points to memory allocated by the application. The application is responsible for managing the memory referred to by this pointer. For more information about this argument, see <A HREF="sslfnc.html#1088040"><CODE>SSL_SetPKCS11PinArg</CODE></A>. </A></P>
+
+<H2><A NAME="SSL Handshake Functions"></A>
+<A NAME="1061582">
+ SSL Handshake Functions
+</A></H2><A NAME="1133419">
+<A HREF="sslfnc.html#1133431"><CODE>SSL_ForceHandshake</CODE></A><br><A HREF="sslfnc.html#1232052"><CODE>SSL_ReHandshake</CODE></A><br><A HREF="sslfnc.html#1058001"><CODE>SSL_ResetHandshake</CODE></A></A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1133431">
+ SSL_ForceHandshake
+</A></H4>
+
+<A NAME="1023162">
+Drives a handshake for a specified SSL socket to completion on a socket that has already been prepared to do a handshake or is in the middle of doing a handshake. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1023163">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1030069">#include "ssl.h"</A></PRE><PRE><A NAME="1023165">SECStatus SSL_ForceHandshake(PRFileDesc *fd);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1023166">
+ Parameters
+</A></H5>
+
+<A NAME="1023172">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1023169">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1023171">
+Pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1023175">
+ Returns
+</A></H5>
+
+<A NAME="1057843">
+The function returns one of these values: </A></P>
+<ul><P><LI><A NAME="1057844">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1083148">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code. 
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1083120">
+ Description
+</A></H5>
+
+<A NAME="1083121">
+When you are forcing the initial handshake on a blocking socket, this function returns when the handshake is complete. For subsequent handshakes, the function can return either because the handshake is complete, or because application data has been received on the connection that must be processed (that is, the application must read it) before the handshake can continue.</A></P>
+<A NAME="1174034">
+You can use <CODE>SSL_ForceHandshake</CODE> when a handshake is desired but neither end has anything to say immediately. This occurs, for example, when an HTTPS server has received a request and determines that before it can answer the request, it needs to request an authentication certificate from the client. At the HTTP protocol level, nothing more is being said (that is, no HTTP request or response is being sent), so the server uses <CODE>SSL_ForceHandshake</CODE> to make the handshake occur.</A></P>
+<A NAME="1179565">
+<CODE>SSL_ForceHandshake</CODE> does not prepare a socket to do a handshake by itself. The following functions prepare a socket (previously imported into SSL and configured as necessary) to do a handshake:</A></P>
+<ul><P><LI><A NAME="1179566">
+<CODE><A href="../../../../../nspr/reference/html/priofnc.html#18727">PR_Connect</A></CODE> </A></LI>
+<P><LI><A NAME="1179567">
+<CODE><A href="../../../../../nspr/reference/html/priofnc.html#18779">PR_Accept</A></CODE></A></LI>
+<P><LI><A NAME="1179568">
+<A HREF="sslfnc.html#1232052"><CODE>SSL_ReHandshake</CODE></A> (after the first handshake is finished)</A></LI>
+<P><LI><A NAME="1179569">
+<A HREF="sslfnc.html#1058001"><CODE>SSL_ResetHandshake</CODE></A> (for sockets that were connected or accepted prior to being imported)</A></LI>
+</ul><A NAME="1179572">
+A call to <CODE>SSL_ForceHandshake</CODE> will almost always be preceded by one of those functions.</A></P>
+<A NAME="1179547">
+In versions prior to NSS 1.2, you cannot force a subsequent handshake. If you use this function after the initial handshake, it returns immediately without forcing a handshake.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1232052">
+ SSL_ReHandshake
+</A></H4>
+
+<A NAME="1177547">
+Causes SSL to begin a new SSL 3.0 handshake on a connection that has already completed one handshake. </A></P>
+<A NAME="1231864">
+<CODE>SSL_ReHandshake</CODE> replaces the deprecated function <A HREF="sslfnc.html#1231825"><CODE>SSL_RedoHandshake</CODE></A>.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1043720">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1043721">#include "ssl.h"</A></PRE><PRE><A NAME="1043722">SECStatus SSL_RedoHandshake(PRFileDesc *fd, PRBool flushCache);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1043723">
+ Parameter
+</A></H5>
+
+<A NAME="1043729">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1043726">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1043728">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1231911">
+<CODE>flushCache</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1231989">
+If <CODE>flushCache</CODE> is non-zero, the SSL3 cache entry will be flushed first, ensuring that a full SSL handshake from scratch will occur.</A></P><P><A NAME="1232063">
+If <CODE>flushCache</CODE> is zero, and an SSL connection is established, it will do the much faster session restart handshake. This will regenerate the symmetric session keys without doing another private key operation. </A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1070253">
+ Returns
+</A></H5>
+
+<A NAME="1070254">
+The function returns one of these values: </A></P>
+<ul><P><LI><A NAME="1070255">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1070258">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1070289">
+ Description
+</A></H5>
+
+<A NAME="1070290">
+If <CODE>flushCache</CODE> is non-zero, the <CODE>SSL_ReHandshake</CODE> function invalidates the current SSL session associated with the specified <CODE>fd</CODE> from the session cache and starts another full SSL 3.0 handshake. It is for use with SSL 3.0 only. You can call this function to redo the handshake if you have changed one of the socket's configuration parameters (for example, if you are going to request client authentication). </A></P>
+<A NAME="1232088">
+Setting <CODE>flushCache</CODE> to zero can be useful, for example, if you are using export ciphers and want to keep changing the symmetric keys to foil potential attackers.</A></P>
+<A NAME="1177592">
+<CODE>SSL_ReHandshake</CODE> only initiates the new handshake by sending the first message of that handshake. To drive the new handshake to completion, you must either call <CODE>SSL_ForceHandshake</CODE> or do another I/O operation (read or write) on the socket. A call to <CODE>SSL_ReHandshake</CODE> is typically followed by a call to <CODE>SSL_ForceHandshake</CODE>.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1058001">
+ SSL_ResetHandshake
+</A></H4>
+
+<A NAME="1058002">
+Resets the handshake state for a specified socket.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1050115">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1060857">#include "ssl.h"</A></PRE><PRE><A NAME="1057923">SECStatus SSL_ResetHandshake(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd, <br>&nbsp;&nbsp;&nbsp;PRBool asServer);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1057929">
+ Parameters
+</A></H5>
+
+<A NAME="1057935">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1057932">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1057934">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1057956">
+<CODE>asServer</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1070325">
+A Boolean value. <CODE>PR_TRUE</CODE> means the socket will attempt to handshake as a server the next time it tries, and <CODE>PR_FALSE</CODE> means the socket will attempt to handshake as a client the next time it tries.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1058067">
+ Returns
+</A></H5>
+
+<A NAME="1058068">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1058069">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1058072">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1057927">
+ Description
+</A></H5>
+
+<A NAME="1070424">
+Calling <CODE>SSL_ResetHandshake</CODE> causes the SSL handshake protocol to start from the beginning on the next I/O operation. That is, the handshake starts with no cipher suite already in use, just as it does on the first handshake on a new socket.</A></P>
+<A NAME="1177661">
+When an application imports a socket into SSL after the TCP connection on that socket has already been established, it must call <CODE>SSL_ResetHandshake</CODE> to determine whether SSL should behave like an SSL client or an SSL server. Note that this step would not be necessary if the socket weren't already connected. For an SSL socket that is configured before it is connected, SSL figures this out when the application calls <A href="../../../../../nspr/reference/html/priofnc.html#18727"><CODE>PR_Connect</A></CODE> or <A href="../../../../../nspr/reference/html/priofnc.html#18779"><CODE>PR_Accept</A></CODE>. If the socket is already connected before SSL gets involved, you must provide this extra hint. </A></P>
+
+<H2><A NAME="NSS Shutdown Function"></A>
+<A NAME="1095840">
+ NSS Shutdown Function
+</A></H2>
+<H4><A NAME="Head3;"></A>
+<A NAME="1061858">
+ NSS_Shutdown
+</A></H4>
+
+<A NAME="1095826">
+Closes the key and certificate databases that were opened by <A HREF="sslfnc.html#1067601"><CODE>NSS_Init</CODE></A>.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1095828">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1095832">#include "nss.h"</A></PRE><PRE><A NAME="1095836">SECStatus NSS_Shutdown(void);</A></PRE>
+<H5><A NAME="Head4;"></A>
+ Description
+</H5>
+Note that if any reference to an NSS object is leaked (for example, if an SSL
+client application doesn't call <A HREF="sslfnc.html#1138601">
+<CODE>SSL_ClearSessionCache</CODE></A> first), <CODE>NSS_Shutdown</CODE> fails
+with the error code <CODE>SEC_ERROR_BUSY</CODE>.
+<H2><A NAME="Deprecated Functions"></A>
+<A NAME="1198429">
+ Deprecated Functions
+</A></H2><A NAME="1222599">
+The following functions have been replaced with newer versions but are still supported:</A></P>
+<A NAME="1219848">
+<A HREF="sslfnc.html#1206365"><CODE>SSL_EnableDefault</CODE></A><br><A HREF="sslfnc.html#1220189"><CODE>SSL_Enable</CODE></A><br><A HREF="sslfnc.html#1207298"><CODE>SSL_EnableCipher</CODE></A><br><A HREF="sslfnc.html#1207350"><CODE>SSL_SetPolicy</CODE></A></A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1206365">
+ SSL_EnableDefault
+</A></H4>
+
+<A NAME="1206613">
+Changes a default value for all subsequently opened sockets as long as the current application program is running.</A></P>
+<A NAME="1206617">
+<CODE>SSL_EnableDefault</CODE> has been replaced by <A HREF="sslfnc.html#1068466"><CODE>SSL_OptionSetDefault</CODE></A> and works the same way.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1206618">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1206619">#include "ssl.h"</A></PRE><PRE><A NAME="1206620">SECStatus SSL_EnableDefault(int which, PRBool on);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1206621">
+ Parameters
+</A></H5>
+
+<A NAME="1206732">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1206722">
+<CODE>which</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1206724">
+For information about the values that can be passed in the <CODE>which</CODE> parameter, see <A HREF="sslfnc.html#1068466"><CODE>SSL_OptionSetDefault</CODE></A>.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1206729">
+<CODE>on</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1206731">
+ <CODE>PR_TRUE</CODE> turns option on; <CODE>PR_FALSE</CODE> turns option off.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1206651">
+ Returns
+</A></H5>
+
+<A NAME="1198654">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1198655">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1198658">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1207098">
+ Description
+</A></H5>
+
+<A NAME="1198685">
+For detailed information about using <CODE>SSL_Enable</CODE>, see the description of 
+<A HREF="sslfnc.html#1068466"><CODE>SSL_OptionSetDefault</CODE></A>.
+</A>
+</BLOCKQUOTE>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1220189">
+ SSL_Enable
+</A></H4>
+
+<A NAME="1220190">
+Sets a single configuration parameter of a specified socket. Call once for each parameter you want to change.</A></P>
+<A NAME="1220194">
+<CODE>SSL_Enable</CODE> has been replaced by <A HREF="sslfnc.html#1086543"><CODE>SSL_OptionSet</CODE></A> and works the same way.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1220195">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1220196">#include "ssl.h"</A></PRE><PRE><A NAME="1220197">SECStatus SSL_Enable(<br>&nbsp;&nbsp;&nbsp;PRFileDesc *fd, <br>&nbsp;&nbsp;&nbsp;int which, <br>&nbsp;&nbsp;&nbsp;PRBool on);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1220198">
+ Parameters
+</A></H5>
+
+<A NAME="1220215">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1220201">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1220203">
+Pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1220205">
+<CODE>which</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1220207">
+For information about the values that can be passed in the <CODE>which</CODE> parameter, see the description of the <CODE>option</CODE> parameter under <A HREF="sslfnc.html#1086543"><CODE>SSL_OptionSet</CODE></A>.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1220212">
+<CODE>on</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1220214">
+ <CODE>PR_TRUE</CODE> turns option on; <CODE>PR_FALSE</CODE> turns option off.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1220216">
+ Returns
+</A></H5>
+
+<A NAME="1220217">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1220218">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1220221">
+If unsuccessful, returns <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1220222">
+ Description
+</A></H5>
+
+<A NAME="1220223">
+For detailed information about using <CODE>SSL_Enable</CODE>, see the description of 
+<A HREF="sslfnc.html#1086543"><CODE>SSL_OptionSet</CODE></A>.
+</A>
+</BLOCKQUOTE>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1207298">
+ SSL_EnableCipher
+</A></H4>
+
+<A NAME="1198756">
+Enables or disables cipher suites (subject to which cipher suites are permitted or disallowed by previous calls to one or more of the <A HREF="sslfnc.html#1098841">SSL Export Policy Functions</A>). This function must be called once for each cipher you want to enable or disable. </A></P>
+<A NAME="1209933">
+<CODE>SSL_EnableCipher</CODE> has been replaced by <A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A> and works the same way.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1227689">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1227690">#include "ssl.h"<br>#include "sslproto.h"</A></PRE><PRE><A NAME="1198762">SECStatus SSL_EnableCipher(long which, PRBool enabled);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1198763">
+ Parameters
+</A></H5>
+
+<A NAME="1198777">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1198766">
+<CODE>which</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1198772">
+The cipher suite whose default preference setting you want to set. For a list of the cipher suites you can specify, see <A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A>.<CODE></CODE></A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1198774">
+<CODE>enabled</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1198776">
+If nonzero, the specified cipher is enabled. If zero, the cipher is disabled.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1198778">
+ Returns
+</A></H5>
+
+<A NAME="1198779">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1198780">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1198783">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1198784">
+ Description
+</A></H5>
+
+<A NAME="1198790">
+For detailed information about using <CODE>SSL_EnableCipher</CODE>, see the description of <A HREF="sslfnc.html#1084747"><CODE>SSL_CipherPrefSetDefault</CODE></A>. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1207350">
+ SSL_SetPolicy
+</A></H4>
+
+<A NAME="1198828">
+Sets policy for the use of individual cipher suites.</A></P>
+<A NAME="1209988">
+<CODE>SSL_SetPolicy</CODE> has been replaced by <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A> and works the same way.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1198829">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1198830">#include &lt;ssl.h&gt;<br>#include &lt;sslproto.h&gt;</A></PRE><PRE><A NAME="1198831">SECStatus SSL_SetPolicy(long which, int policy);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1198832">
+ Parameters
+</A></H5>
+
+<A NAME="1198851">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1198835">
+<CODE>which</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1198837">
+The cipher suite for which you want to set policy. For a list of possible values, see <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A>.<CODE></CODE></A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1198845">
+<CODE>policy</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1198847">
+One of the following values:</A></P><ul></P><LI><A NAME="1198848">
+<CODE>SSL_ALLOWED</CODE>. Cipher is always allowed by U.S. government policy.   </A></P><LI><A NAME="1198849">
+<CODE>SSL_RESTRICTED</CODE>. Cipher is allowed by U.S. government policy for servers with Global ID certificates. </A></P><LI><A NAME="1198850">
+<CODE>SSL_NOT_ALLOWED</CODE>. Cipher is never allowed by U.S. government policy.</A></ul></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1198852">
+ Returns
+</A></H5>
+
+<A NAME="1198853">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1198854">
+If successful, <CODE>SECSuccess</CODE>.</A></LI>
+<LI><A NAME="1198857">
+If unsuccessful, <CODE>SECFailure</CODE>. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1198858">
+ Description
+</A></H5>
+
+<A NAME="1223389">
+For detailed information about using <CODE>SSL_SetPolicy</CODE>, see the description of <A HREF="sslfnc.html#1104647"><CODE>SSL_CipherPolicySet</CODE></A>.</A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1231825">
+ SSL_RedoHandshake
+</A></H4>
+
+<A NAME="1231826">
+Causes SSL to begin a full, new SSL 3.0 handshake from scratch on a connection that has already completed one handshake. </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1231827">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1231828">#include "ssl.h"</A></PRE><PRE><A NAME="1231829">int SSL_RedoHandshake(PRFileDesc *fd);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1231830">
+ Parameter
+</A></H5>
+
+<A NAME="1231836">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><P><A NAME="1231833">
+<CODE>fd</CODE></A></P></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1231835">
+A pointer to the file descriptor for the SSL socket.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1231837">
+ Returns
+</A></H5>
+
+<A NAME="1231838">
+The function returns one of these values: </A></P>
+<ul><P><LI><A NAME="1231839">
+If successful, zero.</A></LI>
+<LI><A NAME="1231842">
+If unsuccessful, -1. Use <A href="../../../../../nspr/reference/html/prerr.html#26127"><CODE>PR_GetError</A></CODE> to obtain the error code.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1231843">
+ Description
+</A></H5>
+
+<A NAME="1231844">
+The <CODE>SSL_RedoHandshake</CODE> function invalidates the current SSL session associated with the <CODE>fd</CODE> parameter from the session cache and starts another full SSL 3.0 handshake. It is for use with SSL 3.0 only. You can call this function to redo the handshake if you have changed one of the socket's configuration parameters (for example, if you are going to request client authentication).</A></P>
+<A NAME="1231845">
+<CODE>SSL_RedoHandshake</CODE> only initiates the new handshake by sending the first message of that handshake. To drive the new handshake to completion, you must either call <CODE>SSL_ForceHandshake</CODE> or do another I/O operation (read or write) on the socket. A call to <CODE>SSL_RedoHandshake</CODE> is typically followed by a call to <CODE>SSL_ForceHandshake</CODE>.</A></P>
+<A NAME="1231821">
+</A></P>
+
+<HR>
+
+<FONT SIZE=-1><A HREF="index.html">Table of Contents</A> | <A HREF="ssltyp.html">Previous</A>
+ | <A HREF="sslcrt.html">Next</A>
+ | <A HREF="bklast.html">Index</A>
+</FONT>
+<P ALIGN=right>
+<FONT SIZE=-2><I>Last Updated:  10/18/00  09:17:43</I></FONT>
+<P> 
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

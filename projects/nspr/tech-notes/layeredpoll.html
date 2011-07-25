@@ -1,0 +1,184 @@
+<?php
+
+$html_title = 'NSPR 2.0: Polling verses layered I/O';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<H2>
+NSPR 2.0: <TT>PR_Poll()</TT> and the layered I/O</H2>
+<I><FONT SIZE=-2>[last edited by AOF
+8 August 1998]</FONT></I>
+<P>This memo discusses some of the nuances of using PR_Poll() in conjunction
+with <I>layered I/O</I>. This is a relatively new feature in NSPR 2.0,
+not that it hasn't been in the source tree for a while, but in that it
+has had no clients.
+<H3>
+History</H3>
+The idea was first proposed in the latter half of 1997. The first prototype
+implementation was actually done outside the NSPR group. It first made
+its way into the NSPR code tree around the first of the year, but was basically
+unused. In the March timeframe it was found deficient in a number of areas.
+These areas were addressed, requiring a moderate API change (if there is
+such a thing) and some significant changes in both the runtime and client
+code.
+<P>The changes to the runtime were included in the May release of NSPR
+(1980529). Unfortunately, the changes were made only in the pthreads implementation.
+The task of propagating the required changes to the classic (UNIX, WINDOWS,
+MAC, etc) NSPR dropped through the cracks and the omission was not noticed
+because the facility still had no clients.
+<P>This changed in mid July of this year. We are still discovering new
+bugs and in some cases having to educate our clients on the feature's use.
+Some of the problem is lack of documentation. This memo will <I>attempt</I>
+to correct that shortcoming.
+<H3>
+Implementation</H3>
+NSPR provides a public API function, PR_Poll() that is modeled after UNIX'
+<TT>poll()</TT>
+system call.
+<UL><PRE>
+PRInt32 PR_Poll(
+    PRPollDesc *pds, PRIntn npds, PRIntervalTime timeout);
+</PRE></UL>
+The implementation of <TT>PR_Poll()</TT> is somewhat complicated. Not only
+does it map the <TT>PRPollDesc</TT> array into structures needed by the
+underlying OS, it also must deal with layered I/O. This is done despite
+the fact that <TT>PR_Poll()</TT> itself is <I>not</I> layered. For every
+element of the <TT>PRPollDesc</TT> array that has a non-NULL <TT>PRFileDesc</TT>
+and whose <TT>in_flags</TT> are not zero, it calls the file descriptor's
+<TT>poll()
+method</TT>.
+<P>The <TT>poll()</TT> method is one of the vector contained in the <TT>PRIOMethods</TT>
+table. In the case of layered I/O, the elements (the methods) of the methods
+table may be overridden by the implementor of that layer. The layers are
+then <I>stacked.</I> I/O using that <I>stack</I> will call through the
+method at the top layer, and each layer may make altering decisions regarding
+how the I/O operation should proceed.
+<P>The signature for the <TT>poll()</TT> method is
+<BR> 
+<UL><PRE>
+typedef PRInt16 (*PRPollFN)(
+    PRFileDesc *fd, PRInt16 in_flags, PRInt16 *out_flags);
+</PRE></UL>
+The default implementation for this function is
+<UL><PRE>
+{ return fd->lower->methods->poll(in_flags, out_flags); }
+</PRE></UL>
+The purpose of the <TT>poll()</TT> method is to allow a layer to modify
+the flags that will ultimately be used in the call to the underlying OS'
+<TT>poll()</TT>
+(or equivalent) function. Such modification might be useful if one was
+implementing an augmented stream protocol (<I>e.g.,</I> <B>SSL</B>). SSL
+stands for <B>Secure Socket Layer</B>, hence the obvious applicability
+as an example. But it is way to complicated to describe in this memo, so
+this memo will use a much simpler layered protocol.
+<P>The example protocol is one that, in order to send <I>n</I> bytes, it
+must first ask the connection's peer if the peer is willing to receive
+that many bytes. The form of the request is 4 bytes (binary) stating the
+number of bytes the sender wishes to transmit. The peer will send back
+the number of bytes it is willing to receive (in the test code there are
+no error conditions, so don't even ask).
+<P>The implication of the protocol is obvious. In order to do a <TT>PR_Send()</TT>
+operation, the layer must first do a <I>different </I>send and then <I>receive</I>
+a response. Doing this and keeping the <I>stack's</I> client unaware is
+the goal. <B><I>It is not a goal of NSPR 2.0 to hide the nuances of synchronous
+verses non-blocking I/O</I></B><I>.</I>
+<H3>
+The layered methods</H3>
+Each layer must implement a suitable function for <I>every</I> element
+of the methods table. One can get a copy of default methods by calling
+<TT>PR_GetDefaultIOMethods().</TT> These methods simply pass all calls
+through the layer on to the next lower layer of the stack.
+<UL><PRE>
+const PRIOMethods *PR_GetDefaultIOMethods(void);
+</PRE></UL>
+
+A layer implementor might copy the elements of the <TT>PRIOMethods</TT>
+acquired from this function into a methods table of its own, then override
+just those methods of interest. <I>Usually</I> (with only a single exception)
+a layered method will perform its design duties and then call the next
+lower layer's equivalent function.
+<H4>
+Layered <TT>poll()</TT></H4>
+One of the more interesting methods is the <TT>poll()</TT>. It is called
+by the runtime whenever the client calls <TT>PR_Poll()</TT>. It may be
+called at the <I>top</I> layer for <I>every</I> file descriptor in the
+poll descriptor. It may be called zero or more times. The purpose of the
+<TT>poll()</TT> method is to provide the layer an opportunity to adjust
+the polling bits as needed. For instance, if a client (<I>i.e.</I>, top
+layer) is calling <TT>PR_Poll()</TT> for a particular file descriptor with
+a <I>read</I> poll request, a lower layer might decide that it must perform
+a <I>write </I>first.
+<P>In that case, the layer's <TT>poll()</TT> method would be called with
+<B><TT>in_flags</TT></B> including a <TT>PR_POLL_READ</TT> flag. However,
+the <TT>poll()</TT> method would call the next lower layer's <TT>poll()</TT>
+method with a <TT>PR_POLL_WRITE</TT> bit set. This process of re-assigning
+the poll flags can happen as many times as there are layers in the stack.
+It is the final value, the one returned to the caller of the top layer's
+<TT>poll()</TT> method  (<TT>PR_Poll()</TT>) that will be used by
+the runtime when calling the OS' <TT>poll()</TT> (or equivalent) system
+call.
+<P>It is expected that the modification of the polling bits propagate from
+the top of the stack down, allowing the layer closest to the bottom of
+the stack to provide the final setting. The implication is that there should
+be no modifications of the <B><TT>in_flags</TT></B> during the <I>return</I>
+phase of the layered function.
+<P>For example:
+
+<UL><PRE>
+PRInt16 LayeredPoll(
+    PRFileDesc *fd, PRInt16 in_flags, PRInt16 *out_flags)
+{
+    PRInt16 final_in_flags;
+    PRInt16 new_in_flags = ...;
+    ... apply desired logic to assign new_in_flags ...
+    final_in_flags = fd->lower->methods->poll(
+        fd->lower, new_in_flags, out_flags);
+    return final_in_flags;
+}
+</PRE></UL>
+
+It is not advised to modify the <TT>final_in_flags</TT> between the call
+to the lower layer's <TT>poll()</TT> method and the <TT>return</TT> statement.
+<P>The third argument of the <TT>poll()</TT> method is a pointer to a 16-bit
+word. If the layer sets a value in memory through that pointer <I>and</I>
+returns with a value that has <I>corresponding</I> bits, the runtime assumes
+that the file descriptor is ready immediately.
+<P>There are two important deviations from the normal. First, this is the
+one (known) exception to having a layered routine call the stack's next
+lower layer method. If bits are set in the <TT>out_flags</TT> the method
+should return <I>directly</I>. Second, the runtime will observe that the
+layer claims this file descriptor is ready and suppress the call to the
+OS' <TT>poll()</TT> system call.
+<P>At this time the only known use for this feature is to allow a layer
+to indicate it has buffered <I>input</I>. Note that it is not appropriate
+for buffered <I>output</I> since in order to write/send output the runtime
+must still confirm with the OS that such an operation is permitted.
+<P>Since the <TT>poll()</TT> method may be called zero or more times it
+must therefore be <I>idempotent</I> or at least <I>functional</I>.
+It will need to look at the layer's state, but must not make modifications
+to that state that would cause subsequent calls within the same <TT>PR_Poll()</TT>
+call to return a different answer. Since the <TT>poll()</TT> method may
+not be called at all, so there is not guarantee that any modifications
+that would have been performed by the routine will every happen.
+<DIV ALIGN=right><BR>
+<BR>
+
+<HR WIDTH="100%"></DIV>
+
+<DIV ALIGN=right><I><FONT SIZE=-1>Last updated: Mon 8 August 1998</FONT></I></DIV>
+
+<HR WIDTH="100%">
+<CENTER>Copyright © 1998 <A HREF="http://home.netscape.com/misc/contact_info.html">Netscape
+Communications Corporation</A></CENTER>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

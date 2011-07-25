@@ -1,0 +1,119 @@
+<?php
+
+$html_title = 'ARIA Button and Title Pane';
+$page_title = 'Title Pane Example';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_style = '
+<style type="text/css">
+.label {
+background: #cccccc;
+height: 20px;
+border-top: 1px solid black;
+border-bottom: 1px solid black;
+}
+.contents, .label {
+width:300px;
+}
+</style>
+
+';
+
+$extra_js = '
+<script type="text/javascript">
+var HIDE_TEXT = "Hide Sample Title Pane";
+var SHOW_TEXT = "Show Sample Title Pane";
+function toggle(contentsId) {
+var pane = document.getElementById(contentsId);
+var labelId = pane.getAttribute("labelledby");
+var label = document.getElementById(labelId);
+var isOpen = pane.getAttribute("open");
+if (isOpen == "true") {
+pane.style.display="none";
+pane.setAttribute("open", "false");
+pane.tabIndex="-1";
+label.title = SHOW_TEXT;
+}
+else {
+pane.style.display="block";
+pane.setAttribute("open", "true");
+pane.tabIndex="0";
+label.title=HIDE_TEXT;
+}
+}
+function keyToggle(ev, contentsId) {
+var bEventContinue = true;
+if (ev.keyCode == "13" || ev.keyCode == "32") {
+toggle(contentsId);
+bEventContinue = false;
+} else if (ev.keyCode == "40") {
+var pane = document.getElementById(contentsId);
+if (pane.getAttribute("open") == "true") {
+pane.focus();
+}
+}
+return bEventContinue;
+}
+function displayAlert() {
+alert("Don\'t Worry, Be Happy!");
+}
+function keyDisplayAlert(ev) {
+var bEventContinue = true;
+if (ev.keyCode == "13"  || ev.keyCode == "32") {
+displayAlert();
+bEventContinue = false;
+}
+return bEventContinue;
+}
+</script>
+
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+  <p>Here's a title pane with an arrow
+button to hide and show the contents. Activating the button will toggle
+the display of the content pane. When the button is activated, focus
+remains on the arrow button. Press the down arrow to set focus from the
+arrow button to the open content pane. The contents pane is put into
+the tab order when the pane is made visible so pressing tab from the
+down arrow button will focus the contents pane when it is visible.. The
+button action is described via the title attribute which is updated
+depending upon the visibility of the content. The title for the button
+appends "Hide" or "Show" to the tile of pane. </p>
+<p>Currently the contents pane is given a role of region and has a
+labelledby property which points to the title. The region role is not
+yet supported by screen readers. </p><div>
+    	<div class="label">
+    		<span role="button" title="Hide Sample Title Pane" tabindex="0" id="paneTitle" onclick="toggle('content');" onkeydown="return keyToggle(event, 'content');">
+    			<img role="presentation" src="combo_box_arrow.png"  alt="">
+    		</span>Sample Title Pane</div>
+    	<div aria-labelledby="paneTitle" role="region" id="content" tabindex="0" open="true" style="display: block;">Some
+sample content. Every soul has a body, every body has an ending, every
+ending has a beginning, every beginning has a soul. And thus the world
+goes round. And now for something less profound. A minute in time is 60
+seconds. Once upon a time there was a very uncreative web developer who
+needed to create some sample text. She considered using lorem ipsum
+text but that can be very confusing to some readers so she just typed
+what ever came into her head. Pity the poor folks who have to read it!</div>
+    </div>
+
+ <h2>Simple Image Button</h2>
+<p>Image button example which just displays a JavaScript alert.</p>
+<div>
+	<span role="button" title="display silly alert" tabindex="0" onclick="displayAlert();" onkeydown="return keyDisplayAlert(event);">
+		<img role="presentation" src="caution2.gif" alt="">
+	</span>
+</div>
+
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

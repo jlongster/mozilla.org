@@ -1,0 +1,930 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> /*
+<b><a name="38">   38</a></b>     Optimized ASN.1 DER decoder
+<b><a name="39">   39</a></b>     
+<b><a name="40">   40</a></b> */
+<b><a name="41">   41</a></b> 
+<b><a name="42">   42</a></b> #include "secerr.h"
+<b><a name="43">   43</a></b> #include "secasn1.h" /* for SEC_ASN1GetSubtemplate */
+<b><a name="44">   44</a></b> #include "secitem.h"
+<b><a name="45">   45</a></b> 
+<b><a name="46">   46</a></b> /*
+<b><a name="47">   47</a></b>  * simple definite-length ASN.1 decoder
+<b><a name="48">   48</a></b>  */
+<b><a name="49">   49</a></b> 
+<b><a name="50">   50</a></b> static unsigned char* <a href="#50">definite_length_decoder</a>(const unsigned char *buf,
+<b><a name="51">   51</a></b>                                               const unsigned int length,
+<b><a name="52">   52</a></b>                                               unsigned int *data_length,
+<b><a name="53">   53</a></b>                                               PRBool includeTag)
+<b><a name="54">   54</a></b> {
+<b><a name="55">   55</a></b>     unsigned char tag;
+<b><a name="56">   56</a></b>     unsigned int used_length= 0;
+<b><a name="57">   57</a></b>     unsigned int data_len;
+<b><a name="58">   58</a></b> 
+<b><a name="59">   59</a></b>     if (used_length &gt;= length)
+<b><a name="60">   60</a></b>     {
+<b><a name="61">   61</a></b>         return NULL;
+<b><a name="62">   62</a></b>     }
+<b><a name="63">   63</a></b>     tag = buf[used_length++];
+<b><a name="64">   64</a></b> 
+<b><a name="65">   65</a></b>     /* blow out when we come to the end */
+<b><a name="66">   66</a></b>     if (tag == 0)
+<b><a name="67">   67</a></b>     {
+<b><a name="68">   68</a></b>         return NULL;
+<b><a name="69">   69</a></b>     }
+<b><a name="70">   70</a></b> 
+<b><a name="71">   71</a></b>     if (used_length &gt;= length)
+<b><a name="72">   72</a></b>     {
+<b><a name="73">   73</a></b>         return NULL;
+<b><a name="74">   74</a></b>     }
+<b><a name="75">   75</a></b>     data_len = buf[used_length++];
+<b><a name="76">   76</a></b> 
+<b><a name="77">   77</a></b>     if (data_len&amp;0x80)
+<b><a name="78">   78</a></b>     {
+<b><a name="79">   79</a></b>         int  len_count = data_len &amp; 0x7f;
+<b><a name="80">   80</a></b> 
+<b><a name="81">   81</a></b>         data_len = 0;
+<b><a name="82">   82</a></b> 
+<b><a name="83">   83</a></b>         while (len_count-- &gt; 0)
+<b><a name="84">   84</a></b>         {
+<b><a name="85">   85</a></b>             if (used_length &gt;= length)
+<b><a name="86">   86</a></b>             {
+<b><a name="87">   87</a></b>                 return NULL;
+<b><a name="88">   88</a></b>             }
+<b><a name="89">   89</a></b>             data_len = (data_len &lt;&lt; 8) | buf[used_length++];
+<b><a name="90">   90</a></b>         }
+<b><a name="91">   91</a></b>     }
+<b><a name="92">   92</a></b> 
+<b><a name="93">   93</a></b>     if (data_len &gt; (length-used_length) )
+<b><a name="94">   94</a></b>     {
+<b><a name="95">   95</a></b>         return NULL;
+<b><a name="96">   96</a></b>     }
+<b><a name="97">   97</a></b>     if (includeTag) data_len += used_length;
+<b><a name="98">   98</a></b> 
+<b><a name="99">   99</a></b>     *data_length = data_len;
+<b><a name="100">  100</a></b>     return ((unsigned char*)buf + (includeTag ? 0 : used_length));
+<b><a name="101">  101</a></b> }
+<b><a name="102">  102</a></b> 
+<b><a name="103">  103</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#103">GetItem</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* src, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* dest, PRBool includeTag)
+<b><a name="104">  104</a></b> {
+<b><a name="105">  105</a></b>     if ( (!src) || (!dest) || (!src-&gt;data) )
+<b><a name="106">  106</a></b>     {
+<b><a name="107">  107</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="108">  108</a></b>         return SECFailure;
+<b><a name="109">  109</a></b>     }
+<b><a name="110">  110</a></b> 
+<b><a name="111">  111</a></b>     if (!src-&gt;len)
+<b><a name="112">  112</a></b>     {
+<b><a name="113">  113</a></b>         /* reaching the end of the buffer is not an error */
+<b><a name="114">  114</a></b>         dest-&gt;data = NULL;
+<b><a name="115">  115</a></b>         dest-&gt;len = 0;
+<b><a name="116">  116</a></b>         return SECSuccess;
+<b><a name="117">  117</a></b>     }
+<b><a name="118">  118</a></b> 
+<b><a name="119">  119</a></b>     dest-&gt;data = <a href="../util/quickder.c.dep.html#definite_length_decoder">definite_length_decoder</a>(src-&gt;data,  src-&gt;len, &amp;dest-&gt;len,
+<b><a name="120">  120</a></b>         includeTag);
+<b><a name="121">  121</a></b>     if (dest-&gt;data == NULL)
+<b><a name="122">  122</a></b>     {
+<b><a name="123">  123</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_DER);
+<b><a name="124">  124</a></b>         return SECFailure;
+<b><a name="125">  125</a></b>     }
+<b><a name="126">  126</a></b>     src-&gt;len -= (dest-&gt;data - src-&gt;data) + dest-&gt;len;
+<b><a name="127">  127</a></b>     src-&gt;data = dest-&gt;data + dest-&gt;len;
+<b><a name="128">  128</a></b>     return SECSuccess;
+<b><a name="129">  129</a></b> }
+<b><a name="130">  130</a></b> 
+<b><a name="131">  131</a></b> /* check if the actual component's type matches the type in the template */
+<b><a name="132">  132</a></b> 
+<b><a name="133">  133</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#133">MatchComponentType</a>(const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* templateEntry,
+<b><a name="134">  134</a></b>                                     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* item, PRBool* match, void* dest)
+<b><a name="135">  135</a></b> {
+<b><a name="136">  136</a></b>     unsigned long kind = 0;
+<b><a name="137">  137</a></b>     unsigned char tag = 0;
+<b><a name="138">  138</a></b> 
+<b><a name="139">  139</a></b>     if ( (!item) || (!templateEntry) || (!match) )
+<b><a name="140">  140</a></b>     {
+<b><a name="141">  141</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="142">  142</a></b>         return SECFailure;
+<b><a name="143">  143</a></b>     }
+<b><a name="144">  144</a></b> 
+<b><a name="145">  145</a></b>     if (!item-&gt;len || !item-&gt;data)
+<b><a name="146">  146</a></b>     {
+<b><a name="147">  147</a></b>         *match = PR_FALSE;
+<b><a name="148">  148</a></b>         return SECSuccess;
+<b><a name="149">  149</a></b>     }
+<b><a name="150">  150</a></b> 
+<b><a name="151">  151</a></b>     kind = templateEntry-&gt;kind;
+<b><a name="152">  152</a></b>     tag = *(unsigned char*) item-&gt;data;
+<b><a name="153">  153</a></b> 
+<b><a name="154">  154</a></b>     if ( ( (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INLINE">SEC_ASN1_INLINE</a>) ||
+<b><a name="155">  155</a></b>            (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_POINTER">SEC_ASN1_POINTER</a>) ) &amp;&amp;
+<b><a name="156">  156</a></b>            (0 == (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_TAG_MASK">SEC_ASN1_TAG_MASK</a>) ) )
+<b><a name="157">  157</a></b>     {
+<b><a name="158">  158</a></b>         /* These cases are special because the template's "kind" does not
+<b><a name="159">  159</a></b>            give us the information for the ASN.1 tag of the next item. It can
+<b><a name="160">  160</a></b>            only be figured out from the subtemplate. */
+<b><a name="161">  161</a></b>         if (!(kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OPTIONAL">SEC_ASN1_OPTIONAL</a>))
+<b><a name="162">  162</a></b>         {
+<b><a name="163">  163</a></b>             /* This is a required component. If there is a type mismatch,
+<b><a name="164">  164</a></b>                the decoding of the subtemplate will fail, so assume this
+<b><a name="165">  165</a></b>                is a match at the parent level and let it fail later. This
+<b><a name="166">  166</a></b>                avoids a redundant check in matching cases */
+<b><a name="167">  167</a></b>             *match = PR_TRUE;
+<b><a name="168">  168</a></b>             return SECSuccess;
+<b><a name="169">  169</a></b>         }
+<b><a name="170">  170</a></b>         else
+<b><a name="171">  171</a></b>         {
+<b><a name="172">  172</a></b>             /* optional component. This is the hard case. Now we need to
+<b><a name="173">  173</a></b>                look at the subtemplate to get the expected kind */
+<b><a name="174">  174</a></b>             const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* subTemplate = 
+<b><a name="175">  175</a></b>                 <a href="../util/secasn1u.c.dep.html#SEC_ASN1GetSubtemplate">SEC_ASN1GetSubtemplate</a> (templateEntry, dest, PR_FALSE);
+<b><a name="176">  176</a></b>             if (!subTemplate)
+<b><a name="177">  177</a></b>             {
+<b><a name="178">  178</a></b>                 <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_TEMPLATE);
+<b><a name="179">  179</a></b>                 return SECFailure;
+<b><a name="180">  180</a></b>             }
+<b><a name="181">  181</a></b>             if ( (subTemplate-&gt;kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INLINE">SEC_ASN1_INLINE</a>) ||
+<b><a name="182">  182</a></b>                  (subTemplate-&gt;kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_POINTER">SEC_ASN1_POINTER</a>) )
+<b><a name="183">  183</a></b>             {
+<b><a name="184">  184</a></b>                 /* disallow nesting SEC_ASN1_POINTER and SEC_ASN1_INLINE,
+<b><a name="185">  185</a></b>                    otherwise you may get a false positive due to the recursion
+<b><a name="186">  186</a></b>                    optimization above that always matches the type if the
+<b><a name="187">  187</a></b>                    component is required . Nesting these should never be
+<b><a name="188">  188</a></b>                    required, so that no one should miss this ability */
+<b><a name="189">  189</a></b>                 <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_TEMPLATE);
+<b><a name="190">  190</a></b>                 return SECFailure;
+<b><a name="191">  191</a></b>             }
+<b><a name="192">  192</a></b>             return <a href="../util/quickder.c.dep.html#MatchComponentType">MatchComponentType</a>(subTemplate, item, match,
+<b><a name="193">  193</a></b>                                       (void*)((char*)dest + templateEntry-&gt;offset));
+<b><a name="194">  194</a></b>         }
+<b><a name="195">  195</a></b>     }
+<b><a name="196">  196</a></b> 
+<b><a name="197">  197</a></b>     if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CHOICE">SEC_ASN1_CHOICE</a>)
+<b><a name="198">  198</a></b>     {
+<b><a name="199">  199</a></b>         /* we need to check the component's tag against each choice's tag */
+<b><a name="200">  200</a></b>         /* XXX it would be nice to save the index of the choice here so that
+<b><a name="201">  201</a></b>            DecodeChoice wouldn't have to do this again. However, due to the
+<b><a name="202">  202</a></b>            recursivity of MatchComponentType, we don't know if we are in a
+<b><a name="203">  203</a></b>            required or optional component, so we can't write anywhere in
+<b><a name="204">  204</a></b>            the destination within this function */
+<b><a name="205">  205</a></b>         unsigned choiceIndex = 1;
+<b><a name="206">  206</a></b>         const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* choiceEntry;
+<b><a name="207">  207</a></b>         while ( (choiceEntry = &amp;templateEntry[choiceIndex++]) &amp;&amp; (choiceEntry-&gt;kind))
+<b><a name="208">  208</a></b>         {
+<b><a name="209">  209</a></b>             if ( (SECSuccess == <a href="../util/quickder.c.dep.html#MatchComponentType">MatchComponentType</a>(choiceEntry, item, match,
+<b><a name="210">  210</a></b>                                 (void*)((char*)dest + choiceEntry-&gt;offset))) &amp;&amp;
+<b><a name="211">  211</a></b>                  (PR_TRUE == *match) )
+<b><a name="212">  212</a></b>             {
+<b><a name="213">  213</a></b>                 return SECSuccess;
+<b><a name="214">  214</a></b>             }
+<b><a name="215">  215</a></b>         }
+<b><a name="216">  216</a></b>         /* no match, caller must decide if this is BAD DER, or not. */
+<b><a name="217">  217</a></b>         *match = PR_FALSE;
+<b><a name="218">  218</a></b>         return SECSuccess;
+<b><a name="219">  219</a></b>     }
+<b><a name="220">  220</a></b> 
+<b><a name="221">  221</a></b>     if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_ANY">SEC_ASN1_ANY</a>)
+<b><a name="222">  222</a></b>     {
+<b><a name="223">  223</a></b>         /* SEC_ASN1_ANY always matches */
+<b><a name="224">  224</a></b>         *match = PR_TRUE;
+<b><a name="225">  225</a></b>         return SECSuccess;
+<b><a name="226">  226</a></b>     }
+<b><a name="227">  227</a></b> 
+<b><a name="228">  228</a></b>     if ( (0 == ((unsigned char)kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_TAGNUM_MASK">SEC_ASN1_TAGNUM_MASK</a>)) &amp;&amp;
+<b><a name="229">  229</a></b>          (!(kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_EXPLICIT">SEC_ASN1_EXPLICIT</a>)) &amp;&amp;
+<b><a name="230">  230</a></b>          ( ( (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SAVE">SEC_ASN1_SAVE</a>) ||
+<b><a name="231">  231</a></b>              (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SKIP">SEC_ASN1_SKIP</a>) ) &amp;&amp;
+<b><a name="232">  232</a></b>            (!(kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OPTIONAL">SEC_ASN1_OPTIONAL</a>)) 
+<b><a name="233">  233</a></b>          )
+<b><a name="234">  234</a></b>        )
+<b><a name="235">  235</a></b>     {
+<b><a name="236">  236</a></b>         /* when saving or skipping a required component,  a type is not
+<b><a name="237">  237</a></b>            required in the template. This is for legacy support of
+<b><a name="238">  238</a></b>            SEC_ASN1_SAVE and SEC_ASN1_SKIP only. XXX I would like to
+<b><a name="239">  239</a></b>            deprecate these usages and always require a type, as this
+<b><a name="240">  240</a></b>            disables type checking, and effectively forbids us from
+<b><a name="241">  241</a></b>            transparently ignoring optional components we aren't aware of */
+<b><a name="242">  242</a></b>         *match = PR_TRUE;
+<b><a name="243">  243</a></b>         return SECSuccess;
+<b><a name="244">  244</a></b>     }
+<b><a name="245">  245</a></b> 
+<b><a name="246">  246</a></b>     /* first, do a class check */
+<b><a name="247">  247</a></b>     if ( (tag &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CLASS_MASK">SEC_ASN1_CLASS_MASK</a>) !=
+<b><a name="248">  248</a></b>          (((unsigned char)kind) &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CLASS_MASK">SEC_ASN1_CLASS_MASK</a>) )
+<b><a name="249">  249</a></b>     {
+<b><a name="250">  250</a></b> #ifdef DEBUG
+<b><a name="251">  251</a></b>         /* this is only to help debugging of the decoder in case of problems */
+<b><a name="252">  252</a></b>         unsigned char tagclass = tag &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CLASS_MASK">SEC_ASN1_CLASS_MASK</a>;
+<b><a name="253">  253</a></b>         unsigned char expectedclass = (unsigned char)kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CLASS_MASK">SEC_ASN1_CLASS_MASK</a>;
+<b><a name="254">  254</a></b>         tagclass = tagclass;
+<b><a name="255">  255</a></b>         expectedclass = expectedclass;
+<b><a name="256">  256</a></b> #endif
+<b><a name="257">  257</a></b>         *match = PR_FALSE;
+<b><a name="258">  258</a></b>         return SECSuccess;
+<b><a name="259">  259</a></b>     }
+<b><a name="260">  260</a></b> 
+<b><a name="261">  261</a></b>     /* now do a tag check */
+<b><a name="262">  262</a></b>     if ( ((unsigned char)kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_TAGNUM_MASK">SEC_ASN1_TAGNUM_MASK</a>) !=
+<b><a name="263">  263</a></b>          (tag &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_TAGNUM_MASK">SEC_ASN1_TAGNUM_MASK</a>))
+<b><a name="264">  264</a></b>     {
+<b><a name="265">  265</a></b>         *match = PR_FALSE;
+<b><a name="266">  266</a></b>         return SECSuccess;
+<b><a name="267">  267</a></b>     }
+<b><a name="268">  268</a></b> 
+<b><a name="269">  269</a></b>     /* now, do a method check. This depends on the class */
+<b><a name="270">  270</a></b>     switch (tag &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CLASS_MASK">SEC_ASN1_CLASS_MASK</a>)
+<b><a name="271">  271</a></b>     {
+<b><a name="272">  272</a></b>     case <a href="../util/secasn1t.h.dep.html#SEC_ASN1_UNIVERSAL">SEC_ASN1_UNIVERSAL</a>:
+<b><a name="273">  273</a></b>         /* For types of the SEC_ASN1_UNIVERSAL class, we know which must be
+<b><a name="274">  274</a></b>            primitive or constructed based on the tag */
+<b><a name="275">  275</a></b>         switch (tag &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_TAGNUM_MASK">SEC_ASN1_TAGNUM_MASK</a>)
+<b><a name="276">  276</a></b>         {
+<b><a name="277">  277</a></b>         case <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SEQUENCE">SEC_ASN1_SEQUENCE</a>:
+<b><a name="278">  278</a></b>         case <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SET">SEC_ASN1_SET</a>:
+<b><a name="279">  279</a></b>         case <a href="../util/secasn1t.h.dep.html#SEC_ASN1_EMBEDDED_PDV">SEC_ASN1_EMBEDDED_PDV</a>:
+<b><a name="280">  280</a></b>             /* this component must be a constructed type */
+<b><a name="281">  281</a></b>             /* XXX add any new universal constructed type here */
+<b><a name="282">  282</a></b>             if (tag &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CONSTRUCTED">SEC_ASN1_CONSTRUCTED</a>)
+<b><a name="283">  283</a></b>             {
+<b><a name="284">  284</a></b>                 *match = PR_TRUE;
+<b><a name="285">  285</a></b>                 return SECSuccess;
+<b><a name="286">  286</a></b>             }
+<b><a name="287">  287</a></b>             break;
+<b><a name="288">  288</a></b> 
+<b><a name="289">  289</a></b>         default:
+<b><a name="290">  290</a></b>             /* this component must be a primitive type */
+<b><a name="291">  291</a></b>             if (! (tag &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CONSTRUCTED">SEC_ASN1_CONSTRUCTED</a>))
+<b><a name="292">  292</a></b>             {
+<b><a name="293">  293</a></b>                 *match = PR_TRUE;
+<b><a name="294">  294</a></b>                 return SECSuccess;
+<b><a name="295">  295</a></b>             }
+<b><a name="296">  296</a></b>             break;
+<b><a name="297">  297</a></b>         }
+<b><a name="298">  298</a></b>         break;
+<b><a name="299">  299</a></b> 
+<b><a name="300">  300</a></b>     default:
+<b><a name="301">  301</a></b>         /* for all other classes, we check the method based on the template */
+<b><a name="302">  302</a></b>         if ( (unsigned char)(kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_METHOD_MASK">SEC_ASN1_METHOD_MASK</a>) ==
+<b><a name="303">  303</a></b>              (tag &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_METHOD_MASK">SEC_ASN1_METHOD_MASK</a>) )
+<b><a name="304">  304</a></b>         {
+<b><a name="305">  305</a></b>             *match = PR_TRUE;
+<b><a name="306">  306</a></b>             return SECSuccess;
+<b><a name="307">  307</a></b>         }
+<b><a name="308">  308</a></b>         /* method does not match between template and component */
+<b><a name="309">  309</a></b>         break;
+<b><a name="310">  310</a></b>     }
+<b><a name="311">  311</a></b> 
+<b><a name="312">  312</a></b>     *match = PR_FALSE;
+<b><a name="313">  313</a></b>     return SECSuccess;
+<b><a name="314">  314</a></b> }
+<b><a name="315">  315</a></b> 
+<b><a name="316">  316</a></b> #ifdef DEBUG
+<b><a name="317">  317</a></b> 
+<b><a name="318">  318</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#318">CheckSequenceTemplate</a>(const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* sequenceTemplate)
+<b><a name="319">  319</a></b> {
+<b><a name="320">  320</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECSuccess;
+<b><a name="321">  321</a></b>     const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* sequenceEntry = NULL;
+<b><a name="322">  322</a></b>     unsigned long seqIndex = 0;
+<b><a name="323">  323</a></b>     unsigned long lastEntryIndex = 0;
+<b><a name="324">  324</a></b>     unsigned long ambiguityIndex = 0;
+<b><a name="325">  325</a></b>     PRBool foundAmbiguity = PR_FALSE;
+<b><a name="326">  326</a></b> 
+<b><a name="327">  327</a></b>     do
+<b><a name="328">  328</a></b>     {
+<b><a name="329">  329</a></b>         sequenceEntry = &amp;sequenceTemplate[seqIndex++];
+<b><a name="330">  330</a></b>         if (sequenceEntry-&gt;kind)
+<b><a name="331">  331</a></b>         {
+<b><a name="332">  332</a></b>             /* ensure that we don't have an optional component of SEC_ASN1_ANY
+<b><a name="333">  333</a></b>                in the middle of the sequence, since we could not handle it */
+<b><a name="334">  334</a></b>             /* XXX this function needs to dig into the subtemplates to find
+<b><a name="335">  335</a></b>                the next tag */
+<b><a name="336">  336</a></b>             if ( (PR_FALSE == foundAmbiguity) &amp;&amp;
+<b><a name="337">  337</a></b>                  (sequenceEntry-&gt;kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OPTIONAL">SEC_ASN1_OPTIONAL</a>) &amp;&amp;
+<b><a name="338">  338</a></b>                  (sequenceEntry-&gt;kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_ANY">SEC_ASN1_ANY</a>) )
+<b><a name="339">  339</a></b>             {
+<b><a name="340">  340</a></b>                 foundAmbiguity = PR_TRUE;
+<b><a name="341">  341</a></b>                 ambiguityIndex = seqIndex - 1;
+<b><a name="342">  342</a></b>             }
+<b><a name="343">  343</a></b>         }
+<b><a name="344">  344</a></b>     } while (sequenceEntry-&gt;kind);
+<b><a name="345">  345</a></b> 
+<b><a name="346">  346</a></b>     lastEntryIndex = seqIndex - 2;
+<b><a name="347">  347</a></b> 
+<b><a name="348">  348</a></b>     if (PR_FALSE != foundAmbiguity)
+<b><a name="349">  349</a></b>     {
+<b><a name="350">  350</a></b>         if (ambiguityIndex &lt; lastEntryIndex)
+<b><a name="351">  351</a></b>         {
+<b><a name="352">  352</a></b>             /* ambiguity can only be tolerated on the last entry */
+<b><a name="353">  353</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_TEMPLATE);
+<b><a name="354">  354</a></b>             rv = SECFailure;
+<b><a name="355">  355</a></b>         }
+<b><a name="356">  356</a></b>     }
+<b><a name="357">  357</a></b> 
+<b><a name="358">  358</a></b>     /* XXX also enforce ASN.1 requirement that tags be
+<b><a name="359">  359</a></b>        distinct for consecutive optional components */
+<b><a name="360">  360</a></b> 
+<b><a name="361">  361</a></b>     return rv;
+<b><a name="362">  362</a></b> }
+<b><a name="363">  363</a></b> 
+<b><a name="364">  364</a></b> #endif
+<b><a name="365">  365</a></b> 
+<b><a name="366">  366</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#366">DecodeItem</a>(void* dest,
+<b><a name="367">  367</a></b>                      const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* templateEntry,
+<b><a name="368">  368</a></b>                      <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* src, PRArenaPool* arena, PRBool checkTag);
+<b><a name="369">  369</a></b> 
+<b><a name="370">  370</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#370">DecodeSequence</a>(void* dest,
+<b><a name="371">  371</a></b>                      const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* templateEntry,
+<b><a name="372">  372</a></b>                      <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* src, PRArenaPool* arena)
+<b><a name="373">  373</a></b> {
+<b><a name="374">  374</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECSuccess;
+<b><a name="375">  375</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> source;
+<b><a name="376">  376</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> sequence;
+<b><a name="377">  377</a></b>     const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* sequenceTemplate = &amp;(templateEntry[1]);
+<b><a name="378">  378</a></b>     const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* sequenceEntry = NULL;
+<b><a name="379">  379</a></b>     unsigned long seqindex = 0;
+<b><a name="380">  380</a></b> 
+<b><a name="381">  381</a></b> #ifdef DEBUG
+<b><a name="382">  382</a></b>     /* for a sequence, we need to validate the template. */
+<b><a name="383">  383</a></b>     rv = <a href="../util/quickder.c.dep.html#CheckSequenceTemplate">CheckSequenceTemplate</a>(sequenceTemplate);
+<b><a name="384">  384</a></b> #endif
+<b><a name="385">  385</a></b> 
+<b><a name="386">  386</a></b>     source = *src;
+<b><a name="387">  387</a></b> 
+<b><a name="388">  388</a></b>     /* get the sequence */
+<b><a name="389">  389</a></b>     if (SECSuccess == rv)
+<b><a name="390">  390</a></b>     {
+<b><a name="391">  391</a></b>         rv = <a href="../util/quickder.c.dep.html#GetItem">GetItem</a>(&amp;source, &amp;sequence, PR_FALSE);
+<b><a name="392">  392</a></b>     }
+<b><a name="393">  393</a></b> 
+<b><a name="394">  394</a></b>     /* process it */
+<b><a name="395">  395</a></b>     if (SECSuccess == rv)
+<b><a name="396">  396</a></b>     do
+<b><a name="397">  397</a></b>     {
+<b><a name="398">  398</a></b>         sequenceEntry = &amp;sequenceTemplate[seqindex++];
+<b><a name="399">  399</a></b>         if ( (sequenceEntry &amp;&amp; sequenceEntry-&gt;kind) &amp;&amp;
+<b><a name="400">  400</a></b>              (sequenceEntry-&gt;kind != <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SKIP_REST">SEC_ASN1_SKIP_REST</a>) )
+<b><a name="401">  401</a></b>         {
+<b><a name="402">  402</a></b>             rv = <a href="../util/quickder.c.dep.html#DecodeItem">DecodeItem</a>(dest, sequenceEntry, &amp;sequence, arena, PR_TRUE);
+<b><a name="403">  403</a></b>         }
+<b><a name="404">  404</a></b>     } while ( (SECSuccess == rv) &amp;&amp;
+<b><a name="405">  405</a></b>               (sequenceEntry-&gt;kind &amp;&amp;
+<b><a name="406">  406</a></b>                sequenceEntry-&gt;kind != <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SKIP_REST">SEC_ASN1_SKIP_REST</a>) );
+<b><a name="407">  407</a></b>     /* we should have consumed all the bytes in the sequence by now
+<b><a name="408">  408</a></b>        unless the caller doesn't care about the rest of the sequence */
+<b><a name="409">  409</a></b>     if (SECSuccess == rv &amp;&amp; sequence.len &amp;&amp;
+<b><a name="410">  410</a></b>         sequenceEntry &amp;&amp; sequenceEntry-&gt;kind != <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SKIP_REST">SEC_ASN1_SKIP_REST</a>)
+<b><a name="411">  411</a></b>     {
+<b><a name="412">  412</a></b>         /* it isn't 100% clear whether this is a bad DER or a bad template.
+<b><a name="413">  413</a></b>            The problem is that logically, they don't match - there is extra
+<b><a name="414">  414</a></b>            data in the DER that the template doesn't know about */
+<b><a name="415">  415</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_DER);
+<b><a name="416">  416</a></b>         rv = SECFailure;
+<b><a name="417">  417</a></b>     }
+<b><a name="418">  418</a></b> 
+<b><a name="419">  419</a></b>     return rv;
+<b><a name="420">  420</a></b> }
+<b><a name="421">  421</a></b> 
+<b><a name="422">  422</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#422">DecodeInline</a>(void* dest,
+<b><a name="423">  423</a></b>                      const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* templateEntry,
+<b><a name="424">  424</a></b>                      <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* src, PRArenaPool* arena, PRBool checkTag)
+<b><a name="425">  425</a></b> {
+<b><a name="426">  426</a></b>     const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* inlineTemplate = 
+<b><a name="427">  427</a></b>         <a href="../util/secasn1u.c.dep.html#SEC_ASN1GetSubtemplate">SEC_ASN1GetSubtemplate</a> (templateEntry, dest, PR_FALSE);
+<b><a name="428">  428</a></b>     return <a href="../util/quickder.c.dep.html#DecodeItem">DecodeItem</a>((void*)((char*)dest + templateEntry-&gt;offset),
+<b><a name="429">  429</a></b>                             inlineTemplate, src, arena, checkTag);
+<b><a name="430">  430</a></b> }
+<b><a name="431">  431</a></b> 
+<b><a name="432">  432</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#432">DecodePointer</a>(void* dest,
+<b><a name="433">  433</a></b>                      const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* templateEntry,
+<b><a name="434">  434</a></b>                      <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* src, PRArenaPool* arena, PRBool checkTag)
+<b><a name="435">  435</a></b> {
+<b><a name="436">  436</a></b>     const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* ptrTemplate = 
+<b><a name="437">  437</a></b>         <a href="../util/secasn1u.c.dep.html#SEC_ASN1GetSubtemplate">SEC_ASN1GetSubtemplate</a> (templateEntry, dest, PR_FALSE);
+<b><a name="438">  438</a></b>     void* subdata = <a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, ptrTemplate-&gt;size);
+<b><a name="439">  439</a></b>     *(void**)((char*)dest + templateEntry-&gt;offset) = subdata;
+<b><a name="440">  440</a></b>     if (subdata)
+<b><a name="441">  441</a></b>     {
+<b><a name="442">  442</a></b>         return <a href="../util/quickder.c.dep.html#DecodeItem">DecodeItem</a>(subdata, ptrTemplate, src, arena, checkTag);
+<b><a name="443">  443</a></b>     }
+<b><a name="444">  444</a></b>     else
+<b><a name="445">  445</a></b>     {
+<b><a name="446">  446</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="447">  447</a></b>         return SECFailure;
+<b><a name="448">  448</a></b>     }
+<b><a name="449">  449</a></b> }
+<b><a name="450">  450</a></b> 
+<b><a name="451">  451</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#451">DecodeImplicit</a>(void* dest,
+<b><a name="452">  452</a></b>                      const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* templateEntry,
+<b><a name="453">  453</a></b>                      <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* src, PRArenaPool* arena)
+<b><a name="454">  454</a></b> {
+<b><a name="455">  455</a></b>     if (templateEntry-&gt;kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_POINTER">SEC_ASN1_POINTER</a>)
+<b><a name="456">  456</a></b>     {
+<b><a name="457">  457</a></b>         return <a href="../util/quickder.c.dep.html#DecodePointer">DecodePointer</a>((void*)((char*)dest ),
+<b><a name="458">  458</a></b>                              templateEntry, src, arena, PR_FALSE);
+<b><a name="459">  459</a></b>     }
+<b><a name="460">  460</a></b>     else
+<b><a name="461">  461</a></b>     {
+<b><a name="462">  462</a></b>         return <a href="../util/quickder.c.dep.html#DecodeInline">DecodeInline</a>((void*)((char*)dest ),
+<b><a name="463">  463</a></b>                              templateEntry, src, arena, PR_FALSE);
+<b><a name="464">  464</a></b>     }
+<b><a name="465">  465</a></b> }
+<b><a name="466">  466</a></b> 
+<b><a name="467">  467</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#467">DecodeChoice</a>(void* dest,
+<b><a name="468">  468</a></b>                      const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* templateEntry,
+<b><a name="469">  469</a></b>                      <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* src, PRArenaPool* arena)
+<b><a name="470">  470</a></b> {
+<b><a name="471">  471</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECSuccess;
+<b><a name="472">  472</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> choice;
+<b><a name="473">  473</a></b>     const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* choiceTemplate = &amp;(templateEntry[1]);
+<b><a name="474">  474</a></b>     const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* choiceEntry = NULL;
+<b><a name="475">  475</a></b>     unsigned long choiceindex = 0;
+<b><a name="476">  476</a></b> 
+<b><a name="477">  477</a></b>     /* XXX for a choice component, we should validate the template to make
+<b><a name="478">  478</a></b>        sure the tags are distinct, in debug builds. This hasn't been
+<b><a name="479">  479</a></b>        implemented yet */
+<b><a name="480">  480</a></b>     /* rv = CheckChoiceTemplate(sequenceTemplate); */
+<b><a name="481">  481</a></b> 
+<b><a name="482">  482</a></b>     /* process it */
+<b><a name="483">  483</a></b>     do
+<b><a name="484">  484</a></b>     {
+<b><a name="485">  485</a></b>         choice = *src;
+<b><a name="486">  486</a></b>         choiceEntry = &amp;choiceTemplate[choiceindex++];
+<b><a name="487">  487</a></b>         if (choiceEntry-&gt;kind)
+<b><a name="488">  488</a></b>         {
+<b><a name="489">  489</a></b>             rv = <a href="../util/quickder.c.dep.html#DecodeItem">DecodeItem</a>(dest, choiceEntry, &amp;choice, arena, PR_TRUE);
+<b><a name="490">  490</a></b>         }
+<b><a name="491">  491</a></b>     } while ( (SECFailure == rv) &amp;&amp; (choiceEntry-&gt;kind));
+<b><a name="492">  492</a></b> 
+<b><a name="493">  493</a></b>     if (SECFailure == rv)
+<b><a name="494">  494</a></b>     {
+<b><a name="495">  495</a></b>         /* the component didn't match any of the choices */
+<b><a name="496">  496</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_DER);
+<b><a name="497">  497</a></b>     }
+<b><a name="498">  498</a></b>     else
+<b><a name="499">  499</a></b>     {
+<b><a name="500">  500</a></b>         /* set the type in the union here */
+<b><a name="501">  501</a></b>         int *which = (int *)((char *)dest + templateEntry-&gt;offset);
+<b><a name="502">  502</a></b>         *which = (int)choiceEntry-&gt;size;
+<b><a name="503">  503</a></b>     }
+<b><a name="504">  504</a></b> 
+<b><a name="505">  505</a></b>     /* we should have consumed all the bytes by now */
+<b><a name="506">  506</a></b>     /* fail if we have not */
+<b><a name="507">  507</a></b>     if (SECSuccess == rv &amp;&amp; choice.len)
+<b><a name="508">  508</a></b>     {
+<b><a name="509">  509</a></b>         /* there is extra data that isn't listed in the template */
+<b><a name="510">  510</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_DER);
+<b><a name="511">  511</a></b>         rv = SECFailure;
+<b><a name="512">  512</a></b>     }
+<b><a name="513">  513</a></b>     return rv;
+<b><a name="514">  514</a></b> }
+<b><a name="515">  515</a></b> 
+<b><a name="516">  516</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#516">DecodeGroup</a>(void* dest,
+<b><a name="517">  517</a></b>                      const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* templateEntry,
+<b><a name="518">  518</a></b>                      <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* src, PRArenaPool* arena)
+<b><a name="519">  519</a></b> {
+<b><a name="520">  520</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECSuccess;
+<b><a name="521">  521</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> source;
+<b><a name="522">  522</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> group;
+<b><a name="523">  523</a></b>     PRUint32 totalEntries = 0;
+<b><a name="524">  524</a></b>     PRUint32 entryIndex = 0;
+<b><a name="525">  525</a></b>     void** entries = NULL;
+<b><a name="526">  526</a></b> 
+<b><a name="527">  527</a></b>     const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* subTemplate =
+<b><a name="528">  528</a></b>         <a href="../util/secasn1u.c.dep.html#SEC_ASN1GetSubtemplate">SEC_ASN1GetSubtemplate</a> (templateEntry, dest, PR_FALSE);
+<b><a name="529">  529</a></b> 
+<b><a name="530">  530</a></b>     source = *src;
+<b><a name="531">  531</a></b> 
+<b><a name="532">  532</a></b>     /* get the group */
+<b><a name="533">  533</a></b>     if (SECSuccess == rv)
+<b><a name="534">  534</a></b>     {
+<b><a name="535">  535</a></b>         rv = <a href="../util/quickder.c.dep.html#GetItem">GetItem</a>(&amp;source, &amp;group, PR_FALSE);
+<b><a name="536">  536</a></b>     }
+<b><a name="537">  537</a></b> 
+<b><a name="538">  538</a></b>     /* XXX we should check the subtemplate in debug builds */
+<b><a name="539">  539</a></b>     if (SECSuccess == rv)
+<b><a name="540">  540</a></b>     {
+<b><a name="541">  541</a></b>         /* first, count the number of entries. Benchmarking showed that this
+<b><a name="542">  542</a></b>            counting pass is more efficient than trying to allocate entries as
+<b><a name="543">  543</a></b>            we read the DER, even if allocating many entries at a time
+<b><a name="544">  544</a></b>         */
+<b><a name="545">  545</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> counter = group;
+<b><a name="546">  546</a></b>         do
+<b><a name="547">  547</a></b>         {
+<b><a name="548">  548</a></b>             <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> anitem;
+<b><a name="549">  549</a></b>             rv = <a href="../util/quickder.c.dep.html#GetItem">GetItem</a>(&amp;counter, &amp;anitem, PR_TRUE);
+<b><a name="550">  550</a></b>             if (SECSuccess == rv &amp;&amp; (anitem.len) )
+<b><a name="551">  551</a></b>             {
+<b><a name="552">  552</a></b>                 totalEntries++;
+<b><a name="553">  553</a></b>             }
+<b><a name="554">  554</a></b>         }  while ( (SECSuccess == rv) &amp;&amp; (counter.len) );
+<b><a name="555">  555</a></b> 
+<b><a name="556">  556</a></b>         if (SECSuccess == rv)
+<b><a name="557">  557</a></b>         {
+<b><a name="558">  558</a></b>             /* allocate room for pointer array and entries */
+<b><a name="559">  559</a></b>             /* we want to allocate the array even if there is 0 entry */
+<b><a name="560">  560</a></b>             entries = (void**)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, sizeof(void*)*
+<b><a name="561">  561</a></b>                                           (totalEntries + 1 ) + /* the extra one is for NULL termination */
+<b><a name="562">  562</a></b>                                           subTemplate-&gt;size*totalEntries); 
+<b><a name="563">  563</a></b> 
+<b><a name="564">  564</a></b>             if (entries)
+<b><a name="565">  565</a></b>             {
+<b><a name="566">  566</a></b>                 entries[totalEntries] = NULL; /* terminate the array */
+<b><a name="567">  567</a></b>             }
+<b><a name="568">  568</a></b>             else
+<b><a name="569">  569</a></b>             {
+<b><a name="570">  570</a></b>                 <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="571">  571</a></b>                 rv = SECFailure;
+<b><a name="572">  572</a></b>             }
+<b><a name="573">  573</a></b>             if (SECSuccess == rv)
+<b><a name="574">  574</a></b>             {
+<b><a name="575">  575</a></b>                 void* entriesData = (unsigned char*)entries + (unsigned long)(sizeof(void*)*(totalEntries + 1 ));
+<b><a name="576">  576</a></b>                 /* and fix the pointers in the array */
+<b><a name="577">  577</a></b>                 PRUint32 entriesIndex = 0;
+<b><a name="578">  578</a></b>                 for (entriesIndex = 0;entriesIndex&lt;totalEntries;entriesIndex++)
+<b><a name="579">  579</a></b>                 {
+<b><a name="580">  580</a></b>                     entries[entriesIndex] =
+<b><a name="581">  581</a></b>                         (char*)entriesData + (subTemplate-&gt;size*entriesIndex);
+<b><a name="582">  582</a></b>                 }
+<b><a name="583">  583</a></b>             }
+<b><a name="584">  584</a></b>         }
+<b><a name="585">  585</a></b>     }
+<b><a name="586">  586</a></b> 
+<b><a name="587">  587</a></b>     if (SECSuccess == rv &amp;&amp; totalEntries)
+<b><a name="588">  588</a></b>     do
+<b><a name="589">  589</a></b>     {
+<b><a name="590">  590</a></b>         if (!(entryIndex&lt;totalEntries))
+<b><a name="591">  591</a></b>         {
+<b><a name="592">  592</a></b>             rv = SECFailure;
+<b><a name="593">  593</a></b>             break;
+<b><a name="594">  594</a></b>         }
+<b><a name="595">  595</a></b>         rv = <a href="../util/quickder.c.dep.html#DecodeItem">DecodeItem</a>(entries[entryIndex++], subTemplate, &amp;group, arena, PR_TRUE);
+<b><a name="596">  596</a></b>     } while ( (SECSuccess == rv) &amp;&amp; (group.len) );
+<b><a name="597">  597</a></b>     /* we should be at the end of the set by now */    
+<b><a name="598">  598</a></b>     /* save the entries where requested */
+<b><a name="599">  599</a></b>     memcpy(((char*)dest + templateEntry-&gt;offset), &amp;entries, sizeof(void**));
+<b><a name="600">  600</a></b> 
+<b><a name="601">  601</a></b>     return rv;
+<b><a name="602">  602</a></b> }
+<b><a name="603">  603</a></b> 
+<b><a name="604">  604</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#604">DecodeExplicit</a>(void* dest,
+<b><a name="605">  605</a></b>                      const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* templateEntry,
+<b><a name="606">  606</a></b>                      <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* src, PRArenaPool* arena)
+<b><a name="607">  607</a></b> {
+<b><a name="608">  608</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECSuccess;
+<b><a name="609">  609</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> subItem;
+<b><a name="610">  610</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> constructed = *src;
+<b><a name="611">  611</a></b> 
+<b><a name="612">  612</a></b>     rv = <a href="../util/quickder.c.dep.html#GetItem">GetItem</a>(&amp;constructed, &amp;subItem, PR_FALSE);
+<b><a name="613">  613</a></b> 
+<b><a name="614">  614</a></b>     if (SECSuccess == rv)
+<b><a name="615">  615</a></b>     {
+<b><a name="616">  616</a></b>         if (templateEntry-&gt;kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_POINTER">SEC_ASN1_POINTER</a>)
+<b><a name="617">  617</a></b>         {
+<b><a name="618">  618</a></b>             rv = <a href="../util/quickder.c.dep.html#DecodePointer">DecodePointer</a>(dest, templateEntry, &amp;subItem, arena, PR_TRUE);
+<b><a name="619">  619</a></b>         }
+<b><a name="620">  620</a></b>         else
+<b><a name="621">  621</a></b>         {
+<b><a name="622">  622</a></b>             rv = <a href="../util/quickder.c.dep.html#DecodeInline">DecodeInline</a>(dest, templateEntry, &amp;subItem, arena, PR_TRUE);
+<b><a name="623">  623</a></b>         }
+<b><a name="624">  624</a></b>     }
+<b><a name="625">  625</a></b> 
+<b><a name="626">  626</a></b>     return rv;
+<b><a name="627">  627</a></b> }
+<b><a name="628">  628</a></b> 
+<b><a name="629">  629</a></b> /* new decoder implementation. This is a recursive function */
+<b><a name="630">  630</a></b> 
+<b><a name="631">  631</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#631">DecodeItem</a>(void* dest,
+<b><a name="632">  632</a></b>                      const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* templateEntry,
+<b><a name="633">  633</a></b>                      <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* src, PRArenaPool* arena, PRBool checkTag)
+<b><a name="634">  634</a></b> {
+<b><a name="635">  635</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECSuccess;
+<b><a name="636">  636</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> temp;
+<b><a name="637">  637</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> mark;
+<b><a name="638">  638</a></b>     PRBool pop = PR_FALSE;
+<b><a name="639">  639</a></b>     PRBool decode = PR_TRUE;
+<b><a name="640">  640</a></b>     PRBool save = PR_FALSE;
+<b><a name="641">  641</a></b>     unsigned long kind;
+<b><a name="642">  642</a></b>     PRBool match = PR_TRUE;
+<b><a name="643">  643</a></b>     PRBool optional = PR_FALSE;
+<b><a name="644">  644</a></b> 
+<b><a name="645">  645</a></b>     PR_ASSERT(src &amp;&amp; dest &amp;&amp; templateEntry &amp;&amp; arena);
+<b><a name="646">  646</a></b> #if 0
+<b><a name="647">  647</a></b>     if (!src || !dest || !templateEntry || !arena)
+<b><a name="648">  648</a></b>     {
+<b><a name="649">  649</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="650">  650</a></b>         rv = SECFailure;
+<b><a name="651">  651</a></b>     }
+<b><a name="652">  652</a></b> #endif
+<b><a name="653">  653</a></b> 
+<b><a name="654">  654</a></b>     if (SECSuccess == rv)
+<b><a name="655">  655</a></b>     {
+<b><a name="656">  656</a></b>         /* do the template validation */
+<b><a name="657">  657</a></b>         kind = templateEntry-&gt;kind;
+<b><a name="658">  658</a></b>         optional = (0 != (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OPTIONAL">SEC_ASN1_OPTIONAL</a>));
+<b><a name="659">  659</a></b>         if (!kind)
+<b><a name="660">  660</a></b>         {
+<b><a name="661">  661</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_TEMPLATE);
+<b><a name="662">  662</a></b>             rv = SECFailure;
+<b><a name="663">  663</a></b>         }
+<b><a name="664">  664</a></b>     }
+<b><a name="665">  665</a></b> 
+<b><a name="666">  666</a></b>     if (SECSuccess == rv)
+<b><a name="667">  667</a></b>     {
+<b><a name="668">  668</a></b> #ifdef DEBUG
+<b><a name="669">  669</a></b>         if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_DEBUG_BREAK">SEC_ASN1_DEBUG_BREAK</a>)
+<b><a name="670">  670</a></b>         {
+<b><a name="671">  671</a></b>             /* when debugging the decoder or a template that fails to
+<b><a name="672">  672</a></b>             decode, put SEC_ASN1_DEBUG in the component that gives you
+<b><a name="673">  673</a></b>             trouble. The decoder will then get to this block and assert.
+<b><a name="674">  674</a></b>             If you want to debug the rest of the code, you can set a
+<b><a name="675">  675</a></b>             breakpoint and set dontassert to PR_TRUE, which will let
+<b><a name="676">  676</a></b>             you skip over the assert and continue the debugging session
+<b><a name="677">  677</a></b>             past it. */
+<b><a name="678">  678</a></b>             PRBool dontassert = PR_FALSE;
+<b><a name="679">  679</a></b>             PR_ASSERT(dontassert); /* set bkpoint here &amp; set dontassert*/
+<b><a name="680">  680</a></b>         }
+<b><a name="681">  681</a></b> #endif
+<b><a name="682">  682</a></b> 
+<b><a name="683">  683</a></b>         if ((kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SKIP">SEC_ASN1_SKIP</a>) ||
+<b><a name="684">  684</a></b>             (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SAVE">SEC_ASN1_SAVE</a>))
+<b><a name="685">  685</a></b>         {
+<b><a name="686">  686</a></b>             /* if skipping or saving this component, don't decode it */
+<b><a name="687">  687</a></b>             decode = PR_FALSE;
+<b><a name="688">  688</a></b>         }
+<b><a name="689">  689</a></b>     
+<b><a name="690">  690</a></b>         if (kind &amp; (<a href="../util/secasn1t.h.dep.html#SEC_ASN1_SAVE">SEC_ASN1_SAVE</a> | <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OPTIONAL">SEC_ASN1_OPTIONAL</a>))
+<b><a name="691">  691</a></b>         {
+<b><a name="692">  692</a></b>             /* if saving this component, or if it is optional, we may not want to
+<b><a name="693">  693</a></b>                move past it, so save the position in case we have to rewind */
+<b><a name="694">  694</a></b>             mark = *src;
+<b><a name="695">  695</a></b>             if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SAVE">SEC_ASN1_SAVE</a>)
+<b><a name="696">  696</a></b>             {
+<b><a name="697">  697</a></b>                 save = PR_TRUE;
+<b><a name="698">  698</a></b>                 if (0 == (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SKIP">SEC_ASN1_SKIP</a>))
+<b><a name="699">  699</a></b>                 {
+<b><a name="700">  700</a></b>                     /* we will for sure have to rewind when saving this
+<b><a name="701">  701</a></b>                        component and not skipping it. This is true for all
+<b><a name="702">  702</a></b>                        legacy uses of SEC_ASN1_SAVE where the following entry
+<b><a name="703">  703</a></b>                        in the template would causes the same component to be
+<b><a name="704">  704</a></b>                        processed again */
+<b><a name="705">  705</a></b>                     pop = PR_TRUE;
+<b><a name="706">  706</a></b>                 }
+<b><a name="707">  707</a></b>             }
+<b><a name="708">  708</a></b>         }
+<b><a name="709">  709</a></b> 
+<b><a name="710">  710</a></b>         rv = <a href="../util/quickder.c.dep.html#GetItem">GetItem</a>(src, &amp;temp, PR_TRUE);
+<b><a name="711">  711</a></b>     }
+<b><a name="712">  712</a></b> 
+<b><a name="713">  713</a></b>     if (SECSuccess == rv)
+<b><a name="714">  714</a></b>     {
+<b><a name="715">  715</a></b>         /* now check if the component matches what we expect in the template */
+<b><a name="716">  716</a></b> 
+<b><a name="717">  717</a></b>         if (PR_TRUE == checkTag)
+<b><a name="718">  718</a></b> 
+<b><a name="719">  719</a></b>         {
+<b><a name="720">  720</a></b>             rv = <a href="../util/quickder.c.dep.html#MatchComponentType">MatchComponentType</a>(templateEntry, &amp;temp, &amp;match, dest);
+<b><a name="721">  721</a></b>         }
+<b><a name="722">  722</a></b> 
+<b><a name="723">  723</a></b>         if ( (SECSuccess == rv) &amp;&amp; (PR_TRUE != match) )
+<b><a name="724">  724</a></b>         {
+<b><a name="725">  725</a></b>             if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OPTIONAL">SEC_ASN1_OPTIONAL</a>)
+<b><a name="726">  726</a></b>             {
+<b><a name="727">  727</a></b> 
+<b><a name="728">  728</a></b>                 /* the optional component is missing. This is not fatal. */
+<b><a name="729">  729</a></b>                 /* Rewind, don't decode, and don't save */
+<b><a name="730">  730</a></b>                 pop = PR_TRUE;
+<b><a name="731">  731</a></b>                 decode = PR_FALSE;
+<b><a name="732">  732</a></b>                 save = PR_FALSE;
+<b><a name="733">  733</a></b>             }
+<b><a name="734">  734</a></b>             else
+<b><a name="735">  735</a></b>             {
+<b><a name="736">  736</a></b>                 /* a required component is missing. abort */
+<b><a name="737">  737</a></b>                 <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_DER);
+<b><a name="738">  738</a></b>                 rv = SECFailure;
+<b><a name="739">  739</a></b>             }
+<b><a name="740">  740</a></b>         }
+<b><a name="741">  741</a></b>     }
+<b><a name="742">  742</a></b> 
+<b><a name="743">  743</a></b>     if ((SECSuccess == rv) &amp;&amp; (PR_TRUE == decode))
+<b><a name="744">  744</a></b>     {
+<b><a name="745">  745</a></b>         /* the order of processing here is is the tricky part */
+<b><a name="746">  746</a></b>         /* we start with our special cases */
+<b><a name="747">  747</a></b>         /* first, check the component class */
+<b><a name="748">  748</a></b>         if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INLINE">SEC_ASN1_INLINE</a>)
+<b><a name="749">  749</a></b>         {
+<b><a name="750">  750</a></b>             /* decode inline template */
+<b><a name="751">  751</a></b>             rv = <a href="../util/quickder.c.dep.html#DecodeInline">DecodeInline</a>(dest, templateEntry, &amp;temp , arena, PR_TRUE);
+<b><a name="752">  752</a></b>         }
+<b><a name="753">  753</a></b> 
+<b><a name="754">  754</a></b>         else
+<b><a name="755">  755</a></b>         if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_EXPLICIT">SEC_ASN1_EXPLICIT</a>)
+<b><a name="756">  756</a></b>         {
+<b><a name="757">  757</a></b>             rv = <a href="../util/quickder.c.dep.html#DecodeExplicit">DecodeExplicit</a>(dest, templateEntry, &amp;temp, arena);
+<b><a name="758">  758</a></b>         }
+<b><a name="759">  759</a></b>         else
+<b><a name="760">  760</a></b>         if ( (<a href="../util/secasn1t.h.dep.html#SEC_ASN1_UNIVERSAL">SEC_ASN1_UNIVERSAL</a> != (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CLASS_MASK">SEC_ASN1_CLASS_MASK</a>)) &amp;&amp;
+<b><a name="761">  761</a></b> 
+<b><a name="762">  762</a></b>               (!(kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_EXPLICIT">SEC_ASN1_EXPLICIT</a>)))
+<b><a name="763">  763</a></b>         {
+<b><a name="764">  764</a></b> 
+<b><a name="765">  765</a></b>             /* decode implicitly tagged components */
+<b><a name="766">  766</a></b>             rv = <a href="../util/quickder.c.dep.html#DecodeImplicit">DecodeImplicit</a>(dest, templateEntry, &amp;temp , arena);
+<b><a name="767">  767</a></b>         }
+<b><a name="768">  768</a></b>         else
+<b><a name="769">  769</a></b>         if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_POINTER">SEC_ASN1_POINTER</a>)
+<b><a name="770">  770</a></b>         {
+<b><a name="771">  771</a></b>             rv = <a href="../util/quickder.c.dep.html#DecodePointer">DecodePointer</a>(dest, templateEntry, &amp;temp, arena, PR_TRUE);
+<b><a name="772">  772</a></b>         }
+<b><a name="773">  773</a></b>         else
+<b><a name="774">  774</a></b>         if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CHOICE">SEC_ASN1_CHOICE</a>)
+<b><a name="775">  775</a></b>         {
+<b><a name="776">  776</a></b>             rv = <a href="../util/quickder.c.dep.html#DecodeChoice">DecodeChoice</a>(dest, templateEntry, &amp;temp, arena);
+<b><a name="777">  777</a></b>         }
+<b><a name="778">  778</a></b>         else
+<b><a name="779">  779</a></b>         if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_ANY">SEC_ASN1_ANY</a>)
+<b><a name="780">  780</a></b>         {
+<b><a name="781">  781</a></b>             /* catch-all ANY type, don't decode */
+<b><a name="782">  782</a></b>             save = PR_TRUE;
+<b><a name="783">  783</a></b>             if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INNER">SEC_ASN1_INNER</a>)
+<b><a name="784">  784</a></b>             {
+<b><a name="785">  785</a></b>                 /* skip the tag and length */
+<b><a name="786">  786</a></b>                 <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> newtemp = temp;
+<b><a name="787">  787</a></b>                 rv = <a href="../util/quickder.c.dep.html#GetItem">GetItem</a>(&amp;newtemp, &amp;temp, PR_FALSE);
+<b><a name="788">  788</a></b>             }
+<b><a name="789">  789</a></b>         }
+<b><a name="790">  790</a></b>         else
+<b><a name="791">  791</a></b>         if (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_GROUP">SEC_ASN1_GROUP</a>)
+<b><a name="792">  792</a></b>         {
+<b><a name="793">  793</a></b>             if ( (<a href="../util/secasn1t.h.dep.html#SEC_ASN1_SEQUENCE">SEC_ASN1_SEQUENCE</a> == (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_TAGNUM_MASK">SEC_ASN1_TAGNUM_MASK</a>)) ||
+<b><a name="794">  794</a></b>                  (<a href="../util/secasn1t.h.dep.html#SEC_ASN1_SET">SEC_ASN1_SET</a> == (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_TAGNUM_MASK">SEC_ASN1_TAGNUM_MASK</a>)) )
+<b><a name="795">  795</a></b>             {
+<b><a name="796">  796</a></b>                 rv = <a href="../util/quickder.c.dep.html#DecodeGroup">DecodeGroup</a>(dest, templateEntry, &amp;temp , arena);
+<b><a name="797">  797</a></b>             }
+<b><a name="798">  798</a></b>             else
+<b><a name="799">  799</a></b>             {
+<b><a name="800">  800</a></b>                 /* a group can only be a SET OF or SEQUENCE OF */
+<b><a name="801">  801</a></b>                 <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_BAD_TEMPLATE);
+<b><a name="802">  802</a></b>                 rv = SECFailure;
+<b><a name="803">  803</a></b>             }
+<b><a name="804">  804</a></b>         }
+<b><a name="805">  805</a></b>         else
+<b><a name="806">  806</a></b>         if (<a href="../util/secasn1t.h.dep.html#SEC_ASN1_SEQUENCE">SEC_ASN1_SEQUENCE</a> == (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_TAGNUM_MASK">SEC_ASN1_TAGNUM_MASK</a>))
+<b><a name="807">  807</a></b>         {
+<b><a name="808">  808</a></b>             /* plain SEQUENCE */
+<b><a name="809">  809</a></b>             rv = <a href="../util/quickder.c.dep.html#DecodeSequence">DecodeSequence</a>(dest, templateEntry, &amp;temp , arena);
+<b><a name="810">  810</a></b>         }
+<b><a name="811">  811</a></b>         else
+<b><a name="812">  812</a></b>         {
+<b><a name="813">  813</a></b>             /* handle all other types as "save" */
+<b><a name="814">  814</a></b>             /* we should only get here for primitive universal types */
+<b><a name="815">  815</a></b>             <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> newtemp = temp;
+<b><a name="816">  816</a></b>             rv = <a href="../util/quickder.c.dep.html#GetItem">GetItem</a>(&amp;newtemp, &amp;temp, PR_FALSE);
+<b><a name="817">  817</a></b>             save = PR_TRUE;
+<b><a name="818">  818</a></b>             if ((SECSuccess == rv) &amp;&amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_UNIVERSAL">SEC_ASN1_UNIVERSAL</a> == (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CLASS_MASK">SEC_ASN1_CLASS_MASK</a>))
+<b><a name="819">  819</a></b>             switch (kind &amp; <a href="../util/secasn1t.h.dep.html#SEC_ASN1_TAGNUM_MASK">SEC_ASN1_TAGNUM_MASK</a>)
+<b><a name="820">  820</a></b>             {
+<b><a name="821">  821</a></b>             /* special cases of primitive types */
+<b><a name="822">  822</a></b>             case <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INTEGER">SEC_ASN1_INTEGER</a>:
+<b><a name="823">  823</a></b>                 {
+<b><a name="824">  824</a></b>                     /* remove leading zeroes if the caller requested siUnsignedInteger
+<b><a name="825">  825</a></b>                        This is to allow RSA key operations to work */
+<b><a name="826">  826</a></b>                     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* destItem = (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*) ((char*)dest + templateEntry-&gt;offset);
+<b><a name="827">  827</a></b>                     if (destItem &amp;&amp; (siUnsignedInteger == destItem-&gt;type))
+<b><a name="828">  828</a></b>                     {
+<b><a name="829">  829</a></b>                         while (temp.len &gt; 1 &amp;&amp; temp.data[0] == 0)
+<b><a name="830">  830</a></b>                         {              /* leading 0 */
+<b><a name="831">  831</a></b>                             temp.data++;
+<b><a name="832">  832</a></b>                             temp.len--;
+<b><a name="833">  833</a></b>                         }
+<b><a name="834">  834</a></b>                     }
+<b><a name="835">  835</a></b>                     break;
+<b><a name="836">  836</a></b>                 }
+<b><a name="837">  837</a></b> 
+<b><a name="838">  838</a></b>             case <a href="../util/secasn1t.h.dep.html#SEC_ASN1_BIT_STRING">SEC_ASN1_BIT_STRING</a>:
+<b><a name="839">  839</a></b>                 {
+<b><a name="840">  840</a></b>                     /* change the length in the SECItem to be the number of bits */
+<b><a name="841">  841</a></b>                     if (temp.len &amp;&amp; temp.data)
+<b><a name="842">  842</a></b>                     {
+<b><a name="843">  843</a></b>                         temp.len = (temp.len-1)*8 - ((*(unsigned char*)temp.data) &amp; 0x7);
+<b><a name="844">  844</a></b>                         temp.data = (unsigned char*)(temp.data+1);
+<b><a name="845">  845</a></b>                     }
+<b><a name="846">  846</a></b>                     break;
+<b><a name="847">  847</a></b>                 }
+<b><a name="848">  848</a></b> 
+<b><a name="849">  849</a></b>             default:
+<b><a name="850">  850</a></b>                 {
+<b><a name="851">  851</a></b>                     break;
+<b><a name="852">  852</a></b>                 }
+<b><a name="853">  853</a></b>             }
+<b><a name="854">  854</a></b>         }
+<b><a name="855">  855</a></b>     }
+<b><a name="856">  856</a></b> 
+<b><a name="857">  857</a></b>     if ((SECSuccess == rv) &amp;&amp; (PR_TRUE == save))
+<b><a name="858">  858</a></b>     {
+<b><a name="859">  859</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* destItem = (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*) ((char*)dest + templateEntry-&gt;offset);
+<b><a name="860">  860</a></b>         if (destItem)
+<b><a name="861">  861</a></b>         {
+<b><a name="862">  862</a></b>             /* we leave the type alone in the destination SECItem.
+<b><a name="863">  863</a></b>                If part of the destination was allocated by the decoder, in
+<b><a name="864">  864</a></b>                cases of POINTER, SET OF and SEQUENCE OF, then type is set to
+<b><a name="865">  865</a></b>                siBuffer due to the use of PORT_ArenaZAlloc*/
+<b><a name="866">  866</a></b>             destItem-&gt;data = temp.data;
+<b><a name="867">  867</a></b>             destItem-&gt;len = temp.len;
+<b><a name="868">  868</a></b>         }
+<b><a name="869">  869</a></b>         else
+<b><a name="870">  870</a></b>         {
+<b><a name="871">  871</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="872">  872</a></b>             rv = SECFailure;
+<b><a name="873">  873</a></b>         }
+<b><a name="874">  874</a></b>     }
+<b><a name="875">  875</a></b> 
+<b><a name="876">  876</a></b>     if (PR_TRUE == pop)
+<b><a name="877">  877</a></b>     {
+<b><a name="878">  878</a></b>         /* we don't want to move ahead, so restore the position */
+<b><a name="879">  879</a></b>         *src = mark;
+<b><a name="880">  880</a></b>     }
+<b><a name="881">  881</a></b>     return rv;
+<b><a name="882">  882</a></b> }
+<b><a name="883">  883</a></b> 
+<b><a name="884">  884</a></b> /* the function below is the public one */
+<b><a name="885">  885</a></b> 
+<b><a name="886">  886</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="#886">SEC_QuickDERDecodeItem</a>(PRArenaPool* arena, void* dest,
+<b><a name="887">  887</a></b>                      const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a>* templateEntry,
+<b><a name="888">  888</a></b>                      const <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>* src)
+<b><a name="889">  889</a></b> {
+<b><a name="890">  890</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECSuccess;
+<b><a name="891">  891</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> newsrc;
+<b><a name="892">  892</a></b> 
+<b><a name="893">  893</a></b>     if (!arena || !templateEntry || !src)
+<b><a name="894">  894</a></b>     {
+<b><a name="895">  895</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="896">  896</a></b>         rv = SECFailure;
+<b><a name="897">  897</a></b>     }
+<b><a name="898">  898</a></b> 
+<b><a name="899">  899</a></b>     if (SECSuccess == rv)
+<b><a name="900">  900</a></b>     {
+<b><a name="901">  901</a></b>         newsrc = *src;
+<b><a name="902">  902</a></b>         rv = <a href="../util/quickder.c.dep.html#DecodeItem">DecodeItem</a>(dest, templateEntry, &amp;newsrc, arena, PR_TRUE);
+<b><a name="903">  903</a></b>         if (SECSuccess == rv &amp;&amp; newsrc.len)
+<b><a name="904">  904</a></b>         {
+<b><a name="905">  905</a></b>             rv = SECFailure;
+<b><a name="906">  906</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_EXTRA_INPUT);
+<b><a name="907">  907</a></b>         }
+<b><a name="908">  908</a></b>     }
+<b><a name="909">  909</a></b> 
+<b><a name="910">  910</a></b>     return rv;
+<b><a name="911">  911</a></b> }
+<b><a name="912">  912</a></b> 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

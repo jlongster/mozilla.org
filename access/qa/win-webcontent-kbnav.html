@@ -1,0 +1,1094 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html lang="en">
+
+<head>
+
+  <meta name="generator" content=
+  "HTML Tidy for Windows (vers 18 June 2008), see http://tidy.sourceforge.net/">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta http-equiv="Content-Language" content="en">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta http-equiv="Content-Script-Type" content="text/javascript">
+
+  <title>Accessibility QA Test Case: Keyboard Navigation and Visual Focus
+  of Web Content</title>
+
+  <link rel="up" href="testcases.html" title=
+  "Mozilla Accessibility QA testcases">
+  <link rel="first" href="win-ui-kbnav-focus.html" title=
+  "Windows UI keyboard navigation and focus">
+  <link rel="previous" href="win-ui-object-inspection.html" title=
+  "MSAA properties for Firefox User Interface elements">
+  <link rel="next" href="win-webcontent-jaws.html" title=
+  "JAWS with Web Content in Firefox.">
+  <link rel="last" href="jaws-checklist.html" title=
+  "JAWS webcontent checklist">
+
+  <style type="text/css">
+  textarea, label.c14, form.c13
+  {
+  background-color: yellow;
+  color: black;
+  }
+  fieldset {max-width: 20em;}
+  ol.c8
+  {
+  list-style-type: decimal;
+  background-color: white;
+  color: black;
+  margin-right: 10%;
+  margin-left: 5px;
+  }
+  p.c12, a.c7, span.c4, kbd {font-weight: bold;}
+  p.c6 {text-align: center;}
+  span.c5 {font-weight: bold; background-color: #CEF;}
+  span.c3 {text-decoration: underline;}
+  h3.c1, h4 {background-color: rgb(221, 238, 255); color: black;}
+  </style>
+
+  <!-- JavaScripts -->
+
+  <!-- Javascript to activate link in Jump to Destination example -->
+
+  <script type="text/javascript">
+  // code for accessible alternative to onChange event
+  function goJSLink()
+  {
+  linkPage = document.quickMenu.link2.options[document.quickMenu.link2.selectedIndex].value;
+  if (linkPage == "")
+  {
+  return;
+  }
+  else
+  {
+  self.location = linkPage;
+  };
+  }
+  </script>
+
+  <!-- JavaScript for example displaying the Time in a pop-up window -->
+
+  <script type="text/javascript">
+  // Begin clock code
+  var timerID = null;
+  var timerRunning = false;
+
+  function stopclock()
+  {
+  if(timerRunning)
+  {
+  clearTimeout(timerID);
+  };
+  timerRunning = false;
+  }
+
+  function showtime()
+  {
+  var now = new Date();
+  var hours = now.getHours();
+  var minutes = now.getMinutes();
+  var seconds = now.getSeconds();
+  var timeValue = "" + ((hours > 12) ? hours - 12 :hours);
+  if (timeValue == "0")
+  {
+  timeValue = 12;
+  };
+  timeValue += ((minutes < 10) ? ":0" : ":") + minutes;
+  timeValue += ((seconds < 10) ? ":0" : ":") + seconds;
+  timeValue += (hours >= 12) ? " P.M." : " A.M.";
+  document.getElementById("face").value = timeValue;
+  timerID = setTimeout("showtime()", 1000);
+  timerRunning = true;
+  }
+
+  function startclock()
+  {
+  stopclock();
+  showtime();
+  }
+  // End clock code
+  </script>
+
+</head>
+
+<body onload="startclock();">
+
+  <p class="crumbs"><em>You are here:</em> <a rel="up" href=
+  "testcases.html">Mozilla Accessibility QA testcases</a> &gt;
+  <strong>Keyboard Navigation and Visual Focus of Web Content</strong></p>
+
+  <h1>Accessibility QA Test Case: Keyboard Navigation and Visual Focus of
+  Web Content in Firefox</h1>
+
+  <p>Firefox Web Content on Microsoft Windows: Keyboard navigation of Web
+  content with no Assistive Technology software running.</p>
+
+  <h2 id="tab-o-contents">Description</h2>
+
+  <p>This test case describes the approach and methods used to test
+  keyboard navigation and keyboard functions in a web page displayed in the
+  Windows version of Firefox. Be sure to follow the <a href=
+  "#Test_Case_Setup">test case setup instructions</a> before proceeding
+  with this test case.</p>
+
+  <p>The following types of functions will be tested. You can select the
+  provided link for each to go directly to the section</p>
+
+  <ol class="toc">
+    <li><a href="#scroll-bars">Scroll bars</a>: Scroll up/down and
+    right/left on web pages that are too large to fit in the browser
+    window.</li>
+
+    <li><a href="#links">Links</a>: Tab to text links and image links in a
+    web page and use the keyboard to select the links.</li>
+
+    <li><a href="#java-scripts">JavaScripts</a>: Test simple JavaScript
+    functions</li>
+
+    <li><a href="#html-forms">HTML Form fields and controls</a>: Navigate
+    form entry fields and controls with the keyboard.</li>
+
+    <li><a href="#html-frames">HTML Frames</a>: Navigate frames with the
+    keyboard.</li>
+
+    <li><a href="#dhtml">DHTML controls</a>: Navigate DHTML elements with
+    the keyboard.</li>
+
+    <li><a href="#caret-browsing">Caret Browsing</a>: Navigate the page in
+    Caret Browsing mode, use keyboard functions like cut/paste.</li>
+  </ol>
+
+  <p>This test case is based on the <a class="ex-ref" href=
+  "http://www-03.ibm.com/able/guidelines/web/accessweb.html">IBM Web
+  accessibility checklist</a>, checkpoints 1, 2, 5, 7, and 9.</p>
+
+  <h3>Scope of test</h3>
+
+  <p>The goal is to test a sample of common Web page elements. It is
+  perhaps impossible to document every type of Web page element and testing
+  techniques for each, so this test case provides some of the common
+  elements to be tested. (Testers are encouraged to surf the Web and use
+  the techniques described here to test other live Web sites.)</p>
+
+  <p class="note">The techniques discussed in in this test case are
+  specifically for Firefox running on the Microsoft Windows operating
+  system.</p>
+
+  <h3>Tools required</h3>
+
+  <p>No software tools are required for this test.</p>
+
+  <p>Note that this is a visual test. There should be no assistive
+  technologies (such as screen readers or screen magnifiers) running during
+  the execution of this test case. Assistive technologies generally provide
+  their own keyboard navigation methods when viewing Web pages.</p>
+
+  <h3 id="Test_Case_Setup">Test Case Setup</h3>
+
+  <p>All of these files must be available for this test case. You may save
+  them all in a file folder on your PC, or, if you have a Web server, they
+  may all be stored in a single directory on the Web server.</p>
+
+  <ol>
+    <li>win-webcontent-kbnav.html (This is the file you are reading right
+    now.)</li>
+
+    <li>groovyimg.jpg</li>
+
+    <li>imgmap1.jpg</li>
+  </ol>
+
+  <h3 class="c1">Test Case Instructions</h3>
+
+  <ol>
+    <li>Open this file with Firefox.
+
+      <ul>
+        <li>Use any method you prefer to open this file. For example, with
+        Firefox started, you can start the "Open file" dialog by pressing
+        <kbd>Ctrl + O</kbd>, or by selecting "Open file" from the File menu
+        bar pulldown.</li>
+      </ul>
+    </li>
+
+    <li>Using the Firefox browser, scroll down through this file and follow
+    the instructions written in each section. <span class="important">Do
+    not use the mouse during the execution of this test case, except where
+    noted.</span></li>
+  </ol>
+
+  <h4 id="scroll-bars">Testing Scroll bars</h4>
+
+  <h5>Rationale for testing Scroll Bars</h5>
+
+  <p>This Web page, like many on the Web, are too large to be seen in their
+  entirety within the Web browser window. Because many users cannot use a
+  mouse, we must test to be sure it is possible to scroll through all of
+  the Web page content using the keyboard.</p>
+
+  <p>You should see a vertical scroll bar along the right side of this
+  browser window, and a horizontal scroll bar along the bottom side of the
+  window.</p>
+
+  <ul>
+    <li>If you do not see them, then resize the window to a smaller size
+    until you see both scroll bars. (You may use the mouse to resize the
+    window, if desired.)</li>
+
+    <li>The following horizontal rule has a set width of 120% of the screen
+    width, which should force a horizontal scrollbar to display at the
+    bottom of the browser window. (If it does not, there is a functional
+    problem in the browser!)</li>
+  </ul>
+  <hr>
+
+  <h5>Steps for testing Scroll Bars</h5>
+
+  <p>Follow these instructions.</p>
+
+  <ol>
+    <li>Press the <kbd>Down Arrow</kbd> key to scroll down a line at a
+    time, and the <kbd>Up Arrow</kbd> key to scroll back up.</li>
+
+    <li>Press the <kbd>Page Up</kbd> and <kbd>Page Down</kbd> keys to
+    scroll up and down a page at a time.</li>
+
+    <li>Press the <kbd>Right Arrow</kbd> key to scroll to the right, and
+    the <kbd>Left Arrow</kbd> key to scroll back to the left.
+
+      <ul>
+        <li>Verify that you can use the arrow keys to scroll to parts of
+        the Web page not currently visible within the browser window.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <ul>
+    <li class="note">Yes, this is pretty trivial, but it's got to be
+    done!</li>
+  </ul>
+
+  <p>End of Scroll Bar test section.</p>
+
+  <h4 id="links">Testing Link Navigation</h4>
+
+  <h5>Rationale for testing Link Navigation</h5>
+
+  <p>Many Web pages contain links to other Web pages, or links to other
+  sections within the same Web page. There are many ways to implement these
+  links. Two of the most common are text links and image links, where a
+  mouse user would "click" on either a string of text or on a graphic image
+  to follow the link. Because many people cannot use the mouse, or just
+  prefer to use the keyboard, users must be able to navigate to these links
+  using only the keyboard.</p>
+
+  <p>The <kbd>Tab</kbd> key is used to navigate to links on a Web page.
+  (The tab key is also used to navigate to other user controls in a Web
+  page, such as input fields and buttons in forms.) When you press the
+  <kbd>Tab</kbd> key, focus will jump to the next link or control.</p>
+
+  <ul>
+    <li>When the browser first loads a Web page, the initial keyboard focus
+    for the page should be at the top of the page.</li>
+
+    <li>When you press <kbd>Tab</kbd> for the first time on a page,
+    keyboard focus should move to the first link or control at the top of
+    the page.</li>
+
+    <li>Remember that the links on the page may not be visible. Often, for
+    example, the first link on a page is a "skip to main content" link,
+    which is provided to allow users to skip over banner images and Web
+    site navigation links and jump directly to the main content of the
+    current page. The "skip to main content" link is often attached to an
+    invisible image, since it is not generally used by sighted users. (More
+    often, "skip to main content" is used by blind users who are using a
+    screen reader,</li>
+  </ul>
+
+  <h5 id="start-link-test">Steps for testing Link Navigation</h5>
+
+  <ol>
+    <li>Click here to <a href="#start-link-test">set keyboard focus to the
+    Link Navigation steps</a>. Just this once, you may use the mouse for
+    this, if you wish. We just want to place keyboard focus at a known
+    location, since there is no way of knowing what keys you pressed before
+    you got to this test. FYI... clicking on the link in this step will
+    move the keyboard focus to the "Steps for testing Links" header, just
+    above.)</li>
+
+    <li>Press the <kbd>Tab</kbd> key once. Verify that you see a
+    dotted-line box around the words "Click on this link". The dotted line
+    is a "visual focus indicator". Any time you press <kbd>Tab</kbd> in a
+    We page, a clear visual focus indicator should show the location of the
+    current keyboard focus.</li>
+
+    <li>Press <kbd>Tab</kbd> one more time. You should see the visual focus
+    move to the following image link: <a href=
+      "#start-link-test"><img alt="Groovy Image Link Button" src=
+      "groovyimg.jpg" height="66" width="69"></a>
+
+      <ul>
+        <li>Verify that you see a clear visual focus indicator (dotted
+        line) around the image. (As you will see, the visual focus
+        indicator will be clearer for some objects than it is for others...
+        but there must be a visual indicator of some sort.)</li>
+      </ul>
+    </li>
+
+    <li>Press <kbd>Tab</kbd> seven more times. You should see the visual
+    focus move to the following client-side image map. There are 7 mapped
+    areas in this image, corresponding to the different colored bands.<br>
+
+      <img alt=
+      "image map containing links to various sections of this document."
+      src="imgmap1.jpg" usemap="#ImgNav_Map1" height="39" width="618">
+
+      <ul>
+        <li>Verify that you see a clear visual focus indicator (dotted
+        line) around each section of the image each time you press
+        <kbd>Tab</kbd>.</li>
+
+        <li>(Note that as of the time this test case was written, this
+        visual focus test fails on the image map area with a black
+        background. Bugzilla bug <a href=
+        "https://bugzilla.mozilla.org/show_bug.cgi?id=338033">338033</a>
+        has been written against this bug.)</li>
+      </ul>
+    </li>
+
+    <li>Next, display the context menu and properties for one of the image
+    map links above, using these steps.
+
+      <ul>
+        <li>Press <kbd>Shift + Tab</kbd> until focus is on the "Forms" link
+        in the image map above. You will see the dotted-line visual focus
+        indicator around the word "Forms".</li>
+
+        <li>Press <kbd>Shift + F10</kbd> to display the context menu. You
+        should see the context menu, listing several link-related options.
+        The last item in the menu should be <span class=
+        "c3">P</span>roperties.</li>
+
+        <li>Verify that the context menu is the same as the context menu
+        displayed when you press the right mouse button on the same
+        image.</li>
+
+        <li>Press <kbd>P</kbd> to select the Properties option. Verify that
+        you see the properties dialog window pop up.</li>
+
+        <li>Verify these properties are listed in the properties dialog:
+
+          <ul>
+            <li><kbd>Alt</kbd> = <span class="c4">Forms</span></li>
+
+            <li><span class="c4">Title</span> = <span class="c4">Html Forms
+            navigation test techniques</span></li>
+          </ul>
+
+          <p class="note">The above properties correspond to the "Alt=" and
+          "Title=" attributes specified in the image map tags for the Forms
+          section of the image map. If you view the page source for this
+          page, you will see similar properties set for the other image map
+          areas, if you wish to verify those also.</p>
+        </li>
+
+        <li>Press <kbd>Esc</kbd> to close the properties window. Verify
+        that visual focus returns to the Forms link (back where you
+        started). Press and <kbd>Tab</kbd> and <kbd>Shift + Tab</kbd> to
+        verify that keyboard focus returned to the Forms link.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <!-- IMAGE MAP DEFINITION for image map file imgmap1.jpg, above -->
+
+  <p><map name="ImgNav_Map1" id="ImgNav_Map1">
+    <area coords="14, 7, 71, 27" shape="rect" href="#scroll-bars" alt=
+    "Scroll Bars" title="Scroll Bar test techniques">
+    <area coords="106, 7, 158, 27" shape="rect" href="#links" alt="Links"
+    title="Link navigation test techniques">
+    <area coords="187, 7, 247, 27" shape="rect" href="#java-scripts" alt=
+    "JavaScripts" title="JavaScript navigation test techniques">
+    <area coords="273, 7, 336, 27" shape="rect" href="#html-forms" alt=
+    "Forms" title="HTML Forms navigation test techniques">
+    <area coords="360, 7, 424, 27" shape="rect" href="#dhtml" alt="DHTML"
+    title="DHTML navigation test techniques">
+    <area coords="441, 7, 518, 27" shape="rect" href="#caret-browsing" alt=
+    "Caret Browsing" title="Caret Browsing and copy/paste test techniques">
+    <area coords="532, 7, 603, 27" shape="rect" href="#last-update" alt=
+    "Last Update" title="Date of the last update of this file">
+  </map></p>
+
+  <p>End of link navigation test section.</p>
+
+  <h4 id="java-scripts">Testing Simple JavaScripts</h4>
+
+  <p>This section contains some simple JavaScripts, with instructions on
+  how to test them with the keyboard. Please feel free to find other more
+  complex JavaScript examples on other Web pages on the net, and test the
+  ability to use those JavaScripts in Firefox.</p>
+
+  <h5>Javascript: Onkeypress alert</h5>
+
+  <p>In this example, both "onkeypress" and "onclick" events are coded, and
+  different alerts are displayed depending on which action is taken.</p>
+
+  <ol>
+    <li>
+      <kbd>Tab</kbd> to the "Tab here and press Enter..." sentence below.
+
+      <ul>
+        <li>Verify that you see a clear visual focus indicator (dotted
+        line) around the text.</li>
+
+        <li>(Note that as of the time this test case was written, this
+        visual focus test fails. Bugzilla bug <a href=
+        "https://bugzilla.mozilla.org/show_bug.cgi?id=338035">338035</a>
+        has been written against this bug.)</li>
+      </ul>
+    </li>
+
+    <li>Press <kbd>Enter</kbd> to activate the onkeypress event.
+
+      <ul>
+        <li>Verify that an alert box is displayed, with the words "You
+        pressed enter".</li>
+
+        <li>Select "OK" to clear the alert box.</li>
+
+        <li>(If you click the mouse on the sentence, you will activate the
+        "onclick" event, and a different message will display.)</li>
+      </ul>
+    </li>
+  </ol>
+
+  <p class="c6">&gt; <span class="c5" onclick=
+  "alert('You clicked the mouse. Onclick was activated');" onkeypress=
+  "if (event.keyCode == 13) { alert('You pressed Enter. Onkeypress was activated.');};">
+  <a tabindex="0" name="keypress-example" id="keypress-example">Tab here
+  and press Enter for onKeyPress alert.</a></span> &lt;</p>
+  <hr>
+
+  <h5>Javascript: Jump to selected destination</h5>
+
+  <p>In the following example, the Go button activates the Javascript to
+  jump to the selected destination.</p>
+
+  <ol>
+    <li>Tab to the "Select a destination" pulldown.</li>
+
+    <li>Press the <kbd>Arrow keys</kbd> (up or down) to select a
+    destination.
+
+      <ul>
+        <li>Verify the arrow keys cause different selections to display in
+        the field.</li>
+      </ul>
+    </li>
+
+    <li>With focus in the "Select a destination" pulldown, press <kbd>Alt +
+    Down Arrow</kbd>.
+
+      <ul>
+        <li>Verify the selection pulldown is displayed.</li>
+      </ul>
+    </li>
+
+    <li>Press <kbd>Tab</kbd> again to move to the Go button.</li>
+
+    <li>Press <kbd>Enter</kbd> to activate the JavaScript.</li>
+
+    <li>Verify that focus moves to the selected jump destination using both
+    of these methods:
+
+      <ul>
+        <li>Visually verify that the selected destination is displayed in
+        the browser.</li>
+
+        <li>Press <kbd>Tab</kbd> to verify that the keyboard focus starts
+        jumping from the selected destination. (In other words, make sure
+        the keyboard focus is not still set on the Go button in this
+        JavaScript section.)</li>
+      </ul>
+    </li>
+  </ol>
+
+  <!-- Set up the menu: user clicks go, run link2() -->
+
+  <form name="quickMenu" action="" method="post" id="quickMenu">
+    <p><label for="select-page">Select a Destination, then press Go
+    button.</label> <select id="select-page" name="link2">
+      <option value="">
+        Select A Destination
+      </option>
+
+      <option value="#tab-o-contents">
+        Return to Table of Contents
+      </option>
+
+      <option value="#scroll-bars">
+        Jump to Scroll Bar test
+      </option>
+
+      <option value="#links">
+        Jump to Links test
+      </option>
+
+      <option value="#java-scripts">
+        Jump to JavaScript test
+      </option>
+
+      <option value="#html-forms">
+        Jump to HTML Forms test
+      </option>
+
+      <option value="#dhtml">
+        Jump to DHTML test
+      </option>
+
+      <option value="#caret-browsing">
+        Jump to Caret Browsing test
+      </option>
+    </select> <input name="Go" value="Go" onclick="goJSLink();" type=
+    "button"></p>
+  </form>
+  <hr>
+
+  <h5>Javascript: Popup current time</h5>
+
+  <p>The following button will cause a popup window to display the time. It
+  interacts with a continuously running JavaScript that starts when this
+  page is first loaded.</p>
+
+  <ol>
+    <li><kbd>Tab</kbd> to the button below.</li>
+
+    <li>Press <kbd>Enter</kbd> to activate the button.</li>
+
+    <li>Verify that a pop-up message is displayed, with the current
+    time.</li>
+
+    <li>Press <kbd>Enter</kbd> again to select the "OK" button to close the
+    pop-up.</li>
+  </ol>
+
+  <form action="" method="get">
+    <p><input name="face" id="face" size="13" value="" type="hidden">
+    <input name="button" value="Display the current time" onclick=
+    "alert('The current time is ' + document.getElementById('face').value);"
+    type="button"></p>
+  </form>
+  <hr>
+
+  <p>End of JavaScript test section</p>
+
+  <h4 id="html-forms">Testing HTML Form fields and controls</h4>
+
+  <p>The following form contains a variety of HTML form options.
+  Instructions are included for navigating the form fields and
+  controls.</p>
+
+  <ol>
+    <li>Click here to <a href="#pre-form-point">set keyboard focus to the
+    HTML Form testing section</a>. This is another of those rare times when
+    you may use the mouse, if you wish. This will place keyboard focus to a
+    spot just before the beginning of the HTML form found below. (Then
+    return to keyboard navigation!)</li>
+  </ol>
+
+  <form action="http://somesite.com/prog/adduser" method="post" class=
+  "c13">
+    <p><a class="c7" name="pre-form-point" id="pre-form-point">Beginning of
+    Form</a></p>
+
+    <p>This form contains a number of typical HTML form input elements. The
+    numbered instructions will guide you through keyboard navigation of
+    this form.</p>
+
+    <ol start="2" class="c8">
+      <li>Press <kbd>Tab</kbd> to jump to the first text field in the form,
+      below (the "email" field).
+
+        <ul>
+          <li>Verify that you see a clear visual focus indication in the
+          "email" text input field. (In this case, the field contains an
+          initial value. You should see the initial text highlighted when
+          focus moves to the input field.)</li>
+        </ul>
+      </li>
+
+      <li>Press <kbd>Tab</kbd> again, to jump to the name field.
+
+        <ul>
+          <li>Verify that you see a clear visual focus indication in the
+          name field. (In this case, you will see a blinking cursor.)</li>
+        </ul>(Testing instructions continue after the User Information
+        group.)
+      </li>
+    </ol>
+
+    <fieldset class="c9">
+      <legend>User Information</legend> <label for="email">email:</label>
+      <input name="email" id="email" value="Enter email address" type=
+      "text"><br>
+      <label for="full-name"><a name="form-name" id=
+      "form-name">Name:</a></label> <input name="full-name" id="full-name"
+      size="30" type="text"><br>
+    </fieldset>
+
+    <ol start="4" class="c8">
+      <li>Press <kbd>Tab</kbd> to move to the radio button section of the
+      form, below.
+
+        <ul>
+          <li>Verify that you see a clear visual focus indicator on the
+          "Ice Cream" option.</li>
+
+          <li>Note that for radio buttons, if there is a default value set,
+          as in this case, you will tab directly to the pre-selected
+          option, rather than to the first item in the group.</li>
+        </ul>
+      </li>
+
+      <li>With focus on the Ice Cream option, press the <kbd>Up Arrow</kbd>
+      and <kbd>Down Arrow</kbd> keys to move focus to the other options.
+
+        <ul>
+          <li>Verify that you see a clear visual focus indicator each time
+          you press the <kbd>Arrow</kbd> key.</li>
+        </ul>(Testing instructions continue after the Favorite dessert
+        group.)
+      </li>
+    </ol>
+
+    <fieldset>
+      <legend>Favorite dessert</legend> <input name="favdes" id="dess-cake"
+      value="Cake" type="radio"> <label for="dess-cake">Cake</label><br>
+      <input name="favdes" id="dess-pie" value="Pie" type="radio">
+      <label for="dess-pie">Pie</label><br>
+      <input name="favdes" id="dess-icecrm" value="IceCream" checked=
+      "checked" type="radio"> <label for="dess-icecrm">Ice
+      Cream</label><br>
+    </fieldset>
+
+    <ol start="6" class="c8">
+      <li>Press <kbd>Tab</kbd> to move keyboard focus from the "Favorite
+      dessert" group above to the "Favorite flavor" section below.
+
+        <ul>
+          <li>Verify that you see a clear visual focus indicator on the
+          first option (Chocolate). In this case, the solid-line checkbox
+          changes to a dotted-line checkbox.</li>
+
+          <li>Note that for checkboxes, you tab to the first item in the
+          group, regardless of whether any items have been
+          pre-selected.</li>
+        </ul>
+      </li>
+
+      <li>Press <kbd>Tab</kbd> to move to the next checkbox. This will move
+      from the "Chocolate" checkbox to the "Vanilla" checkbox. (Note that,
+      unlike the radio button group, above, you must press <kbd>Tab</kbd>
+      to move between checkboxes, and not the Arrow keys.
+
+        <ul>
+          <li>Verify that you see a clear visual focus indicator on the
+          second option (Vanilla). Again, the solid-line checkbox changes
+          to a dotted-line checkbox.</li>
+        </ul>(Testing instructions continue after the Favorite flavor
+        group.)
+      </li>
+    </ol>
+
+    <fieldset>
+      <legend>Favorite flavor</legend> <input name="flav" id="ice-choc"
+      value="Chocolate" type="checkbox"> <label for=
+      "ice-choc">Chocolate</label><br>
+      <input name="flav" id="ice-van" value="Vanilla" checked="checked"
+      type="checkbox"> <label for="ice-van">Vanilla</label><br>
+    </fieldset>
+
+    <ol start="8" class="c8">
+      <li>Press <kbd>Tab</kbd> to move keyboard focus from "Favorite
+      flavor" above to the "Specify file name" field below.
+
+        <ul>
+          <li>Note that there is no tab stop at the hidden field. (You can
+          look at the page source to see the hidden field, if you are
+          interested.)</li>
+
+          <li>Verify that you see a clear visual focus indicator in the
+          "...file name" field. (You should see a blinking cursor.)</li>
+        </ul>
+      </li>
+
+      <li>Press <kbd>Tab</kbd> again to move to the "Browse" button
+      following the text field.
+
+        <ul>
+          <li>Verify that you see a clear visual focus on the Browse
+          button. (You should see a dotted line around the text within
+          button.)</li>
+        </ul>
+      </li>
+
+      <li>Press <kbd>Enter</kbd> to activate the browse button.
+
+        <ul>
+          <li>Verify the "File Upload" window displays after pressing
+          <kbd>Enter</kbd>.</li>
+        </ul>
+      </li>
+
+      <li>Press <kbd>Esc</kbd> to close the browse window.
+
+        <ul>
+          <li>Verify that the File Upload window disappears.</li>
+
+          <li>Verify that visual and keyboard focus return to the Browse
+          button below.</li>
+        </ul>
+      </li>
+
+      <li>Repeat steps 10 and 11 using <kbd>Spacebar</kbd> instead of <kbd>
+        Enter</kbd>. The <kbd>Spacebar</kbd> is a standard key for
+        activating buttons.
+
+        <ul>
+          <li>Verify the "File Upload" window displays when
+          <kbd>Spacebar</kbd> is pressed.</li>
+
+          <li>Again, verify that focus returns to the Browse button again
+          after pressing <kbd>Esc</kbd> to exit the File Upload menu.</li>
+        </ul>(Testing instructions continue after the Specify file name
+        option.)
+      </li>
+    </ol>
+
+    <p><label for="hid-fld">There is a hidden field here:</label>
+    <input name="SecretServerStuff" id="hid-fld" value=
+    "Important information the Server application wants to keep track of."
+    type="hidden"> You should not be able to see it or tab to it. (This
+    text is not part of the field!)</p>
+
+    <p><label for="fileinput">Specify file name:</label> <input name=
+    "datafile" id="fileinput" size="40" type="file"></p>
+
+    <ol start="13" class="c8">
+      <li>Press <kbd>Tab</kbd> to move keyboard focus from "Browse" button
+      to the "Send" button, below.
+
+        <ul>
+          <li>Verify that you see a clear visual focus indicator in the
+          "Send" button. You should see a dotted line around the text
+          within the button.</li>
+
+          <li>(Note that this form is not functional... if you press the
+          "Send" button, it will not submit this form, but it will attempt
+          to find some server on the network, and give you a "server not
+          found" error. The function of the Send button is not a focus of
+          this test.)</li>
+        </ul>
+      </li>
+
+      <li>Press <kbd>Tab</kbd> again to move to the "Reset" button.
+
+        <ul>
+          <li>Verify that you see a clear visual focus on the Reset button.
+          (You should see a dotted line around the text within
+          button.)</li>
+
+          <li>(If you select the Reset button, either with <kbd>Enter</kbd>
+          or <kbd>Spacebar</kbd>, it will reset the values of all of the
+          form fields and controls to their initial states. This is not
+          part of the focus of this test though.)</li>
+        </ul>
+      </li>
+    </ol>
+
+    <p><input value="Send" type="submit"> <input type="reset"></p>
+
+    <p class="c12">End of Form</p>
+  </form>
+
+  <p>End of Form test section.</p>
+
+  <h4 id="html-frames">Testing HTML Frames</h4>
+
+  <p>Some web pages use frames to separate different areas of the page,
+  like window-panes within a large window. The <kbd>F6</kbd> and <kbd>Shift
+  + F6</kbd> keys are used to move from one frame to another in the web
+  page.</p>
+
+  <p>We will link to a sample page at the w3schools web site to display and
+  test a page implemented with frames.</p>
+
+  <p>Follow these steps when testing keyboard navigation of frames. Because
+  you need to open a new web page, it might be best to read all of these
+  instructions before proceeding. (Note that these instructions also make
+  use of Firefox's Tabbed Browsing capability.)</p>
+
+  <ol>
+    <li>Open the following web page with Firefox:
+
+      <ul>
+        <li>Press <kbd>Tab</kbd> to focus on the w3schools link below.</li>
+
+        <li>Press <kbd>Shift + F10</kbd> to open the context menu for the
+        link.</li>
+
+        <li>Press <kbd>T</kbd> to select the "Open Link in New <span class=
+        "c3">T</span>ab" option. Verify that a new web page notebook tab is
+        created at the top of the Firefox window. It has a title that
+        starts "Tryit Editor..."</li>
+
+        <li>Press <kbd>Ctrl + Tab</kbd> to switch to the "Tryit Editor..."
+        notebook tab. (You can press <kbd>Shift + Ctrl + Tab</kbd> to
+        return to this page to review the instructions.)</li>
+
+        <li>Link to <strong><a href=
+        "http://www.w3schools.com/html/tryit.asp?filename=tryhtml_frame_cols">
+        Frames example at w3schools web site</a></strong></li>
+      </ul>
+    </li>
+
+    <li>When the page loads, press <kbd>F6</kbd> several times.
+
+      <ul>
+        <li>Watch the focus carefully. Verify that you see a clear visual
+        focus indicator when focus moves to each frame. You should see a
+        dotted line around the edge of each frame when it has focus.</li>
+      </ul>
+    </li>
+
+    <li>Then press <kbd>Shift + F6</kbd> several times.
+
+      <ul>
+        <li>Watch the focus carefully. Verify that you see a clear visual
+        focus indicator when focus moves to each frame. You should see a
+        dotted line around the edge of each frame when it has focus.</li>
+      </ul>
+    </li>
+
+    <li>When you are done verifying the keyboard navigation and visual
+    focus of the frames on the w3schools page, press <kbd>Ctrl + W</kbd> to
+    close that notebook tab.
+
+      <ul>
+        <li>Verify that the notebook tab containing the Frames example page
+        closes, and focus returns to this page, at the same point in the
+        page where you left it.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <p>End of Frames test section.</p>
+
+  <h4 id="dhtml">Testing DHTML controls</h4>
+
+  <p>The Mozilla.org Web site contains a number of examples of accessible
+  DHTML elements. Rather than reproduce them here, follow the links
+  provided below to load those example pages.</p>
+
+  <p>The examples do not contain detailed information on how to navigate
+  the DHTML elements. For now, just verify that you can use the
+  <kbd>Tab</kbd> key and/or the <kbd>Arrow keys</kbd> to access all of the
+  fields and controls on the DHTML example pages.</p>
+
+  <h5>Links to DHTML example pages</h5>
+
+  <ul>
+    <li><a href="http://www.mozilla.org/access/dhtml/checkbox">DHTML
+    Checkbox and element removed from tab ring</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/slider">DHTML
+    Slider</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/progressbar">DHTML
+    Progress bar</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/alert">DHTML
+    Alerts</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/spreadsheet">DHTML
+    Spreadsheet with menu bar</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/tabpanel">DHTML Tab
+    panel</a></li>
+
+    <li><a href="http://www.mozilla.org/access/dhtml/tree">DHTML Tree
+    view</a></li>
+  </ul>
+
+  <p>End of DHTML test section.</p>
+
+  <h4 id="caret-browsing">Testing Caret Browsing and the system clipboard
+  function</h4>
+
+  <p>Firefox provides a little-known feature called Caret Browsing. When in
+  Caret Browsing mode, you can navigate a Web page in a way similar to
+  navigating a document in a word processor. Visually, you see an insertion
+  caret (cursor) on the page, and you can use the <kbd>Arrow keys</kbd> to
+  move up, down, left, and right, one line or character at a time. In this
+  mode, you can use the keyboard to select text and copy it into the system
+  clipboard. When not in Caret browsing mode, you can select specific parts
+  of the page text only with the mouse.</p>
+
+  <p>Follow these instructions to verify the basic functions of Caret
+  Browsing.</p>
+
+  <ol>
+    <li>Press <kbd>F7</kbd> to start Caret Browsing mode. Select the "Yes"
+    button in the resulting popup (if it displays) to complete the switch
+    to Caret Browsing mode.
+
+      <ul>
+        <li>Verify that the location of the keyboard focus (the "caret", or
+        cursor) is clear when Caret Browsing mode starts.</li>
+
+        <li>(The caret is a vertical, blinking line. If the location of the
+        caret is not obvious, you may need to press the <kbd>Up Arrow</kbd>
+        or <kbd>Down Arrow</kbd> key and watch closely to find the
+        caret.)</li>
+
+        <li>Continue to the next step when you have visually located the
+        caret.</li>
+      </ul>
+    </li>
+
+    <li>Press the <kbd>Up Arrow</kbd> key, then the <kbd>Down Arrow</kbd>
+    key.
+
+      <ul>
+        <li>Verify the caret moves up one line at a time, or down one line
+        at a time, depending on which arrow key was pressed.</li>
+      </ul>
+    </li>
+
+    <li>Press the <kbd>Right Arrow</kbd> key, then the <kbd>Left
+    Arrow</kbd> key.
+
+      <ul>
+        <li>Verify the caret moves right or left one character at a time,
+        depending on which arrow key was pressed.</li>
+      </ul>
+    </li>
+
+    <li>Press the <kbd>Page Up</kbd> key, then the <kbd>Page Down</kbd>
+    key.
+
+      <ul>
+        <li>Verify the page moves up and down, as expected.</li>
+      </ul>
+    </li>
+
+    <li>Press the <kbd>Home</kbd> key.
+
+      <ul>
+        <li>Verify the caret moves to the beginning of the current line
+        (left edge of the browser window) when you press
+        <kbd>Home</kbd>.</li>
+      </ul>
+    </li>
+
+    <li>Press the <kbd>End</kbd> key.
+
+      <ul>
+        <li>Verify the caret moves to the end of the current line when you
+        press <kbd>Esc</kbd>.</li>
+      </ul>
+    </li>
+
+    <li>Press <kbd>Ctrl + Home</kbd>.
+
+      <ul>
+        <li>Verify the browser displays the top of the page, and the caret
+        moves to the upper left corner of the page.</li>
+      </ul>
+    </li>
+
+    <li>Press <kbd>Ctrl + End</kbd>.
+
+      <ul>
+        <li>Verify the browser displays the bottom of the page, and the
+        caret moves to the end of the last line of the page.</li>
+      </ul>
+    </li>
+
+    <li>Press the <kbd>Tab</kbd> key and the <kbd>Shift + Tab</kbd> key.
+
+      <ul>
+        <li>Verify that focus moves between links and form controls, just
+        as when you tested them in non-Caret Browsing mode.</li>
+
+        <li>Note these exceptions: If an <kbd>Arrow key</kbd> has a
+        specific function in the area where the caret is currently located,
+        you may need to use the <kbd>Tab</kbd> key to to navigate away from
+        that area. For example, in a radio button group, the <kbd>Arrow
+        keys</kbd> are used to move from one selection to another. If you
+        Tab to the radio button group in the form (in the forms testing
+        section, above), you cannot use the <kbd>Arrow keys</kbd> to move
+        the cursor back to the text above or below the radio buttons. You
+        must press <kbd>Tab</kbd> to move out of the radio button group,
+        then the <kbd>Arrow keys</kbd> will again move the caret up, down,
+        left, or right, as expected in Caret Browsing mode.</li>
+      </ul>
+    </li>
+
+    <li>Test copy and paste to the system clipboard:
+
+      <ul>
+        <li>Press the <kbd>Arrow keys</kbd> to a text area in this
+        page.</li>
+
+        <li>While holding down the <kbd>Shift</kbd> key, press the
+        <kbd>Arrow keys</kbd> to select a section of text. (The left and
+        right arrow keys will select text one character at a time, while
+        the up and down arrow keys will select a line at a time.)</li>
+
+        <li>After highlighting the desired text, press <kbd>Ctrl + C</kbd>
+        to copy the text into the system clipboard.</li>
+
+        <li>Press the <kbd>Tab</kbd> or <kbd>Shift + Tab</kbd> keys to move
+        to the text area box, below. (Note that you <strong>must</strong>
+        tab into the text area box in order to edit the contents of the
+        box. If you use the arrow keys to enter the box, you will remain in
+        "read only" mode, and you will not be allowed to edit (or paste)
+        text in the box.)</li>
+
+        <li>Press <kbd>Ctrl + V</kbd> to paste the clipboard text into the
+        box.
+
+          <ul>
+            <li>Verify that the text is pasted properly into the text
+            area.</li>
+          </ul>
+
+          <form action="" method="post">
+            <p><label for="paste-test" class="c14">Text entry area for
+            copy/paste test:</label><br>
+            <textarea id="paste-test" rows="3" cols="30" class="c15">
+</textarea></p>
+          </form>
+        </li>
+
+        <li>If you feel adventurous, you can also try to paste some text
+        into the Name field in <a href="#pre-form-point">sample form in the
+        forms testing section</a> of this test case. Or, start your
+        favorite word processor and verify that you can paste the text
+        selected from the Firefox browser window into a word processor
+        document, to verify the "system" clipboard is being used properly.
+        Use the cursor to select different elements in this page: text,
+        form fields, graphics, links... and see how they make the
+        transition to the word processor document.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <p>End of Caret Browsing test section.</p>
+
+  <h3>End of Test Case</h3>
+
+</body>
+</html>

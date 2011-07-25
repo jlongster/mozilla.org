@@ -1,0 +1,432 @@
+<?php
+
+$html_title = 'NSS 3.1.1 Release Notes';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>NSS 3.1.1 Release Notes</h3>
+<h3>5 December 2000
+</h3>
+<FONT SIZE="-1">
+
+<i>Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Engineering lead: 
+<A HREF="mailto:relyea@netscape.com?subject=NSS 3.1.1 Release Notes">Bob Relyea</A><BR>
+
+Product manager: 
+<A HREF="mailto:rolandj@netscape.com?subject=NSS 3.1.1 Release Notes">Roland Jones</A><BR>
+
+Engineering manager: 
+<A HREF="mailto:wtc@netscape.com?subject=NSS 3.1.1 Release Notes">Wan-Teh Chang</A></FONT></i>
+</center>
+<p>
+
+<p><p><hr><h3>
+Contents</h3>
+
+<ul>
+<li>
+<a href="#Introduction">Introduction</a></li>
+
+<li>
+<a href="#cvs">CVS Information</a></l1>
+
+<li>
+<a href="#bugsfixed">Bugs Fixed</a></l1>
+
+<li>
+<a href="#docs">Documentation</a></l1>
+
+<li>
+<a href="#What's">Changes Since NSS 3.1</a></li>
+
+<li>
+<a href="#Platforms">Platforms</a></li>
+
+<li>
+<a href="#issues">Known Bugs and Issues</l1>
+
+<li>
+<a href="#compatibility">Compatibility</a></li>
+
+<li>
+<a href="#feedback">Feedback</a></li>
+
+</ul>
+
+<p><p><hr><a NAME="Introduction">
+<h3></a>Introduction</h3>
+<a href="index.html">Network Security Services (NSS)</a> is a set of libraries designed to 
+support cross-platform development of security-enabled client and server applications. 
+These libraries provide the security foundation for a variety of server products from 
+<a href="http://www.iplanet.com/products/index.html">iPlanet 
+E-Commerce Solutions</a>, including iPlanet Certificate Management System, iPlanet Web Server, 
+iPlanet Directory Server, and iPlanet Messaging Server. NSS 3.1 provided, for the first time, 
+a complete open-source implementation of the crypto libraries used to implement security 
+features in these products, including a new implementation of the RSA algorithm. NSS 3.1.1 fixes 
+several bugs in NSS 3.1, including a bug related to prime number generation that affects RSA 
+key pair generation and other important operations. For more information on bugs fixed in NSS 3.1.1, see <a href="#bugsfixed">Bugs Fixed</a>.
+
+<p>For  
+more information on the effects of the RSA algorithm going into the public domain, see the 
+<a href="../../../../crypto-faq.html">Mozilla Crypto FAQ</a>. For the NSS 3.1 release notes (including 
+information on bugs fixed in NSS 3.1)see <a href="release_notes_31">NSS 3.1 Release Notes</a>.
+
+<p>The NSS libraries also underlie <a href="../psm">Personal Security Manager (PSM)</a>, 
+which performs cryptographic operations on behalf of Netscape Communicator, Netscape 6, 
+and other client applications. 
+
+<p>If you are developing applications that support SSL, S/MIME, or other Internet security standards, 
+you can now use NSS libraries to implement comparable security features in your own applications. 
+NSS 3.1.1 also includes a framework to which developers and OEMs can contribute patches, such as 
+assembler code, to optimize performance on their platforms.
+
+<p>NSS 3.1.1 is dual-licensed under the MPL and the GPL. 
+
+<p><p><hr><a NAME="cvs"></a>
+<h3>
+CVS Information</h3>
+
+The CVS tag for the NSS 3.1.1 release is <tt>NSS_3_1_1_RTM</tt>.
+
+<p><p><hr><a NAME="bugsfixed"></a>
+<h3>Bugs Fixed</h3>
+
+The most important bug fixed in this release is <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=59438">#59438</a>, 
+sometimes referred to as the "prime number generation bug." This bug in the freebl library of NSS 3.1 affects the 
+following algorithms on all platforms:
+
+<ul>
+
+	<li>Diffie-Hellman and DSA parameter generation: The parameter 
+may not be a prime. Generation of Diffie-Hellman or DSA 
+parameters is typically done only by a Certificate 
+Authority (e.g. in iPlanet Certificate Management System), not in other client or server 
+products.
+	<li>RSA key pair generation: The keys may not contain the 
+  product of two primes. RSA key pair generation is done by 
+  all SSL servers, each time they are started up, to generate 
+  a "step down" key for use with export cipher suites. It is 
+  also done by all products that generate Certificate Signing 
+  Requests.
+</ul>
+
+Note that this bug does not affect products using NSS
+3.1 with RSA BSAFE Crypto-C or Netscape's internal
+libcrypto library. It also does not affect any present
+releases of Personal Security Manager from Netscape or iPlanet, since those have all used the
+libcrypto library. However, it affects other releases of Personal Security Manager 
+that may have used the NSS 3.1 freebl library.
+
+<p>For a list of all bugs that have been fixed in the NSS 3.1.1 release, 
+<a href="http://bugzilla.mozilla.org/buglist.cgi?bug_status=RESOLVED&bug_status=VERIFIED&bug_status=CLOSED&chfieldto=Now&product=NSS&target_milestone=3.1&target_milestone=3.1.1&cmdtype=doit&namedcmd=all+open+NSS+bugs&newqueryname=&order=Bug+Number">click here</a>.
+
+
+<p><p><hr><a NAME="docs"></a>
+<h3>Documentation</h3>
+
+For a list of the primary NSS documentation pages on mozilla.org, see <a href="index.html#Documentation">NSS Documentation</a>. 
+New and revised documents available since the release of NSS 3.1 include the following:
+<ul>
+	<li><a href="buildnss_31.html">Build Instructions for NSS</a> have been updated to reflect the new NSS 3.1.1 CVS tag.
+	<li><a href="testnss.html">NSS Test Suite</a> describes how to run the standard NSS tests.
+	<li><a href="contributors.html">NSS Contributors</a> lists major contributors to the NSS project.
+	<li><a HREF="algorithms.html">Encryption Technologies Available in Netscape 6.x, Personal Security Manager, 
+and the iPlanet Servers</a> lists the cryptographic algorithms used by products built on top of NSS.
+	<li><a HREF="loadable_certs.html">NSS 3.1 Loadable Root Certificates</a>. Describes the scheme introduced in NSS 3.1 
+for loading root CA certificates.
+
+</ul>
+
+<p>Source may be viewed with a browser (via the LXR tool) at <a href="http://lxr.mozilla.org/mozilla/source/security/nss/">
+http://lxr.mozilla.org/mozilla/source/security/nss/</a>
+
+
+<p><hr><a NAME="What's"></a>
+<h3>Changes Since NSS 3.1</h3>
+NSS 3.1.1 is a patch release that fixes several bugs in NSS 3.1. It does not introduce any new functions or features. 
+
+<p>For a list of changes introduced in NSS 3.1, see <a href="release_notes_31">NSS 3.1 Release Notes</a>.
+
+<p><hr><a NAME="Platforms"></a>
+<h3>Platform Information</h3>
+NSS is maintained on the platforms listed below. "Certified" means the iPlanet NSS team has built 
+and run QA tests for NSS on a machine with the specified OS. 
+<p>
+<table BORDER >
+
+<tr>
+
+<td VALIGN=CENTER><b>Platform</b></td>
+
+
+
+<td VALIGN=CENTER><b>Build</b></td>
+
+
+
+<td VALIGN=CENTER><b>Certify</b></td>
+
+
+
+<td VALIGN=CENTER><b>Compiler(s)</b></td>
+
+</tr>
+
+
+
+<tr>
+
+<td VALIGN=CENTER ROWSPAN="2" HEIGHT="43">AIX</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="43">4.3.3 (32 bit)</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="43">4.3.3 (32 bit)<br>
+					4.3.3 (64 bit)</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="43">xlC/C++ 3.6.4</td>
+
+</tr>
+
+
+
+<tr>
+
+<td VALIGN=CENTER HEIGHT="9">4.3.3 (64 bit)</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="9">4.3.3 (64 bit)</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="9">xlC/C++ 3.6.4</td>
+
+</tr>
+
+
+
+<tr>
+
+<td VALIGN=CENTER HEIGHT="61">Compaq Tru64</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="61">4.0D</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="61">4.0D&nbsp;
+
+<br>5.0A</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="61">(cc) Digital C v5.6-071</td>
+
+</tr>
+
+
+
+<tr>
+
+<td VALIGN=CENTER ROWSPAN="2" HEIGHT="58">HP-UX</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="58">11.0 (32 bit)</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="58">11.0 (32 bit)<br>
+					11.0 (64 bit)</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="58">C compiler: A.11.01.00</td>
+
+</tr>
+
+<tr>
+
+<td VALIGN=CENTER HEIGHT="9">11.0 (64 bit)</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="9">11.0 (64 bit)</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="9">C compiler A.11.01.00</td>
+
+</tr>
+
+
+
+
+
+<tr>
+
+<td VALIGN=CENTER>Linux</td>
+
+
+
+<td VALIGN=CENTER>RedHat 6.0</td>
+
+
+
+<td VALIGN=CENTER>RedHat 6.0<br>
+			RedHat 6.1</td>
+
+
+
+<td VALIGN=CENTER>egcs-1.1.2</td>
+
+</tr>
+
+
+
+
+
+<tr>
+
+<td VALIGN=CENTER>NT</td>
+
+
+
+<td VALIGN=CENTER>NT 4.0 w/ SP 6a</td>
+
+
+
+<td VALIGN=CENTER>NT 4.0 w/ SP 6a
+
+<br>Win2000</td>
+
+
+
+<td VALIGN=CENTER>VC++ 6.0 Service Pack 3</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>Windows</td>
+
+
+
+<td>NT 4.0 w/ SP 6a</td>
+
+
+
+<td>
+
+
+<br>NT 4.0 w/ SP 6a
+
+<br>Win2000</td>
+
+
+
+<td>VC++ 6.0 Service Pack 3</td>
+
+</tr>
+
+
+
+<tr>
+
+<td VALIGN=CENTER ROWSPAN="2" HEIGHT="66">Solaris</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="66">2.6</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="66">2.6<br>
+					8 (32 bit)<br>
+					8 (64 bit)</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="66">WorkShop Compilers&nbsp;
+
+<br>C/C++ version 4.2&nbsp;</td>
+
+</tr>
+
+
+
+<tr>
+
+<td VALIGN=CENTER HEIGHT="12">8 (64-bit)</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="12">8 (64-bit)</td>
+
+
+
+<td VALIGN=CENTER HEIGHT="12">WorkShop Compilers&nbsp;
+
+<br>C/C++ version 5.0</td>
+
+</tr>
+
+</table>
+
+<p><b>Note to Macintosh Developers:</b> Due to a lack of resources, our team was unable to develop NSS for the Macintosh platform.  We are looking for help from any interested parties to modify the Macintosh project file for NSS 3.1.1. 
+For contact information, please see the <a href="#feedback">Feedback</a> section.
+
+<p>NSS has not yet been formally tested or certified on any other platforms.  If you have successfully run NSS on other platforms, or if you are interested in taking responsibility for testing and maintaining NSS on a particular platform that's not listed above, post a message to <A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A>
+
+
+<p><hr><a NAME="issues"></a>
+<h3>Known Bugs and Issues</h3>
+
+<ul>
+<li>NSS 3.1.1 uses mozilla/dbm, which is based on Berkeley DB 1.85. 
+Berkeley DB 1.85 is released under the original BSD license, whose "advertising clause" is incompatible with the GNU GPL.
+<br><br>In a letter dated July 22, 1999, UC Berkeley announced that the advertising clause is deleted from all the BSD Unix files (of any version of BSD) containing it.  (The announcement is available at <a href="ftp://ftp.cs.berkeley.edu/ucb/4bsd/README.Impt.License.Change">ftp.cs.berkeley.edu/ucb/4bsd/README.Impt.License.Change.)</a>  The final (AT&T proprietary) 4.4BSD release contained version 1.6 of Berkeley DB.  The 4.4BSD-Lite2 release contained version 1.74 of Berkeley DB.  Since Berkeley DB 1.85 is not technically in any version of BSD (although it is derived from the Berkeley DB files in 4.4BSD and 4.4BSD-Lite2), it is not clear whether the Berkeley announcement deletes the advertising clause from Berkeley DB 1.85.<br><br>
+
+
+<li>For a list of reported bugs that have not been fixed in NSS 3.1.1, 
+<a href="http://bugzilla.mozilla.org/buglist.cgi?bug_status=UNCONFIRMED&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&chfieldto=Now&product=NSS&cmdtype=doit&namedcmd=all+open+NSS+bugs&newqueryname=&order=Bug+Number">click here.</a> 
+(Note that not all of these bugs have been confirmed. Even some bugs in the "new" state are unconfirmed.)
+</UL>
+
+<p><hr><a NAME="compatibility"></a>
+<h3>Compatibility</h3>
+
+NSS 3.1.1 is backward compatible with NSS 3.1 and NSS 3.0.x.
+
+
+<p>
+<p><hr><a NAME="feedback"></a>
+<h3>Feedback</h3>
+Bugs discovered should be reported by filing a bug report with <a href="http://bugzilla.mozilla.org/">bugzilla</a> (product NSS).
+
+<p>You can also give feedback directly to the developers on the IRC channel <tt>#mozcrypto</tt>
+on the server <tt>irc.mozilla.org</tt>.
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,219 @@
+<?php
+
+$html_title = 'Using a Master Certificate for Remote Trust Grants';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="DC.author" content="Mitch Stoltz">
+<meta name="DC.creator" content="Mitch Stoltz">
+<meta name="DC.title" content="Using a Master Certificate for Remote Trust Grants">
+<meta name="DC.subject" content="Using a Master Certificate for Remote Trust Grants">
+<meta name="DC.date.created" content="2001-01-10T16:51:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2006-09-10T09:54:03+11:00" scheme="W3CDTF">
+<link rel="up" href="../" title="Security project homepage">
+<link rel="contents" href="./" title="Component Security in Mozilla">
+<link rel="section" href="#needforfeature" title="The need for this feature">
+<link rel="section" href="#mastercert" title="The Master Certificate">
+<link rel="section" href="#api" title="The API">
+<link rel="section" href="#twocert" title="The Two-Certificate Model">
+<link rel="section" href="#why2cert" title="Why Two Certificates?">
+<link rel="glossary" href="terms.html" title="Terminology in JavaScript Security">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<table cellspacing="0" cellpadding="4">
+  <tbody>
+    <tr style="background-color: #F5F5DC; color: inherit;">
+      <td><a rel="up" href="../">Security project</a></td>
+      <td>&gt;</td>
+      <td><a rel="contents" href="./">Component Security</a></td>
+      <td>&gt;</td>
+      <td>Using a Master Certificate</td>
+    </tr>
+  </tbody>
+</table>
+
+<h1>Using a Master Certificate for Remote Trust Grants</h1>
+
+<address class="author">Mitch Stoltz</address>
+
+<p id="intro">This page describes a feature available to distributors of Mozilla 
+which allows establishing a "master certificate." This certificate can grant 
+trust to other code-signing certificates without user interaction. These 
+directions assume a basic familiarity with the concept of code signing. See 
+the links in the provided documentation at the 
+<a href="index.html#docs">Component Security main page</a> for more information.</p>
+
+<h2><a name="needforfeature">The Need for this Feature</a></h2>
+
+<p>In general, if a script wishes to read a user's personal data or perform 
+other sensitive operations, the user must give permission to the script, normally 
+by answering Yes to a dialog box. For some Mozilla embedders and distributors, 
+this dialog box detracts from the user experience, and another method of granting 
+trust while still ensuring security must be used. By distributing a <em>master 
+certificate</em> with the browser, a distributor can allow Web developers to 
+perform sensitive operations in the browser without confirmation from the user.<p>
+
+<p class="note">Official mozilla.org software releases do not have a master 
+certificate installed. The features described below will not work with releases 
+from mozilla.org. These features can be activated at the discretion of 
+individual Mozilla embedders/distributors.</p>
+
+<h2><a name="mastercert">The Master Certificate</a></h2>
+
+<p>The <em>master certificate</em> in Mozilla is defined as the 
+<a href="terms.html#sig">signature</a> on the <code>systemSignature.jar</code> 
+file. On Windows and Unix systems, this file must be installed in the same 
+directory as the Mozilla binary, and on Macintoshes, in the Essential Files 
+directory. This file can be generated using <tt>SignTool</tt>, a Mozilla 
+utility for signing code files. 
+<a href="http://developer.netscape.com/software/signedobj/jarpack.html#signtool1.3">[Download Signtool]</a> 
+<a href="http://docs.sun.com/source/816-5531-10/app_sign.htm">[Complete Documentation]</a></p>
+
+<p> Assuming the certificate you want to use as a master certificate is 
+installed in your certificate database, a master certificate file can be 
+generated with a command like this:</p>
+
+<pre class="code">signtool -k "MyMasterCertNickname" -Z systemSignature.jar emptyDir</pre>
+
+<p>... where <code>myMasterCertNickname</code> is the name of your master 
+certificate as it is installed in your certificate database, and <code>emptyDir</code> 
+is an empty directory, which indicates that no files besides the signature file 
+itself should be placed in the jar. This command will create a file called 
+<code>systemSignature.jar</code> which can be distributed with a Mozilla-based 
+browser. Without this file present in the browser distribution, the master 
+certificate features will not work.</p>
+
+<p> Protect the private key to your master certificate very carefully. Remember 
+that anyone who can sign scripts with your master certificate could gain 
+unauthorized access to any browser distributed with that certificate.</p>
+
+<h2><a name="api">The API</a></h2>
+
+<p>A script signed by the currently installed master certificate can call 
+two functions which no other scripts can call. They are:</p>
+
+<ul>
+    <li><code>netscape.security.PrivilegeManager.setCanEnablePrivilege(certificateID, privilegeList)</code><br>
+         which can grant trust to other certificates, and</li>
+    <li><code>netscape.security.PrivilegeManager.invalidate(certificateID)</code><br>
+         which permanently revokes all trust from a certificate.</li>
+</ul>
+
+<p>The first function, <code>setCanEnablePrivilege</code>, takes two arguments. 
+The first is the <em>certificate fingerprint</em>, a cryptographic hash of 
+the certificate to which you want to grant trust.  The fingerprint is a 
+hexadecimal number which uniquely identifies the certificate. For example, "<code>85:2B:C1:7D:52:63:80:9E:62:02:47:4C:B2:17:BF:29</code>." To find the 
+fingerprint of a certificate in your database, open the Personal Security 
+Manager (under the Tools menu in Mozilla), click the Certificates tab, 
+select your certificate from the list, and click View.</p>
+
+<p>The second argument to <code>setCanEnablePrivilege</code> is a 
+space-separated list of the <a href="terms.html#priv">privileges</a> you 
+want the certificate to be able to use, for example 
+<code>UniversalPreferencesRead</code> for access to browser preferences. 
+The complete list of built-in privileges can be found in the 
+<a href="signed-scripts.html#privs-list">Signed Script Policy documentation</a>.</p>
+
+<h2><a name="twocert">The Two-Certificate Model</a></h2>
+
+<p>It is important to understand that there are two certificates involved 
+in this process. One is the master certificate which is installed by the 
+distributor of a Mozilla-based browser, and the other is the certificate
+that will be used by the content creator to sign their own scripts, which 
+I will call the <em>website certificate</em>. The process works like this:</p>
+
+<ol>
+    <li> The ABC Company distributes a product based on Mozilla code 
+which includes a <code>systemSignature.jar</code> file.</li>
+
+    <li> Foobar.com, a Web content developer, obtains a digital 
+certificate for code signing (the website certificate) and sends 
+the certificate's fingerprint number to ABC.</li>
+
+    <li> ABC writes a script which looks like this<br><br>
+
+        <code>netscape.security.PrivilegeManager.setCanEnablePrivilege(<br>
+	    "85:2B:C1:7D:52:63:80:9E:62:02:47:4C:B2:17:BF:29",<br>
+            "UniversalPreferencesRead UniversalBrowserRead")</code>
+        <br><br>
+
+        where the fingerprint number on the second line is replaced with 
+the fingerprint of Foobar's site certificate. ABC signs this script with 
+the master certificate and gives the signed script to Foobar.com. Note 
+that the script above enables Foobar's certificate to use two privileges.</li>
+
+    <li> Foobar.com creates a website and includes the signed script 
+they received from ABC. When the site needs to access the user's browser 
+privileges, Foobar signs its scripts with the certificate it obtained in step (1).</li>
+
+    <li> When a user visits Foobar's site using ABC's browser, the 
+"enabling" script that was signed by ABC runs first. After this script 
+runs, any scripts signed by Foobar's website certificate can call<br><br>
+
+<code>netscape.security.PrivilegeManager.enablePrivilege("UniversalPreferencesRead")</code><br><br>
+followed by (for example)<br><br>
+
+<code>var homepage = navigator.preference("browser.startup.homepage")</code><br><br>
+
+which reads from the user's browser preferences. The user will not be 
+presented with a confirmation dialog in this case. In fact, this script 
+can be run without the user's knowledge.</li>
+</ol>
+
+<p>The <code>setCanEnablePrivilege</code> script need only be run once on 
+a user's browser. The privileges granted to Foobar's site certificate are 
+stored in browser preferences and will be remembered for future visits to 
+Foobar's site.</p>
+
+<h2><a name="why2cert">Why Two Certificates?</a></h2>
+
+<p>The two-certificate model allows the Mozilla distributor to decide 
+which content creators can enable privileges silently, and to revoke 
+trust from content creators if necessary. Using the companies from the 
+example above, suppose Foobar.com's website certificate is compromised, 
+or a security problem is found in their code. ABC, the Mozilla-based 
+software distributor, can distribute a script signed with their master 
+certificate which looks like this:<br><br>
+
+        <code>netscape.security.PrivilegeManager.invalidate(<br>
+	    "85:2B:C1:7D:52:63:80:9E:62:02:47:4C:B2:17:BF:29")</code></p>
+
+<p>The <code>invalidate</code> function takes a single argument, the 
+fingerprint of a certificate from which trust should be revoked. This 
+script, when run, permanently revokes all trust from Foobar.com's website 
+certificate, ensuring that scripts signed with this certificate can no 
+longer perform dangerous actions. As with 
+<code>setCanEnablePrivilege</code>, <code>invalidate</code> can only be 
+called from a script signed with the master certificate. The 
+<code>invalidate</code> function allows for a "flu shot" script to 
+render harmless a compromised certificate or a dangerous signed script. 
+If the master certificate, which is pre-installed in the browser, 
+were used to sign website scripts, correcting a compromised certificate 
+would require a browser upgrade.</p>
+
+<table cellspacing="0" cellpadding="4">
+  <tbody>
+    <tr style="background-color: #F5F5DC; color: inherit;">
+      <td><a rel="up" href="../">Security project</a></td>
+      <td>&gt;</td>
+      <td><a rel="contents" href="./">Component Security</a></td>
+      <td>&gt;</td>
+      <td>Using a Master Certificate</td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

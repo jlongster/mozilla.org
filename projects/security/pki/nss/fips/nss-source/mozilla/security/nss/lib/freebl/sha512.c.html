@@ -1,0 +1,1399 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /*
+<b><a name="2">    2</a></b>  * sha512.c - implementation of SHA256, SHA384 and SHA512
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="5">    5</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="6">    6</a></b>  *
+<b><a name="7">    7</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="8">    8</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="9">    9</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="10">   10</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="11">   11</a></b>  *
+<b><a name="12">   12</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="13">   13</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="14">   14</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="15">   15</a></b>  * License.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="18">   18</a></b>  *
+<b><a name="19">   19</a></b>  * The Initial Developer of the Original Code is
+<b><a name="20">   20</a></b>  * Netscape Communications Corporation.
+<b><a name="21">   21</a></b>  * Portions created by the Initial Developer are Copyright (C) 2002
+<b><a name="22">   22</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="23">   23</a></b>  *
+<b><a name="24">   24</a></b>  * Contributor(s):
+<b><a name="25">   25</a></b>  *
+<b><a name="26">   26</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="27">   27</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="28">   28</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="29">   29</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="30">   30</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="31">   31</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="32">   32</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="33">   33</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="34">   34</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="35">   35</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="36">   36</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="37">   37</a></b>  *
+<b><a name="38">   38</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="39">   39</a></b> /* $Id$ */
+<b><a name="40">   40</a></b> #include "prcpucfg.h"
+<b><a name="41">   41</a></b> #if defined(_X86_) || defined(SHA_NO_LONG_LONG)
+<b><a name="42">   42</a></b> #define <a href="#42">NOUNROLL512</a> 1
+<b><a name="43">   43</a></b> #undef <a href="#43">HAVE_LONG_LONG</a>
+<b><a name="44">   44</a></b> #endif
+<b><a name="45">   45</a></b> #include "prtypes.h"        /* for PRUintXX */
+<b><a name="46">   46</a></b> #include "secport.h"        /* for PORT_XXX */
+<b><a name="47">   47</a></b> #include "blapi.h"
+<b><a name="48">   48</a></b> #include "sha256.h"        /* for struct SHA256ContextStr */
+<b><a name="49">   49</a></b> 
+<b><a name="50">   50</a></b> /* ============= Common constants and defines ======================= */
+<b><a name="51">   51</a></b> 
+<b><a name="52">   52</a></b> #define <a href="#52">W</a> ctx-&gt;u.w
+<b><a name="53">   53</a></b> #define <a href="#53">B</a> ctx-&gt;u.b
+<b><a name="54">   54</a></b> #define <a href="#54">H</a> ctx-&gt;h
+<b><a name="55">   55</a></b> 
+<b><a name="56">   56</a></b> #define <a href="#56">SHR</a>(x,n) (x &gt;&gt; n)
+<b><a name="57">   57</a></b> #define <a href="#57">SHL</a>(x,n) (x &lt;&lt; n)
+<b><a name="58">   58</a></b> #define <a href="#58">Ch</a>(x,y,z)  ((x &amp; y) ^ (~x &amp; z))
+<b><a name="59">   59</a></b> #define <a href="#59">Maj</a>(x,y,z) ((x &amp; y) ^ (x &amp; z) ^ (y &amp; z))
+<b><a name="60">   60</a></b> 
+<b><a name="61">   61</a></b> /* Padding used with all flavors of SHA */
+<b><a name="62">   62</a></b> static const PRUint8 <a href="#62">pad</a>[240] = { 
+<b><a name="63">   63</a></b> 0x80,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+<b><a name="64">   64</a></b>    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+<b><a name="65">   65</a></b>    /* compiler will fill the rest in with zeros */
+<b><a name="66">   66</a></b> };
+<b><a name="67">   67</a></b> 
+<b><a name="68">   68</a></b> /* ============= SHA256 implemenmtation ================================== */
+<b><a name="69">   69</a></b> 
+<b><a name="70">   70</a></b> /* SHA-256 constants, K256. */
+<b><a name="71">   71</a></b> static const PRUint32 <a href="#71">K256</a>[64] = {
+<b><a name="72">   72</a></b>     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 
+<b><a name="73">   73</a></b>     0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+<b><a name="74">   74</a></b>     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 
+<b><a name="75">   75</a></b>     0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+<b><a name="76">   76</a></b>     0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 
+<b><a name="77">   77</a></b>     0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+<b><a name="78">   78</a></b>     0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 
+<b><a name="79">   79</a></b>     0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+<b><a name="80">   80</a></b>     0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 
+<b><a name="81">   81</a></b>     0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+<b><a name="82">   82</a></b>     0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 
+<b><a name="83">   83</a></b>     0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+<b><a name="84">   84</a></b>     0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 
+<b><a name="85">   85</a></b>     0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+<b><a name="86">   86</a></b>     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 
+<b><a name="87">   87</a></b>     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+<b><a name="88">   88</a></b> };
+<b><a name="89">   89</a></b> 
+<b><a name="90">   90</a></b> /* SHA-256 initial hash values */
+<b><a name="91">   91</a></b> static const PRUint32 <a href="#91">H256</a>[8] = {
+<b><a name="92">   92</a></b>     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 
+<b><a name="93">   93</a></b>     0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+<b><a name="94">   94</a></b> };
+<b><a name="95">   95</a></b> 
+<b><a name="96">   96</a></b> #if defined(_MSC_VER) &amp;&amp; defined(_X86_)
+<b><a name="97">   97</a></b> #ifndef <a href="../freebl/sha512.c.dep.html#FORCEINLINE">FORCEINLINE</a></a><a href="../freebl/sha_fast.h.dep.html#FORCEINLINE"><sup>[2]</sup></a></a>
+<b><a name="98">   98</a></b> #if (MSC_VER &gt;= 1200)
+<b><a name="99">   99</a></b> #define <a href="#99">FORCEINLINE</a> __forceinline
+<b><a name="100">  100</a></b> #else
+<b><a name="101">  101</a></b> #define <a href="#101">FORCEINLINE</a> __inline
+<b><a name="102">  102</a></b> #endif
+<b><a name="103">  103</a></b> #endif
+<b><a name="104">  104</a></b> #define <a href="#104">FASTCALL</a> __fastcall
+<b><a name="105">  105</a></b> 
+<b><a name="106">  106</a></b> static <a href="../freebl/sha512.c.dep.html#FORCEINLINE">FORCEINLINE</a></a><a href="../freebl/sha_fast.h.dep.html#FORCEINLINE"><sup>[2]</sup></a></a> PRUint32 <a href="../freebl/sha512.c.dep.html#FASTCALL">FASTCALL</a><a href="../freebl/sha_fast.h.dep.html#FASTCALL"><sup>[1]</sup></a> 
+<b><a name="107">  107</a></b> <a href="#107">swap4b</a>(PRUint32 dwd) 
+<b><a name="108">  108</a></b> {
+<b><a name="109">  109</a></b>     __asm {
+<b><a name="110">  110</a></b>             mov   eax,dwd
+<b><a name="111">  111</a></b>         bswap eax
+<b><a name="112">  112</a></b>     }
+<b><a name="113">  113</a></b> }
+<b><a name="114">  114</a></b> 
+<b><a name="115">  115</a></b> #define <a href="#115">SHA_HTONL</a>(x) <a href="../freebl/sha512.c.dep.html#swap4b">swap4b</a><a href="../freebl/sha_fast.h.dep.html#swap4b"><sup>[1]</sup></a></a>(x)
+<b><a name="116">  116</a></b> #define <a href="#116">BYTESWAP4</a>(x)  x = <a href="../freebl/sha512.c.dep.html#SHA_HTONL">SHA_HTONL</a></a></a><a href="../freebl/sha_fast.h.dep.html#SHA_HTONL"><sup>[3]</sup></a></a></a></a>(x)
+<b><a name="117">  117</a></b> 
+<b><a name="118">  118</a></b> #elif defined(LINUX) &amp;&amp; defined(_X86_)
+<b><a name="119">  119</a></b> #undef  <a href="#119">__OPTIMIZE__</a>
+<b><a name="120">  120</a></b> #define <a href="#120">__OPTIMIZE__</a> 1
+<b><a name="121">  121</a></b> #undef  <a href="#121">__pentium__</a>
+<b><a name="122">  122</a></b> #define <a href="#122">__pentium__</a> 1
+<b><a name="123">  123</a></b> #include &lt;byteswap.h&gt;
+<b><a name="124">  124</a></b> #define <a href="#124">SHA_HTONL</a>(x) bswap_32(x)
+<b><a name="125">  125</a></b> #define <a href="#125">BYTESWAP4</a>(x)  x = <a href="../freebl/sha512.c.dep.html#SHA_HTONL">SHA_HTONL</a></a></a><a href="../freebl/sha_fast.h.dep.html#SHA_HTONL"><sup>[3]</sup></a></a></a></a>(x)
+<b><a name="126">  126</a></b> 
+<b><a name="127">  127</a></b> #else /* neither windows nor Linux PC */
+<b><a name="128">  128</a></b> #define <a href="#128">SWAP4MASK</a>  0x00FF00FF
+<b><a name="129">  129</a></b> #define <a href="#129">SHA_HTONL</a>(x) (t1 = (x), t1 = (t1 &lt;&lt; 16) | (t1 &gt;&gt; 16), \
+<b><a name="130">  130</a></b>                       ((t1 &amp; <a href="../freebl/sha512.c.dep.html#SWAP4MASK">SWAP4MASK</a>) &lt;&lt; 8) | ((t1 &gt;&gt; 8) &amp; <a href="../freebl/sha512.c.dep.html#SWAP4MASK">SWAP4MASK</a>))
+<b><a name="131">  131</a></b> #define <a href="#131">BYTESWAP4</a>(x)  x = <a href="../freebl/sha512.c.dep.html#SHA_HTONL">SHA_HTONL</a></a></a><a href="../freebl/sha_fast.h.dep.html#SHA_HTONL"><sup>[3]</sup></a></a></a></a>(x)
+<b><a name="132">  132</a></b> #endif
+<b><a name="133">  133</a></b> 
+<b><a name="134">  134</a></b> #if defined(_MSC_VER) &amp;&amp; defined(_X86_)
+<b><a name="135">  135</a></b> #pragma intrinsic (_lrotr, _lrotl) 
+<b><a name="136">  136</a></b> #define <a href="#136">ROTR32</a>(x,n) _lrotr(x,n)
+<b><a name="137">  137</a></b> #define <a href="#137">ROTL32</a>(x,n) _lrotl(x,n)
+<b><a name="138">  138</a></b> #else
+<b><a name="139">  139</a></b> #define <a href="#139">ROTR32</a>(x,n) ((x &gt;&gt; n) | (x &lt;&lt; ((8 * sizeof x) - n)))
+<b><a name="140">  140</a></b> #define <a href="#140">ROTL32</a>(x,n) ((x &lt;&lt; n) | (x &gt;&gt; ((8 * sizeof x) - n)))
+<b><a name="141">  141</a></b> #endif
+<b><a name="142">  142</a></b> 
+<b><a name="143">  143</a></b> /* Capitol Sigma and lower case sigma functions */
+<b><a name="144">  144</a></b> #define <a href="#144">S0</a>(x) (<a href="../freebl/sha512.c.dep.html#ROTR32">ROTR32</a></a>(x, 2) ^ <a href="../freebl/sha512.c.dep.html#ROTR32">ROTR32</a></a>(x,13) ^ <a href="../freebl/sha512.c.dep.html#ROTR32">ROTR32</a></a>(x,22))
+<b><a name="145">  145</a></b> #define <a href="#145">S1</a>(x) (<a href="../freebl/sha512.c.dep.html#ROTR32">ROTR32</a></a>(x, 6) ^ <a href="../freebl/sha512.c.dep.html#ROTR32">ROTR32</a></a>(x,11) ^ <a href="../freebl/sha512.c.dep.html#ROTR32">ROTR32</a></a>(x,25))
+<b><a name="146">  146</a></b> #define <a href="#146">s0</a>(x) (t1 = x, <a href="../freebl/sha512.c.dep.html#ROTR32">ROTR32</a></a>(t1, 7) ^ <a href="../freebl/sha512.c.dep.html#ROTR32">ROTR32</a></a>(t1,18) ^ <a href="../freebl/sha512.c.dep.html#SHR">SHR</a>(t1, 3))
+<b><a name="147">  147</a></b> #define <a href="#147">s1</a>(x) (t2 = x, <a href="../freebl/sha512.c.dep.html#ROTR32">ROTR32</a></a>(t2,17) ^ <a href="../freebl/sha512.c.dep.html#ROTR32">ROTR32</a></a>(t2,19) ^ <a href="../freebl/sha512.c.dep.html#SHR">SHR</a>(t2,10))
+<b><a name="148">  148</a></b> 
+<b><a name="149">  149</a></b> <a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *
+<b><a name="150">  150</a></b> <a href="#150">SHA256_NewContext</a>(void)
+<b><a name="151">  151</a></b> {
+<b><a name="152">  152</a></b>     <a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *ctx = <a href="../util/secport.h.dep.html#PORT_New">PORT_New</a>(<a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a>);
+<b><a name="153">  153</a></b>     return ctx;
+<b><a name="154">  154</a></b> }
+<b><a name="155">  155</a></b> 
+<b><a name="156">  156</a></b> void 
+<b><a name="157">  157</a></b> <a href="#157">SHA256_DestroyContext</a>(<a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *ctx, PRBool freeit)
+<b><a name="158">  158</a></b> {
+<b><a name="159">  159</a></b>     if (freeit) {
+<b><a name="160">  160</a></b>         <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(ctx, sizeof *ctx);
+<b><a name="161">  161</a></b>     }
+<b><a name="162">  162</a></b> }
+<b><a name="163">  163</a></b> 
+<b><a name="164">  164</a></b> void 
+<b><a name="165">  165</a></b> <a href="#165">SHA256_Begin</a>(<a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *ctx)
+<b><a name="166">  166</a></b> {
+<b><a name="167">  167</a></b>     memset(ctx, 0, sizeof *ctx);
+<b><a name="168">  168</a></b>     memcpy(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, <a href="../freebl/sha512.c.dep.html#<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>256"><a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>256</a>, sizeof <a href="../freebl/sha512.c.dep.html#<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>256"><a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>256</a>);
+<b><a name="169">  169</a></b> }
+<b><a name="170">  170</a></b> 
+<b><a name="171">  171</a></b> static void
+<b><a name="172">  172</a></b> <a href="#172">SHA256_Compress</a>(<a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *ctx)
+<b><a name="173">  173</a></b> {
+<b><a name="174">  174</a></b>   {
+<b><a name="175">  175</a></b>     register PRUint32 t1, t2;
+<b><a name="176">  176</a></b> 
+<b><a name="177">  177</a></b> #if defined(IS_LITTLE_ENDIAN)
+<b><a name="178">  178</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[0]);
+<b><a name="179">  179</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[1]);
+<b><a name="180">  180</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[2]);
+<b><a name="181">  181</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[3]);
+<b><a name="182">  182</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[4]);
+<b><a name="183">  183</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[5]);
+<b><a name="184">  184</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[6]);
+<b><a name="185">  185</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[7]);
+<b><a name="186">  186</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[8]);
+<b><a name="187">  187</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[9]);
+<b><a name="188">  188</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[10]);
+<b><a name="189">  189</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[11]);
+<b><a name="190">  190</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[12]);
+<b><a name="191">  191</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[13]);
+<b><a name="192">  192</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[14]);
+<b><a name="193">  193</a></b>     BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP4(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[15]);
+<b><a name="194">  194</a></b> #endif
+<b><a name="195">  195</a></b> 
+<b><a name="196">  196</a></b> #define <a href="#196">INIT<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a></a>(t) <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t] = (<a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-2]) + <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-7] + <a href="../freebl/sha512.c.dep.html#s0">s0</a></a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-15]) + <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-16])
+<b><a name="197">  197</a></b> 
+<b><a name="198">  198</a></b>     /* prepare the "message schedule"   */
+<b><a name="199">  199</a></b> #ifdef NOUNROLL256
+<b><a name="200">  200</a></b>     {
+<b><a name="201">  201</a></b>         int t;
+<b><a name="202">  202</a></b>         for (t = 16; t &lt; 64; ++t) {
+<b><a name="203">  203</a></b>             <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(t);
+<b><a name="204">  204</a></b>         }
+<b><a name="205">  205</a></b>     }
+<b><a name="206">  206</a></b> #else
+<b><a name="207">  207</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(16);
+<b><a name="208">  208</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(17);
+<b><a name="209">  209</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(18);
+<b><a name="210">  210</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(19);
+<b><a name="211">  211</a></b> 
+<b><a name="212">  212</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(20);
+<b><a name="213">  213</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(21);
+<b><a name="214">  214</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(22);
+<b><a name="215">  215</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(23);
+<b><a name="216">  216</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(24);
+<b><a name="217">  217</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(25);
+<b><a name="218">  218</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(26);
+<b><a name="219">  219</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(27);
+<b><a name="220">  220</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(28);
+<b><a name="221">  221</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(29);
+<b><a name="222">  222</a></b> 
+<b><a name="223">  223</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(30);
+<b><a name="224">  224</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(31);
+<b><a name="225">  225</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(32);
+<b><a name="226">  226</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(33);
+<b><a name="227">  227</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(34);
+<b><a name="228">  228</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(35);
+<b><a name="229">  229</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(36);
+<b><a name="230">  230</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(37);
+<b><a name="231">  231</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(38);
+<b><a name="232">  232</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(39);
+<b><a name="233">  233</a></b> 
+<b><a name="234">  234</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(40);
+<b><a name="235">  235</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(41);
+<b><a name="236">  236</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(42);
+<b><a name="237">  237</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(43);
+<b><a name="238">  238</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(44);
+<b><a name="239">  239</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(45);
+<b><a name="240">  240</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(46);
+<b><a name="241">  241</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(47);
+<b><a name="242">  242</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(48);
+<b><a name="243">  243</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(49);
+<b><a name="244">  244</a></b> 
+<b><a name="245">  245</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(50);
+<b><a name="246">  246</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(51);
+<b><a name="247">  247</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(52);
+<b><a name="248">  248</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(53);
+<b><a name="249">  249</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(54);
+<b><a name="250">  250</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(55);
+<b><a name="251">  251</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(56);
+<b><a name="252">  252</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(57);
+<b><a name="253">  253</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(58);
+<b><a name="254">  254</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(59);
+<b><a name="255">  255</a></b> 
+<b><a name="256">  256</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(60);
+<b><a name="257">  257</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(61);
+<b><a name="258">  258</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(62);
+<b><a name="259">  259</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(63);
+<b><a name="260">  260</a></b> 
+<b><a name="261">  261</a></b> #endif
+<b><a name="262">  262</a></b> #undef <a href="#262">INITW</a>
+<b><a name="263">  263</a></b>   }
+<b><a name="264">  264</a></b>   {
+<b><a name="265">  265</a></b>     PRUint32 a, b, c, d, e, f, g, h;
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b>     a = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[0];
+<b><a name="268">  268</a></b>     b = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[1];
+<b><a name="269">  269</a></b>     c = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2];
+<b><a name="270">  270</a></b>     d = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[3];
+<b><a name="271">  271</a></b>     e = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[4];
+<b><a name="272">  272</a></b>     f = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[5];
+<b><a name="273">  273</a></b>     g = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[6];
+<b><a name="274">  274</a></b>     h = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[7];
+<b><a name="275">  275</a></b> 
+<b><a name="276">  276</a></b> #define <a href="#276">ROUND</a>(n,a,b,c,d,e,f,g,h) \
+<b><a name="277">  277</a></b>     h += <a href="../freebl/sha512.c.dep.html#S1">S1</a></a></a>(e) + <a href="../freebl/sha512.c.dep.html#Ch">Ch</a>(e,f,g) + <a href="../freebl/sha512.c.dep.html#K256">K256</a>[n] + <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[n]; \
+<b><a name="278">  278</a></b>     d += h; \
+<b><a name="279">  279</a></b>     h += <a href="../freebl/sha512.c.dep.html#S0">S0</a></a></a>(a) + <a href="../freebl/sha512.c.dep.html#Maj">Maj</a>(a,b,c); 
+<b><a name="280">  280</a></b> 
+<b><a name="281">  281</a></b> #ifdef NOUNROLL256
+<b><a name="282">  282</a></b>     {
+<b><a name="283">  283</a></b>         int t;
+<b><a name="284">  284</a></b>         for (t = 0; t &lt; 64; t+= 8) {
+<b><a name="285">  285</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+0,a,b,c,d,e,f,g,h)
+<b><a name="286">  286</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+1,h,a,b,c,d,e,f,g)
+<b><a name="287">  287</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+2,g,h,a,b,c,d,e,f)
+<b><a name="288">  288</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+3,f,g,h,a,b,c,d,e)
+<b><a name="289">  289</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+4,e,f,g,h,a,b,c,d)
+<b><a name="290">  290</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+5,d,e,f,g,h,a,b,c)
+<b><a name="291">  291</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+6,c,d,e,f,g,h,a,b)
+<b><a name="292">  292</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+7,b,c,d,e,f,g,h,a)
+<b><a name="293">  293</a></b>         }
+<b><a name="294">  294</a></b>     }
+<b><a name="295">  295</a></b> #else
+<b><a name="296">  296</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 0,a,b,c,d,e,f,g,h)
+<b><a name="297">  297</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 1,h,a,b,c,d,e,f,g)
+<b><a name="298">  298</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 2,g,h,a,b,c,d,e,f)
+<b><a name="299">  299</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 3,f,g,h,a,b,c,d,e)
+<b><a name="300">  300</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 4,e,f,g,h,a,b,c,d)
+<b><a name="301">  301</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 5,d,e,f,g,h,a,b,c)
+<b><a name="302">  302</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 6,c,d,e,f,g,h,a,b)
+<b><a name="303">  303</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 7,b,c,d,e,f,g,h,a)
+<b><a name="304">  304</a></b> 
+<b><a name="305">  305</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 8,a,b,c,d,e,f,g,h)
+<b><a name="306">  306</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 9,h,a,b,c,d,e,f,g)
+<b><a name="307">  307</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(10,g,h,a,b,c,d,e,f)
+<b><a name="308">  308</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(11,f,g,h,a,b,c,d,e)
+<b><a name="309">  309</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(12,e,f,g,h,a,b,c,d)
+<b><a name="310">  310</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(13,d,e,f,g,h,a,b,c)
+<b><a name="311">  311</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(14,c,d,e,f,g,h,a,b)
+<b><a name="312">  312</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(15,b,c,d,e,f,g,h,a)
+<b><a name="313">  313</a></b> 
+<b><a name="314">  314</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(16,a,b,c,d,e,f,g,h)
+<b><a name="315">  315</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(17,h,a,b,c,d,e,f,g)
+<b><a name="316">  316</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(18,g,h,a,b,c,d,e,f)
+<b><a name="317">  317</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(19,f,g,h,a,b,c,d,e)
+<b><a name="318">  318</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(20,e,f,g,h,a,b,c,d)
+<b><a name="319">  319</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(21,d,e,f,g,h,a,b,c)
+<b><a name="320">  320</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(22,c,d,e,f,g,h,a,b)
+<b><a name="321">  321</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(23,b,c,d,e,f,g,h,a)
+<b><a name="322">  322</a></b> 
+<b><a name="323">  323</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(24,a,b,c,d,e,f,g,h)
+<b><a name="324">  324</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(25,h,a,b,c,d,e,f,g)
+<b><a name="325">  325</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(26,g,h,a,b,c,d,e,f)
+<b><a name="326">  326</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(27,f,g,h,a,b,c,d,e)
+<b><a name="327">  327</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(28,e,f,g,h,a,b,c,d)
+<b><a name="328">  328</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(29,d,e,f,g,h,a,b,c)
+<b><a name="329">  329</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(30,c,d,e,f,g,h,a,b)
+<b><a name="330">  330</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(31,b,c,d,e,f,g,h,a)
+<b><a name="331">  331</a></b> 
+<b><a name="332">  332</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(32,a,b,c,d,e,f,g,h)
+<b><a name="333">  333</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(33,h,a,b,c,d,e,f,g)
+<b><a name="334">  334</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(34,g,h,a,b,c,d,e,f)
+<b><a name="335">  335</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(35,f,g,h,a,b,c,d,e)
+<b><a name="336">  336</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(36,e,f,g,h,a,b,c,d)
+<b><a name="337">  337</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(37,d,e,f,g,h,a,b,c)
+<b><a name="338">  338</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(38,c,d,e,f,g,h,a,b)
+<b><a name="339">  339</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(39,b,c,d,e,f,g,h,a)
+<b><a name="340">  340</a></b> 
+<b><a name="341">  341</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(40,a,b,c,d,e,f,g,h)
+<b><a name="342">  342</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(41,h,a,b,c,d,e,f,g)
+<b><a name="343">  343</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(42,g,h,a,b,c,d,e,f)
+<b><a name="344">  344</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(43,f,g,h,a,b,c,d,e)
+<b><a name="345">  345</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(44,e,f,g,h,a,b,c,d)
+<b><a name="346">  346</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(45,d,e,f,g,h,a,b,c)
+<b><a name="347">  347</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(46,c,d,e,f,g,h,a,b)
+<b><a name="348">  348</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(47,b,c,d,e,f,g,h,a)
+<b><a name="349">  349</a></b> 
+<b><a name="350">  350</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(48,a,b,c,d,e,f,g,h)
+<b><a name="351">  351</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(49,h,a,b,c,d,e,f,g)
+<b><a name="352">  352</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(50,g,h,a,b,c,d,e,f)
+<b><a name="353">  353</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(51,f,g,h,a,b,c,d,e)
+<b><a name="354">  354</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(52,e,f,g,h,a,b,c,d)
+<b><a name="355">  355</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(53,d,e,f,g,h,a,b,c)
+<b><a name="356">  356</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(54,c,d,e,f,g,h,a,b)
+<b><a name="357">  357</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(55,b,c,d,e,f,g,h,a)
+<b><a name="358">  358</a></b> 
+<b><a name="359">  359</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(56,a,b,c,d,e,f,g,h)
+<b><a name="360">  360</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(57,h,a,b,c,d,e,f,g)
+<b><a name="361">  361</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(58,g,h,a,b,c,d,e,f)
+<b><a name="362">  362</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(59,f,g,h,a,b,c,d,e)
+<b><a name="363">  363</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(60,e,f,g,h,a,b,c,d)
+<b><a name="364">  364</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(61,d,e,f,g,h,a,b,c)
+<b><a name="365">  365</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(62,c,d,e,f,g,h,a,b)
+<b><a name="366">  366</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(63,b,c,d,e,f,g,h,a)
+<b><a name="367">  367</a></b> #endif
+<b><a name="368">  368</a></b> 
+<b><a name="369">  369</a></b>     <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[0] += a;
+<b><a name="370">  370</a></b>     <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[1] += b;
+<b><a name="371">  371</a></b>     <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2] += c;
+<b><a name="372">  372</a></b>     <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[3] += d;
+<b><a name="373">  373</a></b>     <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[4] += e;
+<b><a name="374">  374</a></b>     <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[5] += f;
+<b><a name="375">  375</a></b>     <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[6] += g;
+<b><a name="376">  376</a></b>     <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[7] += h;
+<b><a name="377">  377</a></b>   }
+<b><a name="378">  378</a></b> #undef <a href="#378">ROUND</a>
+<b><a name="379">  379</a></b> }
+<b><a name="380">  380</a></b> 
+<b><a name="381">  381</a></b> #undef <a href="#381">s0</a>
+<b><a name="382">  382</a></b> #undef <a href="#382">s1</a>
+<b><a name="383">  383</a></b> #undef <a href="#383">S0</a>
+<b><a name="384">  384</a></b> #undef <a href="#384">S1</a>
+<b><a name="385">  385</a></b> 
+<b><a name="386">  386</a></b> void 
+<b><a name="387">  387</a></b> <a href="#387">SHA256_Update</a>(<a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *ctx, const unsigned char *input,
+<b><a name="388">  388</a></b>                     unsigned int inputLen)
+<b><a name="389">  389</a></b> {
+<b><a name="390">  390</a></b>     unsigned int <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a> = ctx-&gt;sizeLo &amp; 0x3f;
+<b><a name="391">  391</a></b>     if (!inputLen)
+<b><a name="392">  392</a></b>             return;
+<b><a name="393">  393</a></b> 
+<b><a name="394">  394</a></b>     /* Add inputLen into the count of bytes processed, before processing */
+<b><a name="395">  395</a></b>     if ((ctx-&gt;sizeLo += inputLen) &lt; inputLen)
+<b><a name="396">  396</a></b>             ctx-&gt;sizeHi++;
+<b><a name="397">  397</a></b> 
+<b><a name="398">  398</a></b>     /* if data already in buffer, attemp to fill rest of buffer */
+<b><a name="399">  399</a></b>     if (<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>) {
+<b><a name="400">  400</a></b>             unsigned int todo = <a href="../freebl/blapit.h.dep.html#SHA256_BLOCK_LENGTH">SHA256_BLOCK_LENGTH</a> - <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>;
+<b><a name="401">  401</a></b>         if (inputLen &lt; todo)
+<b><a name="402">  402</a></b>             todo = inputLen;
+<b><a name="403">  403</a></b>         memcpy(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a> + in<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>uf, input, todo);
+<b><a name="404">  404</a></b>         input    += todo;
+<b><a name="405">  405</a></b>         inputLen -= todo;
+<b><a name="406">  406</a></b>         if (<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a> + todo == <a href="../freebl/blapit.h.dep.html#SHA256_BLOCK_LENGTH">SHA256_BLOCK_LENGTH</a>)
+<b><a name="407">  407</a></b>             <a href="../freebl/sha512.c.dep.html#SHA256_Compress">SHA256_Compress</a>(ctx);
+<b><a name="408">  408</a></b>     }
+<b><a name="409">  409</a></b> 
+<b><a name="410">  410</a></b>     /* if enough data to fill one or more whole buffers, process them. */
+<b><a name="411">  411</a></b>     while (inputLen &gt;= <a href="../freebl/blapit.h.dep.html#SHA256_BLOCK_LENGTH">SHA256_BLOCK_LENGTH</a>) {
+<b><a name="412">  412</a></b>             memcpy(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, input, SHA256_<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>LOCK_LENGTH);
+<b><a name="413">  413</a></b>         input    += <a href="../freebl/blapit.h.dep.html#SHA256_BLOCK_LENGTH">SHA256_BLOCK_LENGTH</a>;
+<b><a name="414">  414</a></b>         inputLen -= <a href="../freebl/blapit.h.dep.html#SHA256_BLOCK_LENGTH">SHA256_BLOCK_LENGTH</a>;
+<b><a name="415">  415</a></b>         <a href="../freebl/sha512.c.dep.html#SHA256_Compress">SHA256_Compress</a>(ctx);
+<b><a name="416">  416</a></b>     }
+<b><a name="417">  417</a></b>     /* if data left over, fill it into buffer */
+<b><a name="418">  418</a></b>     if (inputLen) 
+<b><a name="419">  419</a></b>             memcpy(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, input, inputLen);
+<b><a name="420">  420</a></b> }
+<b><a name="421">  421</a></b> 
+<b><a name="422">  422</a></b> void 
+<b><a name="423">  423</a></b> <a href="#423">SHA256_End</a>(<a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *ctx, unsigned char *digest,
+<b><a name="424">  424</a></b>            unsigned int *digestLen, unsigned int maxDigestLen)
+<b><a name="425">  425</a></b> {
+<b><a name="426">  426</a></b>     unsigned int <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a> = ctx-&gt;sizeLo &amp; 0x3f;
+<b><a name="427">  427</a></b>     unsigned int padLen = (<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a> &lt; 56) ? (56 - <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>) : (56 + 64 - <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>);
+<b><a name="428">  428</a></b>     PRUint32 hi, lo;
+<b><a name="429">  429</a></b> #ifdef <a href="../freebl/sha512.c.dep.html#SWAP4MASK">SWAP4MASK</a>
+<b><a name="430">  430</a></b>     PRUint32 t1;
+<b><a name="431">  431</a></b> #endif
+<b><a name="432">  432</a></b> 
+<b><a name="433">  433</a></b>     hi = (ctx-&gt;sizeHi &lt;&lt; 3) | (ctx-&gt;sizeLo &gt;&gt; 29);
+<b><a name="434">  434</a></b>     lo = (ctx-&gt;sizeLo &lt;&lt; 3);
+<b><a name="435">  435</a></b> 
+<b><a name="436">  436</a></b>     <a href="../freebl/sha512.c.dep.html#SHA256_Update">SHA256_Update</a>(ctx, <a href="../freebl/sha512.c.dep.html#pad">pad</a>, <a href="../freebl/sha512.c.dep.html#pad">pad</a>Len);
+<b><a name="437">  437</a></b> 
+<b><a name="438">  438</a></b> #if defined(IS_LITTLE_ENDIAN)
+<b><a name="439">  439</a></b>     <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[14] = <a href="../freebl/sha512.c.dep.html#SHA_HTONL">SHA_HTONL</a></a></a><a href="../freebl/sha_fast.h.dep.html#SHA_HTONL"><sup>[3]</sup></a></a></a></a>(hi);
+<b><a name="440">  440</a></b>     <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[15] = <a href="../freebl/sha512.c.dep.html#SHA_HTONL">SHA_HTONL</a></a></a><a href="../freebl/sha_fast.h.dep.html#SHA_HTONL"><sup>[3]</sup></a></a></a></a>(lo);
+<b><a name="441">  441</a></b> #else
+<b><a name="442">  442</a></b>     <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[14] = hi;
+<b><a name="443">  443</a></b>     <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[15] = lo;
+<b><a name="444">  444</a></b> #endif
+<b><a name="445">  445</a></b>     <a href="../freebl/sha512.c.dep.html#SHA256_Compress">SHA256_Compress</a>(ctx);
+<b><a name="446">  446</a></b> 
+<b><a name="447">  447</a></b>     /* now output the answer */
+<b><a name="448">  448</a></b> #if defined(IS_LITTLE_ENDIAN)
+<b><a name="449">  449</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[0]);
+<b><a name="450">  450</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[1]);
+<b><a name="451">  451</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2]);
+<b><a name="452">  452</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[3]);
+<b><a name="453">  453</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[4]);
+<b><a name="454">  454</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[5]);
+<b><a name="455">  455</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[6]);
+<b><a name="456">  456</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[7]);
+<b><a name="457">  457</a></b> #endif
+<b><a name="458">  458</a></b>     padLen = PR_MIN(<a href="../freebl/blapit.h.dep.html#SHA256_LENGTH">SHA256_LENGTH</a>, maxDigestLen);
+<b><a name="459">  459</a></b>     memcpy(digest, <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, padLen);
+<b><a name="460">  460</a></b>     if (digestLen)
+<b><a name="461">  461</a></b>         *digestLen = padLen;
+<b><a name="462">  462</a></b> }
+<b><a name="463">  463</a></b> 
+<b><a name="464">  464</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="465">  465</a></b> <a href="#465">SHA256_HashBuf</a>(unsigned char *dest, const unsigned char *src, 
+<b><a name="466">  466</a></b>                uint32 src_length)
+<b><a name="467">  467</a></b> {
+<b><a name="468">  468</a></b>     <a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> ctx;
+<b><a name="469">  469</a></b>     unsigned int outLen;
+<b><a name="470">  470</a></b> 
+<b><a name="471">  471</a></b>     <a href="../freebl/sha512.c.dep.html#SHA256_Begin">SHA256_Begin</a>(&amp;ctx);
+<b><a name="472">  472</a></b>     <a href="../freebl/sha512.c.dep.html#SHA256_Update">SHA256_Update</a>(&amp;ctx, src, src_length);
+<b><a name="473">  473</a></b>     <a href="../freebl/sha512.c.dep.html#SHA256_End">SHA256_End</a>(&amp;ctx, dest, &amp;outLen, <a href="../freebl/blapit.h.dep.html#SHA256_LENGTH">SHA256_LENGTH</a>);
+<b><a name="474">  474</a></b> 
+<b><a name="475">  475</a></b>     return SECSuccess;
+<b><a name="476">  476</a></b> }
+<b><a name="477">  477</a></b> 
+<b><a name="478">  478</a></b> 
+<b><a name="479">  479</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="480">  480</a></b> <a href="#480">SHA256_Hash</a>(unsigned char *dest, const char *src)
+<b><a name="481">  481</a></b> {
+<b><a name="482">  482</a></b>     return <a href="../freebl/sha512.c.dep.html#SHA256_HashBuf">SHA256_HashBuf</a>(dest, (const unsigned char *)src, <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a>(src));
+<b><a name="483">  483</a></b> }
+<b><a name="484">  484</a></b> 
+<b><a name="485">  485</a></b> 
+<b><a name="486">  486</a></b> void <a href="#486">SHA256_TraceState</a>(<a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *ctx) { }
+<b><a name="487">  487</a></b> 
+<b><a name="488">  488</a></b> unsigned int 
+<b><a name="489">  489</a></b> <a href="#489">SHA256_FlattenSize</a>(<a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *ctx)
+<b><a name="490">  490</a></b> {
+<b><a name="491">  491</a></b>     return sizeof *ctx;
+<b><a name="492">  492</a></b> }
+<b><a name="493">  493</a></b> 
+<b><a name="494">  494</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="495">  495</a></b> <a href="#495">SHA256_Flatten</a>(<a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *ctx,unsigned char *space)
+<b><a name="496">  496</a></b> {
+<b><a name="497">  497</a></b>     <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(space, ctx, sizeof *ctx);
+<b><a name="498">  498</a></b>     return SECSuccess;
+<b><a name="499">  499</a></b> }
+<b><a name="500">  500</a></b> 
+<b><a name="501">  501</a></b> <a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> * 
+<b><a name="502">  502</a></b> <a href="#502">SHA256_Resurrect</a>(unsigned char *space, void *arg)
+<b><a name="503">  503</a></b> {
+<b><a name="504">  504</a></b>     <a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *ctx = <a href="../freebl/sha512.c.dep.html#SHA256_NewContext">SHA256_NewContext</a>();
+<b><a name="505">  505</a></b>     if (ctx) 
+<b><a name="506">  506</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(ctx, space, sizeof *ctx);
+<b><a name="507">  507</a></b>     return ctx;
+<b><a name="508">  508</a></b> }
+<b><a name="509">  509</a></b> 
+<b><a name="510">  510</a></b> void <a href="#510">SHA256_Clone</a>(<a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *dest, <a href="../freebl/blapit.h.dep.html#SHA256Context">SHA256Context</a> *src) 
+<b><a name="511">  511</a></b> {
+<b><a name="512">  512</a></b>     memcpy(dest, src, sizeof *dest);
+<b><a name="513">  513</a></b> }
+<b><a name="514">  514</a></b> 
+<b><a name="515">  515</a></b> 
+<b><a name="516">  516</a></b> /* ======= SHA512 and SHA384 common constants and defines ================= */
+<b><a name="517">  517</a></b> 
+<b><a name="518">  518</a></b> /* common #defines for SHA512 and SHA384 */
+<b><a name="519">  519</a></b> #if defined(<a href="../freebl/sha512.c.dep.html#HAVE_LONG_LONG">HAVE_LONG_LONG</a>)
+<b><a name="520">  520</a></b> #define <a href="#520">ROTR64</a>(x,n) ((x &gt;&gt; n) | (x &lt;&lt; (64 - n)))
+<b><a name="521">  521</a></b> #define <a href="#521">ROTL64</a>(x,n) ((x &lt;&lt; n) | (x &gt;&gt; (64 - n)))
+<b><a name="522">  522</a></b> 
+<b><a name="523">  523</a></b> #define <a href="#523">S0</a>(x) (<a href="../freebl/sha512.c.dep.html#ROTR64">ROTR64</a>(x,28) ^ <a href="../freebl/sha512.c.dep.html#ROTR64">ROTR64</a>(x,34) ^ <a href="../freebl/sha512.c.dep.html#ROTR64">ROTR64</a>(x,39))
+<b><a name="524">  524</a></b> #define <a href="#524">S1</a>(x) (<a href="../freebl/sha512.c.dep.html#ROTR64">ROTR64</a>(x,14) ^ <a href="../freebl/sha512.c.dep.html#ROTR64">ROTR64</a>(x,18) ^ <a href="../freebl/sha512.c.dep.html#ROTR64">ROTR64</a>(x,41))
+<b><a name="525">  525</a></b> #define <a href="#525">s0</a>(x) (t1 = x, <a href="../freebl/sha512.c.dep.html#ROTR64">ROTR64</a>(t1, 1) ^ <a href="../freebl/sha512.c.dep.html#ROTR64">ROTR64</a>(t1, 8) ^ <a href="../freebl/sha512.c.dep.html#SHR">SHR</a>(t1,7))
+<b><a name="526">  526</a></b> #define <a href="#526">s1</a>(x) (t2 = x, <a href="../freebl/sha512.c.dep.html#ROTR64">ROTR64</a>(t2,19) ^ <a href="../freebl/sha512.c.dep.html#ROTR64">ROTR64</a>(t2,61) ^ <a href="../freebl/sha512.c.dep.html#SHR">SHR</a>(t2,6))
+<b><a name="527">  527</a></b> 
+<b><a name="528">  528</a></b> #if PR_BYTES_PER_LONG == 8
+<b><a name="529">  529</a></b> #define <a href="#529">ULLC</a>(hi,lo) 0x ## hi ## lo ## UL
+<b><a name="530">  530</a></b> #elif defined(_MSC_VER)
+<b><a name="531">  531</a></b> #define <a href="#531">ULLC</a>(hi,lo) 0x ## hi ## lo ## ui64
+<b><a name="532">  532</a></b> #else
+<b><a name="533">  533</a></b> #define <a href="#533">ULLC</a>(hi,lo) 0x ## hi ## lo ## ULL
+<b><a name="534">  534</a></b> #endif
+<b><a name="535">  535</a></b> 
+<b><a name="536">  536</a></b> #define <a href="#536">SHA_MASK16</a> <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(0000FFFF,0000FFFF)
+<b><a name="537">  537</a></b> #define <a href="#537">SHA_MASK8</a>  <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(00FF00FF,00FF00FF)
+<b><a name="538">  538</a></b> #define <a href="#538">SHA_HTONLL</a>(x) (t1 = x, \
+<b><a name="539">  539</a></b>   t1 = ((t1 &amp; <a href="../freebl/sha512.c.dep.html#SHA_MASK8">SHA_MASK8</a> ) &lt;&lt;  8) | ((t1 &gt;&gt;  8) &amp; <a href="../freebl/sha512.c.dep.html#SHA_MASK8">SHA_MASK8</a> ), \
+<b><a name="540">  540</a></b>   t1 = ((t1 &amp; <a href="../freebl/sha512.c.dep.html#SHA_MASK16">SHA_MASK16</a>) &lt;&lt; 16) | ((t1 &gt;&gt; 16) &amp; <a href="../freebl/sha512.c.dep.html#SHA_MASK16">SHA_MASK16</a>), \
+<b><a name="541">  541</a></b>   (t1 &gt;&gt; 32) | (t1 &lt;&lt; 32))
+<b><a name="542">  542</a></b> #define <a href="#542">BYTESWAP8</a>(x)  x = <a href="../freebl/sha512.c.dep.html#SHA_HTONLL">SHA_HTONLL</a></a>(x)
+<b><a name="543">  543</a></b> 
+<b><a name="544">  544</a></b> #else /* no long long */
+<b><a name="545">  545</a></b> 
+<b><a name="546">  546</a></b> #if defined(IS_LITTLE_ENDIAN)
+<b><a name="547">  547</a></b> #define <a href="#547">ULLC</a>(hi,lo) { 0x ## lo ## U, 0x ## hi ## U }
+<b><a name="548">  548</a></b> #else
+<b><a name="549">  549</a></b> #define <a href="#549">ULLC</a>(hi,lo) { 0x ## hi ## U, 0x ## lo ## U }
+<b><a name="550">  550</a></b> #endif
+<b><a name="551">  551</a></b> 
+<b><a name="552">  552</a></b> #define <a href="#552">SHA_HTONLL</a>(x) ( <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(x.lo), <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(x.hi), \
+<b><a name="553">  553</a></b>    x.hi ^= x.lo ^= x.hi ^= x.lo, x)
+<b><a name="554">  554</a></b> #define <a href="#554">BYTESWAP8</a>(x)  do { PRUint32 <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>; <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(x.lo); <a href="../freebl/sha512.c.dep.html#BYTESWAP4">BYTESWAP4</a></a></a>(x.hi); \
+<b><a name="555">  555</a></b>    <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = x.lo; x.lo = x.hi; x.hi = <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>; } while (0)
+<b><a name="556">  556</a></b> #endif
+<b><a name="557">  557</a></b> 
+<b><a name="558">  558</a></b> /* SHA-384 and SHA-512 constants, K512. */
+<b><a name="559">  559</a></b> static const PRUint64 <a href="#559">K512</a>[80] = {
+<b><a name="560">  560</a></b> #if PR_BYTES_PER_LONG == 8
+<b><a name="561">  561</a></b>      0x428a2f98d728ae22UL ,  0x7137449123ef65cdUL , 
+<b><a name="562">  562</a></b>      0xb5c0fbcfec4d3b2fUL ,  0xe9b5dba58189dbbcUL ,
+<b><a name="563">  563</a></b>      0x3956c25bf348b538UL ,  0x59f111f1b605d019UL , 
+<b><a name="564">  564</a></b>      0x923f82a4af194f9bUL ,  0xab1c5ed5da6d8118UL ,
+<b><a name="565">  565</a></b>      0xd807aa98a3030242UL ,  0x12835b0145706fbeUL , 
+<b><a name="566">  566</a></b>      0x243185be4ee4b28cUL ,  0x550c7dc3d5ffb4e2UL ,
+<b><a name="567">  567</a></b>      0x72be5d74f27b896fUL ,  0x80deb1fe3b1696b1UL , 
+<b><a name="568">  568</a></b>      0x9bdc06a725c71235UL ,  0xc19bf174cf692694UL ,
+<b><a name="569">  569</a></b>      0xe49b69c19ef14ad2UL ,  0xefbe4786384f25e3UL , 
+<b><a name="570">  570</a></b>      0x0fc19dc68b8cd5b5UL ,  0x240ca1cc77ac9c65UL ,
+<b><a name="571">  571</a></b>      0x2de92c6f592b0275UL ,  0x4a7484aa6ea6e483UL , 
+<b><a name="572">  572</a></b>      0x5cb0a9dcbd41fbd4UL ,  0x76f988da831153b5UL ,
+<b><a name="573">  573</a></b>      0x983e5152ee66dfabUL ,  0xa831c66d2db43210UL , 
+<b><a name="574">  574</a></b>      0xb00327c898fb213fUL ,  0xbf597fc7beef0ee4UL ,
+<b><a name="575">  575</a></b>      0xc6e00bf33da88fc2UL ,  0xd5a79147930aa725UL , 
+<b><a name="576">  576</a></b>      0x06ca6351e003826fUL ,  0x142929670a0e6e70UL ,
+<b><a name="577">  577</a></b>      0x27b70a8546d22ffcUL ,  0x2e1b21385c26c926UL , 
+<b><a name="578">  578</a></b>      0x4d2c6dfc5ac42aedUL ,  0x53380d139d95b3dfUL ,
+<b><a name="579">  579</a></b>      0x650a73548baf63deUL ,  0x766a0abb3c77b2a8UL , 
+<b><a name="580">  580</a></b>      0x81c2c92e47edaee6UL ,  0x92722c851482353bUL ,
+<b><a name="581">  581</a></b>      0xa2bfe8a14cf10364UL ,  0xa81a664bbc423001UL , 
+<b><a name="582">  582</a></b>      0xc24b8b70d0f89791UL ,  0xc76c51a30654be30UL ,
+<b><a name="583">  583</a></b>      0xd192e819d6ef5218UL ,  0xd69906245565a910UL , 
+<b><a name="584">  584</a></b>      0xf40e35855771202aUL ,  0x106aa07032bbd1b8UL ,
+<b><a name="585">  585</a></b>      0x19a4c116b8d2d0c8UL ,  0x1e376c085141ab53UL , 
+<b><a name="586">  586</a></b>      0x2748774cdf8eeb99UL ,  0x34b0bcb5e19b48a8UL ,
+<b><a name="587">  587</a></b>      0x391c0cb3c5c95a63UL ,  0x4ed8aa4ae3418acbUL , 
+<b><a name="588">  588</a></b>      0x5b9cca4f7763e373UL ,  0x682e6ff3d6b2b8a3UL ,
+<b><a name="589">  589</a></b>      0x748f82ee5defb2fcUL ,  0x78a5636f43172f60UL , 
+<b><a name="590">  590</a></b>      0x84c87814a1f0ab72UL ,  0x8cc702081a6439ecUL ,
+<b><a name="591">  591</a></b>      0x90befffa23631e28UL ,  0xa4506cebde82bde9UL , 
+<b><a name="592">  592</a></b>      0xbef9a3f7b2c67915UL ,  0xc67178f2e372532bUL ,
+<b><a name="593">  593</a></b>      0xca273eceea26619cUL ,  0xd186b8c721c0c207UL , 
+<b><a name="594">  594</a></b>      0xeada7dd6cde0eb1eUL ,  0xf57d4f7fee6ed178UL ,
+<b><a name="595">  595</a></b>      0x06f067aa72176fbaUL ,  0x0a637dc5a2c898a6UL , 
+<b><a name="596">  596</a></b>      0x113f9804bef90daeUL ,  0x1b710b35131c471bUL ,
+<b><a name="597">  597</a></b>      0x28db77f523047d84UL ,  0x32caab7b40c72493UL , 
+<b><a name="598">  598</a></b>      0x3c9ebe0a15c9bebcUL ,  0x431d67c49c100d4cUL ,
+<b><a name="599">  599</a></b>      0x4cc5d4becb3e42b6UL ,  0x597f299cfc657e2aUL , 
+<b><a name="600">  600</a></b>      0x5fcb6fab3ad6faecUL ,  0x6c44198c4a475817UL 
+<b><a name="601">  601</a></b> #else
+<b><a name="602">  602</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(428a2f98,d728ae22), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(71374491,23ef65cd), 
+<b><a name="603">  603</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(b5c0fbcf,ec4d3b2f), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(e9b5dba5,8189dbbc),
+<b><a name="604">  604</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(3956c25b,f348b538), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(59f111f1,b605d019), 
+<b><a name="605">  605</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(923f82a4,af194f9b), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(ab1c5ed5,da6d8118),
+<b><a name="606">  606</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(d807aa98,a3030242), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(12835b01,45706fbe), 
+<b><a name="607">  607</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(243185be,4ee4b28c), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(550c7dc3,d5ffb4e2),
+<b><a name="608">  608</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(72be5d74,f27b896f), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(80deb1fe,3b1696b1), 
+<b><a name="609">  609</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(9bdc06a7,25c71235), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(c19bf174,cf692694),
+<b><a name="610">  610</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(e49b69c1,9ef14ad2), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(efbe4786,384f25e3), 
+<b><a name="611">  611</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(0fc19dc6,8b8cd5b5), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(240ca1cc,77ac9c65),
+<b><a name="612">  612</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(2de92c6f,592b0275), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(4a7484aa,6ea6e483), 
+<b><a name="613">  613</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(5cb0a9dc,bd41fbd4), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(76f988da,831153b5),
+<b><a name="614">  614</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(983e5152,ee66dfab), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(a831c66d,2db43210), 
+<b><a name="615">  615</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(b00327c8,98fb213f), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(bf597fc7,beef0ee4),
+<b><a name="616">  616</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(c6e00bf3,3da88fc2), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(d5a79147,930aa725), 
+<b><a name="617">  617</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(06ca6351,e003826f), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(14292967,0a0e6e70),
+<b><a name="618">  618</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(27b70a85,46d22ffc), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(2e1b2138,5c26c926), 
+<b><a name="619">  619</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(4d2c6dfc,5ac42aed), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(53380d13,9d95b3df),
+<b><a name="620">  620</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(650a7354,8baf63de), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(766a0abb,3c77b2a8), 
+<b><a name="621">  621</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(81c2c92e,47edaee6), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(92722c85,1482353b),
+<b><a name="622">  622</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(a2bfe8a1,4cf10364), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(a81a664b,bc423001), 
+<b><a name="623">  623</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(c24b8b70,d0f89791), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(c76c51a3,0654be30),
+<b><a name="624">  624</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(d192e819,d6ef5218), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(d6990624,5565a910), 
+<b><a name="625">  625</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(f40e3585,5771202a), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(106aa070,32bbd1b8),
+<b><a name="626">  626</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(19a4c116,b8d2d0c8), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(1e376c08,5141ab53), 
+<b><a name="627">  627</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(2748774c,df8eeb99), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(34b0bcb5,e19b48a8),
+<b><a name="628">  628</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(391c0cb3,c5c95a63), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(4ed8aa4a,e3418acb), 
+<b><a name="629">  629</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(5b9cca4f,7763e373), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(682e6ff3,d6b2b8a3),
+<b><a name="630">  630</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(748f82ee,5defb2fc), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(78a5636f,43172f60), 
+<b><a name="631">  631</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(84c87814,a1f0ab72), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(8cc70208,1a6439ec),
+<b><a name="632">  632</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(90befffa,23631e28), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(a4506ceb,de82bde9), 
+<b><a name="633">  633</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(bef9a3f7,b2c67915), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(c67178f2,e372532b),
+<b><a name="634">  634</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(ca273ece,ea26619c), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(d186b8c7,21c0c207), 
+<b><a name="635">  635</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(eada7dd6,cde0eb1e), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(f57d4f7f,ee6ed178),
+<b><a name="636">  636</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(06f067aa,72176fba), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(0a637dc5,a2c898a6), 
+<b><a name="637">  637</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(113f9804,bef90dae), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(1b710b35,131c471b),
+<b><a name="638">  638</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(28db77f5,23047d84), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(32caab7b,40c72493), 
+<b><a name="639">  639</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(3c9ebe0a,15c9bebc), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(431d67c4,9c100d4c),
+<b><a name="640">  640</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(4cc5d4be,cb3e42b6), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(597f299c,fc657e2a), 
+<b><a name="641">  641</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(5fcb6fab,3ad6faec), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(6c44198c,4a475817)
+<b><a name="642">  642</a></b> #endif
+<b><a name="643">  643</a></b> };
+<b><a name="644">  644</a></b> 
+<b><a name="645">  645</a></b> struct <a href="#645">SHA512ContextStr</a> {
+<b><a name="646">  646</a></b>     union {
+<b><a name="647">  647</a></b>         PRUint64 w[80];            /* message schedule, input buffer, plus 64 words */
+<b><a name="648">  648</a></b>         PRUint32 l[160];
+<b><a name="649">  649</a></b>         PRUint8  b[640];
+<b><a name="650">  650</a></b>     } u;
+<b><a name="651">  651</a></b>     PRUint64 h[8];            /* 8 state variables */
+<b><a name="652">  652</a></b>     PRUint64 sizeLo;            /* 64-bit count of hashed bytes. */
+<b><a name="653">  653</a></b> };
+<b><a name="654">  654</a></b> 
+<b><a name="655">  655</a></b> /* =========== SHA512 implementation ===================================== */
+<b><a name="656">  656</a></b> 
+<b><a name="657">  657</a></b> /* SHA-512 initial hash values */
+<b><a name="658">  658</a></b> static const PRUint64 <a href="#658">H512</a>[8] = {
+<b><a name="659">  659</a></b> #if PR_BYTES_PER_LONG == 8
+<b><a name="660">  660</a></b>      0x6a09e667f3bcc908UL ,  0xbb67ae8584caa73bUL , 
+<b><a name="661">  661</a></b>      0x3c6ef372fe94f82bUL ,  0xa54ff53a5f1d36f1UL , 
+<b><a name="662">  662</a></b>      0x510e527fade682d1UL ,  0x9b05688c2b3e6c1fUL , 
+<b><a name="663">  663</a></b>      0x1f83d9abfb41bd6bUL ,  0x5be0cd19137e2179UL 
+<b><a name="664">  664</a></b> #else
+<b><a name="665">  665</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(6a09e667,f3bcc908), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(bb67ae85,84caa73b), 
+<b><a name="666">  666</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(3c6ef372,fe94f82b), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(a54ff53a,5f1d36f1), 
+<b><a name="667">  667</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(510e527f,ade682d1), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(9b05688c,2b3e6c1f), 
+<b><a name="668">  668</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(1f83d9ab,fb41bd6b), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(5be0cd19,137e2179)
+<b><a name="669">  669</a></b> #endif
+<b><a name="670">  670</a></b> };
+<b><a name="671">  671</a></b> 
+<b><a name="672">  672</a></b> 
+<b><a name="673">  673</a></b> <a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *
+<b><a name="674">  674</a></b> <a href="#674">SHA512_NewContext</a>(void)
+<b><a name="675">  675</a></b> {
+<b><a name="676">  676</a></b>     <a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *ctx = <a href="../util/secport.h.dep.html#PORT_New">PORT_New</a>(<a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a>);
+<b><a name="677">  677</a></b>     return ctx;
+<b><a name="678">  678</a></b> }
+<b><a name="679">  679</a></b> 
+<b><a name="680">  680</a></b> void 
+<b><a name="681">  681</a></b> <a href="#681">SHA512_DestroyContext</a>(<a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *ctx, PRBool freeit)
+<b><a name="682">  682</a></b> {
+<b><a name="683">  683</a></b>     if (freeit) {
+<b><a name="684">  684</a></b>         <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(ctx, sizeof *ctx);
+<b><a name="685">  685</a></b>     }
+<b><a name="686">  686</a></b> }
+<b><a name="687">  687</a></b> 
+<b><a name="688">  688</a></b> void 
+<b><a name="689">  689</a></b> <a href="#689">SHA512_Begin</a>(<a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *ctx)
+<b><a name="690">  690</a></b> {
+<b><a name="691">  691</a></b>     memset(ctx, 0, sizeof *ctx);
+<b><a name="692">  692</a></b>     memcpy(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>512, sizeof <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>512);
+<b><a name="693">  693</a></b> }
+<b><a name="694">  694</a></b> 
+<b><a name="695">  695</a></b> #if defined(SHA512_TRACE)
+<b><a name="696">  696</a></b> #if defined(<a href="../freebl/sha512.c.dep.html#HAVE_LONG_LONG">HAVE_LONG_LONG</a>)
+<b><a name="697">  697</a></b> #define <a href="#697">DUMP</a>(n,a,d,e,h) printf(" t = %2d, %s = %016lx, %s = %016lx\n", \
+<b><a name="698">  698</a></b>                                n, #e, d, #a, h);
+<b><a name="699">  699</a></b> #else
+<b><a name="700">  700</a></b> #define <a href="#700">DUMP</a>(n,a,d,e,h) printf(" t = %2d, %s = %08x%08x, %s = %08x%08x\n", \
+<b><a name="701">  701</a></b>                                n, #e, d.hi, d.lo, #a, h.hi, h.lo);
+<b><a name="702">  702</a></b> #endif
+<b><a name="703">  703</a></b> #else
+<b><a name="704">  704</a></b> #define <a href="#704">DUMP</a>(n,a,d,e,h)
+<b><a name="705">  705</a></b> #endif
+<b><a name="706">  706</a></b> 
+<b><a name="707">  707</a></b> #if defined(<a href="../freebl/sha512.c.dep.html#HAVE_LONG_LONG">HAVE_LONG_LONG</a>)
+<b><a name="708">  708</a></b> 
+<b><a name="709">  709</a></b> #define <a href="#709">ADDTO</a>(x,y) y += x
+<b><a name="710">  710</a></b> 
+<b><a name="711">  711</a></b> #define <a href="#711">INIT<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a></a>(t) <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t] = (<a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-2]) + <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-7] + <a href="../freebl/sha512.c.dep.html#s0">s0</a></a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-15]) + <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-16])
+<b><a name="712">  712</a></b> 
+<b><a name="713">  713</a></b> #define <a href="#713">ROUND</a>(n,a,b,c,d,e,f,g,h) \
+<b><a name="714">  714</a></b>     h += <a href="../freebl/sha512.c.dep.html#S1">S1</a></a></a>(e) + <a href="../freebl/sha512.c.dep.html#Ch">Ch</a>(e,f,g) + <a href="../freebl/sha512.c.dep.html#K512">K512</a>[n] + <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[n]; \
+<b><a name="715">  715</a></b>     d += h; \
+<b><a name="716">  716</a></b>     h += <a href="../freebl/sha512.c.dep.html#S0">S0</a></a></a>(a) + <a href="../freebl/sha512.c.dep.html#Maj">Maj</a>(a,b,c); \
+<b><a name="717">  717</a></b>     <a href="../freebl/sha512.c.dep.html#DUMP">DUMP</a></a></a>(n,a,d,e,h)
+<b><a name="718">  718</a></b> 
+<b><a name="719">  719</a></b> #else /* use only 32-bit variables, and don't unroll loops */
+<b><a name="720">  720</a></b> 
+<b><a name="721">  721</a></b> #undef  <a href="#721">NOUNROLL512</a>
+<b><a name="722">  722</a></b> #define <a href="#722">NOUNROLL512</a> 1
+<b><a name="723">  723</a></b> 
+<b><a name="724">  724</a></b> #define <a href="#724">ADDTO</a>(x,y) y.lo += x.lo; y.hi += x.hi + (x.lo &gt; y.lo)
+<b><a name="725">  725</a></b> 
+<b><a name="726">  726</a></b> #define <a href="#726">ROTR64a</a>(x,n,lo,hi) (x.lo &gt;&gt; n | x.hi &lt;&lt; (32-n))
+<b><a name="727">  727</a></b> #define <a href="#727">ROTR64A</a>(x,n,lo,hi) (x.lo &lt;&lt; (64-n) | x.hi &gt;&gt; (n-32))
+<b><a name="728">  728</a></b> #define  <a href="#728">SHR64a</a>(x,n,lo,hi) (x.lo &gt;&gt; n | x.hi &lt;&lt; (32-n))
+<b><a name="729">  729</a></b> 
+<b><a name="730">  730</a></b> /* Capitol Sigma and lower case sigma functions */
+<b><a name="731">  731</a></b> #define <a href="#731">s0lo</a>(x) (<a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,1,lo,hi) ^ <a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,8,lo,hi) ^ <a href="../freebl/sha512.c.dep.html#SHR64a">SHR64a</a>(x,7,lo,hi))
+<b><a name="732">  732</a></b> #define <a href="#732">s0hi</a>(x) (<a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,1,hi,lo) ^ <a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,8,hi,lo) ^ (x.hi &gt;&gt; 7))
+<b><a name="733">  733</a></b> 
+<b><a name="734">  734</a></b> #define <a href="#734">s1lo</a>(x) (<a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,19,lo,hi) ^ <a href="../freebl/sha512.c.dep.html#ROTR64A">ROTR64A</a>(x,61,lo,hi) ^ <a href="../freebl/sha512.c.dep.html#SHR64a">SHR64a</a>(x,6,lo,hi))
+<b><a name="735">  735</a></b> #define <a href="#735">s1hi</a>(x) (<a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,19,hi,lo) ^ <a href="../freebl/sha512.c.dep.html#ROTR64A">ROTR64A</a>(x,61,hi,lo) ^ (x.hi &gt;&gt; 6))
+<b><a name="736">  736</a></b> 
+<b><a name="737">  737</a></b> #define <a href="#737">S0lo</a>(x)(<a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,28,lo,hi) ^ <a href="../freebl/sha512.c.dep.html#ROTR64A">ROTR64A</a>(x,34,lo,hi) ^ <a href="../freebl/sha512.c.dep.html#ROTR64A">ROTR64A</a>(x,39,lo,hi))
+<b><a name="738">  738</a></b> #define <a href="#738">S0hi</a>(x)(<a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,28,hi,lo) ^ <a href="../freebl/sha512.c.dep.html#ROTR64A">ROTR64A</a>(x,34,hi,lo) ^ <a href="../freebl/sha512.c.dep.html#ROTR64A">ROTR64A</a>(x,39,hi,lo))
+<b><a name="739">  739</a></b> 
+<b><a name="740">  740</a></b> #define <a href="#740">S1lo</a>(x)(<a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,14,lo,hi) ^ <a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,18,lo,hi) ^ <a href="../freebl/sha512.c.dep.html#ROTR64A">ROTR64A</a>(x,41,lo,hi))
+<b><a name="741">  741</a></b> #define <a href="#741">S1hi</a>(x)(<a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,14,hi,lo) ^ <a href="../freebl/sha512.c.dep.html#ROTR64a">ROTR64a</a>(x,18,hi,lo) ^ <a href="../freebl/sha512.c.dep.html#ROTR64A">ROTR64A</a>(x,41,hi,lo))
+<b><a name="742">  742</a></b> 
+<b><a name="743">  743</a></b> /* 32-bit versions of Ch and Maj */
+<b><a name="744">  744</a></b> #define <a href="#744">Chxx</a>(x,y,z,lo) ((x.lo &amp; y.lo) ^ (~x.lo &amp; z.lo))
+<b><a name="745">  745</a></b> #define <a href="#745">Majx</a>(x,y,z,lo) ((x.lo &amp; y.lo) ^ (x.lo &amp; z.lo) ^ (y.lo &amp; z.lo))
+<b><a name="746">  746</a></b> 
+<b><a name="747">  747</a></b> #define <a href="#747">INITW</a>(t) \
+<b><a name="748">  748</a></b>     do { \
+<b><a name="749">  749</a></b>         PRUint32 lo, tm; \
+<b><a name="750">  750</a></b>         PRUint32 cy = 0; \
+<b><a name="751">  751</a></b>         lo = <a href="../freebl/sha512.c.dep.html#s1lo">s1lo</a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-2]); \
+<b><a name="752">  752</a></b>         lo += (tm = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-7].lo);     if (lo &lt; tm) cy++; \
+<b><a name="753">  753</a></b>         lo += (tm = <a href="../freebl/sha512.c.dep.html#s0lo">s0lo</a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-15])); if (lo &lt; tm) cy++; \
+<b><a name="754">  754</a></b>         lo += (tm = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-16].lo);    if (lo &lt; tm) cy++; \
+<b><a name="755">  755</a></b>         <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t].lo = lo; \
+<b><a name="756">  756</a></b>         <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t].hi = cy + <a href="../freebl/sha512.c.dep.html#s1hi">s1hi</a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-2]) + <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-7].hi + <a href="../freebl/sha512.c.dep.html#s0hi">s0hi</a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-15]) + <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[t-16].hi; \
+<b><a name="757">  757</a></b>     } while (0)
+<b><a name="758">  758</a></b> 
+<b><a name="759">  759</a></b> #define <a href="#759">ROUND</a>(n,a,b,c,d,e,f,g,h) \
+<b><a name="760">  760</a></b>     { \
+<b><a name="761">  761</a></b>         PRUint32 lo, tm, cy; \
+<b><a name="762">  762</a></b>         lo  = <a href="../freebl/sha512.c.dep.html#S1lo">S1lo</a>(e); \
+<b><a name="763">  763</a></b>         lo += (tm = <a href="../freebl/sha512.c.dep.html#Chxx">Chxx</a>(e,f,g,lo));    cy = (lo &lt; tm); \
+<b><a name="764">  764</a></b>         lo += (tm = <a href="../freebl/sha512.c.dep.html#K512">K512</a>[n].lo);        if (lo &lt; tm) cy++; \
+<b><a name="765">  765</a></b>         lo += (tm =    <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[n].lo);        if (lo &lt; tm) cy++; \
+<b><a name="766">  766</a></b>         h.lo += lo;                        if (h.lo &lt; lo) cy++; \
+<b><a name="767">  767</a></b>         h.hi += cy + <a href="../freebl/sha512.c.dep.html#S1hi">S1hi</a>(e) + <a href="../freebl/sha512.c.dep.html#Chxx">Chxx</a>(e,f,g,hi) + <a href="../freebl/sha512.c.dep.html#K512">K512</a>[n].hi + <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[n].hi; \
+<b><a name="768">  768</a></b>         d.lo += h.lo; \
+<b><a name="769">  769</a></b>         d.hi += h.hi + (d.lo &lt; h.lo); \
+<b><a name="770">  770</a></b>         lo  = <a href="../freebl/sha512.c.dep.html#S0lo">S0lo</a>(a);  \
+<b><a name="771">  771</a></b>         lo += (tm = <a href="../freebl/sha512.c.dep.html#Majx">Majx</a>(a,b,c,lo));        cy = (lo &lt; tm); \
+<b><a name="772">  772</a></b>         h.lo += lo;                        if (h.lo &lt; lo) cy++; \
+<b><a name="773">  773</a></b>         h.hi += cy + <a href="../freebl/sha512.c.dep.html#S0hi">S0hi</a>(a) + <a href="../freebl/sha512.c.dep.html#Majx">Majx</a>(a,b,c,hi); \
+<b><a name="774">  774</a></b>         <a href="../freebl/sha512.c.dep.html#DUMP">DUMP</a></a></a>(n,a,d,e,h) \
+<b><a name="775">  775</a></b>     }
+<b><a name="776">  776</a></b> #endif
+<b><a name="777">  777</a></b> 
+<b><a name="778">  778</a></b> static void
+<b><a name="779">  779</a></b> <a href="#779">SHA512_Compress</a>(<a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *ctx)
+<b><a name="780">  780</a></b> {
+<b><a name="781">  781</a></b> #if defined(IS_LITTLE_ENDIAN)
+<b><a name="782">  782</a></b>   {
+<b><a name="783">  783</a></b> #if defined(<a href="../freebl/sha512.c.dep.html#HAVE_LONG_LONG">HAVE_LONG_LONG</a>)
+<b><a name="784">  784</a></b>     PRUint64 t1;
+<b><a name="785">  785</a></b> #else
+<b><a name="786">  786</a></b>     PRUint32 t1;
+<b><a name="787">  787</a></b> #endif
+<b><a name="788">  788</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[0]);
+<b><a name="789">  789</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[1]);
+<b><a name="790">  790</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[2]);
+<b><a name="791">  791</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[3]);
+<b><a name="792">  792</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[4]);
+<b><a name="793">  793</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[5]);
+<b><a name="794">  794</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[6]);
+<b><a name="795">  795</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[7]);
+<b><a name="796">  796</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[8]);
+<b><a name="797">  797</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[9]);
+<b><a name="798">  798</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[10]);
+<b><a name="799">  799</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[11]);
+<b><a name="800">  800</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[12]);
+<b><a name="801">  801</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[13]);
+<b><a name="802">  802</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[14]);
+<b><a name="803">  803</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[15]);
+<b><a name="804">  804</a></b>   }
+<b><a name="805">  805</a></b> #endif
+<b><a name="806">  806</a></b> 
+<b><a name="807">  807</a></b>   {
+<b><a name="808">  808</a></b>     PRUint64 t1, t2;
+<b><a name="809">  809</a></b> #ifdef <a href="../freebl/sha512.c.dep.html#NOUNROLL512">NOUNROLL512</a></a></a>
+<b><a name="810">  810</a></b>     {
+<b><a name="811">  811</a></b>         /* prepare the "message schedule"   */
+<b><a name="812">  812</a></b>         int t;
+<b><a name="813">  813</a></b>         for (t = 16; t &lt; 80; ++t) {
+<b><a name="814">  814</a></b>             <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(t);
+<b><a name="815">  815</a></b>         }
+<b><a name="816">  816</a></b>     }
+<b><a name="817">  817</a></b> #else
+<b><a name="818">  818</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(16);
+<b><a name="819">  819</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(17);
+<b><a name="820">  820</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(18);
+<b><a name="821">  821</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(19);
+<b><a name="822">  822</a></b> 
+<b><a name="823">  823</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(20);
+<b><a name="824">  824</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(21);
+<b><a name="825">  825</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(22);
+<b><a name="826">  826</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(23);
+<b><a name="827">  827</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(24);
+<b><a name="828">  828</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(25);
+<b><a name="829">  829</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(26);
+<b><a name="830">  830</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(27);
+<b><a name="831">  831</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(28);
+<b><a name="832">  832</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(29);
+<b><a name="833">  833</a></b> 
+<b><a name="834">  834</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(30);
+<b><a name="835">  835</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(31);
+<b><a name="836">  836</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(32);
+<b><a name="837">  837</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(33);
+<b><a name="838">  838</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(34);
+<b><a name="839">  839</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(35);
+<b><a name="840">  840</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(36);
+<b><a name="841">  841</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(37);
+<b><a name="842">  842</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(38);
+<b><a name="843">  843</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(39);
+<b><a name="844">  844</a></b> 
+<b><a name="845">  845</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(40);
+<b><a name="846">  846</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(41);
+<b><a name="847">  847</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(42);
+<b><a name="848">  848</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(43);
+<b><a name="849">  849</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(44);
+<b><a name="850">  850</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(45);
+<b><a name="851">  851</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(46);
+<b><a name="852">  852</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(47);
+<b><a name="853">  853</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(48);
+<b><a name="854">  854</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(49);
+<b><a name="855">  855</a></b> 
+<b><a name="856">  856</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(50);
+<b><a name="857">  857</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(51);
+<b><a name="858">  858</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(52);
+<b><a name="859">  859</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(53);
+<b><a name="860">  860</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(54);
+<b><a name="861">  861</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(55);
+<b><a name="862">  862</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(56);
+<b><a name="863">  863</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(57);
+<b><a name="864">  864</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(58);
+<b><a name="865">  865</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(59);
+<b><a name="866">  866</a></b> 
+<b><a name="867">  867</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(60);
+<b><a name="868">  868</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(61);
+<b><a name="869">  869</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(62);
+<b><a name="870">  870</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(63);
+<b><a name="871">  871</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(64);
+<b><a name="872">  872</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(65);
+<b><a name="873">  873</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(66);
+<b><a name="874">  874</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(67);
+<b><a name="875">  875</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(68);
+<b><a name="876">  876</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(69);
+<b><a name="877">  877</a></b> 
+<b><a name="878">  878</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(70);
+<b><a name="879">  879</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(71);
+<b><a name="880">  880</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(72);
+<b><a name="881">  881</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(73);
+<b><a name="882">  882</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(74);
+<b><a name="883">  883</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(75);
+<b><a name="884">  884</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(76);
+<b><a name="885">  885</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(77);
+<b><a name="886">  886</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(78);
+<b><a name="887">  887</a></b>     <a href="../freebl/sha512.c.dep.html#INITW">INITW</a></a></a></a>(79);
+<b><a name="888">  888</a></b> #endif
+<b><a name="889">  889</a></b>   }
+<b><a name="890">  890</a></b> #ifdef SHA512_TRACE
+<b><a name="891">  891</a></b>   {
+<b><a name="892">  892</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="893">  893</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; 80; ++<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) {
+<b><a name="894">  894</a></b> #ifdef <a href="../freebl/sha512.c.dep.html#HAVE_LONG_LONG">HAVE_LONG_LONG</a>
+<b><a name="895">  895</a></b>         pr<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ntf("<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[%2d] = %016lx\n", <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>, <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]);
+<b><a name="896">  896</a></b> #else
+<b><a name="897">  897</a></b>         pr<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ntf("<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[%2d] = %08x%08x\n", <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>, <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>].h<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>, <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>].lo);
+<b><a name="898">  898</a></b> #endif
+<b><a name="899">  899</a></b>     }
+<b><a name="900">  900</a></b>   }
+<b><a name="901">  901</a></b> #endif
+<b><a name="902">  902</a></b>   {
+<b><a name="903">  903</a></b>     PRUint64 a, b, c, d, e, f, g, h;
+<b><a name="904">  904</a></b> 
+<b><a name="905">  905</a></b>     a = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[0];
+<b><a name="906">  906</a></b>     b = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[1];
+<b><a name="907">  907</a></b>     c = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2];
+<b><a name="908">  908</a></b>     d = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[3];
+<b><a name="909">  909</a></b>     e = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[4];
+<b><a name="910">  910</a></b>     f = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[5];
+<b><a name="911">  911</a></b>     g = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[6];
+<b><a name="912">  912</a></b>     h = <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[7];
+<b><a name="913">  913</a></b> 
+<b><a name="914">  914</a></b> #ifdef <a href="../freebl/sha512.c.dep.html#NOUNROLL512">NOUNROLL512</a></a></a>
+<b><a name="915">  915</a></b>     {
+<b><a name="916">  916</a></b>         int t;
+<b><a name="917">  917</a></b>         for (t = 0; t &lt; 80; t+= 8) {
+<b><a name="918">  918</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+0,a,b,c,d,e,f,g,h)
+<b><a name="919">  919</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+1,h,a,b,c,d,e,f,g)
+<b><a name="920">  920</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+2,g,h,a,b,c,d,e,f)
+<b><a name="921">  921</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+3,f,g,h,a,b,c,d,e)
+<b><a name="922">  922</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+4,e,f,g,h,a,b,c,d)
+<b><a name="923">  923</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+5,d,e,f,g,h,a,b,c)
+<b><a name="924">  924</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+6,c,d,e,f,g,h,a,b)
+<b><a name="925">  925</a></b>             <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(t+7,b,c,d,e,f,g,h,a)
+<b><a name="926">  926</a></b>         }
+<b><a name="927">  927</a></b>     }
+<b><a name="928">  928</a></b> #else
+<b><a name="929">  929</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 0,a,b,c,d,e,f,g,h)
+<b><a name="930">  930</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 1,h,a,b,c,d,e,f,g)
+<b><a name="931">  931</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 2,g,h,a,b,c,d,e,f)
+<b><a name="932">  932</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 3,f,g,h,a,b,c,d,e)
+<b><a name="933">  933</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 4,e,f,g,h,a,b,c,d)
+<b><a name="934">  934</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 5,d,e,f,g,h,a,b,c)
+<b><a name="935">  935</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 6,c,d,e,f,g,h,a,b)
+<b><a name="936">  936</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 7,b,c,d,e,f,g,h,a)
+<b><a name="937">  937</a></b> 
+<b><a name="938">  938</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 8,a,b,c,d,e,f,g,h)
+<b><a name="939">  939</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>( 9,h,a,b,c,d,e,f,g)
+<b><a name="940">  940</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(10,g,h,a,b,c,d,e,f)
+<b><a name="941">  941</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(11,f,g,h,a,b,c,d,e)
+<b><a name="942">  942</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(12,e,f,g,h,a,b,c,d)
+<b><a name="943">  943</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(13,d,e,f,g,h,a,b,c)
+<b><a name="944">  944</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(14,c,d,e,f,g,h,a,b)
+<b><a name="945">  945</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(15,b,c,d,e,f,g,h,a)
+<b><a name="946">  946</a></b> 
+<b><a name="947">  947</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(16,a,b,c,d,e,f,g,h)
+<b><a name="948">  948</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(17,h,a,b,c,d,e,f,g)
+<b><a name="949">  949</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(18,g,h,a,b,c,d,e,f)
+<b><a name="950">  950</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(19,f,g,h,a,b,c,d,e)
+<b><a name="951">  951</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(20,e,f,g,h,a,b,c,d)
+<b><a name="952">  952</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(21,d,e,f,g,h,a,b,c)
+<b><a name="953">  953</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(22,c,d,e,f,g,h,a,b)
+<b><a name="954">  954</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(23,b,c,d,e,f,g,h,a)
+<b><a name="955">  955</a></b> 
+<b><a name="956">  956</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(24,a,b,c,d,e,f,g,h)
+<b><a name="957">  957</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(25,h,a,b,c,d,e,f,g)
+<b><a name="958">  958</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(26,g,h,a,b,c,d,e,f)
+<b><a name="959">  959</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(27,f,g,h,a,b,c,d,e)
+<b><a name="960">  960</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(28,e,f,g,h,a,b,c,d)
+<b><a name="961">  961</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(29,d,e,f,g,h,a,b,c)
+<b><a name="962">  962</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(30,c,d,e,f,g,h,a,b)
+<b><a name="963">  963</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(31,b,c,d,e,f,g,h,a)
+<b><a name="964">  964</a></b> 
+<b><a name="965">  965</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(32,a,b,c,d,e,f,g,h)
+<b><a name="966">  966</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(33,h,a,b,c,d,e,f,g)
+<b><a name="967">  967</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(34,g,h,a,b,c,d,e,f)
+<b><a name="968">  968</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(35,f,g,h,a,b,c,d,e)
+<b><a name="969">  969</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(36,e,f,g,h,a,b,c,d)
+<b><a name="970">  970</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(37,d,e,f,g,h,a,b,c)
+<b><a name="971">  971</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(38,c,d,e,f,g,h,a,b)
+<b><a name="972">  972</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(39,b,c,d,e,f,g,h,a)
+<b><a name="973">  973</a></b> 
+<b><a name="974">  974</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(40,a,b,c,d,e,f,g,h)
+<b><a name="975">  975</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(41,h,a,b,c,d,e,f,g)
+<b><a name="976">  976</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(42,g,h,a,b,c,d,e,f)
+<b><a name="977">  977</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(43,f,g,h,a,b,c,d,e)
+<b><a name="978">  978</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(44,e,f,g,h,a,b,c,d)
+<b><a name="979">  979</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(45,d,e,f,g,h,a,b,c)
+<b><a name="980">  980</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(46,c,d,e,f,g,h,a,b)
+<b><a name="981">  981</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(47,b,c,d,e,f,g,h,a)
+<b><a name="982">  982</a></b> 
+<b><a name="983">  983</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(48,a,b,c,d,e,f,g,h)
+<b><a name="984">  984</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(49,h,a,b,c,d,e,f,g)
+<b><a name="985">  985</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(50,g,h,a,b,c,d,e,f)
+<b><a name="986">  986</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(51,f,g,h,a,b,c,d,e)
+<b><a name="987">  987</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(52,e,f,g,h,a,b,c,d)
+<b><a name="988">  988</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(53,d,e,f,g,h,a,b,c)
+<b><a name="989">  989</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(54,c,d,e,f,g,h,a,b)
+<b><a name="990">  990</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(55,b,c,d,e,f,g,h,a)
+<b><a name="991">  991</a></b> 
+<b><a name="992">  992</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(56,a,b,c,d,e,f,g,h)
+<b><a name="993">  993</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(57,h,a,b,c,d,e,f,g)
+<b><a name="994">  994</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(58,g,h,a,b,c,d,e,f)
+<b><a name="995">  995</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(59,f,g,h,a,b,c,d,e)
+<b><a name="996">  996</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(60,e,f,g,h,a,b,c,d)
+<b><a name="997">  997</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(61,d,e,f,g,h,a,b,c)
+<b><a name="998">  998</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(62,c,d,e,f,g,h,a,b)
+<b><a name="999">  999</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(63,b,c,d,e,f,g,h,a)
+<b><a name="1000"> 1000</a></b> 
+<b><a name="1001"> 1001</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(64,a,b,c,d,e,f,g,h)
+<b><a name="1002"> 1002</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(65,h,a,b,c,d,e,f,g)
+<b><a name="1003"> 1003</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(66,g,h,a,b,c,d,e,f)
+<b><a name="1004"> 1004</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(67,f,g,h,a,b,c,d,e)
+<b><a name="1005"> 1005</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(68,e,f,g,h,a,b,c,d)
+<b><a name="1006"> 1006</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(69,d,e,f,g,h,a,b,c)
+<b><a name="1007"> 1007</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(70,c,d,e,f,g,h,a,b)
+<b><a name="1008"> 1008</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(71,b,c,d,e,f,g,h,a)
+<b><a name="1009"> 1009</a></b> 
+<b><a name="1010"> 1010</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(72,a,b,c,d,e,f,g,h)
+<b><a name="1011"> 1011</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(73,h,a,b,c,d,e,f,g)
+<b><a name="1012"> 1012</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(74,g,h,a,b,c,d,e,f)
+<b><a name="1013"> 1013</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(75,f,g,h,a,b,c,d,e)
+<b><a name="1014"> 1014</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(76,e,f,g,h,a,b,c,d)
+<b><a name="1015"> 1015</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(77,d,e,f,g,h,a,b,c)
+<b><a name="1016"> 1016</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(78,c,d,e,f,g,h,a,b)
+<b><a name="1017"> 1017</a></b>     <a href="../freebl/des.c.dep.html#ROUND">ROUND</a><a href="../freebl/sha512.c.dep.html#ROUND"><sup>[1]</sup></a></a></a></a>(79,b,c,d,e,f,g,h,a)
+<b><a name="1018"> 1018</a></b> #endif
+<b><a name="1019"> 1019</a></b> 
+<b><a name="1020"> 1020</a></b>     <a href="../freebl/sha512.c.dep.html#ADDTO">ADDTO</a></a>(a,<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[0]);
+<b><a name="1021"> 1021</a></b>     <a href="../freebl/sha512.c.dep.html#ADDTO">ADDTO</a></a>(b,<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[1]);
+<b><a name="1022"> 1022</a></b>     <a href="../freebl/sha512.c.dep.html#ADDTO">ADDTO</a></a>(c,<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2]);
+<b><a name="1023"> 1023</a></b>     <a href="../freebl/sha512.c.dep.html#ADDTO">ADDTO</a></a>(d,<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[3]);
+<b><a name="1024"> 1024</a></b>     <a href="../freebl/sha512.c.dep.html#ADDTO">ADDTO</a></a>(e,<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[4]);
+<b><a name="1025"> 1025</a></b>     <a href="../freebl/sha512.c.dep.html#ADDTO">ADDTO</a></a>(f,<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[5]);
+<b><a name="1026"> 1026</a></b>     <a href="../freebl/sha512.c.dep.html#ADDTO">ADDTO</a></a>(g,<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[6]);
+<b><a name="1027"> 1027</a></b>     <a href="../freebl/sha512.c.dep.html#ADDTO">ADDTO</a></a>(h,<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[7]);
+<b><a name="1028"> 1028</a></b>   }
+<b><a name="1029"> 1029</a></b> }
+<b><a name="1030"> 1030</a></b> 
+<b><a name="1031"> 1031</a></b> void 
+<b><a name="1032"> 1032</a></b> <a href="#1032">SHA512_Update</a>(<a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *ctx, const unsigned char *input,
+<b><a name="1033"> 1033</a></b>               unsigned int inputLen)
+<b><a name="1034"> 1034</a></b> {
+<b><a name="1035"> 1035</a></b>     unsigned int <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>;
+<b><a name="1036"> 1036</a></b>     if (!inputLen)
+<b><a name="1037"> 1037</a></b>             return;
+<b><a name="1038"> 1038</a></b> 
+<b><a name="1039"> 1039</a></b> #if defined(<a href="../freebl/sha512.c.dep.html#HAVE_LONG_LONG">HAVE_LONG_LONG</a>)
+<b><a name="1040"> 1040</a></b>     <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a> = (unsigned int)ctx-&gt;sizeLo &amp; 0x7f;
+<b><a name="1041"> 1041</a></b>     /* Add inputLen into the count of bytes processed, before processing */
+<b><a name="1042"> 1042</a></b>     ctx-&gt;sizeLo += inputLen;
+<b><a name="1043"> 1043</a></b> #else
+<b><a name="1044"> 1044</a></b>     <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a> = (unsigned int)ctx-&gt;sizeLo.lo &amp; 0x7f;
+<b><a name="1045"> 1045</a></b>     ctx-&gt;sizeLo.lo += inputLen;
+<b><a name="1046"> 1046</a></b>     if (ctx-&gt;sizeLo.lo &lt; inputLen) ctx-&gt;sizeLo.hi++;
+<b><a name="1047"> 1047</a></b> #endif
+<b><a name="1048"> 1048</a></b> 
+<b><a name="1049"> 1049</a></b>     /* if data already in buffer, attemp to fill rest of buffer */
+<b><a name="1050"> 1050</a></b>     if (<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>) {
+<b><a name="1051"> 1051</a></b>             unsigned int todo = <a href="../freebl/blapit.h.dep.html#SHA512_BLOCK_LENGTH">SHA512_BLOCK_LENGTH</a> - <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>;
+<b><a name="1052"> 1052</a></b>         if (inputLen &lt; todo)
+<b><a name="1053"> 1053</a></b>             todo = inputLen;
+<b><a name="1054"> 1054</a></b>         memcpy(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a> + in<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>uf, input, todo);
+<b><a name="1055"> 1055</a></b>         input    += todo;
+<b><a name="1056"> 1056</a></b>         inputLen -= todo;
+<b><a name="1057"> 1057</a></b>         if (<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a> + todo == <a href="../freebl/blapit.h.dep.html#SHA512_BLOCK_LENGTH">SHA512_BLOCK_LENGTH</a>)
+<b><a name="1058"> 1058</a></b>             <a href="../freebl/sha512.c.dep.html#SHA512_Compress">SHA512_Compress</a>(ctx);
+<b><a name="1059"> 1059</a></b>     }
+<b><a name="1060"> 1060</a></b> 
+<b><a name="1061"> 1061</a></b>     /* if enough data to fill one or more whole buffers, process them. */
+<b><a name="1062"> 1062</a></b>     while (inputLen &gt;= <a href="../freebl/blapit.h.dep.html#SHA512_BLOCK_LENGTH">SHA512_BLOCK_LENGTH</a>) {
+<b><a name="1063"> 1063</a></b>             memcpy(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, input, SHA512_<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>LOCK_LENGTH);
+<b><a name="1064"> 1064</a></b>         input    += <a href="../freebl/blapit.h.dep.html#SHA512_BLOCK_LENGTH">SHA512_BLOCK_LENGTH</a>;
+<b><a name="1065"> 1065</a></b>         inputLen -= <a href="../freebl/blapit.h.dep.html#SHA512_BLOCK_LENGTH">SHA512_BLOCK_LENGTH</a>;
+<b><a name="1066"> 1066</a></b>         <a href="../freebl/sha512.c.dep.html#SHA512_Compress">SHA512_Compress</a>(ctx);
+<b><a name="1067"> 1067</a></b>     }
+<b><a name="1068"> 1068</a></b>     /* if data left over, fill it into buffer */
+<b><a name="1069"> 1069</a></b>     if (inputLen) 
+<b><a name="1070"> 1070</a></b>             memcpy(<a href="../freebl/alg2268.c.dep.html#B">B</a><a href="../freebl/sha512.c.dep.html#B"><sup>[1]</sup></a><a href="../freebl/sha_fast.c.dep.html#B"><sup>[2]</sup></a></a>, input, inputLen);
+<b><a name="1071"> 1071</a></b> }
+<b><a name="1072"> 1072</a></b> 
+<b><a name="1073"> 1073</a></b> void 
+<b><a name="1074"> 1074</a></b> <a href="#1074">SHA512_End</a>(<a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *ctx, unsigned char *digest,
+<b><a name="1075"> 1075</a></b>            unsigned int *digestLen, unsigned int maxDigestLen)
+<b><a name="1076"> 1076</a></b> {
+<b><a name="1077"> 1077</a></b> #if defined(<a href="../freebl/sha512.c.dep.html#HAVE_LONG_LONG">HAVE_LONG_LONG</a>)
+<b><a name="1078"> 1078</a></b>     unsigned int <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>  = (unsigned int)ctx-&gt;sizeLo &amp; 0x7f;
+<b><a name="1079"> 1079</a></b>     unsigned int padLen = (<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a> &lt; 112) ? (112 - <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>) : (112 + 128 - <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>);
+<b><a name="1080"> 1080</a></b>     PRUint64 lo, t1;
+<b><a name="1081"> 1081</a></b>     lo = (ctx-&gt;sizeLo &lt;&lt; 3);
+<b><a name="1082"> 1082</a></b> #else
+<b><a name="1083"> 1083</a></b>     unsigned int <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>  = (unsigned int)ctx-&gt;sizeLo.lo &amp; 0x7f;
+<b><a name="1084"> 1084</a></b>     unsigned int padLen = (<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a> &lt; 112) ? (112 - <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>) : (112 + 128 - <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>);
+<b><a name="1085"> 1085</a></b>     PRUint64 lo = ctx-&gt;sizeLo;
+<b><a name="1086"> 1086</a></b>     PRUint32 t1;
+<b><a name="1087"> 1087</a></b>     lo.lo &lt;&lt;= 3;
+<b><a name="1088"> 1088</a></b> #endif
+<b><a name="1089"> 1089</a></b> 
+<b><a name="1090"> 1090</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_Update">SHA512_Update</a>(ctx, <a href="../freebl/sha512.c.dep.html#pad">pad</a>, <a href="../freebl/sha512.c.dep.html#pad">pad</a>Len);
+<b><a name="1091"> 1091</a></b> 
+<b><a name="1092"> 1092</a></b> #if defined(<a href="../freebl/sha512.c.dep.html#HAVE_LONG_LONG">HAVE_LONG_LONG</a>)
+<b><a name="1093"> 1093</a></b>     <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[14] = 0;
+<b><a name="1094"> 1094</a></b> #else
+<b><a name="1095"> 1095</a></b>     <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[14].lo = 0;
+<b><a name="1096"> 1096</a></b>     <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[14].hi = 0;
+<b><a name="1097"> 1097</a></b> #endif
+<b><a name="1098"> 1098</a></b> 
+<b><a name="1099"> 1099</a></b>     <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[15] = lo;
+<b><a name="1100"> 1100</a></b> #if defined(IS_LITTLE_ENDIAN)
+<b><a name="1101"> 1101</a></b>     <a href="../freebl/sha512.c.dep.html#BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8">BYTES<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>AP8</a></a>(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[15]);
+<b><a name="1102"> 1102</a></b> #endif
+<b><a name="1103"> 1103</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_Compress">SHA512_Compress</a>(ctx);
+<b><a name="1104"> 1104</a></b> 
+<b><a name="1105"> 1105</a></b>     /* now output the answer */
+<b><a name="1106"> 1106</a></b> #if defined(IS_LITTLE_ENDIAN)
+<b><a name="1107"> 1107</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP8">BYTESWAP8</a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[0]);
+<b><a name="1108"> 1108</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP8">BYTESWAP8</a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[1]);
+<b><a name="1109"> 1109</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP8">BYTESWAP8</a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[2]);
+<b><a name="1110"> 1110</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP8">BYTESWAP8</a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[3]);
+<b><a name="1111"> 1111</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP8">BYTESWAP8</a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[4]);
+<b><a name="1112"> 1112</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP8">BYTESWAP8</a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[5]);
+<b><a name="1113"> 1113</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP8">BYTESWAP8</a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[6]);
+<b><a name="1114"> 1114</a></b>     <a href="../freebl/sha512.c.dep.html#BYTESWAP8">BYTESWAP8</a></a>(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>[7]);
+<b><a name="1115"> 1115</a></b> #endif
+<b><a name="1116"> 1116</a></b>     padLen = PR_MIN(<a href="../freebl/blapit.h.dep.html#SHA512_LENGTH">SHA512_LENGTH</a>, maxDigestLen);
+<b><a name="1117"> 1117</a></b>     memcpy(digest, <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, padLen);
+<b><a name="1118"> 1118</a></b>     if (digestLen)
+<b><a name="1119"> 1119</a></b>         *digestLen = padLen;
+<b><a name="1120"> 1120</a></b> }
+<b><a name="1121"> 1121</a></b> 
+<b><a name="1122"> 1122</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="1123"> 1123</a></b> <a href="#1123">SHA512_HashBuf</a>(unsigned char *dest, const unsigned char *src, 
+<b><a name="1124"> 1124</a></b>                uint32 src_length)
+<b><a name="1125"> 1125</a></b> {
+<b><a name="1126"> 1126</a></b>     <a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> ctx;
+<b><a name="1127"> 1127</a></b>     unsigned int outLen;
+<b><a name="1128"> 1128</a></b> 
+<b><a name="1129"> 1129</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_Begin">SHA512_Begin</a>(&amp;ctx);
+<b><a name="1130"> 1130</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_Update">SHA512_Update</a>(&amp;ctx, src, src_length);
+<b><a name="1131"> 1131</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_End">SHA512_End</a>(&amp;ctx, dest, &amp;outLen, <a href="../freebl/blapit.h.dep.html#SHA512_LENGTH">SHA512_LENGTH</a>);
+<b><a name="1132"> 1132</a></b> 
+<b><a name="1133"> 1133</a></b>     return SECSuccess;
+<b><a name="1134"> 1134</a></b> }
+<b><a name="1135"> 1135</a></b> 
+<b><a name="1136"> 1136</a></b> 
+<b><a name="1137"> 1137</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="1138"> 1138</a></b> <a href="#1138">SHA512_Hash</a>(unsigned char *dest, const char *src)
+<b><a name="1139"> 1139</a></b> {
+<b><a name="1140"> 1140</a></b>     return <a href="../freebl/sha512.c.dep.html#SHA512_HashBuf">SHA512_HashBuf</a>(dest, (const unsigned char *)src, <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a>(src));
+<b><a name="1141"> 1141</a></b> }
+<b><a name="1142"> 1142</a></b> 
+<b><a name="1143"> 1143</a></b> 
+<b><a name="1144"> 1144</a></b> void <a href="#1144">SHA512_TraceState</a>(<a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *ctx) { }
+<b><a name="1145"> 1145</a></b> 
+<b><a name="1146"> 1146</a></b> unsigned int 
+<b><a name="1147"> 1147</a></b> <a href="#1147">SHA512_FlattenSize</a>(<a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *ctx)
+<b><a name="1148"> 1148</a></b> {
+<b><a name="1149"> 1149</a></b>     return sizeof *ctx;
+<b><a name="1150"> 1150</a></b> }
+<b><a name="1151"> 1151</a></b> 
+<b><a name="1152"> 1152</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="1153"> 1153</a></b> <a href="#1153">SHA512_Flatten</a>(<a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *ctx,unsigned char *space)
+<b><a name="1154"> 1154</a></b> {
+<b><a name="1155"> 1155</a></b>     <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(space, ctx, sizeof *ctx);
+<b><a name="1156"> 1156</a></b>     return SECSuccess;
+<b><a name="1157"> 1157</a></b> }
+<b><a name="1158"> 1158</a></b> 
+<b><a name="1159"> 1159</a></b> <a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> * 
+<b><a name="1160"> 1160</a></b> <a href="#1160">SHA512_Resurrect</a>(unsigned char *space, void *arg)
+<b><a name="1161"> 1161</a></b> {
+<b><a name="1162"> 1162</a></b>     <a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *ctx = <a href="../freebl/sha512.c.dep.html#SHA512_NewContext">SHA512_NewContext</a>();
+<b><a name="1163"> 1163</a></b>     if (ctx) 
+<b><a name="1164"> 1164</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(ctx, space, sizeof *ctx);
+<b><a name="1165"> 1165</a></b>     return ctx;
+<b><a name="1166"> 1166</a></b> }
+<b><a name="1167"> 1167</a></b> 
+<b><a name="1168"> 1168</a></b> void <a href="#1168">SHA512_Clone</a>(<a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *dest, <a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> *src) 
+<b><a name="1169"> 1169</a></b> {
+<b><a name="1170"> 1170</a></b>     memcpy(dest, src, sizeof *dest);
+<b><a name="1171"> 1171</a></b> }
+<b><a name="1172"> 1172</a></b> 
+<b><a name="1173"> 1173</a></b> /* ======================================================================= */
+<b><a name="1174"> 1174</a></b> /* SHA384 uses a SHA512Context as the real context. 
+<b><a name="1175"> 1175</a></b> ** The only differences between SHA384 an SHA512 are:
+<b><a name="1176"> 1176</a></b> ** a) the intialization values for the context, and
+<b><a name="1177"> 1177</a></b> ** b) the number of bytes of data produced as output.
+<b><a name="1178"> 1178</a></b> */
+<b><a name="1179"> 1179</a></b> 
+<b><a name="1180"> 1180</a></b> /* SHA-384 initial hash values */
+<b><a name="1181"> 1181</a></b> static const PRUint64 <a href="#1181">H384</a>[8] = {
+<b><a name="1182"> 1182</a></b> #if PR_BYTES_PER_LONG == 8
+<b><a name="1183"> 1183</a></b>      0xcbbb9d5dc1059ed8UL ,  0x629a292a367cd507UL , 
+<b><a name="1184"> 1184</a></b>      0x9159015a3070dd17UL ,  0x152fecd8f70e5939UL , 
+<b><a name="1185"> 1185</a></b>      0x67332667ffc00b31UL ,  0x8eb44a8768581511UL , 
+<b><a name="1186"> 1186</a></b>      0xdb0c2e0d64f98fa7UL ,  0x47b5481dbefa4fa4UL 
+<b><a name="1187"> 1187</a></b> #else
+<b><a name="1188"> 1188</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(cbbb9d5d,c1059ed8), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(629a292a,367cd507), 
+<b><a name="1189"> 1189</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(9159015a,3070dd17), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(152fecd8,f70e5939), 
+<b><a name="1190"> 1190</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(67332667,ffc00b31), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(8eb44a87,68581511), 
+<b><a name="1191"> 1191</a></b>     <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(db0c2e0d,64f98fa7), <a href="../freebl/sha512.c.dep.html#ULLC">ULLC</a></a></a></a></a>(47b5481d,befa4fa4)
+<b><a name="1192"> 1192</a></b> #endif
+<b><a name="1193"> 1193</a></b> };
+<b><a name="1194"> 1194</a></b> 
+<b><a name="1195"> 1195</a></b> <a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a> *
+<b><a name="1196"> 1196</a></b> <a href="#1196">SHA384_NewContext</a>(void)
+<b><a name="1197"> 1197</a></b> {
+<b><a name="1198"> 1198</a></b>     return <a href="../freebl/sha512.c.dep.html#SHA512_NewContext">SHA512_NewContext</a>();
+<b><a name="1199"> 1199</a></b> }
+<b><a name="1200"> 1200</a></b> 
+<b><a name="1201"> 1201</a></b> void 
+<b><a name="1202"> 1202</a></b> <a href="#1202">SHA384_DestroyContext</a>(<a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a> *ctx, PRBool freeit)
+<b><a name="1203"> 1203</a></b> {
+<b><a name="1204"> 1204</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_DestroyContext">SHA512_DestroyContext</a>(ctx, freeit);
+<b><a name="1205"> 1205</a></b> }
+<b><a name="1206"> 1206</a></b> 
+<b><a name="1207"> 1207</a></b> void 
+<b><a name="1208"> 1208</a></b> <a href="#1208">SHA384_Begin</a>(<a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a> *ctx)
+<b><a name="1209"> 1209</a></b> {
+<b><a name="1210"> 1210</a></b>     memset(ctx, 0, sizeof *ctx);
+<b><a name="1211"> 1211</a></b>     memcpy(<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>384, sizeof <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>384);
+<b><a name="1212"> 1212</a></b> }
+<b><a name="1213"> 1213</a></b> 
+<b><a name="1214"> 1214</a></b> void 
+<b><a name="1215"> 1215</a></b> <a href="#1215">SHA384_Update</a>(<a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a> *ctx, const unsigned char *input,
+<b><a name="1216"> 1216</a></b>                     unsigned int inputLen)
+<b><a name="1217"> 1217</a></b> {
+<b><a name="1218"> 1218</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_Update">SHA512_Update</a>(ctx, input, inputLen);
+<b><a name="1219"> 1219</a></b> }
+<b><a name="1220"> 1220</a></b> 
+<b><a name="1221"> 1221</a></b> void 
+<b><a name="1222"> 1222</a></b> <a href="#1222">SHA384_End</a>(<a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a> *ctx, unsigned char *digest,
+<b><a name="1223"> 1223</a></b>                  unsigned int *digestLen, unsigned int maxDigestLen)
+<b><a name="1224"> 1224</a></b> {
+<b><a name="1225"> 1225</a></b> #define <a href="#1225">SHA_MIN</a>(a,b) (a &lt; b ? a : b)
+<b><a name="1226"> 1226</a></b>     unsigned int maxLen = <a href="../freebl/sha512.c.dep.html#SHA_MIN">SHA_MIN</a>(maxDigestLen, <a href="../freebl/blapit.h.dep.html#SHA384_LENGTH">SHA384_LENGTH</a>);
+<b><a name="1227"> 1227</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_End">SHA512_End</a>(ctx, digest, digestLen, maxLen);
+<b><a name="1228"> 1228</a></b> }
+<b><a name="1229"> 1229</a></b> 
+<b><a name="1230"> 1230</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="1231"> 1231</a></b> <a href="#1231">SHA384_HashBuf</a>(unsigned char *dest, const unsigned char *src,
+<b><a name="1232"> 1232</a></b>                           uint32 src_length)
+<b><a name="1233"> 1233</a></b> {
+<b><a name="1234"> 1234</a></b>     <a href="../freebl/blapit.h.dep.html#SHA512Context">SHA512Context</a> ctx;
+<b><a name="1235"> 1235</a></b>     unsigned int outLen;
+<b><a name="1236"> 1236</a></b> 
+<b><a name="1237"> 1237</a></b>     <a href="../freebl/sha512.c.dep.html#SHA384_Begin">SHA384_Begin</a>(&amp;ctx);
+<b><a name="1238"> 1238</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_Update">SHA512_Update</a>(&amp;ctx, src, src_length);
+<b><a name="1239"> 1239</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_End">SHA512_End</a>(&amp;ctx, dest, &amp;outLen, <a href="../freebl/blapit.h.dep.html#SHA384_LENGTH">SHA384_LENGTH</a>);
+<b><a name="1240"> 1240</a></b> 
+<b><a name="1241"> 1241</a></b>     return SECSuccess;
+<b><a name="1242"> 1242</a></b> }
+<b><a name="1243"> 1243</a></b> 
+<b><a name="1244"> 1244</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="1245"> 1245</a></b> <a href="#1245">SHA384_Hash</a>(unsigned char *dest, const char *src)
+<b><a name="1246"> 1246</a></b> {
+<b><a name="1247"> 1247</a></b>     return <a href="../freebl/sha512.c.dep.html#SHA384_HashBuf">SHA384_HashBuf</a>(dest, (const unsigned char *)src, <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a>(src));
+<b><a name="1248"> 1248</a></b> }
+<b><a name="1249"> 1249</a></b> 
+<b><a name="1250"> 1250</a></b> void <a href="#1250">SHA384_TraceState</a>(<a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a> *ctx) { }
+<b><a name="1251"> 1251</a></b> 
+<b><a name="1252"> 1252</a></b> unsigned int 
+<b><a name="1253"> 1253</a></b> <a href="#1253">SHA384_FlattenSize</a>(<a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a> *ctx)
+<b><a name="1254"> 1254</a></b> {
+<b><a name="1255"> 1255</a></b>     return sizeof(<a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a>);
+<b><a name="1256"> 1256</a></b> }
+<b><a name="1257"> 1257</a></b> 
+<b><a name="1258"> 1258</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="1259"> 1259</a></b> <a href="#1259">SHA384_Flatten</a>(<a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a> *ctx,unsigned char *space)
+<b><a name="1260"> 1260</a></b> {
+<b><a name="1261"> 1261</a></b>     return <a href="../freebl/sha512.c.dep.html#SHA512_Flatten">SHA512_Flatten</a>(ctx, space);
+<b><a name="1262"> 1262</a></b> }
+<b><a name="1263"> 1263</a></b> 
+<b><a name="1264"> 1264</a></b> <a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a> * 
+<b><a name="1265"> 1265</a></b> <a href="#1265">SHA384_Resurrect</a>(unsigned char *space, void *arg)
+<b><a name="1266"> 1266</a></b> {
+<b><a name="1267"> 1267</a></b>     return <a href="../freebl/sha512.c.dep.html#SHA512_Resurrect">SHA512_Resurrect</a>(space, arg);
+<b><a name="1268"> 1268</a></b> }
+<b><a name="1269"> 1269</a></b> 
+<b><a name="1270"> 1270</a></b> void <a href="#1270">SHA384_Clone</a>(<a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a> *dest, <a href="../freebl/blapit.h.dep.html#SHA384Context">SHA384Context</a> *src) 
+<b><a name="1271"> 1271</a></b> {
+<b><a name="1272"> 1272</a></b>     memcpy(dest, src, sizeof *dest);
+<b><a name="1273"> 1273</a></b> }
+<b><a name="1274"> 1274</a></b> 
+<b><a name="1275"> 1275</a></b> /* ======================================================================= */
+<b><a name="1276"> 1276</a></b> #ifdef SELFTEST
+<b><a name="1277"> 1277</a></b> #include &lt;stdio.h&gt;
+<b><a name="1278"> 1278</a></b> 
+<b><a name="1279"> 1279</a></b> static const char <a href="#1279">abc</a>[] = { "abc" };
+<b><a name="1280"> 1280</a></b> static const char <a href="#1280">abcdbc</a>[] = { 
+<b><a name="1281"> 1281</a></b>     "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+<b><a name="1282"> 1282</a></b> };
+<b><a name="1283"> 1283</a></b> static const char <a href="#1283">abcdef</a>[] = { 
+<b><a name="1284"> 1284</a></b>     "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmn"
+<b><a name="1285"> 1285</a></b>     "hijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu" 
+<b><a name="1286"> 1286</a></b> };
+<b><a name="1287"> 1287</a></b> 
+<b><a name="1288"> 1288</a></b> void
+<b><a name="1289"> 1289</a></b> <a href="#1289">dumpHash32</a>(const unsigned char *buf, unsigned int bufLen)
+<b><a name="1290"> 1290</a></b> {
+<b><a name="1291"> 1291</a></b>     uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="1292"> 1292</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; bufLen; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> += 4) {
+<b><a name="1293"> 1293</a></b>         pr<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ntf(" %02x%02x%02x%02x", buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>], buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+1], buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+2], buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+3]);
+<b><a name="1294"> 1294</a></b>     }
+<b><a name="1295"> 1295</a></b>     printf("\n");
+<b><a name="1296"> 1296</a></b> }
+<b><a name="1297"> 1297</a></b> 
+<b><a name="1298"> 1298</a></b> void <a href="#1298">test256</a>(void)
+<b><a name="1299"> 1299</a></b> {
+<b><a name="1300"> 1300</a></b>     unsigned char outBuf[<a href="../freebl/blapit.h.dep.html#SHA256_LENGTH">SHA256_LENGTH</a>];
+<b><a name="1301"> 1301</a></b> 
+<b><a name="1302"> 1302</a></b>     printf("SHA256, input = %s\n", <a href="../freebl/sha512.c.dep.html#abc">abc</a>);
+<b><a name="1303"> 1303</a></b>     <a href="../freebl/sha512.c.dep.html#SHA256_Hash">SHA256_Hash</a>(outBuf, <a href="../freebl/sha512.c.dep.html#abc">abc</a>);
+<b><a name="1304"> 1304</a></b>     <a href="../freebl/sha512.c.dep.html#dumpHash32">dumpHash32</a>(outBuf, sizeof outBuf);
+<b><a name="1305"> 1305</a></b> 
+<b><a name="1306"> 1306</a></b>     printf("SHA256, input = %s\n", <a href="../freebl/sha512.c.dep.html#abcdbc">abcdbc</a>);
+<b><a name="1307"> 1307</a></b>     <a href="../freebl/sha512.c.dep.html#SHA256_Hash">SHA256_Hash</a>(outBuf, <a href="../freebl/sha512.c.dep.html#abcdbc">abcdbc</a>);
+<b><a name="1308"> 1308</a></b>     <a href="../freebl/sha512.c.dep.html#dumpHash32">dumpHash32</a>(outBuf, sizeof outBuf);
+<b><a name="1309"> 1309</a></b> }
+<b><a name="1310"> 1310</a></b> 
+<b><a name="1311"> 1311</a></b> void
+<b><a name="1312"> 1312</a></b> <a href="#1312">dumpHash64</a>(const unsigned char *buf, unsigned int bufLen)
+<b><a name="1313"> 1313</a></b> {
+<b><a name="1314"> 1314</a></b>     uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="1315"> 1315</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; bufLen; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> += 8) {
+<b><a name="1316"> 1316</a></b>             <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> % 32 == 0)
+<b><a name="1317"> 1317</a></b>             printf("\n");
+<b><a name="1318"> 1318</a></b>         printf(" %02x%02x%02x%02x%02x%02x%02x%02x", 
+<b><a name="1319"> 1319</a></b>                buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>  ], buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+1], buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+2], buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+3],
+<b><a name="1320"> 1320</a></b>                buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+4], buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+5], buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+6], buf[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+7]);
+<b><a name="1321"> 1321</a></b>     }
+<b><a name="1322"> 1322</a></b>     printf("\n");
+<b><a name="1323"> 1323</a></b> }
+<b><a name="1324"> 1324</a></b> 
+<b><a name="1325"> 1325</a></b> void <a href="#1325">test512</a>(void)
+<b><a name="1326"> 1326</a></b> {
+<b><a name="1327"> 1327</a></b>     unsigned char outBuf[<a href="../freebl/blapit.h.dep.html#SHA512_LENGTH">SHA512_LENGTH</a>];
+<b><a name="1328"> 1328</a></b> 
+<b><a name="1329"> 1329</a></b>     printf("SHA512, input = %s\n", <a href="../freebl/sha512.c.dep.html#abc">abc</a>);
+<b><a name="1330"> 1330</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_Hash">SHA512_Hash</a>(outBuf, <a href="../freebl/sha512.c.dep.html#abc">abc</a>);
+<b><a name="1331"> 1331</a></b>     <a href="../freebl/sha512.c.dep.html#dumpHash64">dumpHash64</a>(outBuf, sizeof outBuf);
+<b><a name="1332"> 1332</a></b> 
+<b><a name="1333"> 1333</a></b>     printf("SHA512, input = %s\n", <a href="../freebl/sha512.c.dep.html#abcdef">abcdef</a>);
+<b><a name="1334"> 1334</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_Hash">SHA512_Hash</a>(outBuf, <a href="../freebl/sha512.c.dep.html#abcdef">abcdef</a>);
+<b><a name="1335"> 1335</a></b>     <a href="../freebl/sha512.c.dep.html#dumpHash64">dumpHash64</a>(outBuf, sizeof outBuf);
+<b><a name="1336"> 1336</a></b> }
+<b><a name="1337"> 1337</a></b> 
+<b><a name="1338"> 1338</a></b> void <a href="#1338">time512</a>(void)
+<b><a name="1339"> 1339</a></b> {
+<b><a name="1340"> 1340</a></b>     unsigned char outBuf[<a href="../freebl/blapit.h.dep.html#SHA512_LENGTH">SHA512_LENGTH</a>];
+<b><a name="1341"> 1341</a></b> 
+<b><a name="1342"> 1342</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_Hash">SHA512_Hash</a>(outBuf, <a href="../freebl/sha512.c.dep.html#abc">abc</a>);
+<b><a name="1343"> 1343</a></b>     <a href="../freebl/sha512.c.dep.html#SHA512_Hash">SHA512_Hash</a>(outBuf, <a href="../freebl/sha512.c.dep.html#abcdef">abcdef</a>);
+<b><a name="1344"> 1344</a></b> }
+<b><a name="1345"> 1345</a></b> 
+<b><a name="1346"> 1346</a></b> void <a href="#1346">test384</a>(void)
+<b><a name="1347"> 1347</a></b> {
+<b><a name="1348"> 1348</a></b>     unsigned char outBuf[<a href="../freebl/blapit.h.dep.html#SHA384_LENGTH">SHA384_LENGTH</a>];
+<b><a name="1349"> 1349</a></b> 
+<b><a name="1350"> 1350</a></b>     printf("SHA384, input = %s\n", <a href="../freebl/sha512.c.dep.html#abc">abc</a>);
+<b><a name="1351"> 1351</a></b>     <a href="../freebl/sha512.c.dep.html#SHA384_Hash">SHA384_Hash</a>(outBuf, <a href="../freebl/sha512.c.dep.html#abc">abc</a>);
+<b><a name="1352"> 1352</a></b>     <a href="../freebl/sha512.c.dep.html#dumpHash64">dumpHash64</a>(outBuf, sizeof outBuf);
+<b><a name="1353"> 1353</a></b> 
+<b><a name="1354"> 1354</a></b>     printf("SHA384, input = %s\n", <a href="../freebl/sha512.c.dep.html#abcdef">abcdef</a>);
+<b><a name="1355"> 1355</a></b>     <a href="../freebl/sha512.c.dep.html#SHA384_Hash">SHA384_Hash</a>(outBuf, <a href="../freebl/sha512.c.dep.html#abcdef">abcdef</a>);
+<b><a name="1356"> 1356</a></b>     <a href="../freebl/sha512.c.dep.html#dumpHash64">dumpHash64</a>(outBuf, sizeof outBuf);
+<b><a name="1357"> 1357</a></b> }
+<b><a name="1358"> 1358</a></b> 
+<b><a name="1359"> 1359</a></b> int <a href="#1359">main</a> (int argc, char *argv[], char *envp[])
+<b><a name="1360"> 1360</a></b> {
+<b><a name="1361"> 1361</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 1;
+<b><a name="1362"> 1362</a></b>     if (argc &gt; 1) {
+<b><a name="1363"> 1363</a></b>             <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = ato<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>(argv[1]);
+<b><a name="1364"> 1364</a></b>     }
+<b><a name="1365"> 1365</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; 2) {
+<b><a name="1366"> 1366</a></b>         <a href="../freebl/sha512.c.dep.html#test256">test256</a>();
+<b><a name="1367"> 1367</a></b>         <a href="../freebl/sha512.c.dep.html#test512">test512</a>();
+<b><a name="1368"> 1368</a></b>         <a href="../freebl/sha512.c.dep.html#test384">test384</a>();
+<b><a name="1369"> 1369</a></b>     } else {
+<b><a name="1370"> 1370</a></b>             wh<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>le (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>-- &gt; 0) {
+<b><a name="1371"> 1371</a></b>             <a href="../freebl/sha512.c.dep.html#time512">time512</a>();
+<b><a name="1372"> 1372</a></b>         }
+<b><a name="1373"> 1373</a></b>         printf("done\n");
+<b><a name="1374"> 1374</a></b>     }
+<b><a name="1375"> 1375</a></b>     return 0;
+<b><a name="1376"> 1376</a></b> }
+<b><a name="1377"> 1377</a></b> 
+<b><a name="1378"> 1378</a></b> void *<a href="#1378">PORT_Alloc</a>(size_t len)                 { return malloc(len); }
+<b><a name="1379"> 1379</a></b> void <a href="#1379">PORT_Free</a>(void *ptr)                { free(ptr); }
+<b><a name="1380"> 1380</a></b> void <a href="#1380">PORT_ZFree</a>(void *ptr, size_t len)  { memset(ptr, 0, len); free(ptr); }
+<b><a name="1381"> 1381</a></b> #endif
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

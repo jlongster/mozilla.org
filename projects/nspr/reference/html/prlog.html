@@ -1,0 +1,1250 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;26 Logging';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:06:05">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="prsystem.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prcountr.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="25247"> </A><A NAME=""> </A><h2>
+Chapter&#32;26 
+&nbsp;
+
+
+
+<A NAME="25248"> </A><A NAME="Logging"> </A>Logging
+</h2>
+</center>
+<A NAME="25249"> </A>This chapter describes the global functions you use to perform logging. NSPR 
+provides a set of  logging functions that conditionally write <CODE>printf()</CODE> style strings 
+to the console or to a log file. NSPR  uses this facility itself for its own development 
+debugging purposes.
+
+<P>
+
+<A NAME="25250"> </A>You can select events to be logged by module or level. A module is a user-defined 
+class of  log events. A level is a numeric value that indicates the seriousness of the 
+event to be logged.  You can combine module and level criteria to get highly 
+selective logging.&nbsp; 
+
+<P>
+
+<A NAME="25251"> </A>NSPR also provides "assert"-style macros and functions to aid in application 
+debugging.&nbsp; 
+
+<P>
+
+<A NAME="25255"> </A><A HREF="prlog.html#25266"  >Conditional Compilation and Execution</A><br>
+<A HREF="prlog.html#25271"  >Log Types and Variables</A><br>
+<A HREF="prlog.html#25338"  >Logging Functions and Macros</A><br>
+<A HREF="prlog.html#25604"  >Use Example</A>
+
+<P>
+
+
+
+<A NAME="25266"> </A>
+<A NAME="Conditional Compilation and Execution"> </A>
+<h2>
+Conditional Compilation and Execution
+</h2>
+
+
+<A NAME="25267"> </A>NSPR's logging facility is conditionally compiled in and enabled for applications 
+using it. These controls are platform dependent. Logging is not compiled in for the 
+Win16 platform. Logging is compiled into the NSPR debug builds; logging is not 
+compiled into the NSPR optimized builds. The compile time <CODE>#define</CODE> values <CODE>DEBUG</CODE> 
+or <CODE>FORCE_PR_LOG</CODE> enable NSPR logging for application programs.&nbsp; 
+
+<P>
+
+<A NAME="25268"> </A>To enable NSPR logging and/or the debugging aids in your application, compile 
+using the NSPR debug build headers and runtime. Set one of the compile-time 
+defines when you build your application.&nbsp; 
+
+<P>
+
+<A NAME="25269"> </A>Execution-time control of NSPR's logging uses two environment variables. These 
+variables control which modules and levels are logged as well as the file name of 
+the log file. By default, no logging is enabled at execution time.&nbsp; 
+
+<P>
+
+
+
+<A NAME="25271"> </A>
+<A NAME="Log Types and Variables"> </A>
+<h2>
+Log Types and Variables
+</h2>
+
+
+<A NAME="25272"> </A>Two types supporting NSPR logging are exposed in the API:&nbsp; 
+
+<P>
+
+<A NAME="25276"> </A><A HREF="prlog.html#25290"  ><CODE>PRLogModuleInfo</CODE></A><CODE><br>
+</CODE><A HREF="prlog.html#25299"  ><CODE>PRLogModuleLevel</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="25281"> </A>Two environment variables control the behavior of logging at execution time:
+
+<P>
+
+<A NAME="25285"> </A><A HREF="prlog.html#25306"  ><CODE>NSPR_LOG_MODULES</CODE></A><CODE><br>
+</CODE><A HREF="prlog.html#25329"  ><CODE>NSPR_LOG_FILE</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="25290"> </A><A NAME="PRLogModuleInfo"> </A><h4>
+PRLogModuleInfo
+</h4>
+
+<A NAME="25291"> </A>The <CODE>PRLogModuleInfo</CODE> structure controls logging from within your application. To 
+log your program's activity, create a <CODE>PRLogModuleInfo</CODE> structure using 
+<A HREF="prlog.html#25372"  ><CODE>PR_NewLogModule</CODE></A> .&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25295"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25296"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25297"></A>typedef struct PRLogModuleInfo {<br>&nbsp;&nbsp;&nbsp;const char *name;<br>&nbsp;&nbsp;&nbsp;PRLogModuleLevel level;<br>&nbsp;&nbsp;&nbsp;struct PRLogModuleInfo *next;<br>} PRLogModuleInfo;
+</PRE>
+<P>
+<A NAME="25299"> </A><A NAME="PRLogModuleLevel"> </A><h4>
+PRLogModuleLevel
+</h4>
+
+<A NAME="25300"> </A>The enumerated type <CODE>PRLogModuleLevel</CODE> defines levels of logging available to 
+application programs.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25301"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25302"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25303"></A>typedef enum PRLogModuleLevel {<br>&nbsp;&nbsp;&nbsp;PR_LOG_NONE = 0,<br>&nbsp;&nbsp;&nbsp;PR_LOG_ALWAYS = 1,<br>&nbsp;&nbsp;&nbsp;PR_LOG_ERROR = 2,<br>&nbsp;&nbsp;&nbsp;PR_LOG_WARNING = 3,<br>&nbsp;&nbsp;&nbsp;PR_LOG_DEBUG = 4,
+</PRE>
+<P>
+<PRE>
+<A NAME="25304"></A>&nbsp;&nbsp;&nbsp;PR_LOG_NOTICE = PR_LOG_DEBUG,<br>&nbsp;&nbsp;&nbsp;PR_LOG_WARN = PR_LOG_WARNING,<br>&nbsp;&nbsp;&nbsp;PR_LOG_MIN = PR_LOG_DEBUG,<br>&nbsp;&nbsp;&nbsp;PR_LOG_MAX = PR_LOG_DEBUG<br>} PRLogModuleLevel;
+</PRE>
+<P>
+<A NAME="25306"> </A><A NAME="NSPR_LOG_MODULES"> </A><h4>
+NSPR_LOG_MODULES
+</h4>
+
+<A NAME="25307"> </A>This environment variable specifies which log modules have logging enabled.
+
+<P>
+
+<BR>
+<A NAME="25308"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25309"></A><FONT FACE="serif"><em>moduleName</em></FONT>:<FONT FACE="serif"><em>level</em></FONT>[, <FONT FACE="serif"><em>moduleName</em></FONT>:<FONT FACE="serif"><em>level</em></FONT>]*
+</PRE>
+<P>
+<A NAME="25313"> </A><FONT FACE="serif"><em>moduleName</em></FONT> is the name specified in a <A HREF="prlog.html#25372"  ><CODE>PR_NewLogModule</CODE></A> call.
+
+<P>
+
+<A NAME="25314"> </A><FONT FACE="serif"><em>level</em></FONT> is a numeric value in the range <CODE>PR_LOG_NONE</CODE> to <CODE>PR_LOG_MAX</CODE>.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25315"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25316"> </A>Specify a <CODE>moduleName</CODE> that is associated with the <CODE>name</CODE> argument in a call to 
+<A HREF="prlog.html#25372"  ><CODE>PR_NewLogModule</CODE></A> and a non-zero <CODE>level</CODE> value to enable logging for the named 
+<CODE>moduleName</CODE>.&nbsp; 
+
+<P>
+
+<A NAME="25320"> </A>Special log module names are provided for controlling NSPR's log service at 
+execution time. These controls should be set in the <CODE>NSPR_LOG_MODULES</CODE> 
+environment variable at execution time to affect NSPR's log service for your 
+application.&nbsp; 
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="25321"> </A>The name <CODE>all</CODE> enables all log modules. To enable all log module calls to 
+<A HREF="prlog.html#25497"  ><CODE>PR_LOG</CODE></A>, set the variable as follows:&nbsp; 
+
+<P>
+<PRE>
+<A NAME="25325"></A>set NSPR_LOG_MODULES=all:5
+</PRE>
+<P><B>  <li></B>
+<A NAME="25326"> </A>The name <CODE>sync</CODE> enables unbuffered logging.&nbsp; 
+
+<P><B>  <li></B>
+<A NAME="25327"> </A>The name <CODE>bufsize:</CODE><FONT FACE="serif"><em>size</em></FONT> sets the log buffer to <FONT FACE="serif"><em>size</em></FONT>.&nbsp; 
+
+<P><B>  <li></B>
+<A NAME="25328"> </A>(In NSPR 4.8 or later) The name <CODE>timestamp</CODE> adds a timestamp (in Coordinated Universal Time) of the format "YYYY-MM-DD hh:mm:ss.ssssss UTC" (for example, "2009-05-08 15:28:29.754573 UTC") to the beginning of each log message.&nbsp; 
+
+<P></ul>
+
+<A NAME="25329"> </A><A NAME="NSPR_LOG_FILE"> </A><h4>
+NSPR_LOG_FILE
+</h4>
+
+<A NAME="25330"> </A>This environment variable specifies the file to which log messages are directed.
+
+<P>
+
+<BR>
+<A NAME="25331"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25332"></A><FONT FACE="serif"><em>filespec</em></FONT> 
+</PRE>
+<P>
+<A NAME="25333"> </A><FONT FACE="serif"><em>filespec</em></FONT> is a filename. The exact syntax is platform specific.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25334"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25335"> </A>Use this environment variable to specify a log file other than the default. If 
+<CODE>NSPR_LOG_FILE</CODE> is not in the environment, then log output is written to <CODE>stdout</CODE> or 
+<CODE>stderr</CODE>, depending on the platform.&nbsp; Set <CODE>NSPR_LOG_FILE</CODE> to the name of the log file 
+you want to use. NSPR logging, when enabled, writes to the file named in this 
+environment variable.
+
+<P>
+
+<A NAME="25336"> </A>For MS Windows systems, you can set <CODE>NSPR_LOG_FILE</CODE> to the special 
+(case-sensitive) value <CODE>WinDebug</CODE>. This value causes logging output to be written 
+using the Windows function <CODE>OutputDebugString()</CODE>, which writes to the debugger 
+window. 
+
+<P>
+
+
+
+<A NAME="25338"> </A>
+<A NAME="Logging Functions and Macros"> </A>
+<h2>
+Logging Functions and Macros
+</h2>
+
+
+<A NAME="25339"> </A>The functions and macros for logging are:
+
+<P>
+
+<A NAME="25343"> </A><A HREF="prlog.html#25372"  ><CODE>PR_NewLogModule</CODE></A><CODE><br>
+</CODE><A HREF="prlog.html#25393"  ><CODE>PR_SetLogFile</CODE></A><CODE><br>
+</CODE><A HREF="prlog.html#25415"  ><CODE>PR_SetLogBuffering</CODE></A><CODE><br>
+</CODE><A HREF="prlog.html#25437"  ><CODE>PR_LogPrint</CODE></A><CODE><br>
+</CODE><A HREF="prlog.html#25458"  ><CODE>PR_LogFlush</CODE></A><CODE><br>
+</CODE><A HREF="prlog.html#25470"  ><CODE>PR_LOG_TEST</CODE></A><CODE><br>
+</CODE><A HREF="prlog.html#25497"  ><CODE>PR_LOG</CODE></A><CODE><br>
+</CODE><A HREF="prlog.html#25533"  ><CODE>PR_Assert</CODE></A><CODE><br>
+</CODE><A HREF="prlog.html#25563"  ><CODE>PR_ASSERT</CODE></A><CODE><br>
+</CODE><A HREF="prlog.html#25585"  ><CODE>PR_NOT_REACHED</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="25372"> </A><A NAME="PR_NewLogModule"> </A><h4>
+PR_NewLogModule
+</h4>
+
+<A NAME="25373"> </A>Creates a new log module.
+
+<P>
+
+<BR>
+<A NAME="25374"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25375"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25376"></A>PRLogModuleInfo* PR_NewLogModule(const char *name);
+</PRE>
+<P>
+<BR>
+<A NAME="25377"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="25378"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="25384"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25381"> </A>name&nbsp;
+
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25383"> </A>The name to be assigned to the PRLogModuleInfo structure.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="25385"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="25386"> </A>A pointer to a <CODE>PRLogModuleInfo</CODE> structure.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25387"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25388"> </A>This function allocates and initializes a new <CODE>PRLogModuleInfo</CODE> structure with the 
+specified name. If the environment variable <A HREF="prlog.html#25306"  ><CODE>NSPR_LOG_MODULES</CODE></A> contains the 
+specified name, then the associated level value from the variable is associated with 
+the new <CODE>PRLogModuleInfo</CODE> structure.&nbsp; 
+
+<P>
+
+<A NAME="25393"> </A><A NAME="PR_SetLogFile"> </A><h4>
+PR_SetLogFile
+</h4>
+
+<A NAME="25394"> </A>Sets the name of the log file.
+
+<P>
+
+<BR>
+<A NAME="25395"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25396"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25397"></A>PRBool PR_SetLogFile(const char *name);
+</PRE>
+<P>
+<BR>
+<A NAME="25398"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="25399"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="25405"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25402"> </A><CODE>name&nbsp;
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25404"> </A>The name of the log file.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="25406"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="25407"> </A><CODE>PR_TRUE</CODE> when successful. Otherwise, <CODE>PR_FALSE</CODE>.
+
+<P>
+
+<BR>
+<A NAME="25408"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25409"> </A>Creates a log file with the specified file name. Subsequent log messages are written 
+to this file.&nbsp; 
+
+<P>
+
+<A NAME="25410"> </A>Ordinarily, a user application need not use this function, as NSPR initializes 
+logging at NSPR startup. The application can use the model provided in <A HREF="prlog.html#25604"  >Use 
+Example</A> to effect application logging.&nbsp; 
+
+<P>
+
+<A NAME="25415"> </A><A NAME="PR_SetLogBuffering"> </A><h4>
+PR_SetLogBuffering
+</h4>
+
+<A NAME="25416"> </A>Sets the level of buffering for the log file.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25417"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25418"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25419"></A>void PR_SetLogBuffering(PRIntn buffer_size);
+</PRE>
+<P>
+<BR>
+<A NAME="25420"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="25421"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="25427"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25424"> </A><CODE>buffer_size&nbsp;
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25426"> </A>The size of the buffer to be used for logging.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="25428"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="25429"> </A>Nothing.
+
+<P>
+
+<BR>
+<A NAME="25430"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25431"> </A>This function sets the size of the buffer used in NSPR logging.&nbsp; 
+
+<P>
+
+<A NAME="25432"> </A>Ordinarily, a user application need not use this function, as NSPR initializes 
+logging at NSPR startup. The application can use the model provided in <A HREF="prlog.html#25604"  >Use 
+Example</A> to effect application logging.&nbsp; 
+
+<P>
+
+<A NAME="25437"> </A><A NAME="PR_LogPrint"> </A><h4>
+PR_LogPrint
+</h4>
+
+<A NAME="25438"> </A>Writes an entry to the log.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25439"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25440"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25441"></A>void PR_LogPrint(const char *fmt, ...);
+</PRE>
+<P>
+<BR>
+<A NAME="25442"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="25443"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="25449"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25446"> </A><CODE>fmt&nbsp;
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25448"> </A>The string that is used as the formatting specification.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="25450"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="25451"> </A>Nothing.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25452"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25453"> </A>This function unconditionally writes a message to the log using the specified 
+format string. For a description of formatting and format strings, see <A HREF="prprf.html#23286"  >Chapter&#32;20 
+"Formatted Printing</A>."
+
+<P>
+
+<A NAME="25458"> </A><A NAME="PR_LogFlush"> </A><h4>
+PR_LogFlush
+</h4>
+
+<A NAME="25459"> </A>Flushes the log buffer to external media.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25460"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25461"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25462"></A>void PR_LogFlush(void);
+</PRE>
+<P>
+<BR>
+<A NAME="25463"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="25464"> </A>The function has no parameters.
+
+<P>
+
+<BR>
+<A NAME="25465"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="25466"> </A>Nothing.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25467"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25468"> </A>This function flushes the log buffer to external media.&nbsp; 
+
+<P>
+
+<A NAME="25470"> </A><A NAME="PR_LOG_TEST"> </A><h4>
+PR_LOG_TEST
+</h4>
+
+<A NAME="25471"> </A>Determines if logging is enabled for a module and level.
+
+<P>
+
+<BR>
+<A NAME="25472"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25473"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25474"></A>PRBool PR_LOG_TEST (<br>&nbsp;&nbsp;&nbsp;PRLogModuleInfo *_module,<br>&nbsp;&nbsp;&nbsp;PRLogModuleLevel _level);
+</PRE>
+<P>
+<BR>
+<A NAME="25475"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="25476"> </A>The macro has these parameters:
+
+<P>
+
+<P>
+<A NAME="25488"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25479"> </A><CODE>_module&nbsp;
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25481"> </A>A pointer to a log module structure.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25483"> </A><CODE>_level
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25485"> </A>A level value. Possible values are:
+
+<P>
+
+<A NAME="25486"> </A><CODE>PR_LOG_NONE = 0<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_ALWAYS = 1<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_ERROR = 2<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_WARNING = 3<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_DEBUG = 4
+</CODE>
+<P>
+
+<A NAME="25487"> </A><CODE>&nbsp;&nbsp;&nbsp;PR_LOG_NOTICE = PR_LOG_DEBUG<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_WARN = PR_LOG_WARNING<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_MIN = PR_LOG_DEBUG<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_MAX = PR_LOG_DEBUG
+</CODE>
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="25489"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="25490"> </A><CODE>PR_TRUE</CODE> when logging is enabled for the given module and level, otherwise 
+<CODE>PR_FALSE</CODE>.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25491"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25492"> </A>This macro tests whether logging is enabled for the specified module and level. Use 
+it as an expression in a conditional execution statement to control logging. See also 
+<A HREF="prlog.html#25497"  ><CODE>PR_LOG</CODE></A>. 
+
+<P>
+
+<A NAME="25497"> </A><A NAME="PR_LOG"> </A><h4>
+PR_LOG
+</h4>
+
+<A NAME="25498"> </A>Conditionally writes an entry to the log.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25499"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25500"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25501"></A>void PR_LOG (<br>&nbsp;&nbsp;&nbsp;PRLogModuleInfo *_module,<br>&nbsp;&nbsp;&nbsp;PRLogModuleLevel _level<br>&nbsp;&nbsp;&nbsp; ... _args);
+</PRE>
+<P>
+<BR>
+<A NAME="25502"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="25503"> </A>The macro has these parameters:
+
+<P>
+
+<P>
+<A NAME="25519"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25506"> </A><CODE>_module&nbsp;
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25508"> </A>A pointer to a log module structure.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25510"> </A><CODE>_level
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25512"> </A>A level value. Possible values are:
+
+<P>
+
+<A NAME="25513"> </A><CODE>PR_LOG_NONE = 0<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_ALWAYS = 1<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_ERROR = 2<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_WARNING = 3<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_DEBUG = 4
+</CODE>
+<P>
+
+<A NAME="25514"> </A><CODE>&nbsp;&nbsp;&nbsp;PR_LOG_NOTICE = PR_LOG_DEBUG<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_WARN = PR_LOG_WARNING<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_MIN = PR_LOG_DEBUG<br>
+&nbsp;&nbsp;&nbsp;PR_LOG_MAX = PR_LOG_DEBUG
+</CODE>
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25516"> </A><CODE>_args
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25518"> </A>A variable length argument list, as if to <CODE>printf</CODE>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="25520"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="25521"> </A>Nothing.
+
+<P>
+
+<BR>
+<A NAME="25522"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25523"> </A>This macro formats the specified arguments and writes the output to the log file, if 
+logging is enabled for the specified module and level. For a description of 
+formatting and format strings, see <A HREF="prprf.html#23286"  >Chapter&#32;20 "Formatted Printing</A>"
+
+<P>
+
+<A NAME="25530"> </A>For an example of using conditional logging, see <A HREF="prlog.html#25604"  >Use Example</A> .&nbsp; 
+
+<P>
+
+<A NAME="25531"> </A>This macro compiles to nothing if compile-time options are not specified to enable 
+logging.&nbsp; 
+
+<P>
+
+<A NAME="25533"> </A><A NAME="PR_Assert"> </A><h4>
+PR_Assert
+</h4>
+
+<A NAME="25534"> </A>Writes arguments to the log and terminates execution.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25535"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25536"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25537"></A>void PR_Assert (<br>&nbsp;&nbsp;&nbsp;const char *s, <br>&nbsp;&nbsp;&nbsp;const char *file,<br>&nbsp;&nbsp;&nbsp;PRIntn ln);
+</PRE>
+<P>
+<BR>
+<A NAME="25538"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="25539"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="25553"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25542"> </A><CODE>s&nbsp;
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25544"> </A>A string to be displayed in the log
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25546"> </A><CODE>file
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25548"> </A>The file name of the compilation unit containing this function call. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25550"> </A><CODE>ln
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25552"> </A>The line number within the specified file of this function call.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="25554"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="25555"> </A>Nothing.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25556"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25557"> </A>This function displays data in the log.&nbsp; 
+
+<P>
+
+<A NAME="25558"> </A>Normally an application would not call this function directly; use <A HREF="prlog.html#25563"  ><CODE>PR_ASSERT</CODE></A> 
+instead.&nbsp; 
+
+<P>
+
+<A NAME="25563"> </A><A NAME="PR_ASSERT"> </A><h4>
+PR_ASSERT
+</h4>
+
+<A NAME="25564"> </A>Terminates execution when a given expression is <CODE>FALSE</CODE>. &nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25565"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25566"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25567"></A>void PR_ASSERT ( expression );
+</PRE>
+<P>
+<BR>
+<A NAME="25568"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="25569"> </A>The macro has this parameter:
+
+<P>
+
+<P>
+<A NAME="25575"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25572"> </A><CODE>expression&nbsp;
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25574"> </A>Any valid C language expression that evaluates to <CODE>TRUE</CODE> or <CODE>FALSE</CODE>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="25576"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="25577"> </A>Nothing&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25578"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25579"> </A>This macro evaluates the specified expression. When the result is zero (<CODE>FALSE</CODE>) the 
+application terminates; otherwise the application continues. The macro converts 
+the expression to a string and passes it to <A HREF="prlog.html#25533"  ><CODE>PR_Assert</CODE></A>, using <CODE>file</CODE> and <CODE>ln</CODE> 
+parameters from the compile-time environment.&nbsp; 
+
+<P>
+
+<A NAME="25583"> </A>This macro compiles to nothing if compile-time options are not specified to enable 
+logging.&nbsp; 
+
+<P>
+
+<A NAME="25585"> </A><A NAME="PR_NOT_REACHED"> </A><h4>
+PR_NOT_REACHED
+</h4>
+
+<A NAME="25586"> </A>Terminates the calling application with a message to the log.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25587"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="25588"></A>#include &lt;prlog.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="25589"></A>void PR_NOT_REACHED(const char *_reasonStr);
+</PRE>
+<P>
+<BR>
+<A NAME="25590"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="25591"> </A>The macro has this parameter:
+
+<P>
+
+<P>
+<A NAME="25597"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="25594"> </A><CODE>reasonStr&nbsp;
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="25596"> </A>A string that describes why you should not have reached this 
+statement.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="25598"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="25599"> </A>Nothing.&nbsp; 
+
+<P>
+
+<BR>
+<A NAME="25600"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="25601"> </A>This macro writes the specified reason string to the log and terminates the 
+application.&nbsp; 
+
+<P>
+
+<A NAME="25602"> </A>This macro compiles to nothing if compile-time options are not specified to enable 
+logging.&nbsp; 
+
+<P>
+
+
+
+<A NAME="25604"> </A>
+<A NAME="Use Example"> </A>
+<h2>
+Use Example
+</h2>
+
+
+<A NAME="25605"> </A>The following sample code fragment demonstrates use of the logging and 
+debugging aids.&nbsp; 
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="25606"> </A>Compile the program with <CODE>DEBUG</CODE> defined. 
+
+<P><B>  <li></B>
+<A NAME="25607"> </A>Before running the compiled program, set the environment variable 
+<A HREF="prlog.html#25306"  ><CODE>NSPR_LOG_MODULES</CODE></A> to <CODE>userStuff:5</CODE> 
+
+<P>
+<PRE>
+<A NAME="25611"></A>static void UserLogStuff( void )<br>{<br>&nbsp;&nbsp;&nbsp; PRLogModuleInfo *myLM;<br>&nbsp;&nbsp;&nbsp; PRIntn i;
+</PRE>
+<P>
+<PRE>
+<A NAME="25612"></A>&nbsp;&nbsp;&nbsp; myLM = PR_NewLogModule( "userStuff" );<br>&nbsp;&nbsp;&nbsp; PR_ASSERT( myLM );
+</PRE>
+<P>
+<PRE>
+<A NAME="25613"></A>&nbsp;&nbsp;&nbsp; PR_LOG( myLM, PR_LOG_NOTICE, ("Log a Notice %d\n", 999 ));<br>&nbsp;&nbsp;&nbsp; for (i = 0; i &lt; 10 ; i++ )<br>&nbsp;&nbsp;&nbsp; {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_LOG( myLM, PR_LOG_DEBUG, ("Log Debug number: %d\n", i));<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PR_Sleep( 500 );<br>&nbsp;&nbsp;&nbsp; }<br>&nbsp;&nbsp;&nbsp; PR_LOG( myLM, PR_LOG_NOTICE, ("That's all folks\n");
+</PRE>
+<P>
+<PRE>
+<A NAME="25614"></A>} /* end UserLogStuff() */
+</PRE>
+<P></ul>
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="prsystem.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prcountr.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

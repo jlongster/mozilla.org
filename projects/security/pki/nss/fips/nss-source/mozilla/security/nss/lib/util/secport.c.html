@@ -1,0 +1,682 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> /*
+<b><a name="38">   38</a></b>  * secport.c - portability interfaces for security libraries
+<b><a name="39">   39</a></b>  *
+<b><a name="40">   40</a></b>  * This file abstracts out libc functionality that libsec depends on
+<b><a name="41">   41</a></b>  * 
+<b><a name="42">   42</a></b>  * NOTE - These are not public interfaces
+<b><a name="43">   43</a></b>  *
+<b><a name="44">   44</a></b>  * $Id$
+<b><a name="45">   45</a></b>  */
+<b><a name="46">   46</a></b> 
+<b><a name="47">   47</a></b> #include "seccomon.h"
+<b><a name="48">   48</a></b> #include "prmem.h"
+<b><a name="49">   49</a></b> #include "prerror.h"
+<b><a name="50">   50</a></b> #include "plarena.h"
+<b><a name="51">   51</a></b> #include "secerr.h"
+<b><a name="52">   52</a></b> #include "prmon.h"
+<b><a name="53">   53</a></b> #include "nsslocks.h"
+<b><a name="54">   54</a></b> #include "secport.h"
+<b><a name="55">   55</a></b> #include "prvrsion.h"
+<b><a name="56">   56</a></b> #include "prenv.h"
+<b><a name="57">   57</a></b> 
+<b><a name="58">   58</a></b> #ifdef DEBUG
+<b><a name="59">   59</a></b> #define <a href="#59">THREADMARK</a>
+<b><a name="60">   60</a></b> #endif /* DEBUG */
+<b><a name="61">   61</a></b> 
+<b><a name="62">   62</a></b> #ifdef <a href="../util/secport.c.dep.html#THREADMARK">THREADMARK</a>
+<b><a name="63">   63</a></b> #include "prthread.h"
+<b><a name="64">   64</a></b> #endif /* THREADMARK */
+<b><a name="65">   65</a></b> 
+<b><a name="66">   66</a></b> #if defined(<a href="../util/secport.h.dep.html#XP_UNIX">XP_UNIX</a>) || defined(<a href="../util/secport.h.dep.html#XP_MAC">XP_MAC</a>) || defined(XP_OS2) || defined(<a href="../util/secport.h.dep.html#XP_BEOS">XP_BEOS</a>)
+<b><a name="67">   67</a></b> #include &lt;stdlib.h&gt;
+<b><a name="68">   68</a></b> #else
+<b><a name="69">   69</a></b> #include "wtypes.h"
+<b><a name="70">   70</a></b> #endif
+<b><a name="71">   71</a></b> 
+<b><a name="72">   72</a></b> #define <a href="#72">SET_ERROR_CODE</a>        /* place holder for code to set PR error code. */
+<b><a name="73">   73</a></b> 
+<b><a name="74">   74</a></b> #ifdef <a href="../util/secport.c.dep.html#THREADMARK">THREADMARK</a>
+<b><a name="75">   75</a></b> typedef struct <a href="#75">threadmark_mark_str</a> {
+<b><a name="76">   76</a></b>   struct <a href="../util/secport.c.dep.html#threadmark_mark_str">threadmark_mark_str</a> *next;
+<b><a name="77">   77</a></b>   void *mark;
+<b><a name="78">   78</a></b> } <a href="#78">threadmark_mark</a>;
+<b><a name="79">   79</a></b> 
+<b><a name="80">   80</a></b> #endif /* THREADMARK */
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b> /* The value of this magic must change each time PORTArenaPool changes. */
+<b><a name="83">   83</a></b> #define <a href="#83">ARENAPOOL_MAGIC</a> 0xB8AC9BDF 
+<b><a name="84">   84</a></b> 
+<b><a name="85">   85</a></b> typedef struct <a href="#85">PORTArenaPool_str</a> {
+<b><a name="86">   86</a></b>   PLArenaPool arena;
+<b><a name="87">   87</a></b>   PRUint32    magic;
+<b><a name="88">   88</a></b>   PRLock *    lock;
+<b><a name="89">   89</a></b> #ifdef <a href="../util/secport.c.dep.html#THREADMARK">THREADMARK</a>
+<b><a name="90">   90</a></b>   PRThread *marking_thread;
+<b><a name="91">   91</a></b>   <a href="../util/secport.c.dep.html#threadmark_mark">threadmark_mark</a> *first_mark;
+<b><a name="92">   92</a></b> #endif
+<b><a name="93">   93</a></b> } <a href="#93">PORTArenaPool</a>;
+<b><a name="94">   94</a></b> 
+<b><a name="95">   95</a></b> 
+<b><a name="96">   96</a></b> /* count of allocation failures. */
+<b><a name="97">   97</a></b> unsigned long <a href="#97">port_allocFailures</a>;
+<b><a name="98">   98</a></b> 
+<b><a name="99">   99</a></b> /* locations for registering Unicode conversion functions.  
+<b><a name="100">  100</a></b>  * XXX is this the appropriate location?  or should they be
+<b><a name="101">  101</a></b>  *     moved to client/server specific locations?
+<b><a name="102">  102</a></b>  */
+<b><a name="103">  103</a></b> <a href="../util/secport.h.dep.html#PORTCharConversionFunc">PORTCharConversionFunc</a> <a href="#103">ucs4Utf8ConvertFunc</a>;
+<b><a name="104">  104</a></b> <a href="../util/secport.h.dep.html#PORTCharConversionFunc">PORTCharConversionFunc</a> <a href="#104">ucs2Utf8ConvertFunc</a>;
+<b><a name="105">  105</a></b> <a href="../util/secport.h.dep.html#PORTCharConversionWSwapFunc">PORTCharConversionWSwapFunc</a>  <a href="#105">ucs2AsciiConvertFunc</a>;
+<b><a name="106">  106</a></b> 
+<b><a name="107">  107</a></b> void *
+<b><a name="108">  108</a></b> <a href="#108">PORT_Alloc</a>(size_t bytes)
+<b><a name="109">  109</a></b> {
+<b><a name="110">  110</a></b>     void *rv;
+<b><a name="111">  111</a></b> 
+<b><a name="112">  112</a></b>     /* Always allocate a non-zero amount of bytes */
+<b><a name="113">  113</a></b>     rv = (void *)PR_Malloc(bytes ? bytes : 1);
+<b><a name="114">  114</a></b>     if (!rv) {
+<b><a name="115">  115</a></b>         ++<a href="../util/secport.c.dep.html#port_allocFailures">port_allocFailures</a>;
+<b><a name="116">  116</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="117">  117</a></b>     }
+<b><a name="118">  118</a></b>     return rv;
+<b><a name="119">  119</a></b> }
+<b><a name="120">  120</a></b> 
+<b><a name="121">  121</a></b> void *
+<b><a name="122">  122</a></b> <a href="#122">PORT_Realloc</a>(void *oldptr, size_t bytes)
+<b><a name="123">  123</a></b> {
+<b><a name="124">  124</a></b>     void *rv;
+<b><a name="125">  125</a></b> 
+<b><a name="126">  126</a></b>     rv = (void *)PR_Realloc(oldptr, bytes);
+<b><a name="127">  127</a></b>     if (!rv) {
+<b><a name="128">  128</a></b>         ++<a href="../util/secport.c.dep.html#port_allocFailures">port_allocFailures</a>;
+<b><a name="129">  129</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="130">  130</a></b>     }
+<b><a name="131">  131</a></b>     return rv;
+<b><a name="132">  132</a></b> }
+<b><a name="133">  133</a></b> 
+<b><a name="134">  134</a></b> void *
+<b><a name="135">  135</a></b> <a href="#135">PORT_ZAlloc</a>(size_t bytes)
+<b><a name="136">  136</a></b> {
+<b><a name="137">  137</a></b>     void *rv;
+<b><a name="138">  138</a></b> 
+<b><a name="139">  139</a></b>     /* Always allocate a non-zero amount of bytes */
+<b><a name="140">  140</a></b>     rv = (void *)PR_Calloc(1, bytes ? bytes : 1);
+<b><a name="141">  141</a></b>     if (!rv) {
+<b><a name="142">  142</a></b>         ++<a href="../util/secport.c.dep.html#port_allocFailures">port_allocFailures</a>;
+<b><a name="143">  143</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="144">  144</a></b>     }
+<b><a name="145">  145</a></b>     return rv;
+<b><a name="146">  146</a></b> }
+<b><a name="147">  147</a></b> 
+<b><a name="148">  148</a></b> void
+<b><a name="149">  149</a></b> <a href="#149">PORT_Free</a>(void *ptr)
+<b><a name="150">  150</a></b> {
+<b><a name="151">  151</a></b>     if (ptr) {
+<b><a name="152">  152</a></b>         PR_Free(ptr);
+<b><a name="153">  153</a></b>     }
+<b><a name="154">  154</a></b> }
+<b><a name="155">  155</a></b> 
+<b><a name="156">  156</a></b> void
+<b><a name="157">  157</a></b> <a href="#157">PORT_ZFree</a>(void *ptr, size_t len)
+<b><a name="158">  158</a></b> {
+<b><a name="159">  159</a></b>     if (ptr) {
+<b><a name="160">  160</a></b>         memset(ptr, 0, len);
+<b><a name="161">  161</a></b>         PR_Free(ptr);
+<b><a name="162">  162</a></b>     }
+<b><a name="163">  163</a></b> }
+<b><a name="164">  164</a></b> 
+<b><a name="165">  165</a></b> char *
+<b><a name="166">  166</a></b> <a href="#166">PORT_Strdup</a>(const char *str)
+<b><a name="167">  167</a></b> {
+<b><a name="168">  168</a></b>     size_t len = <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a>(str)+1;
+<b><a name="169">  169</a></b>     char *newstr;
+<b><a name="170">  170</a></b> 
+<b><a name="171">  171</a></b>     newstr = (char *)<a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(len);
+<b><a name="172">  172</a></b>     if (newstr) {
+<b><a name="173">  173</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(newstr, str, len);
+<b><a name="174">  174</a></b>     }
+<b><a name="175">  175</a></b>     return newstr;
+<b><a name="176">  176</a></b> }
+<b><a name="177">  177</a></b> 
+<b><a name="178">  178</a></b> void
+<b><a name="179">  179</a></b> <a href="#179">PORT_SetError</a>(int value)
+<b><a name="180">  180</a></b> {        
+<b><a name="181">  181</a></b>     PR_SetError(value, 0);
+<b><a name="182">  182</a></b>     return;
+<b><a name="183">  183</a></b> }
+<b><a name="184">  184</a></b> 
+<b><a name="185">  185</a></b> int
+<b><a name="186">  186</a></b> <a href="#186">PORT_GetError</a>(void)
+<b><a name="187">  187</a></b> {
+<b><a name="188">  188</a></b>     return(PR_GetError());
+<b><a name="189">  189</a></b> }
+<b><a name="190">  190</a></b> 
+<b><a name="191">  191</a></b> /********************* Arena code follows *****************************/
+<b><a name="192">  192</a></b> 
+<b><a name="193">  193</a></b> PLArenaPool *
+<b><a name="194">  194</a></b> <a href="#194">PORT_NewArena</a>(unsigned long chunksize)
+<b><a name="195">  195</a></b> {
+<b><a name="196">  196</a></b>     <a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *pool;
+<b><a name="197">  197</a></b>     
+<b><a name="198">  198</a></b>     pool = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a>);
+<b><a name="199">  199</a></b>     if (!pool) {
+<b><a name="200">  200</a></b>         return NULL;
+<b><a name="201">  201</a></b>     }
+<b><a name="202">  202</a></b>     pool-&gt;magic = <a href="../util/secport.c.dep.html#ARENAPOOL_MAGIC">ARENAPOOL_MAGIC</a>;
+<b><a name="203">  203</a></b>     pool-&gt;lock = <a href="../util/nssilock.h.dep.html#PZ_NewLock">PZ_NewLock</a></a>(nssILockArena);
+<b><a name="204">  204</a></b>     if (!pool-&gt;lock) {
+<b><a name="205">  205</a></b>         ++<a href="../util/secport.c.dep.html#port_allocFailures">port_allocFailures</a>;
+<b><a name="206">  206</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(pool);
+<b><a name="207">  207</a></b>         return NULL;
+<b><a name="208">  208</a></b>     }
+<b><a name="209">  209</a></b>     PL_InitArenaPool(&amp;pool-&gt;arena, "security", chunksize, sizeof(double));
+<b><a name="210">  210</a></b>     return(&amp;pool-&gt;arena);
+<b><a name="211">  211</a></b> }
+<b><a name="212">  212</a></b> 
+<b><a name="213">  213</a></b> #define <a href="#213">MAX_SIZE</a> 0x7fffffffUL
+<b><a name="214">  214</a></b> 
+<b><a name="215">  215</a></b> void *
+<b><a name="216">  216</a></b> <a href="#216">PORT_ArenaAlloc</a>(PLArenaPool *arena, size_t size)
+<b><a name="217">  217</a></b> {
+<b><a name="218">  218</a></b>     void *p = NULL;
+<b><a name="219">  219</a></b> 
+<b><a name="220">  220</a></b>     <a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *pool = (<a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *)arena;
+<b><a name="221">  221</a></b> 
+<b><a name="222">  222</a></b>     if (size &lt;= 0) {
+<b><a name="223">  223</a></b>         size = 1;
+<b><a name="224">  224</a></b>     }
+<b><a name="225">  225</a></b> 
+<b><a name="226">  226</a></b>     if (size &gt; <a href="../util/secport.c.dep.html#MAX_SIZE">MAX_SIZE</a>) {
+<b><a name="227">  227</a></b>         /* you lose. */
+<b><a name="228">  228</a></b>     } else 
+<b><a name="229">  229</a></b>     /* Is it one of ours?  Assume so and check the magic */
+<b><a name="230">  230</a></b>     if (<a href="../util/secport.c.dep.html#ARENAPOOL_MAGIC">ARENAPOOL_MAGIC</a> == pool-&gt;magic ) {
+<b><a name="231">  231</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Lock">PZ_Lock</a></a>(pool-&gt;lock);
+<b><a name="232">  232</a></b> #ifdef <a href="../util/secport.c.dep.html#THREADMARK">THREADMARK</a>
+<b><a name="233">  233</a></b>         /* Most likely one of ours.  Is there a thread id? */
+<b><a name="234">  234</a></b>         if (pool-&gt;marking_thread  &amp;&amp;
+<b><a name="235">  235</a></b>             pool-&gt;marking_thread != PR_GetCurrentThread() ) {
+<b><a name="236">  236</a></b>             /* Another thread holds a mark in this arena */
+<b><a name="237">  237</a></b>             <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="238">  238</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="239">  239</a></b>             <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(0);
+<b><a name="240">  240</a></b>             return NULL;
+<b><a name="241">  241</a></b>         } /* tid != null */
+<b><a name="242">  242</a></b> #endif /* THREADMARK */
+<b><a name="243">  243</a></b>         PL_ARENA_ALLOCATE(p, arena, size);
+<b><a name="244">  244</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="245">  245</a></b>     } else {
+<b><a name="246">  246</a></b>         PL_ARENA_ALLOCATE(p, arena, size);
+<b><a name="247">  247</a></b>     }
+<b><a name="248">  248</a></b> 
+<b><a name="249">  249</a></b>     if (!p) {
+<b><a name="250">  250</a></b>         ++<a href="../util/secport.c.dep.html#port_allocFailures">port_allocFailures</a>;
+<b><a name="251">  251</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="252">  252</a></b>     }
+<b><a name="253">  253</a></b> 
+<b><a name="254">  254</a></b>     return(p);
+<b><a name="255">  255</a></b> }
+<b><a name="256">  256</a></b> 
+<b><a name="257">  257</a></b> void *
+<b><a name="258">  258</a></b> <a href="#258">PORT_ArenaZAlloc</a>(PLArenaPool *arena, size_t size)
+<b><a name="259">  259</a></b> {
+<b><a name="260">  260</a></b>     void *p;
+<b><a name="261">  261</a></b> 
+<b><a name="262">  262</a></b>     if (size &lt;= 0)
+<b><a name="263">  263</a></b>         size = 1;
+<b><a name="264">  264</a></b> 
+<b><a name="265">  265</a></b>     p = <a href="../util/secport.c.dep.html#PORT_ArenaAlloc">PORT_ArenaAlloc</a>(arena, size);
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b>     if (p) {
+<b><a name="268">  268</a></b>         <a href="../util/secport.h.dep.html#PORT_Memset">PORT_Memset</a>(p, 0, size);
+<b><a name="269">  269</a></b>     }
+<b><a name="270">  270</a></b> 
+<b><a name="271">  271</a></b>     return(p);
+<b><a name="272">  272</a></b> }
+<b><a name="273">  273</a></b> 
+<b><a name="274">  274</a></b> /*
+<b><a name="275">  275</a></b>  * If zero is true, zeroize the arena memory before freeing it.
+<b><a name="276">  276</a></b>  */
+<b><a name="277">  277</a></b> void
+<b><a name="278">  278</a></b> <a href="#278">PORT_FreeArena</a>(PLArenaPool *arena, PRBool <a href="../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>)
+<b><a name="279">  279</a></b> {
+<b><a name="280">  280</a></b>     <a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *pool = (<a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *)arena;
+<b><a name="281">  281</a></b>     PRLock *       lock = (PRLock *)0;
+<b><a name="282">  282</a></b>     size_t         len  = sizeof *arena;
+<b><a name="283">  283</a></b>     extern const PRVersionDescription * libVersionPoint(void);
+<b><a name="284">  284</a></b>     static const PRVersionDescription * pvd;
+<b><a name="285">  285</a></b>     static PRBool  doFreeArenaPool = PR_FALSE;
+<b><a name="286">  286</a></b> 
+<b><a name="287">  287</a></b>     if (<a href="../util/secport.c.dep.html#ARENAPOOL_MAGIC">ARENAPOOL_MAGIC</a> == pool-&gt;magic ) {
+<b><a name="288">  288</a></b>         len  = sizeof *pool;
+<b><a name="289">  289</a></b>         lock = pool-&gt;lock;
+<b><a name="290">  290</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Lock">PZ_Lock</a></a>(lock);
+<b><a name="291">  291</a></b>     }
+<b><a name="292">  292</a></b>     if (!pvd) {
+<b><a name="293">  293</a></b>         /* Each of NSPR's DLLs has a function libVersionPoint().
+<b><a name="294">  294</a></b>         ** We could do a lot of extra work to be sure we're calling the
+<b><a name="295">  295</a></b>         ** one in the DLL that holds PR_FreeArenaPool, but instead we
+<b><a name="296">  296</a></b>         ** rely on the fact that ALL NSPR DLLs in the same directory
+<b><a name="297">  297</a></b>         ** must be from the same release, and we call which ever one we get. 
+<b><a name="298">  298</a></b>         */
+<b><a name="299">  299</a></b>         /* no need for thread protection here */
+<b><a name="300">  300</a></b>         pvd = libVersionPoint();
+<b><a name="301">  301</a></b>         if ((pvd-&gt;vMajor &gt; 4) || 
+<b><a name="302">  302</a></b>             (pvd-&gt;vMajor == 4 &amp;&amp; pvd-&gt;vMinor &gt; 1) ||
+<b><a name="303">  303</a></b>             (pvd-&gt;vMajor == 4 &amp;&amp; pvd-&gt;vMinor == 1 &amp;&amp; pvd-&gt;vPatch &gt;= 1)) {
+<b><a name="304">  304</a></b>             const char *ev = PR_GetEnv("NSS_DISABLE_ARENA_FREE_LIST");
+<b><a name="305">  305</a></b>             if (!ev) doFreeArenaPool = PR_TRUE;
+<b><a name="306">  306</a></b>         }
+<b><a name="307">  307</a></b>     }
+<b><a name="308">  308</a></b>     if (<a href="../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>) {
+<b><a name="309">  309</a></b>         PLArena *a;
+<b><a name="310">  310</a></b>         for (a = arena-&gt;first.next; a; a = a-&gt;next) {
+<b><a name="311">  311</a></b>             PR_ASSERT(a-&gt;base &lt;= a-&gt;avail &amp;&amp; a-&gt;avail &lt;= a-&gt;limit);
+<b><a name="312">  312</a></b>             memset((void *)a-&gt;base, 0, a-&gt;avail - a-&gt;base);
+<b><a name="313">  313</a></b>         }
+<b><a name="314">  314</a></b>     }
+<b><a name="315">  315</a></b>     if (doFreeArenaPool) {
+<b><a name="316">  316</a></b>         PL_FreeArenaPool(arena);
+<b><a name="317">  317</a></b>     } else {
+<b><a name="318">  318</a></b>         PL_FinishArenaPool(arena);
+<b><a name="319">  319</a></b>     }
+<b><a name="320">  320</a></b>     <a href="../util/secport.c.dep.html#PORT_ZFree">PORT_ZFree</a>(arena, len);
+<b><a name="321">  321</a></b>     if (lock) {
+<b><a name="322">  322</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(lock);
+<b><a name="323">  323</a></b>         <a href="../util/nssilock.h.dep.html#PZ_DestroyLock">PZ_DestroyLock</a></a>(lock);
+<b><a name="324">  324</a></b>     }
+<b><a name="325">  325</a></b> }
+<b><a name="326">  326</a></b> 
+<b><a name="327">  327</a></b> void *
+<b><a name="328">  328</a></b> <a href="#328">PORT_ArenaGrow</a>(PLArenaPool *arena, void *ptr, size_t oldsize, size_t newsize)
+<b><a name="329">  329</a></b> {
+<b><a name="330">  330</a></b>     <a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *pool = (<a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *)arena;
+<b><a name="331">  331</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(newsize &gt;= oldsize);
+<b><a name="332">  332</a></b>     
+<b><a name="333">  333</a></b>     if (<a href="../util/secport.c.dep.html#ARENAPOOL_MAGIC">ARENAPOOL_MAGIC</a> == pool-&gt;magic ) {
+<b><a name="334">  334</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Lock">PZ_Lock</a></a>(pool-&gt;lock);
+<b><a name="335">  335</a></b>         /* Do we do a THREADMARK check here? */
+<b><a name="336">  336</a></b>         PL_ARENA_GROW(ptr, arena, oldsize, ( newsize - oldsize ) );
+<b><a name="337">  337</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="338">  338</a></b>     } else {
+<b><a name="339">  339</a></b>         PL_ARENA_GROW(ptr, arena, oldsize, ( newsize - oldsize ) );
+<b><a name="340">  340</a></b>     }
+<b><a name="341">  341</a></b>     
+<b><a name="342">  342</a></b>     return(ptr);
+<b><a name="343">  343</a></b> }
+<b><a name="344">  344</a></b> 
+<b><a name="345">  345</a></b> void *
+<b><a name="346">  346</a></b> <a href="#346">PORT_ArenaMark</a>(PLArenaPool *arena)
+<b><a name="347">  347</a></b> {
+<b><a name="348">  348</a></b>     void * result;
+<b><a name="349">  349</a></b> 
+<b><a name="350">  350</a></b>     <a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *pool = (<a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *)arena;
+<b><a name="351">  351</a></b>     if (<a href="../util/secport.c.dep.html#ARENAPOOL_MAGIC">ARENAPOOL_MAGIC</a> == pool-&gt;magic ) {
+<b><a name="352">  352</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Lock">PZ_Lock</a></a>(pool-&gt;lock);
+<b><a name="353">  353</a></b> #ifdef <a href="../util/secport.c.dep.html#THREADMARK">THREADMARK</a>
+<b><a name="354">  354</a></b>         {
+<b><a name="355">  355</a></b>           <a href="../util/secport.c.dep.html#threadmark_mark">threadmark_mark</a> *tm, **pw;
+<b><a name="356">  356</a></b>           PRThread * currentThread = PR_GetCurrentThread();
+<b><a name="357">  357</a></b> 
+<b><a name="358">  358</a></b>             if (! pool-&gt;marking_thread ) {
+<b><a name="359">  359</a></b>                 /* First mark */
+<b><a name="360">  360</a></b>                 pool-&gt;marking_thread = currentThread;
+<b><a name="361">  361</a></b>             } else if (currentThread != pool-&gt;marking_thread ) {
+<b><a name="362">  362</a></b>                 <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="363">  363</a></b>                 <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="364">  364</a></b>                 <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(0);
+<b><a name="365">  365</a></b>                 return NULL;
+<b><a name="366">  366</a></b>             }
+<b><a name="367">  367</a></b> 
+<b><a name="368">  368</a></b>             result = PL_ARENA_MARK(arena);
+<b><a name="369">  369</a></b>             PL_ARENA_ALLOCATE(tm, arena, sizeof(<a href="../util/secport.c.dep.html#threadmark_mark">threadmark_mark</a>));
+<b><a name="370">  370</a></b>             if (!tm) {
+<b><a name="371">  371</a></b>                 <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="372">  372</a></b>                 <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="373">  373</a></b>                 return NULL;
+<b><a name="374">  374</a></b>             }
+<b><a name="375">  375</a></b> 
+<b><a name="376">  376</a></b>             tm-&gt;mark = result;
+<b><a name="377">  377</a></b>             tm-&gt;next = (<a href="../util/secport.c.dep.html#threadmark_mark">threadmark_mark</a> *)NULL;
+<b><a name="378">  378</a></b> 
+<b><a name="379">  379</a></b>             pw = &amp;pool-&gt;first_mark;
+<b><a name="380">  380</a></b>             while( *pw ) {
+<b><a name="381">  381</a></b>                  pw = &amp;(*pw)-&gt;next;
+<b><a name="382">  382</a></b>             }
+<b><a name="383">  383</a></b> 
+<b><a name="384">  384</a></b>             *pw = tm;
+<b><a name="385">  385</a></b>         }
+<b><a name="386">  386</a></b> #else /* THREADMARK */
+<b><a name="387">  387</a></b>         result = PL_ARENA_MARK(arena);
+<b><a name="388">  388</a></b> #endif /* THREADMARK */
+<b><a name="389">  389</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="390">  390</a></b>     } else {
+<b><a name="391">  391</a></b>         /* a "pure" NSPR arena */
+<b><a name="392">  392</a></b>         result = PL_ARENA_MARK(arena);
+<b><a name="393">  393</a></b>     }
+<b><a name="394">  394</a></b>     return result;
+<b><a name="395">  395</a></b> }
+<b><a name="396">  396</a></b> 
+<b><a name="397">  397</a></b> static void
+<b><a name="398">  398</a></b> <a href="#398">port_ArenaZeroAfterMark</a>(PLArenaPool *arena, void *mark)
+<b><a name="399">  399</a></b> {
+<b><a name="400">  400</a></b>     PLArena *a = arena-&gt;current;
+<b><a name="401">  401</a></b>     if (a-&gt;base &lt;= (PRUword)mark &amp;&amp; (PRUword)mark &lt;= a-&gt;avail) {
+<b><a name="402">  402</a></b>         /* fast path: mark falls in the current arena */
+<b><a name="403">  403</a></b>         memset(mark, 0, a-&gt;avail - (PRUword)mark);
+<b><a name="404">  404</a></b>     } else {
+<b><a name="405">  405</a></b>         /* slow path: need to find the arena that mark falls in */
+<b><a name="406">  406</a></b>         for (a = arena-&gt;first.next; a; a = a-&gt;next) {
+<b><a name="407">  407</a></b>             PR_ASSERT(a-&gt;base &lt;= a-&gt;avail &amp;&amp; a-&gt;avail &lt;= a-&gt;limit);
+<b><a name="408">  408</a></b>             if (a-&gt;base &lt;= (PRUword)mark &amp;&amp; (PRUword)mark &lt;= a-&gt;avail) {
+<b><a name="409">  409</a></b>                 memset(mark, 0, a-&gt;avail - (PRUword)mark);
+<b><a name="410">  410</a></b>                 a = a-&gt;next;
+<b><a name="411">  411</a></b>                 break;
+<b><a name="412">  412</a></b>             }
+<b><a name="413">  413</a></b>         }
+<b><a name="414">  414</a></b>         for (; a; a = a-&gt;next) {
+<b><a name="415">  415</a></b>             PR_ASSERT(a-&gt;base &lt;= a-&gt;avail &amp;&amp; a-&gt;avail &lt;= a-&gt;limit);
+<b><a name="416">  416</a></b>             memset((void *)a-&gt;base, 0, a-&gt;avail - a-&gt;base);
+<b><a name="417">  417</a></b>         }
+<b><a name="418">  418</a></b>     }
+<b><a name="419">  419</a></b> }
+<b><a name="420">  420</a></b> 
+<b><a name="421">  421</a></b> static void
+<b><a name="422">  422</a></b> <a href="#422">port_ArenaRelease</a>(PLArenaPool *arena, void *mark, PRBool <a href="../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>)
+<b><a name="423">  423</a></b> {
+<b><a name="424">  424</a></b>     <a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *pool = (<a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *)arena;
+<b><a name="425">  425</a></b>     if (<a href="../util/secport.c.dep.html#ARENAPOOL_MAGIC">ARENAPOOL_MAGIC</a> == pool-&gt;magic ) {
+<b><a name="426">  426</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Lock">PZ_Lock</a></a>(pool-&gt;lock);
+<b><a name="427">  427</a></b> #ifdef <a href="../util/secport.c.dep.html#THREADMARK">THREADMARK</a>
+<b><a name="428">  428</a></b>         {
+<b><a name="429">  429</a></b>             <a href="../util/secport.c.dep.html#threadmark_mark">threadmark_mark</a> **pw, *tm;
+<b><a name="430">  430</a></b> 
+<b><a name="431">  431</a></b>             if (PR_GetCurrentThread() != pool-&gt;marking_thread ) {
+<b><a name="432">  432</a></b>                 <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="433">  433</a></b>                 <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="434">  434</a></b>                 <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(0);
+<b><a name="435">  435</a></b>                 return /* no error indication available */ ;
+<b><a name="436">  436</a></b>             }
+<b><a name="437">  437</a></b> 
+<b><a name="438">  438</a></b>             pw = &amp;pool-&gt;first_mark;
+<b><a name="439">  439</a></b>             while( *pw &amp;&amp; (mark != (*pw)-&gt;mark) ) {
+<b><a name="440">  440</a></b>                 pw = &amp;(*pw)-&gt;next;
+<b><a name="441">  441</a></b>             }
+<b><a name="442">  442</a></b> 
+<b><a name="443">  443</a></b>             if (! *pw ) {
+<b><a name="444">  444</a></b>                 /* bad mark */
+<b><a name="445">  445</a></b>                 <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="446">  446</a></b>                 <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="447">  447</a></b>                 <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(0);
+<b><a name="448">  448</a></b>                 return /* no error indication available */ ;
+<b><a name="449">  449</a></b>             }
+<b><a name="450">  450</a></b> 
+<b><a name="451">  451</a></b>             tm = *pw;
+<b><a name="452">  452</a></b>             *pw = (<a href="../util/secport.c.dep.html#threadmark_mark">threadmark_mark</a> *)NULL;
+<b><a name="453">  453</a></b> 
+<b><a name="454">  454</a></b>             if (<a href="../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>) {
+<b><a name="455">  455</a></b>                 <a href="../util/secport.c.dep.html#port_ArenaZeroAfterMark">port_ArenaZeroAfterMark</a>(arena, mark);
+<b><a name="456">  456</a></b>             }
+<b><a name="457">  457</a></b>             PL_ARENA_RELEASE(arena, mark);
+<b><a name="458">  458</a></b> 
+<b><a name="459">  459</a></b>             if (! pool-&gt;first_mark ) {
+<b><a name="460">  460</a></b>                 pool-&gt;marking_thread = (PRThread *)NULL;
+<b><a name="461">  461</a></b>             }
+<b><a name="462">  462</a></b>         }
+<b><a name="463">  463</a></b> #else /* THREADMARK */
+<b><a name="464">  464</a></b>         if (<a href="../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>) {
+<b><a name="465">  465</a></b>             <a href="../util/secport.c.dep.html#port_ArenaZeroAfterMark">port_ArenaZeroAfterMark</a>(arena, mark);
+<b><a name="466">  466</a></b>         }
+<b><a name="467">  467</a></b>         PL_ARENA_RELEASE(arena, mark);
+<b><a name="468">  468</a></b> #endif /* THREADMARK */
+<b><a name="469">  469</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="470">  470</a></b>     } else {
+<b><a name="471">  471</a></b>         if (<a href="../freebl/ecl/ecp_fpinc.c.dep.html#zero">zero</a>) {
+<b><a name="472">  472</a></b>             <a href="../util/secport.c.dep.html#port_ArenaZeroAfterMark">port_ArenaZeroAfterMark</a>(arena, mark);
+<b><a name="473">  473</a></b>         }
+<b><a name="474">  474</a></b>         PL_ARENA_RELEASE(arena, mark);
+<b><a name="475">  475</a></b>     }
+<b><a name="476">  476</a></b> }
+<b><a name="477">  477</a></b> 
+<b><a name="478">  478</a></b> void
+<b><a name="479">  479</a></b> <a href="#479">PORT_ArenaRelease</a>(PLArenaPool *arena, void *mark)
+<b><a name="480">  480</a></b> {
+<b><a name="481">  481</a></b>     <a href="../util/secport.c.dep.html#port_ArenaRelease">port_ArenaRelease</a>(arena, mark, PR_FALSE);
+<b><a name="482">  482</a></b> }
+<b><a name="483">  483</a></b> 
+<b><a name="484">  484</a></b> /*
+<b><a name="485">  485</a></b>  * Zeroize the arena memory before releasing it.
+<b><a name="486">  486</a></b>  */
+<b><a name="487">  487</a></b> void
+<b><a name="488">  488</a></b> <a href="#488">PORT_ArenaZRelease</a>(PLArenaPool *arena, void *mark)
+<b><a name="489">  489</a></b> {
+<b><a name="490">  490</a></b>     <a href="../util/secport.c.dep.html#port_ArenaRelease">port_ArenaRelease</a>(arena, mark, PR_TRUE);
+<b><a name="491">  491</a></b> }
+<b><a name="492">  492</a></b> 
+<b><a name="493">  493</a></b> void
+<b><a name="494">  494</a></b> <a href="#494">PORT_ArenaUnmark</a>(PLArenaPool *arena, void *mark)
+<b><a name="495">  495</a></b> {
+<b><a name="496">  496</a></b> #ifdef <a href="../util/secport.c.dep.html#THREADMARK">THREADMARK</a>
+<b><a name="497">  497</a></b>     <a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *pool = (<a href="../util/secport.c.dep.html#PORTArenaPool">PORTArenaPool</a> *)arena;
+<b><a name="498">  498</a></b>     if (<a href="../util/secport.c.dep.html#ARENAPOOL_MAGIC">ARENAPOOL_MAGIC</a> == pool-&gt;magic ) {
+<b><a name="499">  499</a></b>         <a href="../util/secport.c.dep.html#threadmark_mark">threadmark_mark</a> **pw, *tm;
+<b><a name="500">  500</a></b> 
+<b><a name="501">  501</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Lock">PZ_Lock</a></a>(pool-&gt;lock);
+<b><a name="502">  502</a></b> 
+<b><a name="503">  503</a></b>         if (PR_GetCurrentThread() != pool-&gt;marking_thread ) {
+<b><a name="504">  504</a></b>             <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="505">  505</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="506">  506</a></b>             <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(0);
+<b><a name="507">  507</a></b>             return /* no error indication available */ ;
+<b><a name="508">  508</a></b>         }
+<b><a name="509">  509</a></b> 
+<b><a name="510">  510</a></b>         pw = &amp;pool-&gt;first_mark;
+<b><a name="511">  511</a></b>         while( ((<a href="../util/secport.c.dep.html#threadmark_mark">threadmark_mark</a> *)NULL != *pw) &amp;&amp; (mark != (*pw)-&gt;mark) ) {
+<b><a name="512">  512</a></b>             pw = &amp;(*pw)-&gt;next;
+<b><a name="513">  513</a></b>         }
+<b><a name="514">  514</a></b> 
+<b><a name="515">  515</a></b>         if ((<a href="../util/secport.c.dep.html#threadmark_mark">threadmark_mark</a> *)NULL == *pw ) {
+<b><a name="516">  516</a></b>             /* bad mark */
+<b><a name="517">  517</a></b>             <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="518">  518</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_NO_MEMORY);
+<b><a name="519">  519</a></b>             <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(0);
+<b><a name="520">  520</a></b>             return /* no error indication available */ ;
+<b><a name="521">  521</a></b>         }
+<b><a name="522">  522</a></b> 
+<b><a name="523">  523</a></b>         tm = *pw;
+<b><a name="524">  524</a></b>         *pw = (<a href="../util/secport.c.dep.html#threadmark_mark">threadmark_mark</a> *)NULL;
+<b><a name="525">  525</a></b> 
+<b><a name="526">  526</a></b>         if (! pool-&gt;first_mark ) {
+<b><a name="527">  527</a></b>             pool-&gt;marking_thread = (PRThread *)NULL;
+<b><a name="528">  528</a></b>         }
+<b><a name="529">  529</a></b> 
+<b><a name="530">  530</a></b>         <a href="../util/nssilock.h.dep.html#PZ_Unlock">PZ_Unlock</a></a>(pool-&gt;lock);
+<b><a name="531">  531</a></b>     }
+<b><a name="532">  532</a></b> #endif /* THREADMARK */
+<b><a name="533">  533</a></b> }
+<b><a name="534">  534</a></b> 
+<b><a name="535">  535</a></b> char *
+<b><a name="536">  536</a></b> <a href="#536">PORT_ArenaStrdup</a>(PLArenaPool *arena, const char *str) {
+<b><a name="537">  537</a></b>     int len = <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a>(str)+1;
+<b><a name="538">  538</a></b>     char *newstr;
+<b><a name="539">  539</a></b> 
+<b><a name="540">  540</a></b>     newstr = (char*)<a href="../util/secport.c.dep.html#PORT_ArenaAlloc">PORT_ArenaAlloc</a>(arena,len);
+<b><a name="541">  541</a></b>     if (newstr) {
+<b><a name="542">  542</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(newstr,str,len);
+<b><a name="543">  543</a></b>     }
+<b><a name="544">  544</a></b>     return newstr;
+<b><a name="545">  545</a></b> }
+<b><a name="546">  546</a></b> 
+<b><a name="547">  547</a></b> /********************** end of arena functions ***********************/
+<b><a name="548">  548</a></b> 
+<b><a name="549">  549</a></b> /****************** unicode conversion functions ***********************/
+<b><a name="550">  550</a></b> /*
+<b><a name="551">  551</a></b>  * NOTE: These conversion functions all assume that the multibyte
+<b><a name="552">  552</a></b>  * characters are going to be in NETWORK BYTE ORDER, not host byte
+<b><a name="553">  553</a></b>  * order.  This is because the only time we deal with UCS-2 and UCS-4
+<b><a name="554">  554</a></b>  * are when the data was received from or is going to be sent out
+<b><a name="555">  555</a></b>  * over the wire (in, e.g. certificates).
+<b><a name="556">  556</a></b>  */
+<b><a name="557">  557</a></b> 
+<b><a name="558">  558</a></b> void
+<b><a name="559">  559</a></b> <a href="#559">PORT_SetUCS4_UTF8ConversionFunction</a>(<a href="../util/secport.h.dep.html#PORTCharConversionFunc">PORTCharConversionFunc</a> convFunc)
+<b><a name="560">  560</a></b> { 
+<b><a name="561">  561</a></b>     <a href="../util/secport.c.dep.html#ucs4Utf8ConvertFunc">ucs4Utf8ConvertFunc</a> = convFunc;
+<b><a name="562">  562</a></b> }
+<b><a name="563">  563</a></b> 
+<b><a name="564">  564</a></b> void
+<b><a name="565">  565</a></b> <a href="#565">PORT_SetUCS2_ASCIIConversionFunction</a>(<a href="../util/secport.h.dep.html#PORTCharConversionWSwapFunc">PORTCharConversionWSwapFunc</a> convFunc)
+<b><a name="566">  566</a></b> { 
+<b><a name="567">  567</a></b>     <a href="../util/secport.c.dep.html#ucs2AsciiConvertFunc">ucs2AsciiConvertFunc</a> = convFunc;
+<b><a name="568">  568</a></b> }
+<b><a name="569">  569</a></b> 
+<b><a name="570">  570</a></b> void
+<b><a name="571">  571</a></b> <a href="#571">PORT_SetUCS2_UTF8ConversionFunction</a>(<a href="../util/secport.h.dep.html#PORTCharConversionFunc">PORTCharConversionFunc</a> convFunc)
+<b><a name="572">  572</a></b> { 
+<b><a name="573">  573</a></b>     <a href="../util/secport.c.dep.html#ucs2Utf8ConvertFunc">ucs2Utf8ConvertFunc</a> = convFunc;
+<b><a name="574">  574</a></b> }
+<b><a name="575">  575</a></b> 
+<b><a name="576">  576</a></b> PRBool 
+<b><a name="577">  577</a></b> <a href="#577">PORT_UCS4_UTF8Conversion</a>(PRBool toUnicode, unsigned char *<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>,
+<b><a name="578">  578</a></b>                          unsigned int inBufLen, unsigned char *outBuf,
+<b><a name="579">  579</a></b>                          unsigned int maxOutBufLen, unsigned int *outBufLen)
+<b><a name="580">  580</a></b> {
+<b><a name="581">  581</a></b>     if(!<a href="../util/secport.c.dep.html#ucs4Utf8ConvertFunc">ucs4Utf8ConvertFunc</a>) {
+<b><a name="582">  582</a></b>       return <a href="../util/utf8.c.dep.html#sec_port_ucs4_utf8_conversion_function">sec_port_ucs4_utf8_conversion_function</a>(toUnicode,
+<b><a name="583">  583</a></b>         <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>, <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>Len, outBuf, maxOutBufLen, outBufLen);
+<b><a name="584">  584</a></b>     }
+<b><a name="585">  585</a></b> 
+<b><a name="586">  586</a></b>     return (*<a href="../util/secport.c.dep.html#ucs4Utf8ConvertFunc">ucs4Utf8ConvertFunc</a>)(toUnicode, <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>, <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>Len, outBuf, 
+<b><a name="587">  587</a></b>                                   maxOutBufLen, outBufLen);
+<b><a name="588">  588</a></b> }
+<b><a name="589">  589</a></b> 
+<b><a name="590">  590</a></b> PRBool 
+<b><a name="591">  591</a></b> <a href="#591">PORT_UCS2_UTF8Conversion</a>(PRBool toUnicode, unsigned char *<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>,
+<b><a name="592">  592</a></b>                          unsigned int inBufLen, unsigned char *outBuf,
+<b><a name="593">  593</a></b>                          unsigned int maxOutBufLen, unsigned int *outBufLen)
+<b><a name="594">  594</a></b> {
+<b><a name="595">  595</a></b>     if(!<a href="../util/secport.c.dep.html#ucs2Utf8ConvertFunc">ucs2Utf8ConvertFunc</a>) {
+<b><a name="596">  596</a></b>       return <a href="../util/utf8.c.dep.html#sec_port_ucs2_utf8_conversion_function">sec_port_ucs2_utf8_conversion_function</a>(toUnicode,
+<b><a name="597">  597</a></b>         <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>, <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>Len, outBuf, maxOutBufLen, outBufLen);
+<b><a name="598">  598</a></b>     }
+<b><a name="599">  599</a></b> 
+<b><a name="600">  600</a></b>     return (*<a href="../util/secport.c.dep.html#ucs2Utf8ConvertFunc">ucs2Utf8ConvertFunc</a>)(toUnicode, <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>, <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>Len, outBuf, 
+<b><a name="601">  601</a></b>                                   maxOutBufLen, outBufLen);
+<b><a name="602">  602</a></b> }
+<b><a name="603">  603</a></b> 
+<b><a name="604">  604</a></b> PRBool 
+<b><a name="605">  605</a></b> <a href="#605">PORT_ISO88591_UTF8Conversion</a>(const unsigned char *<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>,
+<b><a name="606">  606</a></b>                          unsigned int inBufLen, unsigned char *outBuf,
+<b><a name="607">  607</a></b>                          unsigned int maxOutBufLen, unsigned int *outBufLen)
+<b><a name="608">  608</a></b> {
+<b><a name="609">  609</a></b>     return <a href="../util/utf8.c.dep.html#sec_port_iso88591_utf8_conversion_function">sec_port_iso88591_utf8_conversion_function</a>(<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>, <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>Len,
+<b><a name="610">  610</a></b>       outBuf, maxOutBufLen, outBufLen);
+<b><a name="611">  611</a></b> }
+<b><a name="612">  612</a></b> 
+<b><a name="613">  613</a></b> PRBool 
+<b><a name="614">  614</a></b> <a href="#614">PORT_UCS2_ASCIIConversion</a>(PRBool toUnicode, unsigned char *<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>,
+<b><a name="615">  615</a></b>                           unsigned int inBufLen, unsigned char *outBuf,
+<b><a name="616">  616</a></b>                           unsigned int maxOutBufLen, unsigned int *outBufLen,
+<b><a name="617">  617</a></b>                           PRBool swapBytes)
+<b><a name="618">  618</a></b> {
+<b><a name="619">  619</a></b>     if(!<a href="../util/secport.c.dep.html#ucs2AsciiConvertFunc">ucs2AsciiConvertFunc</a>) {
+<b><a name="620">  620</a></b>         return PR_FALSE;
+<b><a name="621">  621</a></b>     }
+<b><a name="622">  622</a></b> 
+<b><a name="623">  623</a></b>     return (*<a href="../util/secport.c.dep.html#ucs2AsciiConvertFunc">ucs2AsciiConvertFunc</a>)(toUnicode, <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>, <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>Len, outBuf, 
+<b><a name="624">  624</a></b>                                   maxOutBufLen, outBufLen, swapBytes);
+<b><a name="625">  625</a></b> }
+<b><a name="626">  626</a></b> 
+<b><a name="627">  627</a></b> 
+<b><a name="628">  628</a></b> /* Portable putenv.  Creates/replaces an environment variable of the form
+<b><a name="629">  629</a></b>  *  envVarName=envValue
+<b><a name="630">  630</a></b>  */
+<b><a name="631">  631</a></b> int
+<b><a name="632">  632</a></b> <a href="#632">NSS_PutEnv</a>(const char * envVarName, const char * envValue)
+<b><a name="633">  633</a></b> {
+<b><a name="634">  634</a></b> #if  defined(<a href="../util/secport.h.dep.html#XP_MAC">XP_MAC</a>) || defined(_WIN32_WCE)
+<b><a name="635">  635</a></b>     return SECFailure;
+<b><a name="636">  636</a></b> #else
+<b><a name="637">  637</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> result = SECSuccess;
+<b><a name="638">  638</a></b>     char *    encoded;
+<b><a name="639">  639</a></b>     int       putEnvFailed;
+<b><a name="640">  640</a></b> #ifdef _WIN32
+<b><a name="641">  641</a></b>     PRBool      setOK;
+<b><a name="642">  642</a></b> 
+<b><a name="643">  643</a></b>     setOK = SetEnvironmentVariable(envVarName, envValue);
+<b><a name="644">  644</a></b>     if (!setOK) {
+<b><a name="645">  645</a></b>         <a href="../util/secport.c.dep.html#SET_ERROR_CODE">SET_ERROR_CODE</a>
+<b><a name="646">  646</a></b>         return SECFailure;
+<b><a name="647">  647</a></b>     }
+<b><a name="648">  648</a></b> #endif
+<b><a name="649">  649</a></b> 
+<b><a name="650">  650</a></b>     encoded = (char *)<a href="../util/secport.c.dep.html#PORT_ZAlloc">PORT_ZAlloc</a>(strlen(envVarName) + 2 + strlen(envValue));
+<b><a name="651">  651</a></b>     strcpy(encoded, envVarName);
+<b><a name="652">  652</a></b>     strcat(encoded, "=");
+<b><a name="653">  653</a></b>     strcat(encoded, envValue);
+<b><a name="654">  654</a></b> 
+<b><a name="655">  655</a></b>     putEnvFailed = putenv(encoded); /* adopt. */
+<b><a name="656">  656</a></b>     if (putEnvFailed) {
+<b><a name="657">  657</a></b>         <a href="../util/secport.c.dep.html#SET_ERROR_CODE">SET_ERROR_CODE</a>
+<b><a name="658">  658</a></b>         result = SECFailure;
+<b><a name="659">  659</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(encoded);
+<b><a name="660">  660</a></b>     }
+<b><a name="661">  661</a></b>     return result;
+<b><a name="662">  662</a></b> #endif
+<b><a name="663">  663</a></b> }
+<b><a name="664">  664</a></b> 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

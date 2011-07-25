@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<!-- Descrpt: Test nsIAccessible Interface method(addSelection) for XUL menulist Node
+   - Author: jessie.li@sun.com
+   - Copyright (C) 2002 Sun Microsystems Inc.  All Rights Reserved.
+   -->
+  
+<window
+     id="test-window"
+     title="test"
+     orient="horizontal"
+     xmlns:html="http://www.w3.org/1999/xhtml"
+     xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+<script src="accessibility.js"/>
+    
+ <html:script>
+  <![CDATA[
+  
+  function getDomNodeSelection()
+{
+ try{
+  netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+  netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+
+  var node = document.getElementsByTagName("menulist").item(0);
+  return node;
+   }
+ catch(e){
+  alert("Exception: " + e);
+ }
+}
+
+function executeTestCase()
+{
+  var domNode = getDomNodeSelection();
+  if(domNode == null)
+  {
+    res = res + "Could not get the DOM Node";
+  }
+  else
+  { //else1
+    accNode = getAccessibleSelectionNode(domNode);
+    if(accNode == "Exception")
+    {
+      res = res + "The Node you selected is not an Accessible Node";
+    }
+    else
+    { //else2
+     try{
+      netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+      netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+      
+      accNode.addSelection(3);
+   
+      setTimeout("constructResults();", 2000);
+     }
+     catch(e){
+      alert("Exception**: " + e);
+     }
+    }//else2
+  } //else1
+}
+
+function constructResults()
+{
+ try{
+   netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+   netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+
+   var isSelected_1 = accNode.isChildSelected(0);
+   var isSelected_2 = accNode.isChildSelected(3);
+   var allSelect = accNode.selectAllSelection();
+   var count = getSelectionCount(accNode);
+   var childAccNode = accNode.refSelection(0);
+   childAccNode = childAccNode.accName;
+   
+   var expectedCount      ="1";
+   var expectedSelect_1     = false;
+   var expectedSelect_2     = true;
+   var expectedAllSelect = false;
+   var expectedChildAccNode = "Shannxi";
+   
+   var row0 = new Array("Property/Method", "Expected Values", "Actual Values", "Result");
+   var row1 = new Array("Count->", expectedCount, count);
+   var row2 = new Array("item0IsSelected->", expectedSelect_1, isSelected_1);
+   var row3 = new Array("item3IsSelected->", expectedSelect_2, isSelected_2);
+   var row4 = new Array("allItemsSelected->", expectedAllSelect, allSelect);
+   var row5 = new Array("childAccNode->", expectedChildAccNode, childAccNode);
+
+
+   if (count == expectedCount)                     row1[3] = "PASS"; else row1[3] = "FAIL";
+   if (isSelected_1 == expectedSelect_1)           row2[3] = "PASS"; else row2[3] = "FAIL";
+   if (isSelected_2 == expectedSelect_2)           row3[3] = "PASS"; else row3[3] = "FAIL";
+   if (allSelect == expectedAllSelect)             row4[3] = "PASS"; else row4[3] = "FAIL";
+   if (childAccNode == expectedChildAccNode)       row5[3] = "PASS"; else row5[3] = "FAIL";
+
+
+   res += "<table border cols=4 width='70%'>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+     res += "<td><b>" + row0[col] + "</b></td>";
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row1[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row1[col] + "</td>";
+    else
+     res += "<td>" + row1[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "<tr>";
+  for(col=0; col<4; col++)
+   {
+    if(row2[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row2[col] + "</td>";
+    else
+     res += "<td>" + row2[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row3[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row3[col] + "</td>";
+    else
+     res += "<td>" + row3[col] + "</td>";
+   }
+   res += "</tr>";
+      res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row4[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row4[col] + "</td>";
+    else
+     res += "<td>" + row4[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row5[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row5[col] + "</td>";
+    else
+     res += "<td>" + row5[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "</table>";
+      
+   displayResults(res);
+  
+ }
+ catch(e){
+  alert("Exception**: " + e);
+ }
+}
+  
+  ]]>
+  </html:script>
+<vbox>    
+ <description>
+    Testing XUL Menu for Accessibility
+ </description>
+ <label value="Select one province:" 
+               control="province"/>
+
+  <menulist id="province">
+            <menupopup>
+              <menuitem value="1" label="Beijing"/>
+              <menuitem value="2" label="Shanghai"/>
+              <menuitem value="3" label="Guangzhou"/>
+              <menuitem value="4" label="Shannxi"/>
+              <menuitem value="5" label="Jilin"/>
+              <menuitem value="6" label="Jiangxi"/>
+           </menupopup>
+  </menulist>
+
+</vbox>
+
+
+<iframe id="iframe" class="iframe" type="content"
+            flex="1" context="outputContext"/>
+<html:script>
+  <![CDATA[
+    res = "<b><u> Results for XUL menulist Node:</u></b><br><br>";
+
+  setTimeout("executeTestCase();", 2000);
+  ]]>
+  </html:script>
+  
+  
+    
+</window>
+

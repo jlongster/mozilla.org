@@ -1,0 +1,115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">
+
+<html lang="en">
+
+<head>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta http-equiv="Content-Language" content="en">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta http-equiv="Content-Script-Type" content="text/javascript">
+
+<meta name="DC.date.modified" content="2007-10-02T09:54:03+11:00" scheme="W3CDTF">
+
+<title>Interactive Keyboard webpage</title>
+
+<link rel="up" href="./" title="Mozilla Keyboard Planning FAQ and Cross Reference">
+
+<script type="text/javascript">
+
+function setKeypressHandler()
+{
+  window.addEventListener("keydown", onKeyEvent, true);
+  frames["Keyboard"].addEventListener("keydown", onKeyEvent, true);
+  window.addEventListener("keyup", onKeyEvent, true);
+  frames["Keyboard"].addEventListener("keyup", onKeyEvent, true);
+  window.addEventListener("keydown", onKeyEvent, true);
+  frames["Keyboard"].focus();
+}
+
+const keyNames=Array(
+  "","","","CANCEL","","","","","BACKSPACE","TAB","","",
+  "CLEAR","RETURN","ENTER","","SHIFT","CONTROL","ALT","PAUSE","CAPSLOCK",
+  "","","","","","","ESCAPE","","","","","SPACE","PAGEUP","PAGEDOWN","END",
+  "HOME","LEFT","UP","RIGHT","DOWN","","","","PRINTSCREEN","INSERT",
+  "DELETE","","0","1","2","3","4","5","6","7","8","9","","SEMICOLON","",
+  "EQUALS","","","","A","B","C","D","E","F",
+  "G","H","I","J","K","L","M","N","O",
+  "P","Q","R","S","T","U","V","W","X",
+  "Y","Z","","","","","",
+  "NUMPAD0","NUMPAD1","NUMPAD2",
+  "NUMPAD3","NUMPAD4","NUMPAD5",
+  "NUMPAD6","NUMPAD7","NUMPAD8",
+  "NUMPAD9","MULTIPLY","ADD",
+  "SEPARATOR","MINUS","DECIMAL",
+  "DIVIDE",
+  "F1","F2","F3",
+  "F4","F5","F6",
+  "F7","F8","F9",
+  "F10","F11","F12",
+  "F13","F14","F15",
+  "F16","F17","F18",
+  "F19","F20","F21",
+  "F22","F23","F24",
+  "","","","","","","","",
+  "NUMLOCK","SCROLLLOCK",
+  "","","","","","","","","","","","","","",
+  "","","","","","","","","","","","","","","","",
+  "","","","","","","","","","","","",
+  "COMMA","","PERIOD","SLASH",
+  "BACKQUOTE","","","","","","","","","","","","","","","","",
+  "","","","","","","","","","",
+  "OPENBRACKET","BACKSLASH","CLOSEBRACKET",
+  "SINGLEQUOTE", "", "META"
+);
+
+function jumpToKey(keyName)
+{
+  /* window.frames.Keylist.document.location.replace("interactive.html#" + keyName); */
+  frames["Keylist"].document.getElementById(keyName).scrollIntoView(true);
+}
+
+function onKeyEvent(evt)
+{
+  var keyCode = evt.keyCode;
+
+  if (evt.charCode)
+    keyCode = (evt.charCode>96)? evt.charCode-32: evt.charCode;
+
+  keyName = keyNames[keyCode];
+  if (keyName)
+  {
+    keylink = frames["Keyboard"].document.getElementById(keyName);
+    if(keylink)
+    {
+      if(evt.type=="keydown")
+        {
+        keylink.className = "downkey";
+        jumpToKey(keyName);
+        }
+      else
+        keylink.className = "";
+    };
+    if(keyCode == 13)
+frames["Keyboard"].document.getElementById("TopOfEnterKey").className = keylink.getAttribute("class");
+  }
+}
+
+function showTheKey(target)
+{
+  var keyName = target.id;
+  if (keyName)
+  {
+    dump('\n --> going to #' +keyName);
+    jumpToKey(keyName);
+  };
+}
+</script>
+</head>
+
+<frameset rows="60%, *" onload="setKeypressHandler();">
+  <frame src="layout" name="Keyboard" frameborder="1">
+  <frame src="mozilla" name="Keylist" frameborder="1">
+</frameset>
+
+</html>

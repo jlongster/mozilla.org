@@ -1,0 +1,677 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;28 Named Shared Memory';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:06:13">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="prcountr.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prshma.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="25926"> </A><A NAME=""> </A><h2>
+Chapter&#32;28 
+&nbsp;
+
+
+
+<A NAME="25927"> </A><A NAME="Named Shared Memory"> </A>Named Shared Memory
+</h2>
+</center>
+<A NAME="25937"> </A>The chapter describes the NSPR API for named shared memory. Shared memory 
+allows multiple processes to access one or more common shared memory regions, 
+using it as an interprocess communication channel. The NSPR shared memory API 
+provides a cross-platform named shared-memory interface that is modeled on 
+similar constructs in the Unix and Windows operating systems.
+
+<P>
+
+<A NAME="30175"> </A><A HREF="prshm.html#27545"  >Shared Memory Protocol</A><br>
+<A HREF="prshm.html#27591"  >Named Shared Memory Functions</A>
+
+<P>
+
+
+
+<A NAME="27545"> </A>
+<A NAME="Shared Memory Protocol"> </A>
+<h2>
+Shared Memory Protocol
+</h2>
+
+
+<A NAME="27546"> </A>Multiple shared memories can be created using the NSPR shared memory API. 
+Each named shared memory segment defined by the <CODE>PR_OpenSharedMemory</CODE> call 
+should be manipulated according to the protocol described here. Failing to follow 
+the protocol may yield unpredictable results. 
+
+<P>
+
+<A NAME="29548"> </A><A HREF="prshm.html#29539"  >Using Named Shared Memory Functions</A><br>
+<A HREF="prshm.html#27567"  >Filenames</A><br>
+<A HREF="prshm.html#27580"  >Limits on Shared Memory Resources</A><br>
+<A HREF="prshm.html#27585"  >Security Considerations</A>
+
+<P>
+
+
+<A NAME="29539"> </A>
+<A NAME="Using Named Shared Memory Functions"> </A>
+<h3>
+Using Named Shared Memory Functions
+</h3>
+
+
+
+
+<A NAME="29543"> </A><A HREF="prshm.html#28379"  ><CODE>PR_OpenSharedMemory</CODE></A> creates the shared memory segment, if it does not already 
+exist, or opens a connection with the existing shared memory segment if it already 
+exists. 
+
+<P>
+
+<A NAME="27553"> </A><A HREF="prshm.html#27649"  ><CODE>PR_AttachSharedMemory</CODE></A> should be called following <CODE>PR_OpenSharedMemory</CODE> to 
+map the memory segment to an address in the application's address space. 
+<CODE>PR_AttachSharedMemory</CODE> may also be called to remap a shared memory segment 
+after detaching the same <CODE>PRSharedMemory</CODE> object. Be sure to detach it when you're 
+finished. 
+
+<P>
+
+<A NAME="27559"> </A><A HREF="prshm.html#27684"  ><CODE>PR_DetachSharedMemory</CODE></A> should be called to unmap the shared memory segment 
+from the application's address space. 
+
+<P>
+
+<A NAME="27561"> </A><A HREF="prshm.html#27715"  ><CODE>PR_CloseSharedMemory</CODE></A> should be called when no further use of the 
+<CODE>PRSharedMemory</CODE> object is required within a process. Following a call to 
+<CODE>PR_CloseSharedMemory</CODE>, the <CODE>PRSharedMemory</CODE> object is invalid and cannot be 
+reused. 
+
+<P>
+
+<A NAME="27564"> </A><A HREF="prshm.html#27743"  ><CODE>PR_DeleteSharedMemory</CODE></A> should be called before process termination. After you 
+call <CODE>PR_DeleteSharedMemory</CODE>, any further use of the shared memory associated 
+with the name may cause unpredictable results. 
+
+<P>
+
+
+<A NAME="27567"> </A>
+<A NAME="Filenames"> </A>
+<h3>
+Filenames
+</h3>
+
+
+
+
+<A NAME="28167"> </A>The name passed to <CODE>PR_OpenSharedMemory</CODE> should be a valid filename for a Unix 
+platform. <CODE>PR_OpenSharedMemory</CODE> creates file using the name passed in. Some 
+platforms may mangle the name before creating the file and the shared memory. 
+The Unix implementation may use SysV IPC shared memory, Posix shared 
+memory, or memory mapped files; the filename may be used to define the 
+namespace. On Windows, the name is significant, but there is no file associated 
+with the name. 
+
+<P>
+
+<A NAME="27574"> </A>No assumptions about the persistence of data in the named file should be made. 
+Depending on platform, the shared memory may be mapped onto system paging 
+space and be discarded at process termination. 
+
+<P>
+
+<A NAME="27577"> </A>All names provided to <CODE>PR_OpenSharedMemory</CODE> should be valid filename syntax or 
+name syntax for shared memory for the target platform. Referenced directories 
+should have permissions appropriate for writing. 
+
+<P>
+
+
+<A NAME="27580"> </A>
+<A NAME="Limits on Shared Memory Resources"> </A>
+<h3>
+Limits on Shared Memory Resources
+</h3>
+
+
+
+
+<A NAME="27581"> </A>Different platforms have limits on both the number and size of shared memory 
+resources. The default system limits on some platforms may be smaller than your 
+requirements. These limits may be adjusted on some platforms either via boot-time 
+options or by setting the size of the system paging space to accommodate more 
+and/or larger shared memory segment(s). 
+
+<P>
+
+
+<A NAME="27585"> </A>
+<A NAME="Security Considerations"> </A>
+<h3>
+Security Considerations
+</h3>
+
+
+
+
+<A NAME="27586"> </A>On Unix platforms, depending on implementation, contents of the backing store 
+for the shared memory can be exposed via the file system. Set permissions and or 
+access controls at create and attach time to ensure you get the desired security. 
+
+<P>
+
+<A NAME="27589"> </A>On Windows platforms, no special security measures are provided. 
+
+<P>
+
+
+
+<A NAME="27591"> </A>
+<A NAME="Named Shared Memory Functions"> </A>
+<h2>
+Named Shared Memory Functions
+</h2>
+
+
+<A NAME="27593"> </A><A HREF="prshm.html#28379"  ><CODE>PR_OpenSharedMemory</CODE></A><br>
+<A HREF="prshm.html#27649"  ><CODE>PR_AttachSharedMemory</CODE></A><br>
+<A HREF="prshm.html#27684"  ><CODE>PR_DetachSharedMemory</CODE></A><br>
+<A HREF="prshm.html#27715"  ><CODE>PR_CloseSharedMemory</CODE></A><br>
+<A HREF="prshm.html#27743"  ><CODE>PR_DeleteSharedMemory</CODE></A>
+
+<P>
+
+<A NAME="28379"> </A><A NAME="PR_OpenSharedMemory"> </A><h4>
+PR_OpenSharedMemory
+</h4>
+
+<A NAME="27601"> </A>Opens an existing shared memory segment or, if one with the specified name 
+doesn't exist, creates a new one. 
+
+<P>
+
+<BR>
+<A NAME="27603"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="27605"></A>#include &lt;prshm.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="27607"></A>NSPR_API( PRSharedMemory * )<br>&nbsp;&nbsp;&nbsp;PR_OpenSharedMemory(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const char &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*name,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRSize&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; size,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRIntn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flags,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRIntn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mode<br>);
+</PRE>
+<P>
+<PRE>
+<A NAME="27615"></A>/* Define values for PR_OpenShareMemory(...,create) */<br>#define PR_SHM_CREATE 0x1  /* create if not exist */<br>#define PR_SHM_EXCL   0x2  /* fail if already exists */
+</PRE>
+<P>
+<BR>
+<A NAME="29625"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="29626"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="29636"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="29853"></A>name
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="29855"> </A>The name of the shared memory segment.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="29857"></A>size
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="29859"> </A>The size of the shared memory segment.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="29861"></A>flags
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="29863"> </A>Options for creating the shared memory.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="29904"></A>mode
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="29873"> </A>Same as passed to <A HREF="priofnc.html#17649"  ><CODE>PR_Open</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="27632"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="27634"> </A>Pointer to opaque structure <CODE>PRSharedMemory</CODE>, or <CODE>NULL</CODE> if an error occurs. Retrieve 
+the reason for the failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A> and <A HREF="prerr.html#26141"  ><CODE>PR_GetOSError</CODE></A>. 
+
+<P>
+
+<BR>
+<A NAME="27637"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="27639"> </A><CODE>PR_OpenSharedMemory</CODE> creates a new shared memory segment or associates a 
+previously created memory segment with the specified name. When parameter 
+<CODE>create</CODE> is <CODE>(PR_SHM_EXCL | PR_SHM_CREATE)</CODE> and the shared memory already 
+exists, the function returns <CODE>NULL</CODE> with the error set to <CODE>PR_FILE_EXISTS_ERROR</CODE>. 
+
+<P>
+
+<A NAME="27643"> </A>When parameter <CODE>create</CODE> is <CODE>PR_SHM_CREATE</CODE> and the shared memory already exists, 
+a handle to that memory segment is returned. If the segment does not exist, it is 
+created and a pointer to the related <CODE>PRSharedMemory</CODE> structure is returned. 
+
+<P>
+
+<A NAME="27646"> </A>When parameter <CODE>create</CODE> is 0, and the shared memory exists, a pointer to a 
+<CODE>PRSharedMemory</CODE>structure is returned. If the shared memory does not exist, <CODE>NULL</CODE> is 
+returned with the error set to <CODE>PR_FILE_NOT_FOUND_ERROR</CODE>. 
+
+<P>
+
+<A NAME="27649"> </A><A NAME="PR_AttachSharedMemory"> </A><h4>
+PR_AttachSharedMemory
+</h4>
+
+<A NAME="27651"> </A>Attaches a memory segment previously opened with <A HREF="prshm.html#28379"  ><CODE>PR_OpenSharedMemory</CODE></A> and 
+maps it into the process memory space. 
+
+<P>
+
+<BR>
+<A NAME="27654"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<A NAME="27656"> </A><CODE>#include &lt;prshm.h&gt;
+</CODE>
+<P>
+
+<A NAME="27658"> </A><CODE>NSPR_API( void * )<br>
+&nbsp;&nbsp;&nbsp;PR_AttachSharedMemory(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRSharedMemory *shm,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRIntn  flags<br>
+);
+</CODE>
+<P>
+
+<A NAME="27663"> </A><CODE>/* Define values for PR_AttachSharedMemory(...,flags) */ <br>
+#define PR_SHM_READONLY 0x01
+</CODE>
+<P>
+
+<BR>
+<A NAME="29952"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="29953"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="29984"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="29956"></A>shm
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="29958"> </A>The handle returned from <A HREF="prshm.html#28379"  ><CODE>PR_OpenSharedMemory</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="29964"></A>flags
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="29966"> </A>Options for mapping the shared memory. <CODE>PR_SHM_READONLY</CODE> causes 
+the memory to be attached read-only. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="27675"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="27677"> </A>Address where shared memory is mapped, or <CODE>NULL</CODE> if an error occurs. Retrieve the 
+reason for the failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A> and <A HREF="prerr.html#26141"  ><CODE>PR_GetOSError</CODE></A>. 
+
+<P>
+
+<A NAME="27684"> </A><A NAME="PR_DetachSharedMemory"> </A><h4>
+PR_DetachSharedMemory
+</h4>
+
+<A NAME="27686"> </A>Unmaps a shared memory segment identified by name. 
+
+<P>
+
+<BR>
+<A NAME="27688"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="27690"></A>#include &lt;prshm.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="27692"></A>NSPR_API( PRStatus )<br>&nbsp;&nbsp;&nbsp;PR_DetachSharedMemory(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRSharedMemory *shm,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;void  *addr<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="30060"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="30061"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="30074"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="30064"></A>shm
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="30069"> </A>The handle returned from <A HREF="prshm.html#28379"  ><CODE>PR_OpenSharedMemory</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="30071"></A><CODE>addr</CODE>
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="30073"> </A>The address to which the shared memory segment is mapped.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="27707"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="27709"> </A><CODE>PRStatus</CODE>. 
+
+<P>
+
+<A NAME="27715"> </A><A NAME="PR_CloseSharedMemory"> </A><h4>
+PR_CloseSharedMemory
+</h4>
+
+<A NAME="27717"> </A>Closes a shared memory segment identified by name. 
+
+<P>
+
+<BR>
+<A NAME="27719"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="27721"></A>#include &lt;prshm.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="27723"></A>NSPR_API( PRStatus )<br>&nbsp;&nbsp;&nbsp;PR_CloseSharedMemory(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRSharedMemory *shm<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="30096"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="30097"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="30110"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="30100"></A><CODE>shm</CODE>
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="30105"> </A>The handle returned from <A HREF="prshm.html#28379"  ><CODE>PR_OpenSharedMemory</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="27735"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="27737"> </A><CODE>PRStatus</CODE>.
+
+<P>
+
+<A NAME="27743"> </A><A NAME="PR_DeleteSharedMemory"> </A><h4>
+PR_DeleteSharedMemory
+</h4>
+
+<A NAME="27745"> </A>Deletes a shared memory segment identified by name. 
+
+<P>
+
+<BR>
+<A NAME="27747"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="27749"></A>#include &lt;prshm.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="27751"></A>NSPR_API( PRStatus )<br>&nbsp;&nbsp;&nbsp;PR_DeleteSharedMemory( <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const char *name<br>);
+</PRE>
+<P>
+<BR>
+<A NAME="30126"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="30127"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="30136"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="30130"></A>shm
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="30135"> </A>The handle returned from <A HREF="prshm.html#28379"  ><CODE>PR_OpenSharedMemory</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="27763"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="27765"> </A><CODE>PRStatus</CODE>.
+
+<P>
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="prcountr.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prshma.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

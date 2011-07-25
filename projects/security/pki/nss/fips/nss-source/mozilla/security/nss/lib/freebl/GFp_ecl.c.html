@@ -1,0 +1,666 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /*
+<b><a name="2">    2</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="3">    3</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="4">    4</a></b>  *
+<b><a name="5">    5</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="6">    6</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="7">    7</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="8">    8</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="9">    9</a></b>  *
+<b><a name="10">   10</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="11">   11</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="12">   12</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="13">   13</a></b>  * License.
+<b><a name="14">   14</a></b>  *
+<b><a name="15">   15</a></b>  * The Original Code is the elliptic curve math library for prime field curves.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Initial Developer of the Original Code is
+<b><a name="18">   18</a></b>  * Sun Microsystems, Inc.
+<b><a name="19">   19</a></b>  * Portions created by the Initial Developer are Copyright (C) 2003
+<b><a name="20">   20</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="21">   21</a></b>  *
+<b><a name="22">   22</a></b>  * Contributor(s):
+<b><a name="23">   23</a></b>  *   Sheueling Chang Shantz &lt;sheueling.chang@sun.com&gt; and
+<b><a name="24">   24</a></b>  *   Douglas Stebila &lt;douglas@stebila.ca&gt;, Sun Microsystems Laboratories
+<b><a name="25">   25</a></b>  *   Bodo Moeller &lt;moeller@cdc.informatik.tu-darmstadt.de&gt;,
+<b><a name="26">   26</a></b>  *   Nils Larsch &lt;nla@trustcenter.de&gt;, and
+<b><a name="27">   27</a></b>  *   Lenka Fibikova &lt;fibikova@exp-math.uni-essen.de&gt;, the OpenSSL Project
+<b><a name="28">   28</a></b>  *
+<b><a name="29">   29</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="30">   30</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="31">   31</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="32">   32</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="33">   33</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="34">   34</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="35">   35</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="36">   36</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="37">   37</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="38">   38</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="39">   39</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="40">   40</a></b>  *
+<b><a name="41">   41</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="42">   42</a></b>  
+<b><a name="43">   43</a></b> #ifdef NSS_ENABLE_ECC
+<b><a name="44">   44</a></b> /*
+<b><a name="45">   45</a></b>  * GFp_ecl.c: Contains an implementation of elliptic curve math library
+<b><a name="46">   46</a></b>  * for curves over GFp.
+<b><a name="47">   47</a></b>  *
+<b><a name="48">   48</a></b>  * XXX Can be moved to a separate subdirectory later.
+<b><a name="49">   49</a></b>  *
+<b><a name="50">   50</a></b>  */
+<b><a name="51">   51</a></b> 
+<b><a name="52">   52</a></b> #include "GFp_ecl.h"
+<b><a name="53">   53</a></b> #include "mpi/mplogic.h"
+<b><a name="54">   54</a></b> 
+<b><a name="55">   55</a></b> /* Checks if point P(px, py) is at infinity.  Uses affine coordinates. */
+<b><a name="56">   56</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="57">   57</a></b> <a href="#57">GFp_ec_pt_is_inf_aff</a>(const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py)
+<b><a name="58">   58</a></b> {
+<b><a name="59">   59</a></b> 
+<b><a name="60">   60</a></b>     if ((<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_z">mp_cmp_z</a>(px) == 0) &amp;&amp; (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_z">mp_cmp_z</a>(py) == 0)) {
+<b><a name="61">   61</a></b>         return <a href="../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>;
+<b><a name="62">   62</a></b>     } else {
+<b><a name="63">   63</a></b>         return <a href="../freebl/mpi/mpi.h.dep.html#MP_NO">MP_NO</a>;
+<b><a name="64">   64</a></b>     }
+<b><a name="65">   65</a></b> 
+<b><a name="66">   66</a></b> }
+<b><a name="67">   67</a></b> 
+<b><a name="68">   68</a></b> /* Sets P(px, py) to be the point at infinity.  Uses affine coordinates. */
+<b><a name="69">   69</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="70">   70</a></b> <a href="#70">GFp_ec_pt_set_inf_aff</a>(<a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py)
+<b><a name="71">   71</a></b> {
+<b><a name="72">   72</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(px);
+<b><a name="73">   73</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(py);
+<b><a name="74">   74</a></b>     return <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="75">   75</a></b> }
+<b><a name="76">   76</a></b> 
+<b><a name="77">   77</a></b> /* Computes R = P + Q based on IEEE P1363 A.10.1.
+<b><a name="78">   78</a></b>  * Elliptic curve points P, Q, and R can all be identical.
+<b><a name="79">   79</a></b>  * Uses affine coordinates.
+<b><a name="80">   80</a></b>  */
+<b><a name="81">   81</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="82">   82</a></b> <a href="#82">GFp_ec_pt_add_aff</a>(const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *p, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px,
+<b><a name="83">   83</a></b>     const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *qx, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *qy, 
+<b><a name="84">   84</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rx, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *ry)
+<b><a name="85">   85</a></b> {
+<b><a name="86">   86</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="87">   87</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> lambda, temp, xtemp, ytemp;
+<b><a name="88">   88</a></b> 
+<b><a name="89">   89</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;lambda) );
+<b><a name="90">   90</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;temp) );
+<b><a name="91">   91</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;xtemp) );
+<b><a name="92">   92</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;ytemp) );
+<b><a name="93">   93</a></b>     /* if P = inf, then R = Q */
+<b><a name="94">   94</a></b>     if (<a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_is_inf_aff">GFp_ec_pt_is_inf_aff</a>(px, py) == 0) {
+<b><a name="95">   95</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(qx, rx) );
+<b><a name="96">   96</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(qy, ry) );
+<b><a name="97">   97</a></b>         err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="98">   98</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="99">   99</a></b>     }
+<b><a name="100">  100</a></b>     /* if Q = inf, then R = P */
+<b><a name="101">  101</a></b>     if (<a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_is_inf_aff">GFp_ec_pt_is_inf_aff</a>(qx, qy) == 0) {
+<b><a name="102">  102</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(px, rx) );
+<b><a name="103">  103</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(py, ry) );
+<b><a name="104">  104</a></b>         err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="105">  105</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="106">  106</a></b>     }
+<b><a name="107">  107</a></b>     /* if px != qx, then lambda = (py-qy) / (px-qx) */
+<b><a name="108">  108</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>(px, qx) != 0) {
+<b><a name="109">  109</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(py, qy, p, &amp;ytemp) );
+<b><a name="110">  110</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(px, qx, p, &amp;xtemp) );
+<b><a name="111">  111</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_invmod">mp_invmod</a>(&amp;xtemp, p, &amp;xtemp) );
+<b><a name="112">  112</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;ytemp, &amp;xtemp, p, &amp;lambda) );
+<b><a name="113">  113</a></b>     } else {
+<b><a name="114">  114</a></b>         /* if py != qy or qy = 0, then R = inf */
+<b><a name="115">  115</a></b>         if (((<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>(py, qy) != 0)) || (<a href="../freebl/mpi/mpi.c.dep.html#<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>_z"><a href="../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>_z</a>(qy) == 0)) {
+<b><a name="116">  116</a></b>             <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(rx);
+<b><a name="117">  117</a></b>             <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(ry);
+<b><a name="118">  118</a></b>             err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="119">  119</a></b>             goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="120">  120</a></b>         }
+<b><a name="121">  121</a></b>         /* lambda = (3qx^2+a) / (2qy) */
+<b><a name="122">  122</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(qx, p, &amp;xtemp) );
+<b><a name="123">  123</a></b>         <a href="../freebl/mpi/mpi.c.dep.html#mp_set">mp_set</a>(&amp;temp, 0x3);
+<b><a name="124">  124</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;xtemp, &amp;temp, p, &amp;xtemp) );
+<b><a name="125">  125</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(&amp;xtemp, a, p, &amp;xtemp) );
+<b><a name="126">  126</a></b>         <a href="../freebl/mpi/mpi.c.dep.html#mp_set">mp_set</a>(&amp;temp, 0x2);
+<b><a name="127">  127</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(qy, &amp;temp, p, &amp;ytemp) );
+<b><a name="128">  128</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_invmod">mp_invmod</a>(&amp;ytemp, p, &amp;ytemp) );
+<b><a name="129">  129</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;xtemp, &amp;ytemp, p, &amp;lambda) );
+<b><a name="130">  130</a></b>     }
+<b><a name="131">  131</a></b>     /* rx = lambda^2 - px - qx */
+<b><a name="132">  132</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(&amp;lambda, p, &amp;xtemp) );
+<b><a name="133">  133</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(&amp;xtemp, px, p, &amp;xtemp) );
+<b><a name="134">  134</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(&amp;xtemp, qx, p, &amp;xtemp) );
+<b><a name="135">  135</a></b>     /* ry = (x1-x2) * lambda - y1 */
+<b><a name="136">  136</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(qx, &amp;xtemp, p, &amp;ytemp) );
+<b><a name="137">  137</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;ytemp, &amp;lambda, p, &amp;ytemp) );
+<b><a name="138">  138</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(&amp;ytemp, qy, p, &amp;ytemp) );
+<b><a name="139">  139</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(&amp;xtemp, rx) );
+<b><a name="140">  140</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(&amp;ytemp, ry) );
+<b><a name="141">  141</a></b> 
+<b><a name="142">  142</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="143">  143</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;lambda);
+<b><a name="144">  144</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;temp);
+<b><a name="145">  145</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;xtemp);
+<b><a name="146">  146</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;ytemp);
+<b><a name="147">  147</a></b>     return err;
+<b><a name="148">  148</a></b> }
+<b><a name="149">  149</a></b> 
+<b><a name="150">  150</a></b> /* Computes R = P - Q. 
+<b><a name="151">  151</a></b>  * Elliptic curve points P, Q, and R can all be identical.
+<b><a name="152">  152</a></b>  * Uses affine coordinates.
+<b><a name="153">  153</a></b>  */
+<b><a name="154">  154</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="155">  155</a></b> <a href="#155">GFp_ec_pt_sub_aff</a>(const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *p, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px, 
+<b><a name="156">  156</a></b>     const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *qx, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *qy, 
+<b><a name="157">  157</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rx, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *ry)
+<b><a name="158">  158</a></b> {
+<b><a name="159">  159</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="160">  160</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> nqy;
+<b><a name="161">  161</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;nqy) = 0;
+<b><a name="162">  162</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;nqy) );
+<b><a name="163">  163</a></b>     /* nqy = -qy */
+<b><a name="164">  164</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_neg">mp_neg</a>(qy, &amp;nqy) );
+<b><a name="165">  165</a></b>     err = <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_add_aff">GFp_ec_pt_add_aff</a>(p, a, px, py, qx, &amp;nqy, rx, ry);
+<b><a name="166">  166</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="167">  167</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;nqy);
+<b><a name="168">  168</a></b>     return err;
+<b><a name="169">  169</a></b> }
+<b><a name="170">  170</a></b> 
+<b><a name="171">  171</a></b> /* Computes R = 2P. 
+<b><a name="172">  172</a></b>  * Elliptic curve points P and R can be identical.
+<b><a name="173">  173</a></b>  * Uses affine coordinates.
+<b><a name="174">  174</a></b>  */
+<b><a name="175">  175</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="176">  176</a></b> <a href="#176">GFp_ec_pt_dbl_aff</a>(const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *p, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px, 
+<b><a name="177">  177</a></b>     const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rx, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *ry)
+<b><a name="178">  178</a></b> {
+<b><a name="179">  179</a></b>     return <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_add_aff">GFp_ec_pt_add_aff</a>(p, a, px, py, px, py, rx, ry);
+<b><a name="180">  180</a></b> }
+<b><a name="181">  181</a></b> 
+<b><a name="182">  182</a></b> /* Gets the i'th bit in the binary representation of a.
+<b><a name="183">  183</a></b>  * If i &gt;= length(a), then return 0.
+<b><a name="184">  184</a></b>  * (The above behaviour differs from mpl_get_bit, which
+<b><a name="185">  185</a></b>  * causes an error if i &gt;= length(a).)
+<b><a name="186">  186</a></b>  */
+<b><a name="187">  187</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#187">MP_GET_BIT</a>(a, <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="188">  188</a></b>     ((<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) &gt;= mpl_s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gn<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>cant_b<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ts((a))) ? 0 : <a href="../freebl/mp<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>/mplog<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>c.c.dep.html#mpl_get_b<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>t">mpl_get_b<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>t</a>((a), (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>))
+<b><a name="189">  189</a></b> 
+<b><a name="190">  190</a></b> /* Computes R = nP based on IEEE P1363 A.10.3.
+<b><a name="191">  191</a></b>  * Elliptic curve points P and R can be identical.
+<b><a name="192">  192</a></b>  * Uses affine coordinates.
+<b><a name="193">  193</a></b>  */
+<b><a name="194">  194</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="195">  195</a></b> <a href="#195">GFp_ec_pt_mul_aff</a>(const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *p, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b,
+<b><a name="196">  196</a></b>     const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *n, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rx,
+<b><a name="197">  197</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *ry) 
+<b><a name="198">  198</a></b> {
+<b><a name="199">  199</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="200">  200</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> <a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>, <a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>3, qx, qy, sx, sy;
+<b><a name="201">  201</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt b1, b3, <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>, l;
+<b><a name="202">  202</a></b> 
+<b><a name="203">  203</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>) = 0;
+<b><a name="204">  204</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;k3) = 0;
+<b><a name="205">  205</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;qx) = 0;
+<b><a name="206">  206</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;qy) = 0;
+<b><a name="207">  207</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;sx) = 0;
+<b><a name="208">  208</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;sy) = 0;
+<b><a name="209">  209</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>) );
+<b><a name="210">  210</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;k3) );
+<b><a name="211">  211</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;qx) );
+<b><a name="212">  212</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;qy) );
+<b><a name="213">  213</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;sx) );
+<b><a name="214">  214</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;sy) );
+<b><a name="215">  215</a></b>     
+<b><a name="216">  216</a></b>     /* if n = 0 then r = inf */
+<b><a name="217">  217</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_z">mp_cmp_z</a>(n) == 0) {
+<b><a name="218">  218</a></b>         <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(rx);
+<b><a name="219">  219</a></b>         <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(ry);
+<b><a name="220">  220</a></b>         err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="221">  221</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="222">  222</a></b>     }
+<b><a name="223">  223</a></b>     /* Q = P, k = n */
+<b><a name="224">  224</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(px, &amp;qx) );
+<b><a name="225">  225</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(py, &amp;qy) );
+<b><a name="226">  226</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(n, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>) );
+<b><a name="227">  227</a></b>     /* if n &lt; 0 Q = -Q, k = -k */
+<b><a name="228">  228</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_z">mp_cmp_z</a>(n) &lt; 0) {
+<b><a name="229">  229</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_neg">mp_neg</a>(&amp;qy, &amp;qy) );
+<b><a name="230">  230</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mod">mp_mod</a>(&amp;qy, p, &amp;qy) );
+<b><a name="231">  231</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_neg">mp_neg</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>) );
+<b><a name="232">  232</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mod">mp_mod</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>) );
+<b><a name="233">  233</a></b>     }
+<b><a name="234">  234</a></b> #ifdef <a href="../freebl/ec.h.dep.html#EC_DEBUG">EC_DEBUG</a> /* basic double and add method */
+<b><a name="235">  235</a></b>     l = <a href="../freebl/mpi/mplogic.c.dep.html#mpl_significant_bits">mpl_significant_bits</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>) - 1;
+<b><a name="236">  236</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(&amp;sx);
+<b><a name="237">  237</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(&amp;sy);
+<b><a name="238">  238</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = l; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt;= 0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>--) {
+<b><a name="239">  239</a></b>         /* if k_i = 1, then S = S + Q */
+<b><a name="240">  240</a></b>         <a href="../softo<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>en/p<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>11pars.h.dep.html#i">i</a></a></a>f (<a href="../freebl/mp<a href="../softo<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>en/p<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>11pars.h.dep.html#i">i</a></a></a>/mplog<a href="../softo<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>en/p<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>11pars.h.dep.html#i">i</a></a></a>c.c.dep.html#mpl_get_b<a href="../softo<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>en/p<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>11pars.h.dep.html#i">i</a></a></a>t">mpl_get_b<a href="../softo<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>en/p<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>11pars.h.dep.html#i">i</a></a></a>t</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>, <a href="../softo<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>en/p<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>11pars.h.dep.html#i">i</a></a></a>) != 0) {
+<b><a name="241">  241</a></b>             <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_add_aff">GFp_ec_pt_add_aff</a>(p, a, &amp;sx, &amp;sy, 
+<b><a name="242">  242</a></b>                 &amp;qx, &amp;qy, &amp;sx, &amp;sy) );
+<b><a name="243">  243</a></b>         }
+<b><a name="244">  244</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt; 0) {
+<b><a name="245">  245</a></b>             /* S = 2S */
+<b><a name="246">  246</a></b>             <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_dbl_aff">GFp_ec_pt_dbl_aff</a>(p, a, &amp;sx, &amp;sy, &amp;sx, &amp;sy) );
+<b><a name="247">  247</a></b>         }
+<b><a name="248">  248</a></b>     }
+<b><a name="249">  249</a></b> #else /* double and add/subtract method from standard */
+<b><a name="250">  250</a></b>     /* k3 = 3 * k */
+<b><a name="251">  251</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_set">mp_set</a>(&amp;k3, 0x3);
+<b><a name="252">  252</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mul">mp_mul</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>3, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>3) );
+<b><a name="253">  253</a></b>     /* S = Q */
+<b><a name="254">  254</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(&amp;qx, &amp;sx) );
+<b><a name="255">  255</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(&amp;qy, &amp;sy) );
+<b><a name="256">  256</a></b>     /* l = index of high order bit in binary representation of 3*k */
+<b><a name="257">  257</a></b>     l = <a href="../freebl/mpi/mplogic.c.dep.html#mpl_significant_bits">mpl_significant_bits</a>(&amp;k3) - 1;
+<b><a name="258">  258</a></b>     /* for i = l-1 downto 1 */
+<b><a name="259">  259</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = l - 1; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt;= 1; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>--) {
+<b><a name="260">  260</a></b>         /* S = 2S */
+<b><a name="261">  261</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_dbl_aff">GFp_ec_pt_dbl_aff</a>(p, a, &amp;sx, &amp;sy, &amp;sx, &amp;sy) );
+<b><a name="262">  262</a></b>                 b3 = <a href="../freebl/GF2m_ecl.c.dep.html#MP_GET_BIT">MP_GET_BIT</a><a href="../freebl/GFp_ecl.c.dep.html#MP_GET_BIT"><sup>[1]</sup></a><a href="../freebl/ecl/ecl-pr<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>v.h.dep.html#MP_GET_BIT"><sup>[2]</sup></a>(&amp;k3, <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>);
+<b><a name="263">  263</a></b>                 b1 = <a href="../freebl/GF2m_ecl.c.dep.html#MP_GET_BIT">MP_GET_BIT</a><a href="../freebl/GFp_ecl.c.dep.html#MP_GET_BIT"><sup>[1]</sup></a><a href="../freebl/ecl/ecl-pr<a href="../softo<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>en/p<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>11pars.h.dep.html#i">i</a></a></a>v.h.dep.html#MP_GET_BIT"><sup>[2]</sup></a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>, <a href="../softo<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>en/p<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>11pars.h.dep.html#i">i</a></a></a>);
+<b><a name="264">  264</a></b>         /* if k3_i = 1 and k_i = 0, then S = S + Q */
+<b><a name="265">  265</a></b>         if ((b3 == 1) &amp;&amp; (b1 == 0)) {
+<b><a name="266">  266</a></b>             <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_add_aff">GFp_ec_pt_add_aff</a>(p, a, &amp;sx, &amp;sy, 
+<b><a name="267">  267</a></b>                 &amp;qx, &amp;qy, &amp;sx, &amp;sy) );
+<b><a name="268">  268</a></b>         /* if k3_i = 0 and k_i = 1, then S = S - Q */
+<b><a name="269">  269</a></b>         } else if ((b3 == 0) &amp;&amp; (b1 == 1)) {
+<b><a name="270">  270</a></b>             <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_sub_aff">GFp_ec_pt_sub_aff</a>(p, a, &amp;sx, &amp;sy, 
+<b><a name="271">  271</a></b>                 &amp;qx, &amp;qy, &amp;sx, &amp;sy) );
+<b><a name="272">  272</a></b>         }
+<b><a name="273">  273</a></b>     }
+<b><a name="274">  274</a></b> #endif
+<b><a name="275">  275</a></b>     /* output S */
+<b><a name="276">  276</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(&amp;sx, rx) );
+<b><a name="277">  277</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(&amp;sy, ry) );
+<b><a name="278">  278</a></b> 
+<b><a name="279">  279</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="280">  280</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>);
+<b><a name="281">  281</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;k3);
+<b><a name="282">  282</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;qx);
+<b><a name="283">  283</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;qy);
+<b><a name="284">  284</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;sx);
+<b><a name="285">  285</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;sy);
+<b><a name="286">  286</a></b>     return err;
+<b><a name="287">  287</a></b> }
+<b><a name="288">  288</a></b> 
+<b><a name="289">  289</a></b> /* Converts a point P(px, py, pz) from Jacobian projective coordinates to
+<b><a name="290">  290</a></b>  * affine coordinates R(rx, ry).  P and R can share x and y coordinates.
+<b><a name="291">  291</a></b>  */
+<b><a name="292">  292</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="293">  293</a></b> <a href="#293">GFp_ec_pt_jac2aff</a>(const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *pz,
+<b><a name="294">  294</a></b>     const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *p, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rx, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *ry)
+<b><a name="295">  295</a></b> {
+<b><a name="296">  296</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="297">  297</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> z1, z2, z3;
+<b><a name="298">  298</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;z1) = 0;
+<b><a name="299">  299</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;z2) = 0;
+<b><a name="300">  300</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;z3) = 0;
+<b><a name="301">  301</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;z1) );
+<b><a name="302">  302</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;z2) );
+<b><a name="303">  303</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;z3) );
+<b><a name="304">  304</a></b> 
+<b><a name="305">  305</a></b>     /* if point at infinity, then set point at infinity and exit */
+<b><a name="306">  306</a></b>     if (<a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_is_inf_jac">GFp_ec_pt_is_inf_jac</a>(px, py, pz) == <a href="../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="307">  307</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_set_inf_aff">GFp_ec_pt_set_inf_aff</a>(rx, ry) );
+<b><a name="308">  308</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="309">  309</a></b>     }
+<b><a name="310">  310</a></b> 
+<b><a name="311">  311</a></b>     /* transform (px, py, pz) into (px / pz^2, py / pz^3) */
+<b><a name="312">  312</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_d">mp_cmp_d</a>(pz, 1) == 0) {
+<b><a name="313">  313</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(px, rx) );
+<b><a name="314">  314</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(py, ry) );
+<b><a name="315">  315</a></b>     } else {
+<b><a name="316">  316</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_invmod">mp_invmod</a>(pz, p, &amp;z1) );
+<b><a name="317">  317</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(&amp;z1, p, &amp;z2) );
+<b><a name="318">  318</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;z1, &amp;z2, p, &amp;z3) );
+<b><a name="319">  319</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(px, &amp;z2, p, rx) );
+<b><a name="320">  320</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(py, &amp;z3, p, ry) );
+<b><a name="321">  321</a></b>     }
+<b><a name="322">  322</a></b>         
+<b><a name="323">  323</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="324">  324</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;z1);
+<b><a name="325">  325</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;z2);
+<b><a name="326">  326</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;z3);
+<b><a name="327">  327</a></b>         return err;
+<b><a name="328">  328</a></b> }
+<b><a name="329">  329</a></b> 
+<b><a name="330">  330</a></b> /* Checks if point P(px, py, pz) is at infinity.  
+<b><a name="331">  331</a></b>  * Uses Jacobian coordinates.
+<b><a name="332">  332</a></b>  */
+<b><a name="333">  333</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="334">  334</a></b> <a href="#334">GFp_ec_pt_is_inf_jac</a>(const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *pz) 
+<b><a name="335">  335</a></b> {
+<b><a name="336">  336</a></b>     return <a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_z">mp_cmp_z</a>(pz);
+<b><a name="337">  337</a></b> }
+<b><a name="338">  338</a></b> 
+<b><a name="339">  339</a></b> /* Sets P(px, py, pz) to be the point at infinity.  Uses Jacobian 
+<b><a name="340">  340</a></b>  * coordinates. 
+<b><a name="341">  341</a></b>  */
+<b><a name="342">  342</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="343">  343</a></b> <a href="#343">GFp_ec_pt_set_inf_jac</a>(<a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *pz) 
+<b><a name="344">  344</a></b> {
+<b><a name="345">  345</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(pz);
+<b><a name="346">  346</a></b>     return <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="347">  347</a></b> }
+<b><a name="348">  348</a></b> 
+<b><a name="349">  349</a></b> /* Computes R = P + Q where R is (rx, ry, rz), P is (px, py, pz) and 
+<b><a name="350">  350</a></b>  * Q is (qx, qy, qz).  Elliptic curve points P, Q, and R can all be 
+<b><a name="351">  351</a></b>  * identical. Uses Jacobian coordinates.
+<b><a name="352">  352</a></b>  *
+<b><a name="353">  353</a></b>  * This routine implements Point Addition in the Jacobian Projective 
+<b><a name="354">  354</a></b>  * space as described in the paper "Efficient elliptic curve exponentiation 
+<b><a name="355">  355</a></b>  * using mixed coordinates", by H. Cohen, A Miyaji, T. Ono.
+<b><a name="356">  356</a></b>  */
+<b><a name="357">  357</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="358">  358</a></b> <a href="#358">GFp_ec_pt_add_jac</a>(const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *p, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px,
+<b><a name="359">  359</a></b>     const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *pz, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *qx, 
+<b><a name="360">  360</a></b>     const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *qy, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *qz, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rx, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *ry, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rz)
+<b><a name="361">  361</a></b> {
+<b><a name="362">  362</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="363">  363</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> n0, u1, u2, <a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>, s2, <a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, <a href="../freebl/md5.c.dep.html#G">G</a><a href="../freebl/mpi/mpcpucache.c.dep.html#G"><sup>[1]</sup></a>;
+<b><a name="364">  364</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;n0) = 0;
+<b><a name="365">  365</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;u1) = 0;
+<b><a name="366">  366</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;u2) = 0;
+<b><a name="367">  367</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;<a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>) = 0;
+<b><a name="368">  368</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;s2) = 0;
+<b><a name="369">  369</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>) = 0;
+<b><a name="370">  370</a></b>     MP_DI<a href="../freebl/md5.c.dep.html#G">G</a><a href="../freebl/mpi/mpcpucache.c.dep.html#G"><sup>[1]</sup></a>ITS(&amp;<a href="../freebl/md5.c.dep.html#G">G</a><a href="../freebl/mpi/mpcpucache.c.dep.html#G"><sup>[1]</sup></a>) = 0;
+<b><a name="371">  371</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;n0) );
+<b><a name="372">  372</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;u1) );
+<b><a name="373">  373</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;u2) );
+<b><a name="374">  374</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>) );
+<b><a name="375">  375</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;s2) );
+<b><a name="376">  376</a></b>     C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>) );
+<b><a name="377">  377</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a><a href="../freebl/mpi/mpcpucache.c.dep.html#G"><sup>[1]</sup></a>) );
+<b><a name="378">  378</a></b> 
+<b><a name="379">  379</a></b>     /* Use point double if pointers are equal. */
+<b><a name="380">  380</a></b>     if ((px == qx) &amp;&amp; (py == qy) &amp;&amp; (pz == qz)) {
+<b><a name="381">  381</a></b>         err = <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_dbl_jac">GFp_ec_pt_dbl_jac</a>(p, a, px, py, pz, rx, ry, rz);
+<b><a name="382">  382</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="383">  383</a></b>     }
+<b><a name="384">  384</a></b>         
+<b><a name="385">  385</a></b>     /* If either P or Q is the point at infinity, then return 
+<b><a name="386">  386</a></b>      * the other point 
+<b><a name="387">  387</a></b>      */
+<b><a name="388">  388</a></b>     if (<a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_is_inf_jac">GFp_ec_pt_is_inf_jac</a>(px, py, pz) == <a href="../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="389">  389</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(qx, rx) );
+<b><a name="390">  390</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(qy, ry) );
+<b><a name="391">  391</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(qz, rz) );
+<b><a name="392">  392</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="393">  393</a></b>     }
+<b><a name="394">  394</a></b>     if (<a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_is_inf_jac">GFp_ec_pt_is_inf_jac</a>(qx, qy, qz) == <a href="../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="395">  395</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(px, rx) );
+<b><a name="396">  396</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(py, ry) );
+<b><a name="397">  397</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(pz, rz) );
+<b><a name="398">  398</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="399">  399</a></b>     }
+<b><a name="400">  400</a></b>         
+<b><a name="401">  401</a></b>     /* Compute u1 = px * qz^2, s1 = py * qz^3 */
+<b><a name="402">  402</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_d">mp_cmp_d</a>(qz, 1) == 0) {
+<b><a name="403">  403</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(px, &amp;u1) );
+<b><a name="404">  404</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(py, &amp;<a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>) );
+<b><a name="405">  405</a></b>     } else {
+<b><a name="406">  406</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(qz, p, &amp;n0) );
+<b><a name="407">  407</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(px, &amp;n0, p, &amp;u1) );
+<b><a name="408">  408</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;n0, qz, p, &amp;n0) );
+<b><a name="409">  409</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(py, &amp;n0, p, &amp;<a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>) );
+<b><a name="410">  410</a></b>     }
+<b><a name="411">  411</a></b> 
+<b><a name="412">  412</a></b>     /* Compute u2 = qx * pz^2, s2 = qy * pz^3 */
+<b><a name="413">  413</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_d">mp_cmp_d</a>(pz, 1) == 0) {
+<b><a name="414">  414</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(qx, &amp;u2) );
+<b><a name="415">  415</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(qy, &amp;s2) );
+<b><a name="416">  416</a></b>     } else {
+<b><a name="417">  417</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(pz, p, &amp;n0) );
+<b><a name="418">  418</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(qx, &amp;n0, p, &amp;u2) );
+<b><a name="419">  419</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;n0, pz, p, &amp;n0) );
+<b><a name="420">  420</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(qy, &amp;n0, p, &amp;s2) );
+<b><a name="421">  421</a></b>     }
+<b><a name="422">  422</a></b> 
+<b><a name="423">  423</a></b>     /* Compute H = u2 - u1 ; G = s2 - s1 */
+<b><a name="424">  424</a></b>     C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(&amp;u2, &amp;u1, p, &amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>) );
+<b><a name="425">  425</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(&amp;s2, &amp;<a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>, p, &amp;<a href="../freebl/md5.c.dep.html#G">G</a><a href="../freebl/mpi/mpcpucache.c.dep.html#G"><sup>[1]</sup></a>) );
+<b><a name="426">  426</a></b> 
+<b><a name="427">  427</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_z">mp_cmp_z</a>(&amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>) == 0) {
+<b><a name="428">  428</a></b>         if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_z">mp_cmp_z</a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a><a href="../freebl/mpi/mpcpucache.c.dep.html#G"><sup>[1]</sup></a>) == 0) {
+<b><a name="429">  429</a></b>             /* P = Q; double */
+<b><a name="430">  430</a></b>             err = <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_dbl_jac">GFp_ec_pt_dbl_jac</a>(p, a, px, py, pz, 
+<b><a name="431">  431</a></b>                                     rx, ry, rz);
+<b><a name="432">  432</a></b>             goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="433">  433</a></b>         } else {
+<b><a name="434">  434</a></b>             /* P = -Q; return point at infinity */
+<b><a name="435">  435</a></b>             <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_set_inf_jac">GFp_ec_pt_set_inf_jac</a>(rx, ry, rz) );
+<b><a name="436">  436</a></b>             goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="437">  437</a></b>         }
+<b><a name="438">  438</a></b>     }
+<b><a name="439">  439</a></b> 
+<b><a name="440">  440</a></b>     /* rz = pz * qz * H */
+<b><a name="441">  441</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_d">mp_cmp_d</a>(pz, 1) == 0) {
+<b><a name="442">  442</a></b>         if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_d">mp_cmp_d</a>(qz, 1) == 0) {
+<b><a name="443">  443</a></b>             /* if pz == qz == 1, then rz = H */
+<b><a name="444">  444</a></b>             C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(&amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, rz) );
+<b><a name="445">  445</a></b>         } else {
+<b><a name="446">  446</a></b>             C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(qz, &amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, p, rz) );
+<b><a name="447">  447</a></b>         }
+<b><a name="448">  448</a></b>     } else {
+<b><a name="449">  449</a></b>         if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_d">mp_cmp_d</a>(qz, 1) == 0) {
+<b><a name="450">  450</a></b>             C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(pz, &amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, p, rz) );
+<b><a name="451">  451</a></b>         } else {
+<b><a name="452">  452</a></b>             <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(pz, qz, p, &amp;n0) );
+<b><a name="453">  453</a></b>             C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;n0, &amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, p, rz) );
+<b><a name="454">  454</a></b>         }
+<b><a name="455">  455</a></b>     }
+<b><a name="456">  456</a></b>         
+<b><a name="457">  457</a></b>     /* rx = G^2 - H^3 - 2 * u1 * H^2 */
+<b><a name="458">  458</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a><a href="../freebl/mpi/mpcpucache.c.dep.html#G"><sup>[1]</sup></a>, p, rx) );
+<b><a name="459">  459</a></b>     C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(&amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, p, &amp;n0) );
+<b><a name="460">  460</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;n0, &amp;u1, p, &amp;u1) );
+<b><a name="461">  461</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(&amp;u1, &amp;u1, p, &amp;u2) );
+<b><a name="462">  462</a></b>     C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, &amp;n0, p, &amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>) );
+<b><a name="463">  463</a></b>     C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(rx, &amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, p, rx) );
+<b><a name="464">  464</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(rx, &amp;u2, p, rx) );
+<b><a name="465">  465</a></b> 
+<b><a name="466">  466</a></b>     /* ry = - s1 * H^3 + G * (u1 * H^2 - rx) */
+<b><a name="467">  467</a></b>     /* (formula based on values of variables before block above) */
+<b><a name="468">  468</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(&amp;u1, rx, p, &amp;u1) );
+<b><a name="469">  469</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a><a href="../freebl/mpi/mpcpucache.c.dep.html#G"><sup>[1]</sup></a>, &amp;u1, p, ry) );
+<b><a name="470">  470</a></b>     C<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>ECK_MPI_OK( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;<a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>, &amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>, p, &amp;<a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>) );
+<b><a name="471">  471</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(ry, &amp;<a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>, p, ry) );
+<b><a name="472">  472</a></b> 
+<b><a name="473">  473</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="474">  474</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;n0);
+<b><a name="475">  475</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;u1);
+<b><a name="476">  476</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;u2);
+<b><a name="477">  477</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/sha512.c.dep.html#s1">s1</a></a></a>);
+<b><a name="478">  478</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;s2);
+<b><a name="479">  479</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/md5.c.dep.html#H">H</a><a href="../freebl/sha512.c.dep.html#H"><sup>[1]</sup></a>);
+<b><a name="480">  480</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/md5.c.dep.html#G">G</a><a href="../freebl/mpi/mpcpucache.c.dep.html#G"><sup>[1]</sup></a>);
+<b><a name="481">  481</a></b>         return err;
+<b><a name="482">  482</a></b> }
+<b><a name="483">  483</a></b> 
+<b><a name="484">  484</a></b> /* Computes R = 2P.  Elliptic curve points P and R can be identical.  Uses 
+<b><a name="485">  485</a></b>  * Jacobian coordinates.
+<b><a name="486">  486</a></b>  *
+<b><a name="487">  487</a></b>  * This routine implements Point Doubling in the Jacobian Projective 
+<b><a name="488">  488</a></b>  * space as described in the paper "Efficient elliptic curve exponentiation 
+<b><a name="489">  489</a></b>  * using mixed coordinates", by H. Cohen, A Miyaji, T. Ono.
+<b><a name="490">  490</a></b>  */
+<b><a name="491">  491</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="492">  492</a></b> <a href="#492">GFp_ec_pt_dbl_jac</a>(const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *p, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px, 
+<b><a name="493">  493</a></b>     const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *pz, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rx, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *ry, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rz)
+<b><a name="494">  494</a></b> {
+<b><a name="495">  495</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="496">  496</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> t0, t1, <a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, <a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>;
+<b><a name="497">  497</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;t0) = 0;
+<b><a name="498">  498</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;t1) = 0;
+<b><a name="499">  499</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>P_DIGITS"><a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>P_DIGITS</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) = 0;
+<b><a name="500">  500</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGIT<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>">MP_DIGIT<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a></a>(&amp;<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>) = 0;
+<b><a name="501">  501</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;t0) );
+<b><a name="502">  502</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;t1) );
+<b><a name="503">  503</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="504">  504</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>) );
+<b><a name="505">  505</a></b> 
+<b><a name="506">  506</a></b>     if (<a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_is_inf_jac">GFp_ec_pt_is_inf_jac</a>(px, py, pz) == <a href="../freebl/mpi/mpi.h.dep.html#MP_YES">MP_YES</a>) {
+<b><a name="507">  507</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_set_inf_jac">GFp_ec_pt_set_inf_jac</a>(rx, ry, rz) );
+<b><a name="508">  508</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="509">  509</a></b>     }
+<b><a name="510">  510</a></b> 
+<b><a name="511">  511</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_d">mp_cmp_d</a>(pz, 1) == 0) {
+<b><a name="512">  512</a></b>         /* M = 3 * px^2 + a */
+<b><a name="513">  513</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(px, p, &amp;t0) );
+<b><a name="514">  514</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(&amp;t0, &amp;t0, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="515">  515</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(&amp;t0, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, p, &amp;t0) );
+<b><a name="516">  516</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(&amp;t0, a, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="517">  517</a></b>     } else if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_int">mp_cmp_int</a>(a, -3) == 0) {
+<b><a name="518">  518</a></b>         /* M = 3 * (px + pz^2) * (px - pz) */
+<b><a name="519">  519</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(pz, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="520">  520</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(px, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, p, &amp;t0) );
+<b><a name="521">  521</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(px, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, p, &amp;t1) );
+<b><a name="522">  522</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;t0, &amp;t1, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="523">  523</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, p, &amp;t0) );
+<b><a name="524">  524</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(&amp;t0, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="525">  525</a></b>     } else {
+<b><a name="526">  526</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(px, p, &amp;t0) );
+<b><a name="527">  527</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(&amp;t0, &amp;t0, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="528">  528</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(&amp;t0, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, p, &amp;t0) );
+<b><a name="529">  529</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(pz, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="530">  530</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="531">  531</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, a, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="532">  532</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, &amp;t0, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="533">  533</a></b>     }
+<b><a name="534">  534</a></b> 
+<b><a name="535">  535</a></b>     /* rz = 2 * py * pz */
+<b><a name="536">  536</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_d">mp_cmp_d</a>(pz, 1) == 0) {
+<b><a name="537">  537</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(py, py, p, rz) );
+<b><a name="538">  538</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(rz, p, &amp;t0) );
+<b><a name="539">  539</a></b>     } else {
+<b><a name="540">  540</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(py, py, p, &amp;t0) );
+<b><a name="541">  541</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;t0, pz, p, rz) );
+<b><a name="542">  542</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(&amp;t0, p, &amp;t0) );
+<b><a name="543">  543</a></b>     }
+<b><a name="544">  544</a></b> 
+<b><a name="545">  545</a></b>     /* S = 4 * px * py^2 = pz * (2 * py)^2 */
+<b><a name="546">  546</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(px, &amp;t0, p, &amp;<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>) );
+<b><a name="547">  547</a></b> 
+<b><a name="548">  548</a></b>     /* rx = M^2 - 2 * S */
+<b><a name="549">  549</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_addmod">mp_addmod</a>(&amp;<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, &amp;<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, p, &amp;t1) );
+<b><a name="550">  550</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, p, rx) );
+<b><a name="551">  551</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(rx, &amp;t1, p, rx) );
+<b><a name="552">  552</a></b> 
+<b><a name="553">  553</a></b>     /* ry = M * (S - rx) - 8 * py^4 */
+<b><a name="554">  554</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_sqrmod">mp_sqrmod</a><a href="../freebl/mpi/mpi.h.dep.html#mp_sqrmod"><sup>[1]</sup></a>(&amp;t0, p, &amp;t1) );
+<b><a name="555">  555</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_isodd">mp_isodd</a>(&amp;t1)) {
+<b><a name="556">  556</a></b>         <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_add">mp_add</a>(&amp;t1, p, &amp;t1) );
+<b><a name="557">  557</a></b>     }
+<b><a name="558">  558</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_div_2">mp_div_2</a>(&amp;t1, &amp;t1) );
+<b><a name="559">  559</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(&amp;<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, rx, p, &amp;<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>) );
+<b><a name="560">  560</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_mulmod">mp_mulmod</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, &amp;<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>, p, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>) );
+<b><a name="561">  561</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK">CHECK_<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>PI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_submod">mp_submod</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>, &amp;t1, p, ry) );
+<b><a name="562">  562</a></b>         
+<b><a name="563">  563</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="564">  564</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;t0);
+<b><a name="565">  565</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;t1);
+<b><a name="566">  566</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#M">M</a>);
+<b><a name="567">  567</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/alg2268.c.dep.html#S">S</a><a href="../freebl/mksp.c.dep.html#S"><sup>[1]</sup></a>);
+<b><a name="568">  568</a></b>     return err;
+<b><a name="569">  569</a></b> }
+<b><a name="570">  570</a></b> 
+<b><a name="571">  571</a></b> /* Computes R = nP where R is (rx, ry) and P is (px, py). The parameters
+<b><a name="572">  572</a></b>  * a, b and p are the elliptic curve coefficients and the prime that 
+<b><a name="573">  573</a></b>  * determines the field GFp.  Elliptic curve points P and R can be 
+<b><a name="574">  574</a></b>  * identical.  Uses Jacobian coordinates.
+<b><a name="575">  575</a></b>  */
+<b><a name="576">  576</a></b> <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="577">  577</a></b> <a href="#577">GFp_ec_pt_mul_jac</a>(const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *p, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, 
+<b><a name="578">  578</a></b>     const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, const <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *n, 
+<b><a name="579">  579</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rx, <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *ry)
+<b><a name="580">  580</a></b> {
+<b><a name="581">  581</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="582">  582</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> <a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>, qx, qy, qz, sx, sy, sz;
+<b><a name="583">  583</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>, l;
+<b><a name="584">  584</a></b> 
+<b><a name="585">  585</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>) = 0;
+<b><a name="586">  586</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;qx) = 0;
+<b><a name="587">  587</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;qy) = 0;
+<b><a name="588">  588</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;qz) = 0;
+<b><a name="589">  589</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;sx) = 0;
+<b><a name="590">  590</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;sy) = 0;
+<b><a name="591">  591</a></b>     <a href="../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;sz) = 0;
+<b><a name="592">  592</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>) );
+<b><a name="593">  593</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;qx) );
+<b><a name="594">  594</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;qy) );
+<b><a name="595">  595</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;qz) );
+<b><a name="596">  596</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;sx) );
+<b><a name="597">  597</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;sy) );
+<b><a name="598">  598</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;sz) );
+<b><a name="599">  599</a></b> 
+<b><a name="600">  600</a></b>     /* if n = 0 then r = inf */
+<b><a name="601">  601</a></b>     if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_z">mp_cmp_z</a>(n) == 0) {
+<b><a name="602">  602</a></b>         <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(rx);
+<b><a name="603">  603</a></b>         <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(ry);
+<b><a name="604">  604</a></b>         err = <a href="../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="605">  605</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="606">  606</a></b>         /* if n &lt; 0 then out of range error */
+<b><a name="607">  607</a></b>     } else if (<a href="../freebl/mpi/mpi.c.dep.html#mp_cmp_z">mp_cmp_z</a>(n) &lt; 0) {
+<b><a name="608">  608</a></b>         err = <a href="../freebl/mpi/mpi.h.dep.html#MP_RANGE">MP_RANGE</a>;
+<b><a name="609">  609</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="610">  610</a></b>     }
+<b><a name="611">  611</a></b>     /* Q = P, k = n */
+<b><a name="612">  612</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(px, &amp;qx) );
+<b><a name="613">  613</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(py, &amp;qy) );
+<b><a name="614">  614</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_set_int">mp_set_int</a>(&amp;qz, 1) );
+<b><a name="615">  615</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(n, &amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>) );
+<b><a name="616">  616</a></b> 
+<b><a name="617">  617</a></b>     /* double and add method */
+<b><a name="618">  618</a></b>     l = <a href="../freebl/mpi/mplogic.c.dep.html#mpl_significant_bits">mpl_significant_bits</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>) - 1;
+<b><a name="619">  619</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(&amp;sx);
+<b><a name="620">  620</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(&amp;sy);
+<b><a name="621">  621</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(&amp;sz);
+<b><a name="622">  622</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = l; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt;= 0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>--) {
+<b><a name="623">  623</a></b>         /* if k_i = 1, then S = S + Q */
+<b><a name="624">  624</a></b>         <a href="../softo<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>en/p<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>11pars.h.dep.html#i">i</a></a></a>f (<a href="../freebl/GF2m_ecl.c.dep.html#MP_GET_BIT">MP_GET_BIT</a><a href="../freebl/GFp_ecl.c.dep.html#MP_GET_BIT"><sup>[1]</sup></a><a href="../freebl/ecl/ecl-pr<a href="../softo<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>en/p<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>11pars.h.dep.html#i">i</a></a></a>v.h.dep.html#MP_GET_BIT"><sup>[2]</sup></a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>, <a href="../softo<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>en/p<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>11pars.h.dep.html#i">i</a></a></a>) != 0) {
+<b><a name="625">  625</a></b>             <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_add_jac">GFp_ec_pt_add_jac</a>(p, a, &amp;sx, &amp;sy, &amp;sz, 
+<b><a name="626">  626</a></b>                                             &amp;qx, &amp;qy, &amp;qz, &amp;sx, &amp;sy, &amp;sz) );
+<b><a name="627">  627</a></b>         }
+<b><a name="628">  628</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt; 0) {
+<b><a name="629">  629</a></b>             /* S = 2S */
+<b><a name="630">  630</a></b>             <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_dbl_jac">GFp_ec_pt_dbl_jac</a>(p, a, &amp;sx, &amp;sy, &amp;sz, 
+<b><a name="631">  631</a></b>                                             &amp;sx, &amp;sy, &amp;sz) );
+<b><a name="632">  632</a></b>         }
+<b><a name="633">  633</a></b>     }
+<b><a name="634">  634</a></b> 
+<b><a name="635">  635</a></b>     /* convert result S to affine coordinates */
+<b><a name="636">  636</a></b>     <a href="../freebl/secmpi.h.dep.html#CHECK_MPI_OK">CHECK_MPI_OK</a>( <a href="../freebl/GFp_ecl.c.dep.html#GFp_ec_pt_jac2aff">GFp_ec_pt_jac2aff</a>(&amp;sx, &amp;sy, &amp;sz, p, rx, ry) );
+<b><a name="637">  637</a></b> 
+<b><a name="638">  638</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="639">  639</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../freebl/mpi/mpcpucache.c.dep.html#k">k</a>);
+<b><a name="640">  640</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;qx);
+<b><a name="641">  641</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;qy);
+<b><a name="642">  642</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;qz);
+<b><a name="643">  643</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;sx);
+<b><a name="644">  644</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;sy);
+<b><a name="645">  645</a></b>     <a href="../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;sz);
+<b><a name="646">  646</a></b>     return err;
+<b><a name="647">  647</a></b> }
+<b><a name="648">  648</a></b> #endif /* NSS_ENABLE_ECC */
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

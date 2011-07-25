@@ -1,0 +1,661 @@
+<?php
+
+$html_title = 'Domain Interface';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<h2 align="center">Domain Interface</h2>
+<br>
+<br>
+<a name="token"></a><b>Token Management Interface</b><br>
+<br>
+<tt><b>EnableToken</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Enable the specified token for use within the domain.
+<br>
+<pre>
+PRStatus
+EnableToken (
+  &lt;_implementor_&gt; *imp,
+  NSSToken *token
+);
+</pre>
+<br>
+<tt><b>DisableToken</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Disable the specified token within the domain.
+<br>
+<pre>
+PRStatus
+DisableToken (
+  &lt;_implementor_&gt; *imp,
+  NSSToken *token,
+  NSSError why
+);
+</pre>
+<br>
+<tt><b>IsTokenEnabled</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Query the domain for the status of the token.
+<br>
+<pre>
+PRBool
+IsTokenEnabled (
+  &lt;_implementor_&gt; *imp,
+  NSSToken *token,
+  NSSError *whyOpt
+);
+</pre>
+<br>
+<tt><b>FindTokenByName</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Locate a token by name within the domain.
+<br>
+<pre>
+NSSToken *
+FindTokenByName (
+  &lt;_implementor_&gt; *imp,
+  NSSUTF8 *tokenName
+);
+</pre>
+<br>
+<tt><b>FindTokenBySlotName</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Locate a token by the name of its slot within the domain.
+<br>
+<pre>
+NSSToken *
+FindTokenBySlotName (
+  &lt;_implementor_&gt; *imp,
+  NSSUTF8 *slotName
+);
+</pre>
+<br>
+<tt><b>FindTokenForAlgorithm</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Find a token in the domain that can perform the given algorithm.
+<br>
+<pre>
+NSSToken *
+FindTokenForAlgorithm (
+  &lt;_implementor_&gt; *imp,
+  NSSOIDTag algorithm
+);
+</pre>
+<br>
+<tt><b>FindTokenForAlgorithms</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Find a token in the domain that can perform all of the given algorithms.
+<br>
+<pre>
+NSSToken *
+FindTokenForAlgorithms (
+  &lt;_implementor_&gt; *imp,
+  NSSOIDTag *algorithms,
+  PRUint32 nAlgorithms
+);
+</pre>
+<br>
+<tt><b>FindTokenForAlgNParam</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Find a token in the domain that can perform the given algorithm.
+<br>
+<pre>
+NSSToken *
+FindTokenForAlgNParam (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *ap
+);
+</pre>
+<br>
+<tt><b>FindTokenForAlgNParams</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Find a token in the domain that can perform all of the given algorithms.
+<br>
+<pre>
+NSSToken *
+FindTokenForAlgNParams (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam **ap,
+  PRUint32 nAlgorithms
+);
+</pre>
+<br>
+<br>
+<a name="auth"></a><b>Authentication Interface</b><br>
+<br>
+<a name="SetDefaultCallback"></a>
+<tt><b>SetDefaultCallback</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain, NSSCryptoContext</i><br>
+Set the default callback to use for authentication.  This callback will be the 
+default for all token authentications performed in the domain/context.
+<br>
+<pre>
+PRStatus
+SetDefaultCallback (
+  &lt;_implementor_&gt; *imp,
+  NSSCallback *newCallback,
+  NSSCallback **oldCallbackOpt
+);
+</pre>
+<br>
+<a name="GetDefaultCallback"></a>
+<tt><b>GetDefaultCallback</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain, NSSCryptoContext</i><br>
+Get the default callback used for authentication in the domain/context.
+<br>
+<pre>
+NSSCallback *
+GetDefaultCallback (
+  &lt;_implementor_&gt; *imp,
+  PRStatus *statusOpt
+);
+</pre>
+<br>
+<a name="Login"></a>
+<tt><b>Login</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain, NSSCryptoContext,
+                   NSSSlot</i><br>
+Authenticate to a domain (all enabled tokens), context (token in use for 
+operation), or a specific slot.
+<br>
+<pre>
+PRStatus
+Login (
+  &lt;_implementor_&gt; *imp,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<a name="Logout"></a>
+<tt><b>Logout</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain, NSSCryptoContext,
+                   NSSSlot</i><br>
+Logout of all tokens in a domain, the token in use by a context, or a specific 
+slot.
+<pre>
+PRStatus
+Logout (
+  &lt;_implementor_&gt; *imp
+);
+</pre>
+<br>
+<br>
+<a name="keygen"></a><b>Key Generation</b><br>
+<br>
+<tt><b>GenerateKeyPair</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Generate a public/private key pair within the domain.
+<br>
+<pre>
+PRStatus
+GenerateKeyPair (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *ap,
+  NSSPrivateKey **pvkOpt,
+  NSSPublicKey **pbkOpt,
+  const NSSUTF8 *labelOpt,
+  NSSOperations operations,
+  NSSProperties properties,
+  NSSToken *destinationOpt,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<tt><b>GenerateSymKey</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Generate a symmetric key within the domain.
+<br>
+<pre>
+NSSSymKey *
+GenerateSymKey (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *ap,
+  PRUint32 keysize,
+  const NSSUTF8 *labelOpt,
+  NSSOperations operations,
+  NSSProperties properties,
+  NSSToken *destinationOpt,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<tt><b>GenerateSymKeyFromPassword</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Use a PBE method to generate a symmetric key from a passphrase.
+<br>
+<pre>
+NSSSymKey *
+GenerateSymKeyFromPassword (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *ap,
+  const NSSUTF8 *labelOpt,
+  NSSOperations operations,
+  NSSProperties properties,
+  NSSToken *destinationOpt,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+</ul>
+<i>Additional methods for creating keys within domains:</i>
+<ul>
+<tt>
+<li><a href="pkiobject_api.html#UnwrapSymKey">UnwrapSymKey</a></li>
+<li><a href="pkiobject_api.html#UnwrapPrivateKey">UnwrapPrivateKey</a></li>
+<li><a href="pkiobject_api.html#Derive">Derive</a></li>
+</tt>
+</ul>
+<br>
+<br>
+<a name="import"></a><b>Object Import</b><br>
+<br>
+<tt><b>ImportEncodedCert</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Import a BER-encoded certificate into the domain.
+<br>
+<pre>
+NSSCert *
+ImportEncodedCert (
+  &lt;_implementor_&gt; *imp,
+  NSSBER *ber,
+  NSSUTF8 *nicknameOpt,
+  NSSToken *destinationOpt
+);
+</pre>
+<br>
+<tt><b>ImportEncodedCertChain</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Import a BER-encoded certificate chain into the domain.
+<br>
+<pre>
+NSSCertChain *
+ImportEncodedCertChain (
+  &lt;_implementor_&gt; *imp,
+  NSSBER *ber,
+  NSSToken *destinationOpt
+);
+</pre>
+<br>
+<tt><b>ImportEncodedPrivateKey</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Import a PKCS#8-encoded private key into the domain.
+<br>
+<pre>
+NSSPrivateKey *
+ImportEncodedPrivateKey (
+  &lt;_implementor_&gt; *imp,
+  NSSBER *ber,
+  NSSKeyPairType keyPairType,
+  NSSUTF8 *passwordOpt,
+  NSSUTF8 *nicknameOpt,
+  NSSOperations operations,
+  NSSProperties properties,
+  NSSCallback *uhhOpt,
+  NSSToken *destinationOpt
+);
+</pre>
+<br>
+<tt><b>ImportPublicKey</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Import a public key from a keyInfo object.
+<br>
+<pre>
+NSSPublicKey *
+ImportPublicKey (
+  &lt;_implementor_&gt; *imp,
+  NSSPublicKeyInfo *keyInfo,
+  NSSUTF8 *nicknameOpt,
+  NSSOperations operations,
+  NSSProperties properties,
+  NSSToken *destinationOpt
+);
+</pre>
+<br>
+<br>
+<a name="search"></a><b>Object Searches</b><br>
+<br>
+<tt><b>FindBestCertByNickname</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for the best certificate with the given nickname.
+<br>
+<pre>
+NSSCert *
+FindBestCertByNickname (
+  &lt;_implementor_&gt; *imp,
+  NSSUTF8 *name,
+  NSSTime time,
+  NSSUsages *usages,
+  NSSPolicies *policiesOpt
+);
+</pre>
+<br>
+<tt><b>FindCertsByNickname</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for all certificates with the given nickname.
+<br>
+<pre>
+NSSCert **
+FindCertsByNickname (
+  &lt;_implementor_&gt; *imp,
+  NSSUTF8 *name,
+  NSSCert **rvOpt,
+  PRUint32 maximumOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>FindBestCertBySubject</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for the best certificate with the given subject.
+<br>
+<pre>
+NSSCert *
+FindBestCertBySubject (
+  &lt;_implementor_&gt; *imp,
+  NSSDER *subject,
+  NSSTime time,
+  NSSUsages *usages,
+  NSSPolicies *policiesOpt
+);
+</pre>
+<br>
+<tt><b>FindCertsBySubject</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for all certificates with the given subject.
+<br>
+<pre>
+NSSCert **
+FindCertsBySubject (
+  &lt;_implementor_&gt; *imp,
+  NSSDER *subject,
+  NSSCert **rvOpt,
+  PRUint32 maximumOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>FindCertByEncodedCert</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for a specific certificate.
+<br>
+<pre>
+NSSCert *
+FindCertByEncodedCert (
+  &lt;_implementor_&gt; *imp,
+  NSSBER *encodedCert
+);
+</pre>
+<br>
+<tt><b>FindCertByIssuerAndSerialNumber</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+<pre>
+Search the domain for a specific certificate.
+<br>
+NSSCert *
+FindCertByIssuerAndSerialNumber (
+  &lt;_implementor_&gt; *imp,
+  NSSDER *issuer,
+  NSSDER *serialNumber
+);
+</pre>
+<br>
+<tt><b>FindBestCertByEmail</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for the best certificate with the given subject.
+<br>
+<pre>
+NSSCert *
+FindBestCertByEmail (
+  &lt;_implementor_&gt; *imp,
+  NSSASCII7 *email,
+  NSSTime time,
+  NSSUsages *usages,
+  NSSPolicies *policiesOpt
+);
+</pre>
+<br>
+<tt><b>FindCertsByEmail</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for all certificates with the given email address.
+<br>
+<pre>
+NSSCert **
+FindCertsByEmail (
+  &lt;_implementor_&gt; *imp,
+  NSSASCII7 *email,
+  NSSCert **rvOpt,
+  PRUint32 maximumOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>FindBestUserCert</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for the best certificate with a private key.
+<br>
+<pre>
+NSSCert *
+FindBestUserCert (
+  &lt;_implementor_&gt; *imp,
+  NSSTime time,
+  NSSUsages *usages,
+  NSSPolicies *policiesOpt
+);
+</pre>
+<br>
+<tt><b>FindUserCerts</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for all certificates with a private key.
+<br>
+<pre>
+NSSCert **
+FindUserCerts (
+  &lt;_implementor_&gt; *imp,
+  NSSTime time,
+  NSSUsages *usagesOpt,
+  NSSPolicies *policiesOpt,
+  NSSCert **rvOpt,
+  PRUint32 rvLimit,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>FindBestUserCertForSSLClientAuth</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for the best certificate with a private key that can
+be used for SSL client authentication.
+<pre>
+NSSCert *
+FindBestUserCertForSSLClientAuth (
+  &lt;_implementor_&gt; *imp,
+  NSSUTF8 *sslHostOpt,
+  NSSDER **rootCAsOpt,
+  PRUint32 rootCAsMaxOpt,
+  const NSSAlgNParam *apOpt,
+  NSSPolicies *policiesOpt
+);
+</pre>
+<br>
+<tt><b>FindUserCertsForSSLClientAuth</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for all certificates with a private key that can
+be used for SSL client authentication.
+<pre>
+NSSCert **
+FindUserCertsForSSLClientAuth (
+  &lt;_implementor_&gt; *imp,
+  NSSUTF8 *sslHostOpt,
+  NSSDER **rootCAsOpt,
+  PRUint32 rootCAsMaxOpt,
+  const NSSAlgNParam *apOpt,
+  NSSPolicies *policiesOpt,
+  NSSCert **rvOpt,
+  PRUint32 rvLimit,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>FindBestUserCertForEmailSigning</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for the best certificate with a private key that can
+be used for S/MIME signing.
+<pre>
+NSSCert *
+FindBestUserCertForEmailSigning (
+  &lt;_implementor_&gt; *imp,
+  NSSASCII7 *signerOpt,
+  NSSASCII7 *recipientOpt,
+  /* anything more here? */
+  const NSSAlgNParam *apOpt,
+  NSSPolicies *policiesOpt
+);
+</pre>
+<br>
+<tt><b>FindUserCertsForEmailSigning</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for all certificates with a private key that can
+be used for S/MIME signing.
+<pre>
+NSSCert *
+FindUserCertsForEmailSigning (
+  &lt;_implementor_&gt; *imp,
+  NSSASCII7 *signerOpt, /* fgmr or a more general name? */
+  NSSASCII7 *recipientOpt,
+  /* anything more here? */
+  const NSSAlgNParam *apOpt,
+  NSSPolicies *policiesOpt,
+  NSSCert **rvOpt,
+  PRUint32 rvLimit,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>FindPrivateKeyByID</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for a private key with a given ID.  The ID is token-specific,
+as described in the PKCS#11 standard.
+<pre>
+NSSPrivateKey *
+FindPrivateKeyByID (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *keyID,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<tt><b>FindSymKeyByID</b></tt><br>
+<i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+Search the domain for a symmetric key with a given ID.  The ID is 
+token-specific, as described in the PKCS#11 standard.
+<pre>
+NSSSymKey *
+FindSymKeyByID (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *keyID,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<i>Additional methods for locating objects within domains:</i>
+<ul>
+<tt>
+<li><a href="pkiobject_api.html#NSSPublicKey_FindCerts">
+  NSSPublicKey_FindCerts</a></li>
+<li><a href="pkiobject_api.html#NSSPrivateKey_FindCerts">
+  NSSPrivateKey_FindCerts</a></li>
+<li><a href="pkiobject_api.html#NSSCert_GetPublicKey">
+  NSSCert_GetPublicKey</a></li>
+<li><a href="pkiobject_api.html#NSSCert_FindPrivateKey">
+  NSSCert_FindPrivateKey</a></li>
+</tt>
+</ul>
+<br>
+<br>
+<a name="trustdomain"></a><b>Trust Domain Interface</b><br>
+<br>
+<i>Additional methods:</i>
+<ul>
+<tt>
+<li><a href="crypto_api.html#CreateCryptoContext">CreateCryptoContext</a></li>
+</tt>
+</ul>
+<br>
+<br>
+<a name="voldomain"></a><b>Volatile Domain Interface</b><br>
+<br>
+<tt><b>NSSVolatileDomain_CreateCertChain </b></tt><br>
+Create a certificate chain object.  Optionally begin with a cert from
+the volatile domain as the leaf.
+<pre>
+NSSCertChain *
+NSSVolatileDomain_CreateCertChain (
+  NSSVolatileDomain *vd,
+  NSSCert *vdCertOpt,
+  NSSTime time,
+  const NSSUsages *usages,
+  NSSPolicies *policiesOpt
+);
+</pre>
+<br>
+<i>Additional methods:</i>
+<ul>
+<tt>
+<li><a href="crypto_api.html#CreateCryptoContext">CreateCryptoContext</a></li>
+<li>enumeration?</li>
+</tt>
+</ul>
+<br>
+<br>
+<a name="chains"></a><b>Certificate Chain Interface</b><br>
+<br>
+<tt><b>NSSCertChain_Destroy</b></tt><br>
+<pre>
+PRStatus
+NSSCertChain_Destroy (
+  NSSCertChain *chain
+);
+</pre>
+<br>
+<tt><b>NSSCertChain_AddEncodedCert</b></tt><br>
+Certs must be added in order, beginning with the leaf.
+<pre>
+PRStatus
+NSSCertChain_AddEncodedCert (
+  NSSCertChain *chain,
+  NSSBER *encodedCert,
+  NSSUTF8 *nicknameOpt,
+  NSSToken *destinationOpt,
+  NSSCert **rvCertOpt
+);
+</pre>
+<br>
+<tt><b>NSSCertChain_GetNumCerts</b></tt><br>
+Get the number of certs in the chain.
+<pre>
+NSS_EXTERN PRIntn
+NSSCertChain_GetNumCerts (
+  NSSCertChain *chain
+);
+</pre>
+<br>
+<tt><b>NSSCertChain_GetCert</b></tt><br>
+Get the ith cert in the chain (0 is the leaf).
+<pre>
+NSSCert *
+NSSCertChain_GetCert (
+  NSSCertChain *chain,
+  PRIntn index
+);
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

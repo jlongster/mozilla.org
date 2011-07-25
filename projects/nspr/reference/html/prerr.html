@@ -1,0 +1,392 @@
+<?php
+
+$html_title = 'NSPR Reference: NSPR Error Handling (Chapter 34)';
+$page_title = 'NSPR Reference';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<link rel="prev" href="./plhash.html">
+<link rel="contents" href="./">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<ul class="snav">
+  <li><a href="./plhash.html">Previous</a>
+  <li><a href="./">Contents</a>
+</ul>
+<h1 id="NSPR-error-handling">NSPR Error Handling (Chapter 34)</h1>
+<p>This chapter describes the functions for retrieving and setting errors and 
+ the error codes set by NSPR.</p>
+<ul class="toc">
+  <li><a href="#error-type">Error Type</a>
+  <li><a href="#error-functions">Error Functions</a>
+  <li><a href="#error-codes">Error Codes</a>
+</ul>
+<div class="section">
+  <h2 id="error-type">Error Type</h2>
+  <div class="section">
+    <h4>PRErrorCode</h4>
+    <p>Type for error codes that can be retrieved with 
+     <a href="#PR_GetError"><code>PR_GetError</code></a>. You can also set your 
+     own errors using <a href="#PR_SetError"><code>PR_SetError</code></a>.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;prerror.h&gt;
+
+typedef PRInt32 PRErrorCode</pre>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p>The service NSPR offers in this area is the ability to associate a 
+       thread-specific condition with an error number. The error number 
+       namespace is not well managed. NSPR assumes error numbers starting at 
+       -6000 (decimal) and progressing towards zero. At present less than 100 
+       error codes have been defined. If NSPR's error handling is adopted by 
+       calling clients, then some sort of partitioning of the namespace will 
+       have to be employed. NSPR does not attempt to address this issue.</p>
+      <p>For NSPR errors, see <a href="#error-codes">Error Codes</a>.</p>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <h2 id="error-functions">Error Functions</h2>
+  <ul class="toc">
+    <li><a href="#PR_SetError"><code>PR_SetError</code></a>
+    <li><a href="#PR_SetErrorText"><code>PR_SetErrorText</code></a>
+    <li><a href="#PR_GetError"><code>PR_GetError</code></a>
+    <li><a href="#PR_GetOSError"><code>PR_GetOSError</code></a>
+    <li><a href="#PR_GetErrorTextLength"><code>PR_GetErrorTextLength</code></a>
+    <li><a href="#PR_GetErrorText"><code>PR_GetErrorText</code></a>
+  </ul>
+  <div class="section">
+    <h4 id="PR_SetError">PR_SetError</h4>
+    <p>Sets error information within a thread context.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;prerror.h&gt;
+
+void PR_SetError(PRErrorCode <code>errorCode</code>, PRInt32 oserr)</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has these parameters:</p>
+      <dl>
+        <dt><code>errorCode</code>
+          <dd>The NSPR (platform-independent) translation of the error.
+        <dt><code>oserr</code>
+          <dd>The platform-specific error. If there is no appropriate OS error 
+           number, a zero may be supplied.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p>NSPR does not validate the value of the error number or OS error 
+       number being specified. The runtime merely stores the value and returns 
+       it when requested.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PR_SetErrorText">PR_SetErrorText</h4>
+    <p>Sets the text associated with an error.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;prerror.h&gt;
+
+void PR_SetErrorText(PRIntn textLength, const char *text)</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has these parameters:</p>
+      <dl>
+        <dt><code>textLength</code>
+          <dd>The length of the text in the <code>text</code>. May be 
+           <code>NULL</code>. If not <code>NULL</code>, and if 
+           <code>text</code> is zero, the string is assumed to be a 
+           null-terminated C string. Otherwise the text is assumed to be the 
+           length specified and to possibly include <code>NULL</code> 
+           characters (as might occur in a multilingual string).
+        <dt><code>text</code>
+          <dd>The text to associate with the error.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p>The text is copied into the thread structure and remains there until 
+       the next call to <code>PR_SetError</code>. If there is error text 
+       already present in the thread, the previous value is first deleted. The 
+       new value is copied into storage allocated and owned by NSPR and remains 
+       there until the next call to <code>PR_SetError</code> or another call to 
+       <code>PR_SetErrorText</code>.</p>
+      <p>NSPR makes no use of this function. Clients may use it for their own 
+       purposes.</p>
+    </div>
+  </div>  
+  <div class="section">
+    <h4 id="PR_GetError">PR_GetError</h4>
+    <p>Returns the current thread's last set platform-independent error 
+     code.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;prerror.h&gt;
+
+PRErrorCode PR_GetError(void)</pre>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p>The value returned is a 32-bit number. NSPR provides no direct 
+       interpretation of the number's value. NSPR does use 
+       <a href="#PR_SetError"><code>PR_SetError</code></a> to set error numbers 
+       defined in <a href="#error-codes">Error Codes</a>.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PR_GetOSError">PR_GetOSError</h4>
+    <p>Returns the current thread's last set OS-specific error code.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;prerror.h&gt;
+
+PRInt32 PR_GetOSError(void)</pre>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p>The value returned is a 32-bit signed number. Its interpretation is 
+       left to the caller.</p>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p>Used for platform-specific code that requires the underlying OS error. 
+       For portability, clients should not create dependencies on the values of 
+       OS-specific error codes. However, this information is preserved, along 
+       with a platform neutral error code, on a per thread basis. It is most 
+       useful during development.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PR_GetErrorTextLength">PR_GetErrorTextLength</h4>
+    <p>Gets the length of the error text.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;prerror.h&gt;
+
+PRInt32 PR_GetErrorTextLength(void)</pre>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p>If a zero is returned, no error text is currently set. Otherwise, the 
+       value returned is sufficient to contain the error text currently 
+       available.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PR_GetErrorText">PR_GetErrorText</h4>
+    <p>Copies the current thread's current error text without altering the text 
+     as stored in the thread's context.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;prerror.h&gt;
+
+PRInt32 PR_GetErrorText(char *text);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameter</h5>
+      <p>The function has one parameter:</p>
+      <dl>
+        <dt><code>text</code>
+          <dd>On output, the array pointed to contains the thread's current 
+           error text.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p>The actual number of bytes copied. If the result is zero, 
+       <code>text</code> is unaffected.</p>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <h2 id="error-codes">Error Codes</h2>
+  <p>Error codes defined in <code>prerror.h</code>:</p>
+  <dl>
+    <dt><code>PR_OUT_OF_MEMORY_ERROR</code>
+      <dd>Insufficient memory to perform request.
+    <dt><code>PR_BAD_DESCRIPTOR_ERROR</code>
+      <dd>The file descriptor used as an argument in the preceding function is 
+       invalid.
+    <dt><code>PR_WOULD_BLOCK_ERROR</code>
+      <dd>The operation would have blocked, which conflicts with the semantics 
+       that have been established.
+    <dt><code>PR_ACCESS_FAULT_ERROR</code>
+      <dd>One of the arguments of the preceding function specified an invalid 
+       memory address.
+    <dt><code>PR_INVALID_METHOD_ERROR</code>
+      <dd>The preceding function is invalid for the type of file descriptor 
+       used.
+    <dt><code>PR_ILLEGAL_ACCESS_ERROR</code>
+      <dd>One of the arguments of the preceding function specified an invalid 
+       memory address.
+    <dt><code>PR_UNKNOWN_ERROR</code>
+      <dd>Some unknown error has occurred.
+    <dt><code>PR_PENDING_INTERRUPT_ERROR</code>
+      <dd>The operation terminated because another thread has interrupted it 
+       with <a href="./prthrd.html#15471"><code>PR_Interrupt</code></a>.
+    <dt><code>PR_NOT_IMPLEMENTED_ERROR</code>
+      <dd>The preceding function has not been implemented.
+    <dt><code>PR_IO_ERROR</code>
+      <dd>The preceding I/O function encountered some sort of an error, perhaps 
+       an invalid device.
+    <dt><code>PR_IO_TIMEOUT_ERROR</code>
+      <dd>The I/O operation has not completed in the time specified for the 
+       preceding function.
+    <dt><code>PR_IO_PENDING_ERROR</code>
+      <dd>An I/O operation has been attempted on a file descriptor that is 
+       currently busy with another operation.
+    <dt><code>PR_DIRECTORY_OPEN_ERROR</code>
+      <dd>The directory could not be opened.
+    <dt><code>PR_INVALID_ARGUMENT_ERROR</code>
+      <dd>One or more of the arguments to the function is invalid.
+    <dt><code>PR_ADDRESS_NOT_AVAILABLE_ERROR</code>
+      <dd>The network address 
+       (<a href="./priotyp.html#17138"><code>PRNetAddr</code></a>) is not 
+       available (probably in use).
+    <dt><code>PR_ADDRESS_NOT_SUPPORTED_ERROR</code>
+      <dd>The type of network address specified is not supported.
+    <dt><code>PR_IS_CONNECTED_ERROR</code>
+      <dd>An attempt to connect on an already connected network file descriptor.
+    <dt><code>PR_BAD_ADDRESS_ERROR</code>
+      <dd>The network address specified is invalid (as reported by the network).
+    <dt><code>PR_ADDRESS_IN_USE_ERROR</code>
+      <dd>Network address specified 
+       (<a href="./priotyp.html#17138"><code>PRNetAddr</code></a>) is in use.
+    <dt><code>PR_CONNECT_REFUSED_ERROR</code>
+      <dd>The peer has refused to allow the connection to be established.
+    <dt><code>PR_NETWORK_UNREACHABLE_ERROR</code>
+      <dd>The network address specifies a host that is unreachable (perhaps 
+       temporary).
+    <dt><code>PR_CONNECT_TIMEOUT_ERROR</code>
+      <dd>The connection attempt did not complete in a reasonable period of 
+       time.
+    <dt><code>PR_NOT_CONNECTED_ERROR</code>
+      <dd>The preceding function attempted to use connected semantics on a 
+       network file descriptor that was not connected.
+    <dt><code>PR_LOAD_LIBRARY_ERROR</code>
+      <dd>Failure to load a dynamic library.
+    <dt><code>PR_UNLOAD_LIBRARY_ERROR</code>
+      <dd>Failure to unload a dynamic library.
+    <dt><code>PR_FIND_SYMBOL_ERROR</code>
+      <dd>Symbol could not be found in the specified library.
+    <dt><code>PR_INSUFFICIENT_RESOURCES_ERROR</code>
+      <dd>There are insufficient system resources to process the request.
+    <dt><code>PR_DIRECTORY_LOOKUP_ERROR</code>
+      <dd>A directory lookup on a network address has failed.
+    <dt><code>PR_TPD_RANGE_ERROR</code>
+      <dd>Attempt to access a thread-private data index that is out of range of 
+       any index that has been allocated to the process.
+    <dt><code>PR_PROC_DESC_TABLE_FULL_ERROR</code>
+      <dd>The process' table for holding open file descriptors is full.
+    <dt><code>PR_SYS_DESC_TABLE_FULL_ERROR</code>
+      <dd>The system's table for holding open file descriptors has been 
+       exceeded.
+    <dt><code>PR_NOT_SOCKET_ERROR</code>
+      <dd>An attempt to use a non-network file descriptor on a network-only 
+       operation.
+    <dt><code>PR_NOT_TCP_SOCKET_ERROR</code>
+      <dd>Attempt to perform a TCP specific function on a non-TCP file 
+       descriptor.
+    <dt><code>PR_SOCKET_ADDRESS_IS_BOUND_ERRO</code>
+      <dd>Attempt to bind an address to a TCP file descriptor that is already 
+       bound.
+    <dt><code>PR_NO_ACCESS_RIGHTS_ERROR</code>
+      <dd>Calling thread does not have privilege to perform the operation 
+       requested.
+    <dt><code>PR_OPERATION_NOT_SUPPORTED_ERRO</code>
+      <dd>The requested operation is not supported by the platform.
+    <dt><code>PR_PROTOCOL_NOT_SUPPORTED_ERROR</code>
+      <dd>The host operating system does not support the protocol requested.
+    <dt><code>PR_REMOTE_FILE_ERROR</code>
+      <dd>Access to the remote file has been severed.
+    <dt><code>PR_BUFFER_OVERFLOW_ERROR</code>
+      <dd>The value retrieved is too large to be stored in the buffer provided.
+    <dt><code>PR_CONNECT_RESET_ERROR</code>
+      <dd>The (TCP) connection has been reset by the peer.
+    <dt><code>PR_RANGE_ERROR</code>
+      <dd>Unused.
+    <dt><code>PR_DEADLOCK_ERROR</code>
+      <dd>Performing the requested operation would have caused a deadlock. The 
+       deadlock was avoided.
+    <dt><code>PR_FILE_IS_LOCKED_ERROR</code>
+      <dd>An attempt to acquire a lock on a file has failed because the file is 
+       already locked.
+    <dt><code>PR_FILE_TOO_BIG_ERROR</code>
+      <dd>Completing the write or seek operation would have resulted in a file 
+       larger than the system could handle.
+    <dt><code>PR_NO_DEVICE_SPACE_ERROR</code>
+      <dd>The device for storing the file is full.
+    <dt><code>PR_PIPE_ERROR</code>
+      <dd>Unused.
+    <dt><code>PR_NO_SEEK_DEVICE_ERROR</code>
+      <dd>Unused.
+    <dt><code>PR_IS_DIRECTORY_ERROR</code>
+      <dd>Attempt to perform a normal file operation on a directory.
+    <dt><code>PR_LOOP_ERROR</code>
+      <dd>Symbolic link loop.
+    <dt><code>PR_NAME_TOO_LONG_ERROR</code>
+      <dd>Filename is longer than allowed by the host operating system.
+    <dt><code>PR_FILE_NOT_FOUND_ERROR</code>
+      <dd>The requested file was not found.
+    <dt><code>PR_NOT_DIRECTORY_ERROR</code>
+      <dd>Attempt to perform directory specific operations on a normal file.
+    <dt><code>PR_READ_ONLY_FILESYSTEM_ERROR</code>
+      <dd>Attempt to write to a read-only file system.
+    <dt><code>PR_DIRECTORY_NOT_EMPTY_ERROR</code>
+      <dd>Attempt to delete a directory that is not empty.
+    <dt><code>PR_FILESYSTEM_MOUNTED_ERROR</code>
+      <dd>Attempt to delete or rename a file object while the file system is 
+       busy.
+    <dt><code>PR_NOT_SAME_DEVICE_ERROR</code>
+      <dd>Request to rename a file to a file system on another device.
+    <dt><code>PR_DIRECTORY_CORRUPTED_ERROR</code>
+      <dd>The directory object in the file system is corrupted.
+    <dt><code>PR_FILE_EXISTS_ERROR</code>
+      <dd>Attempt to create or rename a file when the new name is already being 
+       used.
+    <dt><code>PR_MAX_DIRECTORY_ENTRIES_ERROR</code>
+      <dd>Attempt to add new filename to directory would exceed the limit 
+       allowed.
+    <dt><code>PR_INVALID_DEVICE_STATE_ERROR</code>
+      <dd>The device was in an invalid state to complete the desired operation.
+    <dt><code>PR_DEVICE_IS_LOCKED_ERROR</code>
+      <dd>The device needed to perform the desired request is locked.
+    <dt><code>PR_NO_MORE_FILES_ERROR</code>
+      <dd>There are no more entries in the directory.
+    <dt><code>PR_END_OF_FILE_ERROR</code>
+      <dd>Unexpectedly encountered end of file (Mac OS only).
+    <dt><code>PR_FILE_SEEK_ERROR</code>
+      <dd>An unexpected seek error (Mac OS only).
+    <dt><code>PR_FILE_IS_BUSY_ERROR</code>
+      <dd>The file is busy and the operation cannot be performed.
+    <dt><code>PR_IN_PROGRESS_ERROR</code>
+      <dd>The operation is still in progress (probably a nonblocking connect).
+    <dt><code>PR_ALREADY_INITIATED_ERROR</code>
+      <dd>The (retried) operation has already been initiated (probably a 
+       nonblocking connect).
+    <dt><code>PR_GROUP_EMPTY_ERROR</code>
+      <dd>The wait group is empty.
+    <dt><code>PR_INVALID_STATE_ERROR</code>
+      <dd>The attempted operation is on an object that was in an improper state 
+       to perform the request.
+    <dt><code>PR_MAX_ERROR</code>
+      <dd>Placeholder for the end of the list.
+  </dl>
+</div>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

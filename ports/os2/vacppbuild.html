@@ -1,0 +1,94 @@
+<TITLE>Build Instructions for Warpzilla with VisualAge 3.6.5</TITLE>
+<H1>Build Instructions for Warpzilla with VisualAge 3.6.5</H1>
+<H2>Tweak VisualAge, Toolkit, and TCP/IP - only needs to be done once</H2>
+Open <TT>Ibmcxxo\include\stdlib.h</TT> in an editor. Search for "min" and add the following bold lines to the code:
+<PRE>
+<B>#ifndef XP_OS2_VACPP</B>
+#ifndef max
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+#ifndef min
+#define min(a, b) (((a) &lt; (b)) ? (a) : (b))
+#endif
+<B>#endif /* XP_OS2_VACPP */</B>
+</PRE>
+<P>Open <TT>Toolkit\h\stack16\utils.h</TT> in an editor. Search for "strcasecmp" and add the following bold lines to the code:
+<PRE>
+<B>#ifndef XP_OS2_VACPP</B>
+#define strcasecmp(x,y) strcmpi((x),(y))
+#define strncasecmp(x,y,z) strnicmp(x,y,z)
+<B>#endif /* XP_OS2_VACPP */</B>
+</PRE>
+<P>
+On your boot drive, go to the tcpip/bin directory, and if you have <TT>ln.exe</TT>, rename it to <TT>ln-old.exe</TT>.
+<H2>Step 1: Setup your environment</H2>
+<P>
+SETMOZENV.CMD uses environment variables to locate the various tools that are needed for the build. The following
+environment variables should be set to point to where your tools are located:
+<PRE>
+GLIB
+LIBIDL
+AUTOCONF
+EMX
+VACPP365
+MOZTOOLS
+</PRE>
+Note that if you have all of your tools directory of off your root directory, you do not need to set these values.
+When you have set up the variables, type:
+<PRE>
+SETMOZENV vacpp
+</PRE>
+<H2>Step 2: Get the Code</H2>
+To get the code from CVS, go the directory where you want to put Warpzilla and type:
+<PRE>
+cvs checkout mozilla/client.mk
+</PRE>
+Then type:
+<PRE>
+cd mozilla
+gmake -f client.mk pull_all
+</PRE>
+<H2>Step 3: The .mozconfig file</H2>
+The .mozconfig file is a file you create in the mozilla directory that specifies options for the build. Some
+of the more common options are creating an obj directoy (builds objs separate from source) or enabling security
+(--enable-crypto) To create a .mozconfig file, see the <A HREF="http://webtools.mozilla.org/build/config.cgi">Unix Build Configurator</A>
+This is also how you turn on extensions like irc or venkman.
+<P>
+<B>We strongly recommend that you build with an obj directory</B>
+<P>
+Here is what our typical .mozconfig files look like for a debug build:
+<PRE>
+# sh
+# Build configuration script
+#
+# See http://www.mozilla.org/build/unix.html for build instructions.
+#
+
+# Options for client.mk.
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj
+
+# Options for 'configure' (same as command-line options).
+#ac_add_options --disable-tests
+#ac_add_options --enable-optimize
+#ac_add_options --disable-debug
+ac_add_options --enable-crypto
+ac_add_options --with-extensions=all
+</PRE>
+<H2>Step 4: Build the code</H2>
+Go to the mozilla directory and type:
+<PRE>
+gmake -f client.mk build_all
+</PRE>
+The build itself is actually two steps, an export step that builds required tools and copies headers into the dist, and a
+libs step that actually builds the code. If you encounter a situation where the export step appears to complete,
+but the libs step does not begin, you can type
+<PRE>
+gmake libs
+</PRE>
+to continue the build.
+<H2>Step 5: Run the code</H2>
+<P>The executable is located in mozilla/dist/bin. Type:
+<PRE>
+mozilla
+</PRE>
+to run it.

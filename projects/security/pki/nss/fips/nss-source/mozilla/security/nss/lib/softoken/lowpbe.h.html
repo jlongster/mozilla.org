@@ -1,0 +1,153 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> #ifndef <a href="../softoken/lowpbe.h.dep.html#_SECPKCS5_H_">_SECPKCS5_H_</a>
+<b><a name="38">   38</a></b> #define <a href="#38">_SECPKCS5_H_</a>
+<b><a name="39">   39</a></b> 
+<b><a name="40">   40</a></b> #include "plarena.h"
+<b><a name="41">   41</a></b> #include "secitem.h"
+<b><a name="42">   42</a></b> #include "seccomon.h"
+<b><a name="43">   43</a></b> #include "secoidt.h"
+<b><a name="44">   44</a></b> #include "hasht.h"
+<b><a name="45">   45</a></b> 
+<b><a name="46">   46</a></b> typedef <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> * (* <a href="#46">SEC_PKCS5GetPBEPassword</a>)(void *arg);
+<b><a name="47">   47</a></b> 
+<b><a name="48">   48</a></b> /* used for V2 PKCS 12 Draft Spec */ 
+<b><a name="49">   49</a></b> typedef enum {
+<b><a name="50">   50</a></b>     pbeBitGenIDNull = 0,
+<b><a name="51">   51</a></b>     pbeBitGenCipherKey = 0x01,
+<b><a name="52">   52</a></b>     pbeBitGenCipherIV = 0x02,
+<b><a name="53">   53</a></b>     pbeBitGenIntegrityKey = 0x03
+<b><a name="54">   54</a></b> } <a href="#54">PBEBitGenID</a>;
+<b><a name="55">   55</a></b> 
+<b><a name="56">   56</a></b> typedef enum {
+<b><a name="57">   57</a></b>     NSSPKCS5_PBKDF1 = 0,
+<b><a name="58">   58</a></b>     NSSPKCS5_PBKDF2 = 1,
+<b><a name="59">   59</a></b>     NSSPKCS5_PKCS12_V2 = 2
+<b><a name="60">   60</a></b> } <a href="#60">NSSPKCS5PBEType</a>;
+<b><a name="61">   61</a></b> 
+<b><a name="62">   62</a></b> typedef struct <a href="../softoken/lowpbe.h.dep.html#<a href="#62">NSSPKCS5PBEParameter</a>Str">NSSPKCS5PBEParameterStr</a> NSSPKCS5PBEParameter;
+<b><a name="63">   63</a></b> 
+<b><a name="64">   64</a></b> struct <a href="#64">NSSPKCS5PBEParameterStr</a> {
+<b><a name="65">   65</a></b>     PRArenaPool *poolp;
+<b><a name="66">   66</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>        salt;                /* octet string */
+<b><a name="67">   67</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>        iteration;        /* integer */
+<b><a name="68">   68</a></b> 
+<b><a name="69">   69</a></b>     /* used locally */
+<b><a name="70">   70</a></b>     int                iter;
+<b><a name="71">   71</a></b>     int         keyLen;
+<b><a name="72">   72</a></b>     int                ivLen;
+<b><a name="73">   73</a></b>     HASH_HashType hashType;
+<b><a name="74">   74</a></b>     <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEType">NSSPKCS5PBEType</a> pbeType;
+<b><a name="75">   75</a></b>     <a href="../softoken/lowpbe.h.dep.html#PBEBitGenID">PBEBitGenID</a>        keyID;
+<b><a name="76">   76</a></b>     <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a>        encAlg;
+<b><a name="77">   77</a></b>     PRBool        is2KeyDES;
+<b><a name="78">   78</a></b> };
+<b><a name="79">   79</a></b> 
+<b><a name="80">   80</a></b> 
+<b><a name="81">   81</a></b> <a href="../util/seccomon.h.dep.html#SEC_BEGIN_PROTOS">SEC_BEGIN_PROTOS</a></a>
+<b><a name="82">   82</a></b> /* Create a PKCS5 Algorithm ID
+<b><a name="83">   83</a></b>  * The algorithm ID is set up using the PKCS #5 parameter structure
+<b><a name="84">   84</a></b>  *  algorithm is the PBE algorithm ID for the desired algorithm
+<b><a name="85">   85</a></b>  *  pbe is a pbe param block with all the info needed to create the 
+<b><a name="86">   86</a></b>  *   algorithm id.
+<b><a name="87">   87</a></b>  * If an error occurs or the algorithm specified is not supported 
+<b><a name="88">   88</a></b>  * or is not a password based encryption algorithm, NULL is returned.
+<b><a name="89">   89</a></b>  * Otherwise, a pointer to the algorithm id is returned.
+<b><a name="90">   90</a></b>  */
+<b><a name="91">   91</a></b> extern <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *
+<b><a name="92">   92</a></b> <a href="#92">nsspkcs5_CreateAlgorithmID</a>(PRArenaPool *arena, <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm, 
+<b><a name="93">   93</a></b>                                                 <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *pbe);
+<b><a name="94">   94</a></b> 
+<b><a name="95">   95</a></b> /*
+<b><a name="96">   96</a></b>  * Convert an Algorithm ID to a PBE Param.
+<b><a name="97">   97</a></b>  * NOTE: this does not suppport PKCS 5 v2 because it's only used for the
+<b><a name="98">   98</a></b>  * keyDB which only support PKCS 5 v1, PFX, and PKCS 12.
+<b><a name="99">   99</a></b>  */
+<b><a name="100">  100</a></b> <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *
+<b><a name="101">  101</a></b> <a href="#101">nsspkcs5_AlgidToParam</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *algid);
+<b><a name="102">  102</a></b> 
+<b><a name="103">  103</a></b> /*
+<b><a name="104">  104</a></b>  * Convert an Algorithm ID to a PBE Param.
+<b><a name="105">  105</a></b>  * NOTE: this does not suppport PKCS 5 v2 because it's only used for the
+<b><a name="106">  106</a></b>  * keyDB which only support PKCS 5 v1, PFX, and PKCS 12.
+<b><a name="107">  107</a></b>  */
+<b><a name="108">  108</a></b> <a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *
+<b><a name="109">  109</a></b> <a href="#109">nsspkcs5_NewParam</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> alg, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *salt, int iterator);
+<b><a name="110">  110</a></b> 
+<b><a name="111">  111</a></b> 
+<b><a name="112">  112</a></b> /* Encrypt/Decrypt data using password based encryption.  
+<b><a name="113">  113</a></b>  *  algid is the PBE algorithm identifier,
+<b><a name="114">  114</a></b>  *  pwitem is the password,
+<b><a name="115">  115</a></b>  *  src is the source for encryption/decryption,
+<b><a name="116">  116</a></b>  *  encrypt is PR_TRUE for encryption, PR_FALSE for decryption.
+<b><a name="117">  117</a></b>  * The key and iv are generated based upon PKCS #5 then the src
+<b><a name="118">  118</a></b>  * is either encrypted or decrypted.  If an error occurs, NULL
+<b><a name="119">  119</a></b>  * is returned, otherwise the ciphered contents is returned.
+<b><a name="120">  120</a></b>  */
+<b><a name="121">  121</a></b> extern <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="122">  122</a></b> <a href="#122">nsspkcs5_CipherData</a>(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem,
+<b><a name="123">  123</a></b>                     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *src, PRBool encrypt, PRBool *update);
+<b><a name="124">  124</a></b> 
+<b><a name="125">  125</a></b> extern <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="126">  126</a></b> <a href="#126">nsspkcs5_ComputeKeyAndIV</a>(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *pwitem,
+<b><a name="127">  127</a></b>                                             <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *iv, PRBool faulty3DES);
+<b><a name="128">  128</a></b> 
+<b><a name="129">  129</a></b> /* Destroys PBE parameter */
+<b><a name="130">  130</a></b> extern void
+<b><a name="131">  131</a></b> <a href="#131">nsspkcs5_DestroyPBEParameter</a>(<a href="../softoken/lowpbe.h.dep.html#NSSPKCS5PBEParameter">NSSPKCS5PBEParameter</a> *param);
+<b><a name="132">  132</a></b> 
+<b><a name="133">  133</a></b> <a href="../util/secasn1.h.dep.html#SEC_END_PROTOS">SEC_END_PROTOS</a><a href="../util/seccomon.h.dep.html#SEC_END_PROTOS"><sup>[1]</sup></a></a>
+<b><a name="134">  134</a></b> 
+<b><a name="135">  135</a></b> #endif
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

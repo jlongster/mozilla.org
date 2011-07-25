@@ -1,0 +1,451 @@
+<?php
+
+$html_title = 'The NSS Build System: History and Future Directions';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="GENERATOR" content="Mozilla/4.7 [en]C-AOLNSCP  (WinNT; U) [Netscape]">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>
+The NSS Build System:<br>
+History and Future Directions</h2></center>
+
+<center><i><font size=-1>Newsgroup: <a href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a></font></i>
+<br><i><font size=-1>Main technical contact: Bob
+Relyea</font></i>
+<br><i><font size=-1>Manager: Wan-Teh
+Chang</font></i></center>
+
+<h3>
+
+<hr>Contents</h3>
+
+<ul>
+<li>
+<a href="#background">Background</a></li>
+
+<li>
+<a href="#definitions">Definitions</l1></a></li>
+
+<li>
+<a href="#history">History</l1></a></li>
+
+<li>
+<a href="#special">Special Considerations</l1></a></li>
+
+<li>
+<a href="#nssreqs">iPlanet Requirements for the NSS Build System</l1></a></li>
+
+<li>
+<a href="#mozillareqs">Mozilla Requirements for the NSS Build System</a></li>
+
+<li>
+<a href="#proposals">Proposals</a></li>
+</ul>
+<a NAME="background"></a>
+<h3>
+
+<hr>Background</h3>
+<a href="index.html">Network Security Services (NSS)</a> started out as
+the base security code used by the original Netscape Navigator products.
+In the beginning, this code was packaged and built as part of the monolithic
+client build system. The NSS build system was disentangled from the client
+build system starting with Communicator. Since then, it has gone through
+a series of modifications in response to the changing needs of NSS customers,
+whose products now include the following:
+<ul>
+<li>
+Mozilla open source browser and related browser products, including Netscape
+browsers.</li>
+
+<li>
+<a href="http://www.iplanet.com/products/product_map/product_name_2_0a.html">iPlanet
+server products</a>, including but not limited to the following:</li>
+
+<ul>
+<li>
+<a href="http://www.iplanet.com/products/iplanet_directory/home_2_1_1z.html">iPlanet
+Directory Server</a></li>
+
+<li>
+<a href="http://www.iplanet.com/downloads/developer/">iPlanet LDAP C SDK</a></li>
+
+<li>
+<a href="http://www.iplanet.com/products/iplanet_certificate/home_2_1_1ad.html">iPlanet
+Certificate Management System</a></li>
+
+<li>
+<a href="http://www.iplanet.com/products/iplanet_web_enterprise/home_2_1_1m.html">iPlanet
+Web Server</a></li>
+
+<li>
+<a href="http://www.iplanet.com/products/iplanet_messaging/home_2_1_1h.html">iPlanet
+Messaging Server</a></li>
+</ul>
+
+<li>
+Custom client-server applications built by other NSS customers.</li>
+</ul>
+Each of these products includes legacy NSS-dependent code and has specialized
+build requirements. We must continue to support them while working toward
+the goal of an independent NSS build solution that integrates smoothly
+with a modular Mozilla build system.
+<p>Beyond the goal of merely building without error on all platforms, the
+NSS team has the goal of building efficient, high-performance crypto code
+on all platforms. NSS and its current build system contain much embedded
+knowledge of how to get optimal performance out of specific compilers on
+specific platforms, and of pitfalls (including compiler deficiencies) to
+avoid on specific platforms. Code that merely builds correctly on these
+platforms may be far from optimal for some NSS customers.
+<p>This document describes the history of the NSS build system, iPlanet
+and Mozilla requirements for a new build system, and some proposals for
+how to meet those requirements. Please send feedback on these proposals
+to <a href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a>.
+<p>For more background information on NSS, see the <a href="index.html">NSS
+Project Page</a>.
+<p><a NAME="definitions"></a>
+<h3>
+
+<hr>Definitions</h3>
+This document uses the following terms related to the Netscape, Mozilla,
+and NSS build systems:
+<p><b>autoconf:</b> A build system framework that is popular in the open
+source community.
+<p><b>config:</b> The original build system for Netscape Navigator.
+<p><b>coreconf:</b> The build system, based on config, that was developed
+and is still used for NSS.
+<p><b>svbld:</b> The internal iPlanet wide automated build and release
+system.
+<p><a NAME="history"></a>
+<h3>
+
+<hr>History</h3>
+<b>1997:</b>
+<ul>The browser team frequently "froze" builds based on the original monolithic
+build system while browser problems were being resolved. When this happened,
+the NSS team was blocked and could not address the needs of its other customers
+at the time, the Netscape servers.
+<p>Therefore, as part of the modularity work on Communicator, Netscape
+engineers disentangled three components from the monolithic Communicator
+build system to be built as separate binary components. These components
+represented the basic code that has been shared by Netscape clients and
+servers since the beginning:
+<ul>
+<li>
+NSS provides the core security APIs.</li>
+
+<li>
+Netscape Portable Runtime (NSPR) provides a platform-neutral API for system
+level and libc like functions</li>
+
+<li>
+DBM provides low-level data-base management services.</li>
+</ul>
+Once this was accomplished, the NSS team was able to meet its other customer
+needs even when the browser team had to freeze development for the browser.
+<p>To faciliate this change, we created a hybrid version of the client
+and server build systems that made it possible to build, release, and import
+binary NSS releases. At this point two important things happened:
+<ul>
+<li>
+The client and server teams could not agree on a binary object-naming convention.</li>
+
+<li>
+The client team never implemented a binary import scheme. Instead, client
+builds were accomplished by pulling the various components from a stable
+NSS release tag (representing the source used to produce the latest QA'd
+binary release).</li>
+</ul>
+Within a year, the needs of the various teams releasing binary components
+fractured this build system into at least two versions: one used by NSS
+and DBM and one used by NSPR. Although these versions diverged, they remained
+close enough to move components easily from one build system to another.
+<p>These closely related build systems had three major advantages over
+the client build system:
+<ul>
+<li>
+A single set of Makefiles worked on all platforms (with the exception of
+Macintosh).</li>
+
+<li>
+The system could easily build separate components by importing binary versions
+of dependent components. It was no longer necessary to build all the dependencies
+prior to building one's one product. This greatly improved product development
+time.</li>
+
+<li>
+The system ran with minimal external tool dependencies: <tt>ns/tools</tt>
+for Windows, standard Unix commands for Unix plus either a native compiler/linker
+or <tt>gcc</tt>.</li>
+</ul>
+</ul>
+<b>1998:</b>
+<ul>Netscape announced the historic decision to develop all its browser
+products as open source. Because of patent restrictions on proprietory
+code and US export rules, we could not ship the source to our security
+code at that time. Instead, we patched the client security calls with "hieroglyphs"
+to obscure the security links in Communicator, which allowed us to publish
+the rest of the source code.
+<p>The original code contained the Netscape client's config build system
+(on which coreconf was originally based). Over the next couple of years,
+Mozilla developers converted the Unix build code to the autoconf system
+(used by Linux and other open source developers). It started as wrappers,
+and slowly moved to complete autoconf usage. At this time NSPR was integrated
+with a dual build system, because NSPR still needed to build and maintain
+binary releases as a component of the iPlanet server product releases.
+A separate copy of DBM was converted to the autoconf build system.
+<p>The NSS team went on to solve the problem of how we could produce a
+security module that would
+<ul>
+<li>
+work with a varienty of clients, each with its own version of NSPR (or
+no version of NSPR)</li>
+
+<li>
+provide the same UI for each client</li>
+
+<li>
+allow multiple applications to share a common set of crytographic "tokens"
+and certificates at the same time.</li>
+</ul>
+The result was <a href="../psm/">Personal Security Manager (PSM)</a>.
+<p>At the same time, the Mozilla team made (or acquired) enhancements to
+their build system to support the following capabilities:
+<ul>
+<li>
+All the object files could be installed in a parallel tree (a feature that
+the Windows version of Communicator had, but other platforms did not).</li>
+
+<li>
+The ability to build cross plaform.</li>
+
+<li>
+Parallel building.</li>
+</ul>
+</ul>
+<b>1999:</b>
+<ul>In the wake of signals that the US Government was considering easing
+the export regulations governing crypto software, the NSS team began the
+process of sanitizing the NSS code and examining the impediments to building
+a fully open source version of NSS. One issue we examined was the possibility
+of converting to the autoconf build system. We attempted to build DBM as
+a component without pulling the monolithic Mozilla build system. The proposal
+was to give DBM its own autoconf system, which could be called separately
+from the monolithic autoconf system.
+<p>The Mozilla team rejected this suggestion. No alternative was available
+and neither the Mozilla team nor the NSS team had the resources to address
+the problem, which was not a high priority for either team. Coupled with
+the difficulties the NSPR team was having with the dual build system, this
+situation led the NSS team to maintain the coreconf build system for NSS.
+<p>Because of the RSA patent, NSS used components built from proprietary
+licensed source code that could not be publicly disclosed. For this reason,
+and also because of export controls, the NSS team built PSM binaries internally
+and distributed them only as a complete executable program.
+<p>Another important event in 1999 was the acquisition of Netscape by AOL.
+Soon after, the NSS engineering team, along with the other Netscape server
+teams, became part of <a href="http://www.iplanet.com/index.html">iPlanet
+E-Commerce Solutions</a>.</ul>
+<b>2000:</b>
+<ul>The RSA patent expired in September 2000, and the NSS team immediately
+developed replacements for all the proprietary code on which NSS previously
+depended. As a result of these changes, all NSS source could start being
+posted to Mozilla. By December the PSM team had created a set of Makefiles
+that could be attached to the mozilla build system.</ul>
+<b>2001:</b>
+<ul>Changes in export regulations allowed Netscape and Sun to ship NSS
+in the form of shared libraries, so the NSS team modified NSS to ship as
+shared libraries in addition to static libraries. In the process we added
+<tt>.def</tt> files to control what symbols are exported from our shared
+libraries.
+<p>To understand the situation today (April 2001), it's important to recognize
+that, unlike other Mozilla components, PSM, NSS, and NSPR each operate
+under their own release schedules and product requirement documents (PRDs).
+Because of this, tree locking and checkin rules will always differ between
+the NSS build system and the Mozilla build system.
+<p>In the future, as embedding becomes more important, more Mozilla components
+will start branching off on their own schedules as well. In the long term,
+iPlanet and other customer requirements for a separate NSS build system
+converge with Mozilla requirements for separate components. The only difference
+between NSS and other components in this respect is that NSS is a more
+mature component with a broader customer base.
+<p>At the same time, the Mozilla team may well have its own requirement
+to be able to tweak the NSS branch of the Mozilla build system without
+worrying about NSS release schedule or NSS team approval. Neither of these
+requirements have ever been stated, but it would be foolish not to recognize
+that they exist. These are the same requirements that led to the initial
+bifurcation of coreconf in 1997.</ul>
+<a NAME="special"></a>
+<h3>
+
+<hr>Special Considerations</h3>
+In addition to meeting the different needs of various customers and engineering
+teams, the current NSS build system takes account of various specialized
+customer needs. Future work on the build system must take these considerations
+into account.
+<p>The main consideration involves performance. Most products built with
+autoconf have code that is conditionally compiled based on the presence
+or absence of some symbol in a system header file, such as a #define or
+a certain function declaration. The objective of those measures is to produce
+code that correctly compiles on all platforms, not using symbols or calling
+functions that do not exist on all systems.
+<p>Some people have wondered why NSS uses information about the particular
+system for which it is being built as a basis for deciding what exactly
+to build. The answer is that such information is vital to obtaining maximum
+performance in NSS. Information that is system-dependent and cannot be
+gleaned from header files includes the following:
+<ul>
+<li>
+whether loop unrolling improves speed on that system or not</li>
+
+<li>
+whether byte writes are signficantly slower than word writes on that platform.</li>
+
+<li>
+whether byte reads are slower than word reads, shifting and masking</li>
+
+<li>
+whether the system has a FPU that is capable of doing 64-bit integer arithmetic</li>
+
+<li>
+whether using the FPU is faster than using the integer ALU for multiplication.</li>
+
+<li>
+compiler flaws--for example, does the compiler's preprocessor truncate
+all values to 32 bits for evaluating #if expressions?</li>
+</ul>
+Some autoconf build systems include large and elaborate sets of programs
+that attempt to determine the answers to those questions at build times,
+e.g. running benchmarks, attempting to compile test sources and noting
+compiler failures, etc. The amount of time required to implement such systems
+is enormous.
+<p>On many platforms, assembler code is necessary to get optimal performance
+in time-critical functions. Such code is dependent on the type of the target
+system and also the tools used to build. For example, <tt>gnu</tt> assembler
+syntax is totally different from any system's native assembler. Such assembler
+code is either present or not in the product's sources, and it is built,
+or not, based on whether it is appropriate to the system and tools being
+used. Such files will continue to be built based on information about the
+system for which they are being built.
+<p><a NAME="nssreqs"></a>
+<h3>
+
+<hr>iPlanet Requirements for the NSS Build System</h3>
+The iPlanet NSS engineering team's customers and build requirements are
+different from those of the Mozilla team. Unlike other Mozilla components,
+PSM, NSS, and NSPR operate under their own release schedules and PRDs.
+Because of this, tree locking and checkin rules will always differ from
+those for Mozilla. The NSS team needs to be able to make adjustments to
+its build system, whether based on coreconf or autoconf, without gates
+or controls by the Mozilla team. This means NSS can never be part of a
+monolithic build system.
+<p>The iPlanet engineering team has the following general requirements
+for the new NSS build system, in order of priority:
+<ol>
+<li>
+Build NSS without pulling parts of Mozilla that iPlanet products do not
+need or use and that are not being pulled in present NSS builds for iPlanet.</li>
+
+<li>
+Preserve and where possible improve the current level of performance, which
+is important for many iPlanet server products.</li>
+
+<li>
+Build NSS with minimal external tools dependencies. The bigger these dependencies,
+the bigger pressure on our release engineering team. When these dependencies
+vary greatly from the dependencies of other components built by our release
+team, iPlanet management starts asking nasty cost/value questions.</li>
+
+<li>
+Build all NSS platforms (except Macintosh, see note below) with a single
+build system and a single set of Makefiles.</li>
+
+<li>
+Build from imported binary components. Production, QA'd versions of NSS
+should be supplied by building with production, QA'ed, binary versions
+of NSPR and DBM.</li>
+
+<li>
+Build as a component reliably on all platforms (except Macintosh, see below).</li>
+
+<li>
+Build from a single checked out tree on all NSS platforms simultaneously
+(requirement of our svbld system).</li>
+</ol>
+<b>NOTE:</b> "All NSS platforms" in the list above does not include Macintosh.
+The only component that needs NSS on Macintosh is PSM, so the PSM build
+process also builds its own version of NSS for Macintosh.
+<p><a NAME="mozillareqs"></a>
+<h3>
+
+<hr>Mozilla Requirements for the NSS Build System</h3>
+We believe that Mozilla has the following requirements for the new NSS
+build system, in order of priority:
+<ol>
+<li>
+NSS should build reliably when invoked from the Mozilla build system.</li>
+
+<li>
+NSS should build from a read-only tree.</li>
+
+<li>
+NSS should build cross-platform.</li>
+
+<li>
+NSS should not interfere with the <tt>-j</tt> flag (that is, NSS should
+not force serialization of a parallel build).</li>
+
+<li>
+NSS should be built by some standard autoconf invocation.</li>
+</ol>
+<a NAME="proposals"></a>
+<h3>
+
+<hr>Proposals</h3>
+We are considering two proposals for a new NSS build system. Please send
+comments to <a href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a>.
+<p><b>Proposal One:</b>
+<ul>The NSS engineering team integrates the Mozilla build requirements
+into coreconf. Mozilla Requirements 1 through 3 are relatively easy to
+do in coreconf. It takes one day to get cross-plaform code working (there
+is only one command in the coreconf build that needs to be native). coreconf
+is already OBJDIR driven. It would take a couple of days to allow it to
+build its objects into a separate object tree.
+<p>Mozilla Requirement 4 requires more understanding about what parallelized
+builds mean.
+<p>Mozilla Requirement 5 is actually the hardest, although it seems to
+be the lowest priority.
+<p>In the meantime, the Mozilla team is working at its own pace toward
+a componentized version of autoconf that can be used to produce a version
+of NSS as simply and reliably as the current <a href="buildnss_32.html">NSS
+3.2 Build Instructions</a>.
+<p>This proposal meets all the listed requirements without using autoconf.</ul>
+<b>Proposal Two:</b>
+<ul>The NSS engineering team continues using its own build system, and
+the Mozilla team develops a parallel build system that is decoupled from
+NSS (preferably in a separate tree or tag). Developers can overlay the
+parallel build system on an existing NSS tree to produce an autoconf tree
+that the mozilla team may use to build NSS from. This build system is maintained
+by the Mozilla community.
+<p>The C code for this special tree would still be pulled from a stable,
+tested version of NSS and not modified. This suggests a tree where autoconf
+is overlayed on top of an existing NSS system. There is an example of this
+already in <tt>security/dbm</tt>, where the security Makefiles pull in
+the mozilla DBM source but use the coreconf build system to build DBM.
+<p>The disadvantage of this proposal is we put off the work componentizing
+the Mozilla build system until necko, gecko, or someone else needs it (which
+is not necessarily a bad resource trade-off).</ul>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

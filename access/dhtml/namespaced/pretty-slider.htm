@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 Strict//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:wairole="http://www.w3.org/2005/01/wai-rdf/GUIRoleTaxonomy#"
+      xmlns:aaa="http://www.w3.org/2005/07/aaa">
+<head>
+<!--[if IE]>
+<script type="text/javascript">var IE = true;</script>
+<![endif]-->
+
+<title>Graphical ARIA Slider</title>
+
+<script type="text/javascript">
+<!--//--><![CDATA[//><!--
+
+/* ****** Variables to be set ****** */
+
+var sliderSize = 300;  //Width of slider in pixels
+var moveValue = 10;  //Value to change the slider on any action.
+
+/* ****** Variables to be set ****** */
+
+//Since I don't like errors in my JavaScript console.
+try{
+      if(IE) {};
+}catch(e){
+      var IE = false;
+}
+
+function displaySlider(slider)
+{
+ if(!IE){
+  var valueNow = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow"));
+  var valueMin = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemin"));
+  var valueMax = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemax"));
+ } else {
+	//IE is so stupid it accepts this as valid
+  var valueNow = parseInt(slider.getAttribute("aaa:valuenow"));
+  var valueMin = parseInt(slider.getAttribute("aaa:valuemin"));
+  var valueMax = parseInt(slider.getAttribute("aaa:valuemax"));
+ }
+
+
+ var barWidth = slider.firstChild.scrollWidth;
+ var grade = sliderSize/valueMax;
+
+	//Set the left padding.
+	var leftPad  = valueNow*grade-barWidth/2;
+	// if it is less then the min width.
+	if(leftPad < valueMin*grade){
+		leftPad = valueMin*grade;
+	}
+	// if it is greater than the max width
+	if(leftPad > valueMax*grade-barWidth){
+		leftPad = valueMax*grade-barWidth;
+	}
+	//The deferance between max and the current value, were going to use it like the valueMin was
+	var valueDown = valueMax-valueNow;
+	//Set the right padding
+	var rightPad  = valueDown*grade-barWidth/2;
+	//If it is less than zero
+	if(rightPad < 0){
+		rightPad = 0;
+	}
+	//If it is too big
+	if(rightPad > valueMax*grade-barWidth-valueMin*grade){
+		rightPad = valueMax*grade-barWidth-valueMin*grade;
+	}
+
+	//Remove cases where *.5 is involved, this can cause the width to change by 1px if we don't fix it
+	if(rightPad >= leftPad){
+	var rightNew = Math.round(rightPad);
+	 if(rightNew != rightPad){
+		rightPad = rightNew;
+		leftPad = leftPad-0.5;
+		 }
+	}
+	if(leftPad >= rightPad){
+	var leftNew = Math.round(leftPad);
+	 if(leftNew != leftPad){
+		leftPad = leftNew;
+		rightPad = rightPad-0.5;
+	 }
+	}
+
+	//set the padding
+	slider.style.paddingRight  = rightPad+'px';
+	slider.style.paddingLeft  = leftPad+'px';
+
+  return false;
+}
+function handleSliderKey(slider, event)
+{
+ if(!IE){
+  var valueNow = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow"));
+  var valueMin = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemin"));
+  var valueMax = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemax"));
+ } else {
+	//IE is so stupid it accepts this as valid
+  var valueNow = parseInt(slider.getAttribute("aaa:valuenow"));
+  var valueMin = parseInt(slider.getAttribute("aaa:valuemin"));
+  var valueMax = parseInt(slider.getAttribute("aaa:valuemax"));
+ }
+
+//Find the key press and respond to it
+ var delta = 0;
+  if (event.keyCode == 37) {
+    delta = -moveValue/2;
+  }
+  else if (event.keyCode == 39) {
+    delta = moveValue/2;
+  }
+  else if (event.keyCode == 36) {
+    delta = -( valueNow - valueMin );
+  }
+  else if (event.keyCode == 35) {
+    delta = valueMax - valueNow
+  }
+  else {
+    return true;
+  }
+
+//Stop the values going over the max and min
+  valueNow += delta;
+  if (valueNow < valueMin) {
+    valueNow = valueMin;
+  }
+  if (valueNow > valueMax) {
+    valueNow = valueMax;
+  }
+
+//set the value and move the slider
+ if(!IE){
+  slider.setAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow", valueNow);
+ } else {
+	//Incorrect, but IE does not mind.
+  slider.setAttribute("aaa:valuenow", valueNow);
+ }
+  displaySlider(slider);
+
+  return false;
+}
+
+function sliderButton(event, where, id)
+{
+var slider = document.getElementById(id);
+
+ if(!IE){
+  var valueNow = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow"));
+  var valueMin = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemin"));
+  var valueMax = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemax"));
+ } else {
+	//IE is so stupid it accepts this as valid
+  var valueNow = parseInt(slider.getAttribute("aaa:valuenow"));
+  var valueMin = parseInt(slider.getAttribute("aaa:valuemin"));
+  var valueMax = parseInt(slider.getAttribute("aaa:valuemax"));
+ }
+
+if(where == 'after'){
+	var value = -moveValue;
+} else {
+	var value = moveValue;
+}
+
+//Enter was pressed or mouse clicked on the button
+ if(event.keyCode == 13 || event.button == 0){
+
+	//Caculate new value
+	var valueNow = valueNow+value;
+
+	//Stop the values going over the max and min
+	if(valueNow < valueMin){
+		valueNow = valueMin;
+	} else if(valueNow > valueMax) {
+		valueNow = valueMax;
+	}
+
+	//set the value and move the slider
+	 if(!IE){
+	  slider.setAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow", valueNow);
+	 } else {
+		//Incorrect, but IE does not mind.
+	  slider.setAttribute("aaa:valuenow", valueNow);
+	 }
+	displaySlider(slider);
+ }
+}
+
+function barMouseDown(event,bar)
+{
+
+if (event.preventDefault) {
+  event.preventDefault();
+ }
+
+   bar.id = 'active';
+if(!IE){
+   document.addEventListener('mousemove',mouseMove,true);
+   document.addEventListener('mouseup',barMouseUp,true);
+} else {
+	//More stupid IE code
+	document.attachEvent('onmousemove',mouseMove,true);
+	document.attachEvent('onmouseup',barMouseUp,true);
+}
+
+  return false
+}
+
+function barMouseUp()
+{
+var bar = document.getElementById('active');
+   bar.removeAttribute('id');
+if(!IE){
+  document.removeEventListener('mousemove',mouseMove,true);
+   document.removeEventListener('mouseup',barMouseUp,true);
+} else {
+	//More stupid IE code
+	document.detachEvent('onmousemove',mouseMove,true);
+	document.detachEvent('onmouseup',barMouseUp,true);
+}
+
+}
+
+function mouseMove(event)
+{
+
+//Get the slider we are moveing
+var slider = document.getElementById('active').parentNode;
+
+ if(!IE){
+  var valueNow = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow"));
+  var valueMin = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemin"));
+  var valueMax = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemax"));
+ } else {
+	//IE is so stupid it accepts this as valid
+  var valueNow = parseInt(slider.getAttribute("aaa:valuenow"));
+  var valueMin = parseInt(slider.getAttribute("aaa:valuemin"));
+  var valueMax = parseInt(slider.getAttribute("aaa:valuemax"));
+ }
+
+
+ var grade = sliderSize/valueMax;
+ // Find what the new value should be and round it.
+ valueNow =  event.clientX/grade-slider.offsetLeft/grade;
+ valueNow = Math.round(valueNow);
+
+  //Stop the values going over the max and min
+  if (valueNow < valueMin) {
+    valueNow = valueMin;
+  }
+  if (valueNow > valueMax) {
+    valueNow = valueMax;
+  }
+   //set the value and move the slider
+ if(!IE){
+  slider.setAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow", valueNow);
+ } else {
+	//Incorrect, but IE does not mind.
+  slider.setAttribute("aaa:valuenow", valueNow);
+ }
+  displaySlider(slider);
+
+}
+
+function sliderMouseDown(slider,event)
+{
+
+ if(!IE){
+  var valueNow = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow"));
+  var valueMin = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemin"));
+  var valueMax = parseInt(slider.getAttributeNS("http://www.w3.org/2005/07/aaa", "valuemax"));
+ } else {
+	//IE is so stupid it accepts this as valid
+  var valueNow = parseInt(slider.getAttribute("aaa:valuenow"));
+  var valueMin = parseInt(slider.getAttribute("aaa:valuemin"));
+  var valueMax = parseInt(slider.getAttribute("aaa:valuemax"));
+ }
+
+ var grade = sliderSize/valueMax;
+
+ // Find where was clicked, and were the bar is.
+clickPos =  event.clientX-slider.offsetLeft;
+ var barWidth = slider.firstChild.scrollWidth;
+var barPos =  slider.firstChild.offsetLeft-slider.offsetLeft;
+
+// change the value
+if(clickPos > barPos && clickPos < barPos+barWidth){
+	return true;
+} else if(clickPos > barPos) {
+	var valueNow = valueNow+moveValue;
+	if(valueNow > clickPos/grade){
+		valueNow = clickPos/grade;
+	}
+} else if(clickPos < barPos+barWidth) {
+	var valueNow = valueNow-moveValue;
+	if(valueNow < clickPos/grade){
+		valueNow = clickPos/grade;
+	}
+}
+
+   //set the value and move the slider
+ if(!IE){
+  slider.setAttributeNS("http://www.w3.org/2005/07/aaa", "valuenow", valueNow);
+ } else {
+	//Incorrect, but IE does not mind.
+  slider.setAttribute("aaa:valuenow", valueNow);
+ }
+  displaySlider(slider);
+
+if (event.preventDefault) {
+  event.preventDefault();
+ }
+
+  return false
+
+}
+
+//--><!]]>
+</script>
+
+<style type="text/css">
+<!--/*--><![CDATA[/*><!--*/
+
+span.right {
+	background:url('right.png') no-repeat;
+	width:17px;
+}
+
+span.left {
+	background:url('left.png') no-repeat;
+	width:17px;
+}
+
+span.right:hover {
+	background:url('right_h.png') no-repeat;
+	width:17px;
+}
+
+span.left:hover {
+	background:url('left_h.png') no-repeat;
+	width:17px;
+}
+
+span.right:active {
+	background:url('right_a.png') no-repeat;
+	width:17px;
+}
+
+span.left:active {
+	background:url('left_a.png') no-repeat;
+	width:17px;
+}
+
+
+#slider1 {
+	background:url('back.png') repeat-x;
+	height:17px;
+}
+
+.bar {
+	background:url('slider.png') no-repeat;
+	height:17px;
+	width:17px;
+}
+
+.bar:hover {
+	background:url('slider_h.png') no-repeat;
+}
+
+
+#active {
+	background:url('slider_a.png') no-repeat;
+}
+
+.slider  span {
+	display:table-cell;
+}
+
+
+/*]]>*/-->
+</style>
+
+</head>
+
+<body onload="displaySlider(document.getElementById('slider1'));">
+
+<p>
+This is a slider.  It has two buttons on either end marked role:button and a slider in the middle marked role:slider.  When you tab on to the slider and use the arrow, End and Home keys to change the value.  Also just to draw people into useing it, we have some mouse events.  You can click on the buttons or drag the slider.
+</p>
+<p>
+It is easy to adjust the width of the slider or the speed it changes. We just set two variables at the begining of the JavaScript.  Or to have different values for each slider with pop a script tag just before the slider with the values we want.
+</p>
+
+<div class="slider">
+<span>0</span>
+
+<span role="wairole:button" title="Move slider left"
+	class="left" onclick="sliderButton(event, 'after', 'slider1');"
+	onkeypress="sliderButton(event, 'after', 'slider1');"></span>
+
+<span title="My slider" tabindex="0" id="slider1"
+	role="wairole:slider" aaa:valuenow="10" aaa:valuemin="0" aaa:valuemax="100"
+	onmousedown="sliderMouseDown(this,event);"
+	onkeydown="return handleSliderKey(this, event);"><span class="bar" onmousedown="barMouseDown(event,this)"></span>
+</span>
+
+<span title="Move slider right" role="wairole:button"
+	class="right"  onclick="sliderButton(event, 'before', 'slider1');"
+	onkeypress="sliderButton(event, 'before', 'slider1');"></span>
+
+<span>100</span>
+</div>
+
+</body>
+</html>

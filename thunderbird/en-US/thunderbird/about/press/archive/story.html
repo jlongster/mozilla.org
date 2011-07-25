@@ -1,0 +1,38 @@
+<?php
+$story_id = $_GET['id'];
+$story_file = dirname(__FILE__)."/{$story_id}.story.php";
+
+// If id was passed, make sure it's in the proper format
+if (!preg_match("/^\d{4}-\d{2}-\d{2}(-\d+)?$/", $story_id) || !file_exists($story_file)) {
+    header('Location: ..');
+}
+
+include $story_file;
+
+$page_title = $story_title;
+$body_id = 'press-release';
+$extra_headers = <<<EXTRA_HEADERS
+    <link rel="stylesheet" type="text/css" href="/style/about.css" media="screen" />
+EXTRA_HEADERS;
+@include_once "{$config['file_root']}/{$lang}/includes/header.inc.php";
+?>
+
+	<div id="main-feature">
+		<h3><?=$story_title?></h3>
+		<? if (!empty($story_snippet)) {
+			echo "<p><em>{$story_snippet}</em></p>";
+		} ?>
+	</div>
+
+	<ul id="side-menu">
+		<li class="first"><h3><a href="/<?=$lang?>/about/">About</a> / <a href="/<?=$lang?>/about/press/">Press Center</a></h3></li>
+		<li><a href="/<?=$lang?>/about/press/archive/">All Press Releases</a></li>
+	</ul>
+
+<div id="content">
+	<?=$story_body;?>
+</div>
+
+<?
+@include_once "{$config['file_root']}/{$lang}/includes/footer.inc.php";
+?>

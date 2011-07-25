@@ -1,0 +1,111 @@
+<?php
+
+$html_title = 'System Integration';
+$page_title = 'Firefox System Integration';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<link rel="stylesheet" type="text/css" href="http://www.mozilla.org/css/base/content.css">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+    <p>Firefox integrates with the Windows Shell in a number of ways - the 
+       default browser setting, the ability to set the desktop background 
+       etc. Using these settings involves using a windows-only interface
+       called nsIWindowsHooks. These functions (and others) are required on
+       other platforms however, so a generic interface is desirable. 
+       
+    <p>The plan is thus to transition to <tt>nsIShellIntegration</tt>, an
+       XP interface implemented on each platform by code that uses APIs
+       specific to that platform. Platform-specific functions (e.g. the
+       Windows unread mail count) can be exposed through platform-specific
+       interfaces.
+       
+    <p>For example:
+    
+    <p>
+    <pre class="code">
+  browser/components/shell-integration/
+                                       public/nsIShellIntegration.idl
+                                       public/nsIWindowsShellIntegration.idl
+                                       public/nsIMacShellIntegration.idl
+                                       public/nsIGNOMEShellIntegration.idl
+                                       ...
+                                       win/nsShellIntegration.cpp
+                                       ...
+                                       mac/nsShellIntegration.cpp
+                                       ...
+                                       gnome/nsShellIntegration.cpp</pre>
+    
+    <p>The current code in nsWindowsHooks and friends can be relocated, 
+       (and hopefully simplified a bit). nsIWindowsHooksSettings can probably 
+       die, since it really has no bearing on the FE.
+       
+    <p>This is what nsIShellIntegration might look like:
+    
+    <p>
+    <pre class="code">
+[scriptable, uuid(19c9fbb0-06a3-11d4-8076-00600811a9c3)]
+interface nsIShellIntegration : nsISupports 
+{
+  boolean attribute isDefaultBrowser;
+  
+  const long BACKGROUND_TILE    = 0;
+  const long BACKGROUND_STRETCH = 1;
+  const long BACKGROUND_CENTER  = 2;
+
+  void setDesktopBackground(in nsIDOMElement aElement
+                            in long aPosition);
+
+  const long CLIENT_MAIL        = 0;
+  const long CLIENT_NEWS        = 1;
+  void openDefaultClient(in long aClient);
+};</pre>
+    
+    <p>nsWindowsHooks currently throws up a confirm default browser dialog itself, 
+       with this new interface the browser FE can check itself using the attribute
+       <tt>isDefaultBrowser</tt> (which does all the required file-type-handling 
+       and protocol-handling checks in the system registry) and then throw up the
+       UI itself if it deems it necessary. Similarly setting <tt>isDefaultBrowser</tt>
+       from the FE upon confirmation from the user simplifies code in the windows
+       implementation quite a bit. 
+    
+    <p>The 'use background' parameter should be able to be removed from the 
+       setDesktopBackground method as if the element is <em>not</em> a &lt;IMG&gt;
+       element it can be assumed the background is being used. 
+    
+    <p>References to 'wallpaper' are changed to 'background' to be XP and keep
+       up with the times (Microsoft Windows itself no longer refers to wallpaper
+       as 'wallpaper').
+
+    <p>This is what nsIWindowsShellIntegration might look like:
+    
+    <p>
+    <pre class="code">
+[scriptable, uuid(19c9fbb0-06a3-11d4-8076-00600811a9c3)]
+interface nsIWindowsShellIntegration : nsIShellIntegration
+{
+  attribute long desktopColor;
+
+  readonly attribute unsigned long unreadMailCount;
+};</pre>
+    
+    <p>This interface inherits from the XP base so that users wanting to access
+       methods/properties on both don't need to QI back and forth. setDesktopColor/
+       getDesktopColor is flattened into an attribute. 
+
+    <p>&nbsp;
+    
+    <p><em>-- Ben Goodger (2004/03/06)</em>
+       
+  
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,466 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> /*
+<b><a name="37">   37</a></b>  * certt.h - public data structures for the certificate library
+<b><a name="38">   38</a></b>  *
+<b><a name="39">   39</a></b>  * $Id$
+<b><a name="40">   40</a></b>  */
+<b><a name="41">   41</a></b> #ifndef <a href="../softoken/pcertt.h.dep.html#_PCERTT_H_">_PCERTT_H_</a>
+<b><a name="42">   42</a></b> #define <a href="#42">_PCERTT_H_</a>
+<b><a name="43">   43</a></b> 
+<b><a name="44">   44</a></b> #include "prclist.h"
+<b><a name="45">   45</a></b> #include "pkcs11t.h"
+<b><a name="46">   46</a></b> #include "seccomon.h"
+<b><a name="47">   47</a></b> #include "secoidt.h"
+<b><a name="48">   48</a></b> #include "plarena.h"
+<b><a name="49">   49</a></b> #include "prcvar.h"
+<b><a name="50">   50</a></b> #include "nssilock.h"
+<b><a name="51">   51</a></b> #include "prio.h"
+<b><a name="52">   52</a></b> #include "prmon.h"
+<b><a name="53">   53</a></b> 
+<b><a name="54">   54</a></b> /* Non-opaque objects */
+<b><a name="55">   55</a></b> typedef struct <a href="../softoken/cdbhdl.h.dep.html#<a href="#55">NSSLOWCERTCertDBHandle</a>Str">NSSLOWCERTCertDBHandleStr</a>               NSSLOWCERTCertDBHandle;
+<b><a name="56">   56</a></b> typedef struct <a href="#56">NSSLOWCERTCertKey</a>Str                    NSSLOWCERTCertKey;
+<b><a name="57">   57</a></b> 
+<b><a name="58">   58</a></b> typedef struct <a href="#58">NSSLOWCERTTrust</a>Str                      NSSLOWCERTTrust;
+<b><a name="59">   59</a></b> typedef struct <a href="../softoken/pcertt.h.dep.html#<a href="#59">NSSLOWCERTCertTrust</a>Str">NSSLOWCERTCertTrustStr</a>                  NSSLOWCERTCertTrust;
+<b><a name="60">   60</a></b> typedef struct <a href="../softoken/pcertt.h.dep.html#<a href="#60">NSSLOWCERTCertificate</a>Str">NSSLOWCERTCertificateStr</a>                NSSLOWCERTCertificate;
+<b><a name="61">   61</a></b> typedef struct <a href="#61">NSSLOWCERTCertificateList</a>Str            NSSLOWCERTCertificateList;
+<b><a name="62">   62</a></b> typedef struct <a href="#62">NSSLOWCERTIssuerAndSN</a>Str                NSSLOWCERTIssuerAndSN;
+<b><a name="63">   63</a></b> typedef struct <a href="#63">NSSLOWCERTSignedData</a>Str                 NSSLOWCERTSignedData;
+<b><a name="64">   64</a></b> typedef struct <a href="#64">NSSLOWCERTSubjectPublicKeyInfo</a>Str       NSSLOWCERTSubjectPublicKeyInfo;
+<b><a name="65">   65</a></b> typedef struct <a href="../softoken/pcertt.h.dep.html#<a href="#65">NSSLOWCERTValidity</a>Str">NSSLOWCERTValidityStr</a>                   NSSLOWCERTValidity;
+<b><a name="66">   66</a></b> 
+<b><a name="67">   67</a></b> /*
+<b><a name="68">   68</a></b> ** An X.509 validity object
+<b><a name="69">   69</a></b> */
+<b><a name="70">   70</a></b> struct <a href="#70">NSSLOWCERTValidityStr</a> {
+<b><a name="71">   71</a></b>     PRArenaPool *arena;
+<b><a name="72">   72</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> notBefore;
+<b><a name="73">   73</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> notAfter;
+<b><a name="74">   74</a></b> };
+<b><a name="75">   75</a></b> 
+<b><a name="76">   76</a></b> /*
+<b><a name="77">   77</a></b>  * A serial number and issuer name, which is used as a database key
+<b><a name="78">   78</a></b>  */
+<b><a name="79">   79</a></b> struct <a href="#79">NSSLOWCERTCertKeyStr</a> {
+<b><a name="80">   80</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> serialNumber;
+<b><a name="81">   81</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derIssuer;
+<b><a name="82">   82</a></b> };
+<b><a name="83">   83</a></b> 
+<b><a name="84">   84</a></b> /*
+<b><a name="85">   85</a></b> ** A signed data object. Used to implement the "signed" macro used
+<b><a name="86">   86</a></b> ** in the X.500 specs.
+<b><a name="87">   87</a></b> */
+<b><a name="88">   88</a></b> struct <a href="#88">NSSLOWCERTSignedDataStr</a> {
+<b><a name="89">   89</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> data;
+<b><a name="90">   90</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> signatureAlgorithm;
+<b><a name="91">   91</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> signature;
+<b><a name="92">   92</a></b> };
+<b><a name="93">   93</a></b> 
+<b><a name="94">   94</a></b> /*
+<b><a name="95">   95</a></b> ** An X.509 subject-public-key-info object
+<b><a name="96">   96</a></b> */
+<b><a name="97">   97</a></b> struct <a href="#97">NSSLOWCERTSubjectPublicKeyInfoStr</a> {
+<b><a name="98">   98</a></b>     PRArenaPool *arena;
+<b><a name="99">   99</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> algorithm;
+<b><a name="100">  100</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> subjectPublicKey;
+<b><a name="101">  101</a></b> };
+<b><a name="102">  102</a></b> 
+<b><a name="103">  103</a></b> typedef struct <a href="../softoken/pcertt.h.dep.html#_<a href="#103">certDBEntryCert</a>">_certDBEntryCert</a> certDBEntryCert;
+<b><a name="104">  104</a></b> typedef struct _<a href="#104">certDBEntryRevocation</a> certDBEntryRevocation;
+<b><a name="105">  105</a></b> 
+<b><a name="106">  106</a></b> struct <a href="#106">NSSLOWCERTCertTrustStr</a> {
+<b><a name="107">  107</a></b>     unsigned int sslFlags;
+<b><a name="108">  108</a></b>     unsigned int emailFlags;
+<b><a name="109">  109</a></b>     unsigned int objectSigningFlags;
+<b><a name="110">  110</a></b> };
+<b><a name="111">  111</a></b> 
+<b><a name="112">  112</a></b> /*
+<b><a name="113">  113</a></b> ** PKCS11 Trust representation
+<b><a name="114">  114</a></b> */
+<b><a name="115">  115</a></b> struct <a href="#115">NSSLOWCERTTrustStr</a> {
+<b><a name="116">  116</a></b>     <a href="../softoken/pcertt.h.dep.html#NSSLOWCERTTrust">NSSLOWCERTTrust</a> *next;
+<b><a name="117">  117</a></b>     <a href="../softoken/pcertt.h.dep.html#NSSLOWCERTCertDBHandle">NSSLOWCERTCertDBHandle</a> *dbhandle;
+<b><a name="118">  118</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> dbKey;                        /* database key for this cert */
+<b><a name="119">  119</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCert">certDBEntryCert</a> *dbEntry;                /* database entry struct */
+<b><a name="120">  120</a></b>     <a href="../softoken/pcertt.h.dep.html#NSSLOWCERTCertTrust">NSSLOWCERTCertTrust</a> *trust;
+<b><a name="121">  121</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *derCert;                        /* original DER for the cert */
+<b><a name="122">  122</a></b>     unsigned char dbKeySpace[512];
+<b><a name="123">  123</a></b> };
+<b><a name="124">  124</a></b> 
+<b><a name="125">  125</a></b> /*
+<b><a name="126">  126</a></b> ** An X.509 certificate object (the unsigned form)
+<b><a name="127">  127</a></b> */
+<b><a name="128">  128</a></b> struct <a href="#128">NSSLOWCERTCertificateStr</a> {
+<b><a name="129">  129</a></b>     /* the arena is used to allocate any data structures that have the same
+<b><a name="130">  130</a></b>      * lifetime as the cert.  This is all stuff that hangs off of the cert
+<b><a name="131">  131</a></b>      * structure, and is all freed at the same time.  I is used when the
+<b><a name="132">  132</a></b>      * cert is decoded, destroyed, and at some times when it changes
+<b><a name="133">  133</a></b>      * state
+<b><a name="134">  134</a></b>      */
+<b><a name="135">  135</a></b>     <a href="../softoken/pcertt.h.dep.html#NSSLOWCERTCertificate">NSSLOWCERTCertificate</a> *next;
+<b><a name="136">  136</a></b>     <a href="../softoken/pcertt.h.dep.html#NSSLOWCERTCertDBHandle">NSSLOWCERTCertDBHandle</a> *dbhandle;
+<b><a name="137">  137</a></b> 
+<b><a name="138">  138</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derCert;                        /* original DER for the cert */
+<b><a name="139">  139</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derIssuer;                        /* DER for issuer name */
+<b><a name="140">  140</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derSN;
+<b><a name="141">  141</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> serialNumber;
+<b><a name="142">  142</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derSubject;                        /* DER for subject name */
+<b><a name="143">  143</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derSubjKeyInfo;
+<b><a name="144">  144</a></b>     <a href="../softoken/pcertt.h.dep.html#NSSLOWCERTSubjectPublicKeyInfo">NSSLOWCERTSubjectPublicKeyInfo</a> *subjectPublicKeyInfo;
+<b><a name="145">  145</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> certKey;                        /* database key for this cert */
+<b><a name="146">  146</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> validity;
+<b><a name="147">  147</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCert">certDBEntryCert</a> *dbEntry;                /* database entry struct */
+<b><a name="148">  148</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> subjectKeyID;        /* x509v3 subject key identifier */
+<b><a name="149">  149</a></b>     char *nickname;
+<b><a name="150">  150</a></b>     char *emailAddr;
+<b><a name="151">  151</a></b>     <a href="../softoken/pcertt.h.dep.html#NSSLOWCERTCertTrust">NSSLOWCERTCertTrust</a> *trust;
+<b><a name="152">  152</a></b> 
+<b><a name="153">  153</a></b>     /* the reference count is modified whenever someone looks up, dups
+<b><a name="154">  154</a></b>      * or destroys a certificate
+<b><a name="155">  155</a></b>      */
+<b><a name="156">  156</a></b>     int referenceCount;
+<b><a name="157">  157</a></b> 
+<b><a name="158">  158</a></b>     char nicknameSpace[200];
+<b><a name="159">  159</a></b>     unsigned char certKeySpace[512];
+<b><a name="160">  160</a></b> };
+<b><a name="161">  161</a></b> 
+<b><a name="162">  162</a></b> #define <a href="#162">SEC_CERTIFICATE_VERSION_1</a>                0        /* default created */
+<b><a name="163">  163</a></b> #define <a href="#163">SEC_CERTIFICATE_VERSION_2</a>                1        /* v2 */
+<b><a name="164">  164</a></b> #define <a href="#164">SEC_CERTIFICATE_VERSION_3</a>                2        /* v3 extensions */
+<b><a name="165">  165</a></b> 
+<b><a name="166">  166</a></b> #define <a href="#166">SEC_CRL_VERSION_1</a>                0        /* default */
+<b><a name="167">  167</a></b> #define <a href="#167">SEC_CRL_VERSION_2</a>                1        /* v2 extensions */
+<b><a name="168">  168</a></b> 
+<b><a name="169">  169</a></b> struct <a href="#169">NSSLOWCERTIssuerAndSNStr</a> {
+<b><a name="170">  170</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derIssuer;
+<b><a name="171">  171</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> serialNumber;
+<b><a name="172">  172</a></b> };
+<b><a name="173">  173</a></b> 
+<b><a name="174">  174</a></b> typedef <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> (* <a href="#174">NSSLOWCERTCertCallback</a>)(<a href="../softoken/pcertt.h.dep.html#NSSLOWCERTCertificate">NSSLOWCERTCertificate</a> *cert, void *arg);
+<b><a name="175">  175</a></b> 
+<b><a name="176">  176</a></b> /* This is the typedef for the callback passed to nsslowcert_OpenCertDB() */
+<b><a name="177">  177</a></b> /* callback to return database name based on version number */
+<b><a name="178">  178</a></b> typedef char * (*<a href="#178">NSSLOWCERTDBNameFunc</a>)(void *arg, int dbVersion);
+<b><a name="179">  179</a></b> 
+<b><a name="180">  180</a></b> /* XXX Lisa thinks the template declarations belong in cert.h, not here? */
+<b><a name="181">  181</a></b> 
+<b><a name="182">  182</a></b> #include "secasn1t.h"        /* way down here because I expect template stuff to
+<b><a name="183">  183</a></b>                          * move out of here anyway */
+<b><a name="184">  184</a></b> 
+<b><a name="185">  185</a></b> /*
+<b><a name="186">  186</a></b>  * Certificate Database related definitions and data structures
+<b><a name="187">  187</a></b>  */
+<b><a name="188">  188</a></b> 
+<b><a name="189">  189</a></b> /* version number of certificate database */
+<b><a name="190">  190</a></b> #define <a href="#190">CERT_DB_FILE_VERSION</a>                8
+<b><a name="191">  191</a></b> #define <a href="#191">CERT_DB_V7_FILE_VERSION</a>                7
+<b><a name="192">  192</a></b> #define <a href="#192">CERT_DB_CONTENT_VERSION</a>                2
+<b><a name="193">  193</a></b> 
+<b><a name="194">  194</a></b> #define <a href="#194">SEC_DB_ENTRY_HEADER_LEN</a>                3
+<b><a name="195">  195</a></b> #define <a href="#195">SEC_DB_KEY_HEADER_LEN</a>                1
+<b><a name="196">  196</a></b> 
+<b><a name="197">  197</a></b> /* All database entries have this form:
+<b><a name="198">  198</a></b>  *         
+<b><a name="199">  199</a></b>  *        byte offset        field
+<b><a name="200">  200</a></b>  *        -----------        -----
+<b><a name="201">  201</a></b>  *        0                version
+<b><a name="202">  202</a></b>  *        1                type
+<b><a name="203">  203</a></b>  *        2                flags
+<b><a name="204">  204</a></b>  */
+<b><a name="205">  205</a></b> 
+<b><a name="206">  206</a></b> /* database entry types */
+<b><a name="207">  207</a></b> typedef enum {
+<b><a name="208">  208</a></b>     certDBEntryTypeVersion = 0,
+<b><a name="209">  209</a></b>     certDBEntryTypeCert = 1,
+<b><a name="210">  210</a></b>     certDBEntryTypeNickname = 2,
+<b><a name="211">  211</a></b>     certDBEntryTypeSubject = 3,
+<b><a name="212">  212</a></b>     certDBEntryTypeRevocation = 4,
+<b><a name="213">  213</a></b>     certDBEntryTypeKeyRevocation = 5,
+<b><a name="214">  214</a></b>     certDBEntryTypeSMimeProfile = 6,
+<b><a name="215">  215</a></b>     certDBEntryTypeContentVersion = 7,
+<b><a name="216">  216</a></b>     certDBEntryTypeBlob = 8
+<b><a name="217">  217</a></b> } <a href="#217">certDBEntryType</a>;
+<b><a name="218">  218</a></b> 
+<b><a name="219">  219</a></b> typedef struct {
+<b><a name="220">  220</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryType">certDBEntryType</a> type;
+<b><a name="221">  221</a></b>     unsigned int version;
+<b><a name="222">  222</a></b>     unsigned int flags;
+<b><a name="223">  223</a></b>     PRArenaPool *arena;
+<b><a name="224">  224</a></b> } <a href="#224">certDBEntryCommon</a>;
+<b><a name="225">  225</a></b> 
+<b><a name="226">  226</a></b> /*
+<b><a name="227">  227</a></b>  * Certificate entry:
+<b><a name="228">  228</a></b>  *
+<b><a name="229">  229</a></b>  *        byte offset        field
+<b><a name="230">  230</a></b>  *        -----------        -----
+<b><a name="231">  231</a></b>  *        0                sslFlags-msb
+<b><a name="232">  232</a></b>  *        1                sslFlags-lsb
+<b><a name="233">  233</a></b>  *        2                emailFlags-msb
+<b><a name="234">  234</a></b>  *        3                emailFlags-lsb
+<b><a name="235">  235</a></b>  *        4                objectSigningFlags-msb
+<b><a name="236">  236</a></b>  *        5                objectSigningFlags-lsb
+<b><a name="237">  237</a></b>  *        6                derCert-len-msb
+<b><a name="238">  238</a></b>  *        7                derCert-len-lsb
+<b><a name="239">  239</a></b>  *        8                nickname-len-msb
+<b><a name="240">  240</a></b>  *        9                nickname-len-lsb
+<b><a name="241">  241</a></b>  *        ...                derCert
+<b><a name="242">  242</a></b>  *        ...                nickname
+<b><a name="243">  243</a></b>  *
+<b><a name="244">  244</a></b>  * NOTE: the nickname string as stored in the database is null terminated,
+<b><a name="245">  245</a></b>  *                in other words, the last byte of the db entry is always 0
+<b><a name="246">  246</a></b>  *                if a nickname is present.
+<b><a name="247">  247</a></b>  * NOTE: if nickname is not present, then nickname-len-msb and
+<b><a name="248">  248</a></b>  *                nickname-len-lsb will both be zero.
+<b><a name="249">  249</a></b>  */
+<b><a name="250">  250</a></b> struct <a href="#250">_certDBEntryCert</a> {
+<b><a name="251">  251</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCommon">certDBEntryCommon</a> common;
+<b><a name="252">  252</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCert">certDBEntryCert</a> *next;
+<b><a name="253">  253</a></b>     <a href="../softoken/pcertt.h.dep.html#NSSLOWCERTCertTrust">NSSLOWCERTCertTrust</a> trust;
+<b><a name="254">  254</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derCert;
+<b><a name="255">  255</a></b>     char *nickname;
+<b><a name="256">  256</a></b>     char nicknameSpace[200];
+<b><a name="257">  257</a></b>     unsigned char derCertSpace[2048];
+<b><a name="258">  258</a></b> };
+<b><a name="259">  259</a></b> 
+<b><a name="260">  260</a></b> /*
+<b><a name="261">  261</a></b>  * Certificate Nickname entry:
+<b><a name="262">  262</a></b>  *
+<b><a name="263">  263</a></b>  *        byte offset        field
+<b><a name="264">  264</a></b>  *        -----------        -----
+<b><a name="265">  265</a></b>  *        0                subjectname-len-msb
+<b><a name="266">  266</a></b>  *        1                subjectname-len-lsb
+<b><a name="267">  267</a></b>  *        2...                subjectname
+<b><a name="268">  268</a></b>  *
+<b><a name="269">  269</a></b>  * The database key for this type of entry is a nickname string
+<b><a name="270">  270</a></b>  * The "subjectname" value is the DER encoded DN of the identity
+<b><a name="271">  271</a></b>  *   that matches this nickname.
+<b><a name="272">  272</a></b>  */
+<b><a name="273">  273</a></b> typedef struct {
+<b><a name="274">  274</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCommon">certDBEntryCommon</a> common;
+<b><a name="275">  275</a></b>     char *nickname;
+<b><a name="276">  276</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> subjectName;
+<b><a name="277">  277</a></b> } <a href="#277">certDBEntryNickname</a>;
+<b><a name="278">  278</a></b> 
+<b><a name="279">  279</a></b> #define <a href="#279">DB_NICKNAME_ENTRY_HEADER_LEN</a> 2
+<b><a name="280">  280</a></b> 
+<b><a name="281">  281</a></b> /*
+<b><a name="282">  282</a></b>  * Certificate Subject entry:
+<b><a name="283">  283</a></b>  *
+<b><a name="284">  284</a></b>  *        byte offset        field
+<b><a name="285">  285</a></b>  *        -----------        -----
+<b><a name="286">  286</a></b>  *        0                ncerts-msb
+<b><a name="287">  287</a></b>  *        1                ncerts-lsb
+<b><a name="288">  288</a></b>  *        2                nickname-msb
+<b><a name="289">  289</a></b>  *        3                nickname-lsb
+<b><a name="290">  290</a></b>  *        4                emailAddr-msb
+<b><a name="291">  291</a></b>  *        5                emailAddr-lsb
+<b><a name="292">  292</a></b>  *        ...                nickname
+<b><a name="293">  293</a></b>  *        ...                emailAddr
+<b><a name="294">  294</a></b>  *        ...+2*i                certkey-len-msb
+<b><a name="295">  295</a></b>  *        ...+1+2*i       certkey-len-lsb
+<b><a name="296">  296</a></b>  *        ...+2*ncerts+2*i keyid-len-msb
+<b><a name="297">  297</a></b>  *        ...+1+2*ncerts+2*i keyid-len-lsb
+<b><a name="298">  298</a></b>  *        ...                certkeys
+<b><a name="299">  299</a></b>  *        ...                keyids
+<b><a name="300">  300</a></b>  *
+<b><a name="301">  301</a></b>  * The database key for this type of entry is the DER encoded subject name
+<b><a name="302">  302</a></b>  * The "certkey" value is an array of  certificate database lookup keys that
+<b><a name="303">  303</a></b>  *   points to the database entries for the certificates that matche
+<b><a name="304">  304</a></b>  *   this subject.
+<b><a name="305">  305</a></b>  *
+<b><a name="306">  306</a></b>  */
+<b><a name="307">  307</a></b> typedef struct <a href="#307">_certDBEntrySubject</a> {
+<b><a name="308">  308</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCommon">certDBEntryCommon</a> common;
+<b><a name="309">  309</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> derSubject;
+<b><a name="310">  310</a></b>     unsigned int ncerts;
+<b><a name="311">  311</a></b>     char *nickname;
+<b><a name="312">  312</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *certKeys;
+<b><a name="313">  313</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *keyIDs;
+<b><a name="314">  314</a></b>     char **emailAddrs;
+<b><a name="315">  315</a></b>     unsigned int nemailAddrs;
+<b><a name="316">  316</a></b> } <a href="#316">certDBEntrySubject</a>;
+<b><a name="317">  317</a></b> 
+<b><a name="318">  318</a></b> #define <a href="#318">DB_SUBJECT_ENTRY_HEADER_LEN</a> 6
+<b><a name="319">  319</a></b> 
+<b><a name="320">  320</a></b> /*
+<b><a name="321">  321</a></b>  * Certificate SMIME profile entry:
+<b><a name="322">  322</a></b>  *
+<b><a name="323">  323</a></b>  *        byte offset        field
+<b><a name="324">  324</a></b>  *        -----------        -----
+<b><a name="325">  325</a></b>  *        0                subjectname-len-msb
+<b><a name="326">  326</a></b>  *        1                subjectname-len-lsb
+<b><a name="327">  327</a></b>  *        2                smimeoptions-len-msb
+<b><a name="328">  328</a></b>  *        3                smimeoptions-len-lsb
+<b><a name="329">  329</a></b>  *        4                options-date-len-msb
+<b><a name="330">  330</a></b>  *        5                options-date-len-lsb
+<b><a name="331">  331</a></b>  *        6...                subjectname
+<b><a name="332">  332</a></b>  *        ...                smimeoptions
+<b><a name="333">  333</a></b>  *        ...                options-date
+<b><a name="334">  334</a></b>  *
+<b><a name="335">  335</a></b>  * The database key for this type of entry is the email address string
+<b><a name="336">  336</a></b>  * The "subjectname" value is the DER encoded DN of the identity
+<b><a name="337">  337</a></b>  *   that matches this nickname.
+<b><a name="338">  338</a></b>  * The "smimeoptions" value is a string that represents the algorithm
+<b><a name="339">  339</a></b>  *   capabilities on the remote user.
+<b><a name="340">  340</a></b>  * The "options-date" is the date that the smime options value was created.
+<b><a name="341">  341</a></b>  *   This is generally the signing time of the signed message that contained
+<b><a name="342">  342</a></b>  *   the options.  It is a UTCTime value.
+<b><a name="343">  343</a></b>  */
+<b><a name="344">  344</a></b> typedef struct {
+<b><a name="345">  345</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCommon">certDBEntryCommon</a> common;
+<b><a name="346">  346</a></b>     char *emailAddr;
+<b><a name="347">  347</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> subjectName;
+<b><a name="348">  348</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> smimeOptions;
+<b><a name="349">  349</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> optionsDate;
+<b><a name="350">  350</a></b> } <a href="#350">certDBEntrySMime</a>;
+<b><a name="351">  351</a></b> 
+<b><a name="352">  352</a></b> #define <a href="#352">DB_SMIME_ENTRY_HEADER_LEN</a> 6
+<b><a name="353">  353</a></b> 
+<b><a name="354">  354</a></b> /*
+<b><a name="355">  355</a></b>  * Crl/krl entry:
+<b><a name="356">  356</a></b>  *
+<b><a name="357">  357</a></b>  *        byte offset        field
+<b><a name="358">  358</a></b>  *        -----------        -----
+<b><a name="359">  359</a></b>  *        0                derCert-len-msb
+<b><a name="360">  360</a></b>  *        1                derCert-len-lsb
+<b><a name="361">  361</a></b>  *        2                url-len-msb
+<b><a name="362">  362</a></b>  *        3                url-len-lsb
+<b><a name="363">  363</a></b>  *        ...                derCert
+<b><a name="364">  364</a></b>  *        ...                url
+<b><a name="365">  365</a></b>  *
+<b><a name="366">  366</a></b>  * NOTE: the url string as stored in the database is null terminated,
+<b><a name="367">  367</a></b>  *                in other words, the last byte of the db entry is always 0
+<b><a name="368">  368</a></b>  *                if a nickname is present. 
+<b><a name="369">  369</a></b>  * NOTE: if url is not present, then url-len-msb and
+<b><a name="370">  370</a></b>  *                url-len-lsb will both be zero.
+<b><a name="371">  371</a></b>  */
+<b><a name="372">  372</a></b> #define <a href="#372">DB_CRL_ENTRY_HEADER_LEN</a>        4
+<b><a name="373">  373</a></b> struct <a href="#373">_certDBEntryRevocation</a> {
+<b><a name="374">  374</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCommon">certDBEntryCommon</a> common;
+<b><a name="375">  375</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>        derCrl;
+<b><a name="376">  376</a></b>     char        *url;        /* where to load the crl from */
+<b><a name="377">  377</a></b> };
+<b><a name="378">  378</a></b> 
+<b><a name="379">  379</a></b> /*
+<b><a name="380">  380</a></b>  * Database Version Entry:
+<b><a name="381">  381</a></b>  *
+<b><a name="382">  382</a></b>  *        byte offset        field
+<b><a name="383">  383</a></b>  *        -----------        -----
+<b><a name="384">  384</a></b>  *        only the low level header...
+<b><a name="385">  385</a></b>  *
+<b><a name="386">  386</a></b>  * The database key for this type of entry is the string "Version"
+<b><a name="387">  387</a></b>  */
+<b><a name="388">  388</a></b> typedef struct {
+<b><a name="389">  389</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCommon">certDBEntryCommon</a> common;
+<b><a name="390">  390</a></b> } <a href="#390">certDBEntryVersion</a>;
+<b><a name="391">  391</a></b> 
+<b><a name="392">  392</a></b> #define <a href="#392">SEC_DB_VERSION_KEY</a> "Version"
+<b><a name="393">  393</a></b> #define <a href="#393"><a href="../softoken/pcertt.h.dep.html#SEC_DB_VERSION_KEY">SEC_DB_VERSION_KEY</a>_LEN</a> sizeof(<a href="../softoken/pcertt.h.dep.html#SEC_DB_VERSION_KEY">SEC_DB_VERSION_KEY</a>)
+<b><a name="394">  394</a></b> 
+<b><a name="395">  395</a></b> /*
+<b><a name="396">  396</a></b>  * Database Content Version Entry:
+<b><a name="397">  397</a></b>  *
+<b><a name="398">  398</a></b>  *        byte offset        field
+<b><a name="399">  399</a></b>  *        -----------        -----
+<b><a name="400">  400</a></b>  *        0                contentVersion
+<b><a name="401">  401</a></b>  *
+<b><a name="402">  402</a></b>  * The database key for this type of entry is the string "ContentVersion"
+<b><a name="403">  403</a></b>  */
+<b><a name="404">  404</a></b> typedef struct {
+<b><a name="405">  405</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCommon">certDBEntryCommon</a> common;
+<b><a name="406">  406</a></b>     char contentVersion;
+<b><a name="407">  407</a></b> } <a href="#407">certDBEntryContentVersion</a>;
+<b><a name="408">  408</a></b> 
+<b><a name="409">  409</a></b> #define <a href="#409">SEC_DB_CONTENT_VERSION_KEY</a> "ContentVersion"
+<b><a name="410">  410</a></b> #define <a href="#410"><a href="../softoken/pcertt.h.dep.html#SEC_DB_CONTENT_VERSION_KEY">SEC_DB_CONTENT_VERSION_KEY</a>_LEN</a> sizeof(<a href="../softoken/pcertt.h.dep.html#SEC_DB_CONTENT_VERSION_KEY">SEC_DB_CONTENT_VERSION_KEY</a>)
+<b><a name="411">  411</a></b> 
+<b><a name="412">  412</a></b> typedef union {
+<b><a name="413">  413</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCommon">certDBEntryCommon</a>         common;
+<b><a name="414">  414</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryCert">certDBEntryCert</a>           cert;
+<b><a name="415">  415</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryContentVersion">certDBEntryContentVersion</a> content;
+<b><a name="416">  416</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryNickname">certDBEntryNickname</a>       nickname;
+<b><a name="417">  417</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryRevocation">certDBEntryRevocation</a>     revocation;
+<b><a name="418">  418</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntrySMime">certDBEntrySMime</a>          smime;
+<b><a name="419">  419</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntrySubject">certDBEntrySubject</a>        subject;
+<b><a name="420">  420</a></b>     <a href="../softoken/pcertt.h.dep.html#certDBEntryVersion">certDBEntryVersion</a>        version;
+<b><a name="421">  421</a></b> } <a href="#421">certDBEntry</a>;
+<b><a name="422">  422</a></b> 
+<b><a name="423">  423</a></b> /* length of the fixed part of a database entry */
+<b><a name="424">  424</a></b> #define <a href="#424">DBCERT_V4_HEADER_LEN</a>        7
+<b><a name="425">  425</a></b> #define <a href="#425">DB_CERT_V5_ENTRY_HEADER_LEN</a>        7
+<b><a name="426">  426</a></b> #define <a href="#426">DB_CERT_V6_ENTRY_HEADER_LEN</a>        7
+<b><a name="427">  427</a></b> #define <a href="#427">DB_CERT_ENTRY_HEADER_LEN</a>        10
+<b><a name="428">  428</a></b> 
+<b><a name="429">  429</a></b> /* common flags for all types of certificates */
+<b><a name="430">  430</a></b> #define <a href="#430">CERTDB_VALID_PEER</a>        (1&lt;&lt;0)
+<b><a name="431">  431</a></b> #define <a href="#431">CERTDB_TRUSTED</a>                (1&lt;&lt;1)
+<b><a name="432">  432</a></b> #define <a href="#432">CERTDB_SEND_WARN</a>        (1&lt;&lt;2)
+<b><a name="433">  433</a></b> #define <a href="#433">CERTDB_VALID_CA</a>                (1&lt;&lt;3)
+<b><a name="434">  434</a></b> #define <a href="#434">CERTDB_TRUSTED_CA</a>        (1&lt;&lt;4) /* trusted for issuing server certs */
+<b><a name="435">  435</a></b> #define <a href="#435">CERTDB_NS_TRUSTED_CA</a>        (1&lt;&lt;5)
+<b><a name="436">  436</a></b> #define <a href="#436">CERTDB_USER</a>                (1&lt;&lt;6)
+<b><a name="437">  437</a></b> #define <a href="#437">CERTDB_TRUSTED_CLIENT_CA</a> (1&lt;&lt;7) /* trusted for issuing client certs */
+<b><a name="438">  438</a></b> #define <a href="#438">CERTDB_INVISIBLE_CA</a>        (1&lt;&lt;8) /* don't show in UI */
+<b><a name="439">  439</a></b> #define <a href="#439">CERTDB_GOVT_APPROVED_CA</a>        (1&lt;&lt;9) /* can do strong crypto in export ver */
+<b><a name="440">  440</a></b> #define <a href="#440">CERTDB_NOT_TRUSTED</a>        (1&lt;&lt;10) /* explicitly don't trust this cert */
+<b><a name="441">  441</a></b> #define <a href="#441">CERTDB_TRUSTED_UNKNOWN</a>        (1&lt;&lt;11) /* accept trust from another source */
+<b><a name="442">  442</a></b> 
+<b><a name="443">  443</a></b> /* bits not affected by the CKO_NETSCAPE_TRUST object */
+<b><a name="444">  444</a></b> #define <a href="#444">CERTDB_PRESERVE_TRUST_BITS</a> (<a href="../softoken/pcertt.h.dep.html#CERTDB_USER">CERTDB_USER</a> | <a href="../softoken/pcertt.h.dep.html#CERTDB_VALID_PEER">CERTDB_VALID_PEER</a> | \
+<b><a name="445">  445</a></b>         <a href="../softoken/pcertt.h.dep.html#CERTDB_NS_TRUSTED_CA">CERTDB_NS_TRUSTED_CA</a> | <a href="../softoken/pcertt.h.dep.html#CERTDB_VALID_CA">CERTDB_VALID_CA</a> | <a href="../softoken/pcertt.h.dep.html#CERTDB_INVISIBLE_CA">CERTDB_INVISIBLE_CA</a> | \
+<b><a name="446">  446</a></b>                                         <a href="../softoken/pcertt.h.dep.html#CERTDB_GOVT_APPROVED_CA">CERTDB_GOVT_APPROVED_CA</a>)
+<b><a name="447">  447</a></b> 
+<b><a name="448">  448</a></b> #endif /* _PCERTT_H_ */
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

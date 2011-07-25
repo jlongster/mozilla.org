@@ -1,0 +1,254 @@
+<?php
+
+$html_title = 'Introduction to the S/MIME Toolkit';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<FONT SIZE=-1><A HREF="index.html">Table of Contents</A> | <A HREF="index.html">Previous</A>
+ | <A HREF="type.html">Next</A>
+ | <A HREF="smimex.html">Index</A>
+</FONT><BR><BR>
+<HR>
+
+
+<center>
+<h2>Introduction to the S/MIME Toolkit</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Main technical contact: 
+<A HREF="mailto:mcgreer@netscape.com?subject=SMIME doc feedback">Ian McGreer</A><BR>
+
+Manager: 
+<A HREF="mailto:wtc@netscape.com?subject=SMIME doc feedback">Wan-Teh Chang</A></FONT></i>
+</center>
+
+<p><a href="#overview">Overview</a><br>
+<a href="#types">S/MIME Types and Structures</a><br>
+<a href="#appover">Overview of an S/MIME Application</a><br>
+<a href="#refs">References</a><br>
+
+
+<a name="overview"><H2>Overview of CMS</h2></a>
+
+<p>This document provides a brief introduction to the S/MIME Toolkit API. More complete descriptions of individual types and functions will be provided at a later time.
+
+<p>The S/MIME Toolkit API reflects the <a href="http://www.ietf.org/rfc/rfc2630.txt">Cryptographic Message Syntax (CMS) Specification (RFC 2630)</a>. You should read that document before attempting to use the S/MIME Toolkit API. For information on other relevant RFCs, see <a href="#References">Referemces</a>.
+
+<p>CMS, which is based on PKCS #7, describes various message types that can be used to digitally sign and/or encrypt messages transmitted over an unencrypted communications channel. Two of the message types defined by RFC 2630 are relevant for S/MIME: SignedData and EnvelopedData. The corresponding types in the S/MIME Toolkit API are NSSCMSSignedData and NSSCMSSignedData.
+ 
+<p>This overview uses the RFC names to discuss basic concepts and procedures. The remainder of this document refers to specific S/MIME Toolkit types and functions listed in <a href="http://lxr.mozilla.org/mozilla/source/security/nss/lib/smime/cmst.h">http://lxr.mozilla.org/mozilla/source/security/nss/lib/smime/cmst.h</a> and <a href="http://lxr.mozilla.org/mozilla/source/security/nss/lib/smime/cms.h">http://lxr.mozilla.org/mozilla/source/security/nss/lib/smime/cms.h</a>, respectively.
+
+<h3>EnvelopedData</h3>
+
+<p>An EnvelopedData message contains an "inner" message that is encrypted for a set of recipients. The "inner" message is encrypted with a random key using a fast symmetric encryption algorithm such as RC2 or 3DES. The random key itself is transmitted with the <tt>EnvelopedData</tt>, encrypted with each recipient's public key, so that it can be decrypted only by the recipients using their private keys. 
+
+<p>An EnvelopedData message includes:
+<ul>
+	<li>a set of <tt>RecipientInfo</tt> structures, each of which contains the encrypted content key and the ID of the recipient's certificate used for this encryption. There is one <tt>RecipientInfo</tt> per recipient. 
+	<li>the encrypted "inner" content 
+	<li>information about the encryption algorithms used
+</ul>
+
+<h3>SignedData</h3>
+ 
+<p>A SignedData message contains an unencrypted message, plus one or more "signer" blocks. Each signer block contains the signer’s certificate, digest values for the message that are encrypted using the signer's private key, and other information, such as the signing time.
+ 
+<p>By decrypting the digest values with the signer's public key, and then checking whether they are equal to newly computed digests, the receiving software can make reasonably sure that (1) the message has not been altered since the signer signed it, and (2) the message was, in fact, signed by the entity/person identified in the message (assuming that the signer's certificate verified correctly and its issuer is trusted by the receiver). 
+
+<p>A SignedData message includes:
+
+<ul>
+	<li>the "inner" content 
+	<li>a set of certificates used in processing the message
+	<li>a set of SignerInfo structures, each of which contains signer identification (pointer to signer's certificate), encrypted digest value(s), and other attributes.
+	<li>for S/MIME messages, an attribute that specifies S/MIME preferences, including the sender's encryption algorithm preferences and identification of the certificate the sender prefers to be used for sending encrypted mail back to the sender
+	<li>information about the algorithms used
+</ul>
+
+<p>Since SignedData messages can contain certificate information, they can also be used for simple transport of certificates. In this case, there is no "inner" content and no SignerInfo structures. 
+
+<h3>Use of Enveloped Data and SignedData in a MIME Message</h3>
+
+<h4>Content-Type: application/pkcs7-mime</h4>
+
+<p>Depending on the smime-type subheader, MIME messages can be signed or enveloped (encrypted) messages. The content is a DER-encoded CMS message that contains the "inner" content of a SignedData or EnvelopedData structure.
+
+<p>Here's an example of a signed message: 
+
+<pre>Content-Type: application/pkcs7-mime; smime-type=signed-data; name=smime.p7m 
+Content-Transfer-Encoding: base64 
+Content-Disposition: attachment; filename=smime.p7m 
+
+567GhIGfHfYT6ghyHhHUujpfyF4f8HHGTrfvhJhjH776tbB9HG4VQbnj7
+77n8HHGT9HG4VQpfyF467GhIGfHfYT6rfvbnj756tbBghyHhHUujhJhjH
+HUujhJh4VQpfyF467GhIGfHfYGTrfvbnjT6jH7756tbB9H7n8HHGghyHh
+6YT64V0GhIGfHfQbnj75</pre>
+
+<p>In this example, the binary data contains a SignedData message, which is the "inner" content plus signature information. The inner content could, for example, expand to this text:
+
+<pre>Content-Type: text/plain 
+
+This is a signed message. </pre>
+
+<p>To be displayed appropriately in an email program, the binary data must be fed to a MIME parser and tagged with information about the signatures and their validity. 
+
+<p>Alternatively, the inner content can be another S/MIME message, up to arbitrary levels of recursion, with each message in the hierarchy signed or encrypted. A single message that is both signed and encrypted consists of two nested MIME messages. 
+
+<p>Binary CMS messages can (but need not) be encoded for 7-bit channels. The information in the Content-Transfer-Encoding header must be used for parsing. 
+
+<p>Here's an example of an encrypted message: 
+<pre>Content-Type: application/pkcs7-mime; smime-type=enveloped-data; name=smime.p7m 
+Content-Transfer-Encoding: base64 
+Content-Disposition: attachment; filename=smime.p7m 
+
+rfvbnj756tbBghyHhHUujhJhjH77n8HHGT9HG4VQpfyF467GhIGfHfYT6
+7n8HHGghyHhHUujhJh4VQpfyF467GhIGfHfYGTrfvbnjT6jH7756tbB9H
+f8HHGTrfvhJhjH776tbB9HG4VQbnj7567GhIGfHfYT6ghyHhHUujpfyF4
+0GhIGfHfQbnj756YT64V </pre>
+
+<p>The binary content is a DER-encoded CMS EnvelopedData message containing inner content that must be decrypted before further processing occurs. 
+
+<h4>Content-Type: multipart/signed</h4>
+
+<p>The multipart/signed content type designates clear-signed messages. <b>[what does this mean?]</b> The content to be signed is in the first part (in readable form, with the appropriate content type), and the signature is in the second part (using a SignedData CMS message without inner content). This format is preferred for generation because it can be used even with non-S/MIME enabled user agents. <b>[generation of original message? does this mean that this content type is readable even if the receiving software doesn’t support S/MIME? whereas the other one isn’t?]</b>
+
+<p>Here’s an example of a multipart/signed CMS message: 
+
+<pre>Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary=boundary42 
+
+--boundary42 
+Content-Type: text/plain</pre>
+
+<p>This is a clear-signed message. 
+
+<pre>--boundary42 
+Content-Type: application/pkcs7-signature; name=smime.p7s 
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename=smime.p7s 
+
+ghyHhHUujhJhjH77n8HHGTrfvbnj756tbB9HG4VQpfyF467GhIGfHfYT6
+4VQpfyF467GhIGfHfYT6jH77n8HHGghyHhHUujhJh756tbB9HGTrfvbnj 
+n8HHGTrfvhJhjH776tbB9HG4VQbnj7567GhIGfHfYT6ghyHhHUujpfyF4
+7GhIGfHfYT64VQbnj756 
+--boundary42-- </pre>
+
+<p><b>add the rest of Christian’s text here? heads are:</b>
+
+<pre>Advanced Topics
+	Triple-Wrapped Messages
+	Secure Mail Lists
+	Security Labels
+	Signed Receipts
+Implications for a Mail User Agent Implementation
+	MIME Parser Glue Code
+	MIME Generator Glue Code
+	Message Composition UI
+	Message Presentation UI
+	Address Book Integration
+	S/MIME Preferences
+</pre>
+
+<a name="types"><h2>S/MIME Types and Structures</h2></a>
+
+<p> - follows RFC 2630, Cryptographic Message Syntax, exactly.
+<p>
+Basically, you create a NSSCMSMessage structure and populate it with the info re algorithms, data to be signed or encrypted, certs, etc. and then stream your data through it. <b>[???]</b>
+
+<p>A ContentUnion structure is a container that specifies the type of content and the content itself. The content can be unstructured data (SEC_Item), structured data (NSSCMSDigestedData, NSSCMSEncryptedData, NSSCMSEnvelopedData, NSSCMSSignedData), or a pointer to something.
+
+<p>A NSSCMSMessage structure contains an NSSCMSSignedData ocbject</p>
+
+<pre>SignedData ::= SEQUENCE {
+        version CMSVersion,
+        digestAlgorithms DigestAlgorithmIdentifiers,
+        encapContentInfo EncapsulatedContentInfo,
+        certificates [0] IMPLICIT CertificateSet OPTIONAL,
+        crls [1] IMPLICIT CertificateRevocationLists OPTIONAL,
+        signerInfos SignerInfos }
+
+NSSCMSMessage
+	NSSCMSContentInfo - type & content of “outer” data
+	memory stuff
+	inner stuff:
+		algorithm
+		sectitem (digests) 
+		callback for getting decryption key
+</pre>
+
+<a name="appover"><h2>Overview of an S/MIME Application</h2></a>
+
+<p><b>[say something about streaming model here? anything else? e.g. process of building up nested messages?]</b> 
+
+
+<h3>Initialization</h3>
+
+<p>Initialization includes initializing the NSPR and NSS libraries, opening the certificate database, and setting the default certificate database. Functions used in the initialization part of an application can include the following: 
+
+<ul>
+	<li>PR_Init. Initializes NSPR. Must be called before any other NSS or S/MIME Toolkit functions.
+	<li>SECU_PKCS11Init. <b>[Initializes PKCS #11? not in SSL Ref, where to document?]</b> 
+	<li>SEC_Init. <b>[Initializes NSS library? not in SSL Ref, where to document? Why this and not NSS_Init?]</b> 
+	<li>OpenCertDB. Opens the cert database. <b>[Specifies a callback?]</b> 
+	<li>CERT_SetDefaultCertDB. Sets the opened cert database to be the default cert database. <b>[not documented in SSL Ref; add it to CERT chapter?]</b>
+</ul>
+
+
+<h3>Building the NSSCMSMessage Object</h3>
+
+<p>An NSSCMSMessage object in turn contains nested NSSCMSSignedData, NSSCMSEnvelopedData, and other objects. Each of these CMS objects consists of a content type and content, plus other information required for processing. The basic procedure is to create an NSSCMSMessage, which is the outermost container, and build up the nested objects as necessary for signing or encrypting nested messages.
+
+<p>These are the functions that an S/MIME application typically calls initially to create an NSSCMSMessage object and the chain of objects it contains:
+
+<ul>
+	<li>NSS_CMSMessage_Create allocates memory for an empty NSSCMSMessage object.
+	<li>NSS_CMSSignedData_Create adds an empty NSSCMSSIgnedData object to an existing NSSCMSMessage object.
+	<li><b>[others here, e.g. NSS_CMSEnvelopedData_Create?]</b>
+	<li>NSS_CMSMessage_GetContentInfo returns a pointer to the top level contentInfo structure.
+	<li>NSS_CMSSignedData_GetContentInfo returns a pointer to a specified NSSCMSSignedData object's contentinfo. - need to talk more about contentInfo
+</ul>
+
+<b>misc. notes follow</b>
+
+<pre>
+build chain of objects: 
+create signeddata object (sigd) with a call to NSS_CMSSignedData_Create
+get ref. to contentinfo of your cmsg (cinfo) with a call to NSS_CMSMessage_GetContentInfo
+get ref. to contentinfo of your signeddata (sigd) with a call to NSS_CMSSignedData_GetContentInfo
+
+set content of your data with a call to NSS_CMSContentInfo_SetContent
+
+create and attach signer info with NSS_CMSSignerInfo_Create, passing in a cert and an algorithm
+
+if you want to include the cert chain, call NSS_CMSSignerInfo_IncludeCerts
+NSS_CMSSignerInfo_AddSigningTime adds signing time to signer info
+NSS_CMSSignerInfo_AddSMIMECaps adds profile info (?) to signerinfo
+
+
+ContentInfo ::= SEQUENCE {
+		contentType ContentType,
+content [0] EXPLICIT ANY DEFINED BY contentType }
+
+      ContentType ::= OBJECT IDENTIFIER</pre>
+
+a name="refs"><h2>References</h2></a>
+
+<p><b>[formatting to come]</b>
+
+<pre>
+RFC2633 S/MIME v3 Message Specification. The authoritative document. 
+RFC2634 Enhanced Security Services for S/MIME. Some extensions for S/MIME - not required, but growing importance for some. 
+RFC2630 Cryptographic Message Syntax. Describes the format of cryptographic messages used in S/MIME (SignedData, EnvelopedData), plus some others
+RFC2045-2049 MIME. 
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,209 @@
+<?php
+
+$html_title = 'Mozilla Firefox - UE - Profile Migration';
+$page_title = 'Profile Migration';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<link rel="stylesheet" type="text/css" href="../ue-styles.css">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+    <strong><em><a href="mailto:ben@mozilla.org?subject=Firefox Installer UE Spec">Ben Goodger</a> (11/17/2003)</em></strong>
+    
+    <h2>Status: PROVISIONAL</h2>
+    
+    <p>This document describes the user experience for Profile and Data Migration for
+       Firefox. This document is incomplete. Full functional details are not
+       yet provided. E-mail the author with questions.</p>
+
+    <h3>Goal</h3>
+    <p>The Goal of Profile Migration is to harvest as much data as possible from the
+       user's current browser to make the transition to Firefox as seamless as possible.
+       Currently we have the capacity to import some, but not all, data from other
+       browsers the user may have.
+       
+
+    <h3>Data to Migrate</h3>
+
+    <h4>Netscape 4.x</h4>
+    <ul>
+      <li>bookmarks.html
+      <li>cookies.txt
+      <li>cert7.db
+      <li>key3.db
+      <li>prefs.js
+      <li>secmod.db
+    </ul>
+    
+    <h4>Mozilla 1.5/Netscape 7.x</h4
+    <ul>
+      <li>bookmarks.html
+      <li>cert7.db
+      <li>cert8.db
+      <li>key3.db
+      <li>secmod.db
+      <li>cookies.txt
+      <li>downloads.rdf
+      <li>mimeTypes.rdf
+      <li>prefs.js
+    </ul>
+    
+    <h4>Internet Explorer</h4>
+    <ul>
+      <li>Favorites, Links to Personal Toolbar.
+      <li>Home Page
+    </ul>
+    
+    <h3>UI for First Run</h3>
+    <p>When the user picks one of the options in the following dialog, the
+       procedure(s) described in the pseudocode below are performed and the
+       application is started.
+       
+    <div class="figure"><div class="figure-caption"><a name="figure1">Figure 1</a>, <strong>Migration Start</strong> dialog:</div>
+        <blockquote class="figure-body"><code><pre>    
++--------------------------------------------------+
+| Getting Started with Firefox                     |
++--------------------------------------------------+
+|                                                  |
+|  It looks like you're running Firefox for the    | 
+|  first time. Let's take the time to import       |
+|  settings from your old browser...               |
+|                                                  |
+|  Which browser were you using?                   |
+|                                                  |
+|  (*) Microsoft Internet Explorer                 |
+|  ( ) Netscape Navigator or Mozilla               |
+|  ( ) Something else                              |
+|                                                  |
+|                                     (( Next > )) |
++--------------------------------------------------+
+
+Logic in pseudocode:
+
+if 
+  user chooses IE:
+    <no special page, go to IMPORT PROGRESS> 
+
+else if 
+  user chooses Netscape or Mozilla:
+    Look for Profile Registry in:
+      Documents and Settings\<User>\Application Data\Mozilla\
+    If present, 
+      show PROFILE SELECTOR if > 1, else IMPORT PROGRESS
+    else
+      (Windows):
+        look for registry key:
+          My Computer\HKEY_CURRENT_USER\Software\Netscape\Netscape Navigator\Main
+        if present,
+          show PROFILE SELECTOR if > 1, else IMPORT PROGRESS
+        else 
+          show FAILED MESSAGE
+      (Linux):
+        look for ~/.netscape
+
+else if
+  user chooses "Something Else"
+    Show SOMETHING ELSE dialog
+        </pre></code></blockquote>
+    </div>
+    
+    <p class="notes">The user's default browser is the one which is initially checked.</p>
+    
+    <div class="figure"><div class="figure-caption"><a name="figure2">Figure 2</a>, <strong>Profile Selector</strong> dialog:</div>
+        <blockquote class="figure-body"><code><pre>    
++--------------------------------------------------+
+| Which Netscape Profile?                          |
++--------------------------------------------------+
+|                                                  |
+|  Firefox discovered more than one Netscape       |
+|  profile. Which one do you want to import        |
+|  settings from?                                  |
+|                                                  |
+|   +----------------------------------------+     |
+|   | @ ben                                  |     |
+|   | @ dave                                 |     |
+|   | @ blake                                |     |
+|   | @ scott                                |     |
+|   |                                        |     |
+|   +----------------------------------------+     |
+|                                                  |
+|                                     (( Next > )) |
++--------------------------------------------------+
+        </pre></code></blockquote>
+    </div>
+    
+    <div class="figure"><div class="figure-caption"><a name="figure3">Figure 3</a>, <strong>Import Progress</strong> dialog:</div>
+        <blockquote class="figure-body"><code><pre>    
++--------------------------------------------------+
+| Importing...                                     |
++--------------------------------------------------+
+|                                                  |
+|  Your Internet Explorer Favorites are being      |
+|  imported. This might take a few minutes...      |
+|                                                  |
++--------------------------------------------------+
+        </pre></code></blockquote>
+    </div>
+    
+    <div class="figure"><div class="figure-caption"><a name="figure4">Figure 4</a>, <strong>Import Failed</strong> dialog:</div>
+        <blockquote class="figure-body"><code><pre>    
++--------------------------------------------------+
+| Netscape/Mozilla Import Failed                   |
++--------------------------------------------------+
+|                                                  |
+|  Firefox could not find any Netscape or          |
+|  Mozilla settings to import.                     |
+|                                                  |
+|  [x] Import Favorites from Internet Explorer     |
+|      instead.                                    |
+|                                                  |
+|                                                  |
+|                                                  |
+|                                     (( Next > )) |
++--------------------------------------------------+
+
+|                                                  |
+|  [ ] Import Favorites from Internet Explorer     |
+|      instead.                                    |
+|                                                  |
+|  Click Finish to start Firefox now.              |
+|                                                  |
+|                                     (( Finish )) |
++--------------------------------------------------+
+        </pre></code></blockquote>
+    </div>
+    
+    <div class="figure"><div class="figure-caption"><a name="figure5">Figure 5</a>, <strong>Something Else</strong> dialog:</div>
+        <blockquote class="figure-body"><code><pre>    
++--------------------------------------------------+
+| Importing Settings from Other Browsers           |
++--------------------------------------------------+
+|                                                  |
+|  Firefox can only automatically import settings  |
+|  from Internet Explorer and Mozilla or Netscape. |
+|                                                  |
+|  To import settings manually from another        |
+|  such as Opera, please read the Help topic:      |
+|  "Importing Settings Manually".                  |
+|                                                  |
+|  Click Finish to start Firefox now.              |
+|                                                  |
+|                                     (( Finish )) |
++--------------------------------------------------+
+        </pre></code></blockquote>
+    </div>
+
+    <p>&nbsp;
+
+  
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

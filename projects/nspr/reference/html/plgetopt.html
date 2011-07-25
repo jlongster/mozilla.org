@@ -1,0 +1,171 @@
+<?php
+
+$html_title = 'NSPR: Command line option processing';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<H2>
+NSPR: Command line option processing</H2>
+NSPR provides a mechanism to process command line options. This facility
+is similar to that available on many UNIX platforms known as <B><TT>getopt
+</TT></B>(see UNIX man getopt). The NSPR version of this capability allows
+processing based on the standard C language main() function definition's
+argc and argv. There are no modifications to values of those symbols during
+the processing.
+
+<P>The syntax of the command line is generically as follows:
+<UL><B><TT>> command -abc value naked -xyz</TT></B></UL>
+In this example, 'a', 'b', 'c', 'x', 'y' and 'z' are options. "abc" are
+clustered behind a single '-' as are "xyz". This command line is identical
+in semantics to
+<UL><B><TT>> command -a -b -c value naked -x -y -z</TT></B></UL>
+The string "value" is associated with the option 'c'. The options 'a',
+'b', 'x', 'y' and 'z' have no associated values.
+<BR>The token "naked" is not associated with any option (and is therefore
+naked). Any number of naked values may be included in the command line.
+Since they have no known option association, they are position dependent,
+but none the less, useful.
+
+<P>An object is created by the client to hold the state of the options
+processing. Sharing that handle with other threads may produce non-deterministic
+results. Having multiple such state objects, each accessed by a different
+thread, is supported (though we struggle for a reason why).
+
+<PRE>
+PLOptState *PL_CreateOptState(
+    PRIntn argc, char **argv, const char *options);
+</PRE>
+
+If the function fails to return a valid handle the reason for the failure
+will be contained in the calling thread's error structure (see <B><TT>PR_GetError()</TT></B>).
+A non-<B><TT>NULL </TT></B>return pointer will point to an object of type
+<B><TT>PLOptState</TT></B>. The pointer will remain valid until it is destroyed
+by calling <B><TT>PL_DestroyOptState()</TT></B> and is required for all
+subsequent processing.
+<BR>
+<TABLE COLS=2 WIDTH="100%" >
+<TR>
+<TD ALIGN=LEFT VALIGN=TOP WIDTH="10%"><B><TT>argc</TT></B></TD>
+
+<TD>The number of arguments on the command line. This is the same value
+as that the C program's <B><TT>main()</TT></B> function argument, <B><TT>argc</TT></B>.</TD>
+</TR>
+
+<TR>
+<TD ALIGN=LEFT VALIGN=TOP><B><TT>argv</TT></B></TD>
+
+<TD>The pointer to a vector of strings that represent the arguments provided
+on the command line. For instance, <B><TT>argv[0</TT></B>] is a string
+representation of the program's execution name.</TD>
+</TR>
+
+<TR>
+<TD ALIGN=LEFT VALIGN=TOP><B><TT>options</TT></B></TD>
+
+<TD>The string that defines the options expected on the command line. All
+options are single characters and case sensitive. If an option has an associated
+value, the option identifier must be followed by a ':' in the options string.</TD>
+</TR>
+</TABLE>
+Given the example cited earlier for the command line, a complete options
+list to parse the command line might be written as "<B><TT>ABC:XYZ</TT></B>".
+The order of specification of the options strings to <B><TT>PL_CreateOptState()</TT></B>
+is not significant. The order that the options are specified on the command
+line may be, particularly if one is using <I>naked </I>values.
+
+<PRE>
+typedef struct PLOptState
+{
+    char option;
+    const char *value;
+    PLOptionInternal *internal;
+} PLOptState;
+</PRE>
+
+The object <B><TT>PLOptState </TT></B>not only allows the implementation
+to record the progress of the processing, it is also used as the area where
+the majority of the results are made available to the client. The actual
+value returned from the option processing function only indicates the validity
+of the values stored in this object.
+<BR>
+<TABLE COLS=2 WIDTH="100%" >
+<TR>
+<TD ALIGN=LEFT VALIGN=TOP WIDTH="10%"><B><TT>option</TT></B></TD>
+
+<TD>The value of the option on the command line just processed. Processing
+of the command line progresses from left to right. The value of this field
+will be either one of those specified in the options string of <B><TT>PL_CreateOptState</TT></B>
+a <B>nul</B> (0)<B> </B>if the option is <I>naked</I>.</TD>
+</TR>
+
+<TR>
+<TD ALIGN=LEFT VALIGN=TOP><B><TT>value</TT></B></TD>
+
+<TD>This field contains the option's associated value or <B><TT>NULL </TT></B>if
+the option has no associated value.</TD>
+</TR>
+
+<TR>
+<TD ALIGN=LEFT VALIGN=TOP><B><TT>internal</TT></B></TD>
+
+<TD>A reference to the implementation's private (and opaque) state processing
+object.</TD>
+</TR>
+</TABLE>
+The <B><TT>PL_CreateOptState </TT></B>function returns one of three values
+from the enumerated byte<B><TT> PLOptStatus</TT></B>.
+
+<PRE>
+typedef enum {PL_OPT_OK, PL_OPT_EOL, PL_OPT_BAD } PLOptStatus;
+</PRE>
+
+<TABLE COLS=2 WIDTH="100%" >
+<TR>
+<TD WIDTH="10%"><B><TT>PL_OPT_OK</TT></B></TD>
+
+<TD>The processing completed normally.</TD>
+</TR>
+
+<TR>
+<TD><B><TT>PL_OPT_EOL</TT></B></TD>
+
+<TD>All the tokens from the command line have been processed.</TD>
+</TR>
+
+<TR>
+<TD><B><TT>PL_OPT_BAD</TT></B></TD>
+
+<TD>The option is invalid.</TD>
+</TR>
+</TABLE>
+
+<BR>Once the options processing has run to completion, the state object
+allocated by <B><TT>PL_CreateOptState()</TT></B> must be dismissed. That
+is accomplished by calling <B><TT>DestroyOptState()</TT></B>.
+
+<PRE>void PL_DestroyOptState(PLOptState *opt);</PRE>
+
+
+<DIV ALIGN=right><BR>
+<BR>
+
+<HR WIDTH="100%"></DIV>
+
+<DIV ALIGN=right><I><FONT SIZE=-1>Last updated: Tue Mar 10 10:02:19 PST
+1998</FONT></I></DIV>
+
+<HR WIDTH="100%">
+<CENTER>Copyright &copy; 1998 <A HREF="http://home.netscape.com/misc/contact_info.html">Netscape
+Communications Corporation</A></CENTER>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

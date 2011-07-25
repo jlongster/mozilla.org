@@ -1,0 +1,124 @@
+<?php
+
+$html_title = 'cert7.db';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center><h2>
+cert7.db</h2>
+<i><FONT SIZE="-1">
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Technical contact: 
+<A HREF="mailto:roeber@netscape.com?subject=cert7.db feedback">Frederick Roeber</A></FONT></i><BR>
+
+<i><FONT SIZE="-1">Yell at the manager: 
+<A HREF="mailto:lord@netscape.com?subject=cert7.db feedback">Bob Lord</A></FONT></i>
+</center>
+
+<p>Based on the number of requests we get, we suspect that many people will
+want to use the NSS source code to figure out the format of the cert7.db
+databases. To save you some effort, here is some internal documentation
+we wrote a couple years ago. (Note that 
+<a href="http://www.sei.cmu.edu/publications/documents/99.reports/99tn010/99tn010chap03.html">some
+people</a> have already worked this out; we just couldn't comment on it
+at the time.)
+
+<p><b>Warning:</b> Do not access the cert7.db or key3.db files directly. 
+The format is changing, the files are likely to get corrupted if you access 
+them, and crytpo programs should not be designed to work with key material directly. 
+See below for details.
+
+<p>For information about record types stored in cert7.db, see 
+<A HREF="pcertdb.html">Physical Format of pcertdb</A>.
+
+
+<p>Netscape never released the format for these databases, for several
+reasons:
+<ul>
+<li>
+We wanted to be able to change the format without incurring an external
+support burden. (Note that the current cert and key database formats
+are the 7th and 3rd, respectively!)</li>
+
+<li>
+Some of the trust information hinted at how some operations, including
+step-up, worked. US export regulations prohibited us from saying anything about
+some types of operations.</li>
+
+<li>
+The existing code is "brittle" with respect to database corruption.</li>
+
+<li>
+We wanted to discourage people from expecting that key material is available
+to their programs. Programs that need to do crypto should not be designed
+to work with databases of certs and keys; instead, they should be written to work
+with cryptographic tokens. This approach ensures programs don't have to be redesigned
+to work with crypto hardware (such as smart cards). This was one of the factors
+that went into the design of Personal Security Manager.</li>
+</ul>
+This was not an attempt at "security through obscurity." As the people
+who reverse-engineered the databases found, all sensitive information is
+secured with PKCS#5 password-based encryption.
+
+<p>We'd still like to encourage anyone wanting access to these files to
+think carefully about why they want to do this. A few things to keep
+in mind:
+<ul>
+<li>
+The format is going to change. The NSS 3.0 design calls for all sources
+of data to be "data-only" PKCS#11 modules. This set of modules
+is expected to include</li>
+</ul>
+
+<ul>
+<ul>
+<li>
+one that hits an LDAP server</li>
+
+<li>
+one for "built-in" default root certs and trust information</li>
+
+<li>
+one or more high-performance modules designed for servers; this may include
+one based on Sleepycat's Berkeley database</li>
+
+<li>
+one based on whatever database is selected for Mozilla</li>
+
+<li>
+and perhaps even more . . .</li>
+</ul>
+<br>
+In short: in the future there will be many sources of data, not just
+these two databases (or their direct replacements); also, the format will
+undoubtedly change to better fit with the object model of PKCS#11. 
+Finally, the authors of Berkeley DB admit that there are bugs that
+can cause corruption; they've been after us for ages to upgrade.
+<li>
+The existing code is still "brittle" with respect to database corruption. 
+Most management operations (listing certs, adding certs, fixing corruption,
+etc.) can be done with the tools in security/cmd; we'd like to encourage
+you to use those tools first if possible.</li>
+
+<li>
+Programs wishing to do crypto should not be designed to work with direct
+access to key material. This material may well be irretrievably locked
+inside a hardware token that can do operations without revealing
+the key material. If you don't keep this in mind, your program will
+have to be rewritten when such hardware becomes more common. You
+may well find that the NSS or PSM libraries better suit your needs.</li>
+</ul>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

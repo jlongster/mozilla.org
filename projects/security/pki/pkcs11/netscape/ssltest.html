@@ -1,0 +1,376 @@
+<?php
+
+$html_title = 'Netscape SSL Test Suite';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>Netscape SSL Test Suite</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Technical contact: 
+<A HREF="mailto:relyea@netscape.com?subject=PKCS #11 Netscape PK11 Test Suite Feedback">Bob Relyea</A><BR>
+
+Yell at the manager: 
+<A HREF="mailto:lord@netscape.com?subject=PKCS #11 Netscape PK11 Test Suite Feedback">Bob Lord</A></FONT></i>
+</center>
+
+
+<H3>
+Purpose</H3>
+The SSL test suite uses the regress framework to run a series of test programs
+(up to 8000). Each test opens a client and server SSL socket and transfers
+data between the two. By default, the suite runs on the communicator internal
+crypto library, but it can be configured to run over any PKCS #11 cryptographic
+provider.
+
+<H3>
+Setting Up the Suite</H3>
+To set up the environment for the suite, put <TT>regress</TT>,
+<TT>sslt</TT>,
+<TT>ssl.reg</TT>,
+<TT>cert7.db</TT>,
+<TT>key3.db</TT>,
+<TT>secmod.db</TT> into a directory.
+
+<H3>
+Running the Suite</H3>
+The test suite is run like this:
+<BLOCKQUOTE>
+<PRE>regress specfile=ssl.reg progress</PRE>
+</BLOCKQUOTE>
+This command will read the specfile, then start running the test program
+(<TT>sslt</TT>).
+
+<P>The test suite uses Netscape's PKCS#11 implementation to locate
+a certificate with the nickname 'SSLServer' to use as the SSL server
+certificate, and a certificate with the nickname 'SSLClient' to use as the
+SSL client certificate.
+
+<P>sslt takes at least one argument, the test ID number. This is automatically
+provided by regress. However, to facilitate running the suite on other
+cryptographic providers, other arguments may be required. You can run individual
+tests by simply running sslt with the appropriate test-id. sslt allows
+you to specify the nickname to be used for the SSL server and client
+certificates with the '-n'  and '-c' options,
+and the password/pin protecting the key with the '-p'
+option. It's recommended to put these options as the 'globalArgs' parameter
+in the [General] section of the ssl.reg file.
+<P>We have provided you with keys and certificates in <TT>cert7.db</TT>
+and
+<TT>key3.db</TT>, so you can try out the suite on the internal Cryptographic
+Service Provider. The nicknames of the certificates are 'SSLServer' and
+'SSLClient', and the password is 'netscape'. 
+<P>Output is provided in a file named according to the date. In the event
+of any failures, we recommend running the same test combination with the
+internal cryptographic provider.
+<P>Please note that the listing of variables in each test in
+<TT>ssl.reg</TT>
+(the 'testname' line) is for information only. For example, changing SSLVersion3
+to NoSSLVersion3 will not actually change the test at all. The 'testname'
+information is not transferred to the test. The variables are transferred
+to the test by way of the testid number.
+
+<H3>
+Generating Your Keys and Certificates on Your Card</H3>
+
+<p>To use the suite with a hardware PKCS #11 solution, you will first need
+to use modutil and
+certutil (see <a href="../../nss/tools/#Tools">Tools Information</a>)
+to make a 2 key pairs
+and 2 certificates on your card. You need to make one certificate which
+is good for SSL Server, and one for SSL Client auth. Please refer to the
+documentation for these tools. The following is an example of the commands
+that should be performed:
+
+<PRE>modutil -dbdir . -create
+modutil -dbdir . -add "modulename" -libfile
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "c:\windows\driver.dll"
+modutil -dbdir . -changepw "tokenname"</PRE>
+
+<PRE>#create server key
+certutil -d . -G -n SSLServer -k rsa 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -g 512 -y 65537 -h "tokenname"
+certutil -d . -G -n SSLClient -k rsa 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -g 512 -y 65537 -h "tokenname"</pre>
+
+<pre>certutil -d . -S -s "CN=www.domain.com"&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -x -t "Pu,Pu,Pu" -m 1 -n SSLServer
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -h tokenname</pre>
+
+<pre>certutil -d . -S -s "CN=xyz"&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -x -t "Pu,Pu,Pu" -m 2 -n SSLClient
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -h tokenname</pre>
+
+The DN of the certificates (the -s parameter to certutil) is ignored by
+the suite. The secmod.db, cert7.db and key3.db should be placed into the
+same directory as the sslt executable. Edit 'globalArgs' at the start of
+ssl.reg to point the suite at your new hardware-based certificates. To indicate
+that the certs are on a hardware token, you must specify the token name
+in the nickname argument.
+<P>&nbsp;For example:
+<PRE>[General]
+.
+.
+globalArgs= -n "Hardware Token Name:SSLServer" -c 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Hardware Token Name:SSLClient"-p password</PRE>
+
+<H3>
+Error Codes</H3>
+
+<TABLE BORDER WIDTH="100%" >
+<TR>
+<TH>Error Code</TH>
+
+<TH>Description</TH>
+</TR>
+
+<TR>
+<TD>0</TD>
+
+<TD>SUCCESS</TD>
+</TR>
+
+<TR>
+<TD>1</TD>
+
+<TD>reserved</TD>
+</TR>
+
+<TR>
+<TD>2</TD>
+
+<TD>Couldn't initialize address for server socket</TD>
+</TR>
+
+<TR>
+<TD>3</TD>
+
+<TD>Couldn't bind server socket to address.</TD>
+</TR>
+
+<TR>
+<TD>4</TD>
+
+<TD>Couldn't listen</TD>
+</TR>
+
+<TR>
+<TD>5</TD>
+
+<TD>Couldn't find out which port server socket is sitting at</TD>
+</TR>
+
+<TR>
+<TD>6</TD>
+
+<TD>Couldn't create client thread</TD>
+</TR>
+
+<TR>
+<TD>7</TD>
+
+<TD>PR_Accept return NULL</TD>
+</TR>
+
+<TR>
+<TD>9</TD>
+
+<TD>Join Thread failed</TD>
+</TR>
+
+<TR>
+<TD>10</TD>
+
+<TD>Couldn't enable security on this socket</TD>
+</TR>
+
+<TR>
+<TD>11</TD>
+
+<TD>Couldn't enable client auth on this socket</TD>
+</TR>
+
+<TR>
+<TD>12</TD>
+
+<TD>Couldn't find server certificate</TD>
+</TR>
+
+<TR>
+<TD>13</TD>
+
+<TD>Couldn't find private key for this certificate</TD>
+</TR>
+
+<TR>
+<TD>14</TD>
+
+<TD>Couldn't configure server with this certificate/key pair</TD>
+</TR>
+
+<TR>
+<TD>15</TD>
+
+<TD>Couldn't configure server session ID cache</TD>
+</TR>
+
+<TR>
+<TD>16</TD>
+
+<TD>Found non-existant certificate in database</TD>
+</TR>
+
+<TR>
+<TD>20</TD>
+
+<TD>Couldn't create new NSPR20 TCP socket for server</TD>
+</TR>
+
+<TR>
+<TD>21</TD>
+
+<TD>Couldn't create SSL socket from NSPR20 socket for server</TD>
+</TR>
+
+<TR>
+<TD>30</TD>
+
+<TD>Couldn't allocate memory for CertDBHandle</TD>
+</TR>
+
+<TR>
+<TD>31</TD>
+
+<TD>Couldn't open Certificate Database 'cert7.db' in current directory</TD>
+</TR>
+
+<TR>
+<TD>40</TD>
+
+<TD>Couldn't Enable SSL2 in SSL2-only case</TD>
+</TR>
+
+<TR>
+<TD>41</TD>
+
+<TD>Couldn't Disable SSL3 in SSL2-only case</TD>
+</TR>
+
+<TR>
+<TD>42</TD>
+
+<TD>Couldn't Disable SSL2 in SSL3-only case</TD>
+</TR>
+
+<TR>
+<TD>43</TD>
+
+<TD>Couldn't Enable SSL3 in SSL3-only case</TD>
+</TR>
+
+<TR>
+<TD>44</TD>
+
+<TD>Couldn't Enable SSL2 in Both SSL2 and 3 case</TD>
+</TR>
+
+<TR>
+<TD>45</TD>
+
+<TD>Couldn't Enable SSL3 in Both SSL2 and 3 case</TD>
+</TR>
+
+<TR>
+<TD>50</TD>
+
+<TD>Got an exception on the socket</TD>
+</TR>
+
+<TR>
+<TD>51</TD>
+
+<TD>Got an error while SSL Reading data</TD>
+</TR>
+
+<TR>
+<TD>52</TD>
+
+<TD>Didn't SSL Write any bytes</TD>
+</TR>
+
+<TR>
+<TD>53</TD>
+
+<TD>Got an Error while SSL Writing</TD>
+</TR>
+
+<TR>
+<TD>54</TD>
+
+<TD>We didn't write the write amount of bytes</TD>
+</TR>
+
+<TR>
+<TD>71</TD>
+
+<TD>Data got corrupted</TD>
+</TR>
+
+<TR>
+<TD>73</TD>
+
+<TD>Error inside verify code</TD>
+</TR>
+
+<TR>
+<TD>101</TD>
+
+<TD>Couldn't make Client point back to 127.0.0.1</TD>
+</TR>
+
+<TR>
+<TD>102</TD>
+
+<TD>Client couldn't connect to Server</TD>
+</TR>
+
+<TR>
+<TD>120</TD>
+
+<TD>Couldn't create new NSPR20 TCP socket for Client</TD>
+</TR>
+
+<TR>
+<TD>121</TD>
+
+<TD>Couldn't create SSL socket from NSPR20 socket for Client</TD>
+</TR>
+
+<TR>
+<TD>130</TD>
+
+<TD>Could not enable security on Client Socket</TD>
+</TR>
+
+<TR>
+<TD>131</TD>
+
+<TD>Couldn't find client's certificate</TD>
+</TR>
+</TABLE>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

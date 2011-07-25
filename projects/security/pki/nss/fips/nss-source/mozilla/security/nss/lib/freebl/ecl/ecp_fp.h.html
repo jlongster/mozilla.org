@@ -1,0 +1,424 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* 
+<b><a name="2">    2</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="3">    3</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="4">    4</a></b>  *
+<b><a name="5">    5</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="6">    6</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="7">    7</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="8">    8</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="9">    9</a></b>  *
+<b><a name="10">   10</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="11">   11</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="12">   12</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="13">   13</a></b>  * License.
+<b><a name="14">   14</a></b>  *
+<b><a name="15">   15</a></b>  * The Original Code is the elliptic curve math library for prime field curves using floating point operations.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Initial Developer of the Original Code is
+<b><a name="18">   18</a></b>  * Sun Microsystems, Inc.
+<b><a name="19">   19</a></b>  * Portions created by the Initial Developer are Copyright (C) 2003
+<b><a name="20">   20</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="21">   21</a></b>  *
+<b><a name="22">   22</a></b>  * Contributor(s):
+<b><a name="23">   23</a></b>  *   Stephen Fung &lt;fungstep@hotmail.com&gt;, Sun Microsystems Laboratories
+<b><a name="24">   24</a></b>  *
+<b><a name="25">   25</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="26">   26</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="27">   27</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="28">   28</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="29">   29</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="30">   30</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="31">   31</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="32">   32</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="33">   33</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="34">   34</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="35">   35</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="36">   36</a></b>  *
+<b><a name="37">   37</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> #ifndef <a href="../../freebl/ecl/ecp_fp.h.dep.html#__ecp_fp_h_">__ecp_fp_h_</a>
+<b><a name="40">   40</a></b> #define <a href="#40">__ecp_fp_h_</a>
+<b><a name="41">   41</a></b> 
+<b><a name="42">   42</a></b> #include "mpi.h"
+<b><a name="43">   43</a></b> #include "ecl.h"
+<b><a name="44">   44</a></b> #include "ecp.h"
+<b><a name="45">   45</a></b> 
+<b><a name="46">   46</a></b> #include &lt;sys/types.h&gt;
+<b><a name="47">   47</a></b> #include "mpi-priv.h"
+<b><a name="48">   48</a></b> 
+<b><a name="49">   49</a></b> #ifdef ECL_DEBUG
+<b><a name="50">   50</a></b> #include &lt;assert.h&gt;
+<b><a name="51">   51</a></b> #endif
+<b><a name="52">   52</a></b> 
+<b><a name="53">   53</a></b> /* Largest number of doubles to store one reduced number in floating
+<b><a name="54">   54</a></b>  * point. Used for memory allocation on the stack. */
+<b><a name="55">   55</a></b> #define <a href="#55">ECFP_MAXDOUBLES</a> 10
+<b><a name="56">   56</a></b> 
+<b><a name="57">   57</a></b> /* For debugging purposes */
+<b><a name="58">   58</a></b> #ifndef ECL_DEBUG
+<b><a name="59">   59</a></b> #define <a href="#59">ECFP_ASSERT</a>(x)
+<b><a name="60">   60</a></b> #else
+<b><a name="61">   61</a></b> #define <a href="#61">ECFP_ASSERT</a>(x) assert(x)
+<b><a name="62">   62</a></b> #endif
+<b><a name="63">   63</a></b> 
+<b><a name="64">   64</a></b> /* ECFP_Ti = 2^(i*24) Define as preprocessor constants so we can use in
+<b><a name="65">   65</a></b>  * multiple static constants */
+<b><a name="66">   66</a></b> #define <a href="#66">ECFP_T0</a> 1.0
+<b><a name="67">   67</a></b> #define <a href="#67">ECFP_T1</a> 16777216.0
+<b><a name="68">   68</a></b> #define <a href="#68">ECFP_T2</a> 281474976710656.0
+<b><a name="69">   69</a></b> #define <a href="#69">ECFP_T3</a> 4722366482869645213696.0
+<b><a name="70">   70</a></b> #define <a href="#70">ECFP_T4</a> 79228162514264337593543950336.0
+<b><a name="71">   71</a></b> #define <a href="#71">ECFP_T5</a> 1329227995784915872903807060280344576.0
+<b><a name="72">   72</a></b> #define <a href="#72">ECFP_T6</a> 22300745198530623141535718272648361505980416.0
+<b><a name="73">   73</a></b> #define <a href="#73">ECFP_T7</a> 374144419156711147060143317175368453031918731001856.0
+<b><a name="74">   74</a></b> #define <a href="#74">ECFP_T8</a> 6277101735386680763835789423207666416102355444464034512896.0
+<b><a name="75">   75</a></b> #define <a href="#75">ECFP_T9</a> 105312291668557186697918027683670432318895095400549111254310977536.0
+<b><a name="76">   76</a></b> #define <a href="#76">ECFP_T10</a>  1766847064778384329583297500742918515827483896875618958121606201292619776.0
+<b><a name="77">   77</a></b> #define <a href="#77">ECFP_T11</a> 29642774844752946028434172162224104410437116074403984394101141506025761187823616.0
+<b><a name="78">   78</a></b> #define <a href="#78">ECFP_T12</a> 497323236409786642155382248146820840100456150797347717440463976893159497012533375533056.0
+<b><a name="79">   79</a></b> #define <a href="#79">ECFP_T13</a>  8343699359066055009355553539724812947666814540455674882605631280555545803830627148527195652096.0
+<b><a name="80">   80</a></b> #define <a href="#80">ECFP_T14</a> 139984046386112763159840142535527767382602843577165595931249318810236991948760059086304843329475444736.0
+<b><a name="81">   81</a></b> #define <a href="#81">ECFP_T15</a> 2348542582773833227889480596789337027375682548908319870707290971532209025114608443463698998384768703031934976.0
+<b><a name="82">   82</a></b> #define <a href="#82">ECFP_T16</a> 39402006196394479212279040100143613805079739270465446667948293404245\
+<b><a name="83">   83</a></b> 721771497210611414266254884915640806627990306816.0
+<b><a name="84">   84</a></b> #define <a href="#84">ECFP_T17</a> 66105596879024859895191530803277103982840468296428121928464879527440\
+<b><a name="85">   85</a></b> 5791236311345825189210439715284847591212025023358304256.0
+<b><a name="86">   86</a></b> #define <a href="#86">ECFP_T18</a> 11090678776483259438313656736572334813745748301503266300681918322458\
+<b><a name="87">   87</a></b> 485231222502492159897624416558312389564843845614287315896631296.0
+<b><a name="88">   88</a></b> #define <a href="#88">ECFP_T19</a> 18607071341967536398062689481932916079453218833595342343206149099024\
+<b><a name="89">   89</a></b> 36577570298683715049089827234727835552055312041415509848580169253519\
+<b><a name="90">   90</a></b> 36.0
+<b><a name="91">   91</a></b> 
+<b><a name="92">   92</a></b> #define <a href="#92">ECFP_TWO160</a> 1461501637330902918203684832716283019655932542976.0
+<b><a name="93">   93</a></b> #define <a href="#93">ECFP_TWO192</a> 6277101735386680763835789423207666416102355444464034512896.0
+<b><a name="94">   94</a></b> #define <a href="#94">ECFP_TWO224</a> 26959946667150639794667015087019630673637144422540572481103610249216.0
+<b><a name="95">   95</a></b> 
+<b><a name="96">   96</a></b> /* Multiplicative constants */
+<b><a name="97">   97</a></b> static const double <a href="#97">ecfp_two32</a> = 4294967296.0;
+<b><a name="98">   98</a></b> static const double <a href="#98">ecfp_two64</a> = 18446744073709551616.0;
+<b><a name="99">   99</a></b> static const double <a href="#99">ecfp_twom16</a> = .0000152587890625;
+<b><a name="100">  100</a></b> static const double <a href="#100">ecfp_twom128</a> =
+<b><a name="101">  101</a></b>         .00000000000000000000000000000000000000293873587705571876992184134305561419454666389193021880377187926569604314863681793212890625;
+<b><a name="102">  102</a></b> static const double <a href="#102">ecfp_twom129</a> =
+<b><a name="103">  103</a></b>         .000000000000000000000000000000000000001469367938527859384960920671527807097273331945965109401885939632848021574318408966064453125;
+<b><a name="104">  104</a></b> static const double <a href="#104">ecfp_twom160</a> =
+<b><a name="105">  105</a></b>         .0000000000000000000000000000000000000000000000006842277657836020854119773355907793609766904013068924666782559979930620520927053718196475529111921787261962890625;
+<b><a name="106">  106</a></b> static const double <a href="#106">ecfp_twom192</a> =
+<b><a name="107">  107</a></b>         .000000000000000000000000000000000000000000000000000000000159309191113245227702888039776771180559110455519261878607388585338616290151305816094308987472018268594098344692611135542392730712890625;
+<b><a name="108">  108</a></b> static const double <a href="#108">ecfp_twom224</a> =
+<b><a name="109">  109</a></b>         .00000000000000000000000000000000000000000000000000000000000000000003709206150687421385731735261547639513367564778757791002453039058917581340095629358997312082723208437536338919136001159027049567384892725385725498199462890625;
+<b><a name="110">  110</a></b> 
+<b><a name="111">  111</a></b> /* ecfp_exp[i] = 2^(i*ECFP_DSIZE) */
+<b><a name="112">  112</a></b> static const double <a href="#112">ecfp_exp</a>[2 * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>] = {
+<b><a name="113">  113</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T0">ECFP_T0</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T1">ECFP_T1</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T2">ECFP_T2</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T3">ECFP_T3</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T4">ECFP_T4</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T5">ECFP_T5</a>,
+<b><a name="114">  114</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T6">ECFP_T6</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T7">ECFP_T7</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T8">ECFP_T8</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T9">ECFP_T9</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T10">ECFP_T10</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T11">ECFP_T11</a>,
+<b><a name="115">  115</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T12">ECFP_T12</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T13">ECFP_T13</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T14">ECFP_T14</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T15">ECFP_T15</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T16">ECFP_T16</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T17">ECFP_T17</a>, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T18">ECFP_T18</a>,
+<b><a name="116">  116</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T19">ECFP_T19</a>
+<b><a name="117">  117</a></b> };
+<b><a name="118">  118</a></b> 
+<b><a name="119">  119</a></b> /* 1.1 * 2^52 Uses 2^52 to truncate, the .1 is an extra 2^51 to protect
+<b><a name="120">  120</a></b>  * the 2^52 bit, so that adding alphas to a negative number won't borrow
+<b><a name="121">  121</a></b>  * and empty the important 2^52 bit */
+<b><a name="122">  122</a></b> #define <a href="#122">ECFP_ALPHABASE_53</a> 6755399441055744.0
+<b><a name="123">  123</a></b> /* Special case: On some platforms, notably x86 Linux, there is an
+<b><a name="124">  124</a></b>  * extended-precision floating point representation with 64-bits of
+<b><a name="125">  125</a></b>  * precision in the mantissa.  These extra bits of precision require a
+<b><a name="126">  126</a></b>  * larger value of alpha to truncate, i.e. 1.1 * 2^63. */
+<b><a name="127">  127</a></b> #define <a href="#127">ECFP_ALPHABASE_64</a> 13835058055282163712.0
+<b><a name="128">  128</a></b> 
+<b><a name="129">  129</a></b> /* 
+<b><a name="130">  130</a></b>  * ecfp_alpha[i] = 1.5 * 2^(52 + i*ECFP_DSIZE) we add and subtract alpha
+<b><a name="131">  131</a></b>  * to truncate floating point numbers to a certain number of bits for
+<b><a name="132">  132</a></b>  * tidying */
+<b><a name="133">  133</a></b> static const double <a href="#133">ecfp_alpha_53</a>[2 * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>] = {
+<b><a name="134">  134</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T0">ECFP_T0</a>,
+<b><a name="135">  135</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T1">ECFP_T1</a>,
+<b><a name="136">  136</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T2">ECFP_T2</a>,
+<b><a name="137">  137</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T3">ECFP_T3</a>,
+<b><a name="138">  138</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T4">ECFP_T4</a>,
+<b><a name="139">  139</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T5">ECFP_T5</a>,
+<b><a name="140">  140</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T6">ECFP_T6</a>,
+<b><a name="141">  141</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T7">ECFP_T7</a>,
+<b><a name="142">  142</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T8">ECFP_T8</a>,
+<b><a name="143">  143</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T9">ECFP_T9</a>,
+<b><a name="144">  144</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T10">ECFP_T10</a>,
+<b><a name="145">  145</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T11">ECFP_T11</a>,
+<b><a name="146">  146</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T12">ECFP_T12</a>,
+<b><a name="147">  147</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T13">ECFP_T13</a>,
+<b><a name="148">  148</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T14">ECFP_T14</a>,
+<b><a name="149">  149</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T15">ECFP_T15</a>,
+<b><a name="150">  150</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T16">ECFP_T16</a>,
+<b><a name="151">  151</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T17">ECFP_T17</a>,
+<b><a name="152">  152</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T18">ECFP_T18</a>,
+<b><a name="153">  153</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_53">ECFP_ALPHABASE_53</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T19">ECFP_T19</a>
+<b><a name="154">  154</a></b> };
+<b><a name="155">  155</a></b> 
+<b><a name="156">  156</a></b> /* 
+<b><a name="157">  157</a></b>  * ecfp_alpha[i] = 1.5 * 2^(63 + i*ECFP_DSIZE) we add and subtract alpha
+<b><a name="158">  158</a></b>  * to truncate floating point numbers to a certain number of bits for
+<b><a name="159">  159</a></b>  * tidying */
+<b><a name="160">  160</a></b> static const double <a href="#160">ecfp_alpha_64</a>[2 * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>] = {
+<b><a name="161">  161</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T0">ECFP_T0</a>,
+<b><a name="162">  162</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T1">ECFP_T1</a>,
+<b><a name="163">  163</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T2">ECFP_T2</a>,
+<b><a name="164">  164</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T3">ECFP_T3</a>,
+<b><a name="165">  165</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T4">ECFP_T4</a>,
+<b><a name="166">  166</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T5">ECFP_T5</a>,
+<b><a name="167">  167</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T6">ECFP_T6</a>,
+<b><a name="168">  168</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T7">ECFP_T7</a>,
+<b><a name="169">  169</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T8">ECFP_T8</a>,
+<b><a name="170">  170</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T9">ECFP_T9</a>,
+<b><a name="171">  171</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T10">ECFP_T10</a>,
+<b><a name="172">  172</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T11">ECFP_T11</a>,
+<b><a name="173">  173</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T12">ECFP_T12</a>,
+<b><a name="174">  174</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T13">ECFP_T13</a>,
+<b><a name="175">  175</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T14">ECFP_T14</a>,
+<b><a name="176">  176</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T15">ECFP_T15</a>,
+<b><a name="177">  177</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T16">ECFP_T16</a>,
+<b><a name="178">  178</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T17">ECFP_T17</a>,
+<b><a name="179">  179</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T18">ECFP_T18</a>,
+<b><a name="180">  180</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_ALPHABASE_64">ECFP_ALPHABASE_64</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T19">ECFP_T19</a>
+<b><a name="181">  181</a></b> };
+<b><a name="182">  182</a></b> 
+<b><a name="183">  183</a></b> /* 0.011111111111111111111111 (binary) = 0.5 - 2^25 (24 ones) */
+<b><a name="184">  184</a></b> #define <a href="#184">ECFP_BETABASE</a> 0.4999999701976776123046875
+<b><a name="185">  185</a></b> 
+<b><a name="186">  186</a></b> /* 
+<b><a name="187">  187</a></b>  * We subtract beta prior to using alpha to simulate rounding down. We
+<b><a name="188">  188</a></b>  * make this close to 0.5 to round almost everything down, but exactly 0.5 
+<b><a name="189">  189</a></b>  * would cause some incorrect rounding. */
+<b><a name="190">  190</a></b> static const double <a href="#190">ecfp_beta</a>[2 * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>] = {
+<b><a name="191">  191</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T0">ECFP_T0</a>,
+<b><a name="192">  192</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T1">ECFP_T1</a>,
+<b><a name="193">  193</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T2">ECFP_T2</a>,
+<b><a name="194">  194</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T3">ECFP_T3</a>,
+<b><a name="195">  195</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T4">ECFP_T4</a>,
+<b><a name="196">  196</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T5">ECFP_T5</a>,
+<b><a name="197">  197</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T6">ECFP_T6</a>,
+<b><a name="198">  198</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T7">ECFP_T7</a>,
+<b><a name="199">  199</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T8">ECFP_T8</a>,
+<b><a name="200">  200</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T9">ECFP_T9</a>,
+<b><a name="201">  201</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T10">ECFP_T10</a>,
+<b><a name="202">  202</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T11">ECFP_T11</a>,
+<b><a name="203">  203</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T12">ECFP_T12</a>,
+<b><a name="204">  204</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T13">ECFP_T13</a>,
+<b><a name="205">  205</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T14">ECFP_T14</a>,
+<b><a name="206">  206</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T15">ECFP_T15</a>,
+<b><a name="207">  207</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T16">ECFP_T16</a>,
+<b><a name="208">  208</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T17">ECFP_T17</a>,
+<b><a name="209">  209</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T18">ECFP_T18</a>,
+<b><a name="210">  210</a></b>         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_T19">ECFP_T19</a>
+<b><a name="211">  211</a></b> };
+<b><a name="212">  212</a></b> 
+<b><a name="213">  213</a></b> static const double <a href="#213">ecfp_beta_160</a> = <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_TWO160">ECFP_TWO160</a>;
+<b><a name="214">  214</a></b> static const double <a href="#214">ecfp_beta_192</a> = <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_TWO192">ECFP_TWO192</a>;
+<b><a name="215">  215</a></b> static const double <a href="#215">ecfp_beta_224</a> = <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_BETABASE">ECFP_BETABASE</a> * <a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_TWO224">ECFP_TWO224</a>;
+<b><a name="216">  216</a></b> 
+<b><a name="217">  217</a></b> /* Affine EC Point. This is the basic representation (x, y) of an elliptic 
+<b><a name="218">  218</a></b>  * curve point. */
+<b><a name="219">  219</a></b> typedef struct {
+<b><a name="220">  220</a></b>         double x[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="221">  221</a></b>         double y[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="222">  222</a></b> } <a href="#222">ecfp_aff_pt</a>;
+<b><a name="223">  223</a></b> 
+<b><a name="224">  224</a></b> /* Jacobian EC Point. This coordinate system uses X = x/z^2, Y = y/z^3,
+<b><a name="225">  225</a></b>  * which enables calculations with fewer inversions than affine
+<b><a name="226">  226</a></b>  * coordinates. */
+<b><a name="227">  227</a></b> typedef struct {
+<b><a name="228">  228</a></b>         double x[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="229">  229</a></b>         double y[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="230">  230</a></b>         double z[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="231">  231</a></b> } <a href="#231">ecfp_jac_pt</a>;
+<b><a name="232">  232</a></b> 
+<b><a name="233">  233</a></b> /* Chudnovsky Jacobian EC Point. This coordinate system is the same as
+<b><a name="234">  234</a></b>  * Jacobian, except it keeps z^2, z^3 for faster additions. */
+<b><a name="235">  235</a></b> typedef struct {
+<b><a name="236">  236</a></b>         double x[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="237">  237</a></b>         double y[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="238">  238</a></b>         double z[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="239">  239</a></b>         double z2[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="240">  240</a></b>         double z3[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="241">  241</a></b> } <a href="#241">ecfp_chud_pt</a>;
+<b><a name="242">  242</a></b> 
+<b><a name="243">  243</a></b> /* Modified Jacobian EC Point. This coordinate system is the same as
+<b><a name="244">  244</a></b>  * Jacobian, except it keeps a*z^4 for faster doublings. */
+<b><a name="245">  245</a></b> typedef struct {
+<b><a name="246">  246</a></b>         double x[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="247">  247</a></b>         double y[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="248">  248</a></b>         double z[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="249">  249</a></b>         double az4[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="250">  250</a></b> } <a href="#250">ecfp_jm_pt</a>;
+<b><a name="251">  251</a></b> 
+<b><a name="252">  252</a></b> struct <a href="#252">EC_group_fp_str</a>;
+<b><a name="253">  253</a></b> 
+<b><a name="254">  254</a></b> typedef struct <a href="../../freebl/ecl/ecp_fp.h.dep.html#<a href="#254">EC_group_fp</a>_str">EC_group_fp_str</a></a> EC_group_fp;
+<b><a name="255">  255</a></b> struct <a href="#255">EC_group_fp_str</a> {
+<b><a name="256">  256</a></b>         int fpPrecision;                        /* Set to number of bits in mantissa, 53
+<b><a name="257">  257</a></b>                                                                  * or 64 */
+<b><a name="258">  258</a></b>         int numDoubles;
+<b><a name="259">  259</a></b>         int primeBitSize;
+<b><a name="260">  260</a></b>         int orderBitSize;
+<b><a name="261">  261</a></b>         int doubleBitSize;
+<b><a name="262">  262</a></b>         int numInts;
+<b><a name="263">  263</a></b>         int aIsM3;                                        /* True if curvea == -3 (mod p), then we
+<b><a name="264">  264</a></b>                                                                  * can optimize doubling */
+<b><a name="265">  265</a></b>         double curvea[<a href="../../freebl/ecl/ecp_fp.h.dep.html#ECFP_MAXDOUBLES">ECFP_MAXDOUBLES</a>];
+<b><a name="266">  266</a></b>         /* Used to truncate a double to the number of bits in the curve */
+<b><a name="267">  267</a></b>         double bitSize_alpha;
+<b><a name="268">  268</a></b>         /* Pointer to either ecfp_alpha_53 or ecfp_alpha_64 */
+<b><a name="269">  269</a></b>         const double *alpha;
+<b><a name="270">  270</a></b> 
+<b><a name="271">  271</a></b>         void (*ecfp_singleReduce) (double *r, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="272">  272</a></b>         void (*ecfp_reduce) (double *r, double *x, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="273">  273</a></b>         /* Performs a "tidy" operation, which performs carrying, moving excess 
+<b><a name="274">  274</a></b>          * bits from one double to the next double, so that the precision of
+<b><a name="275">  275</a></b>          * the doubles is reduced to the regular precision ECFP_DSIZE. This
+<b><a name="276">  276</a></b>          * might result in some float digits being negative. */
+<b><a name="277">  277</a></b>         void (*<a href="../../freebl/ecl/ecp_fp.c.dep.html#ecfp_tidy">ecfp_tidy</a>) (double *t, const double *alpha,
+<b><a name="278">  278</a></b>                                            const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="279">  279</a></b>         /* Perform a point addition using coordinate system Jacobian + Affine
+<b><a name="280">  280</a></b>          * -&gt; Jacobian. Input and output should be multi-precision floating
+<b><a name="281">  281</a></b>          * point integers. */
+<b><a name="282">  282</a></b>         void (*<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_jac_aff">pt_add_jac_aff</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * p, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_aff_pt">ecfp_aff_pt</a> * q,
+<b><a name="283">  283</a></b>                                                         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * r, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="284">  284</a></b>         /* Perform a point doubling in Jacobian coordinates. Input and output
+<b><a name="285">  285</a></b>          * should be multi-precision floating point integers. */
+<b><a name="286">  286</a></b>         void (*<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_dbl_jac">pt_dbl_jac</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * dp, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * dr,
+<b><a name="287">  287</a></b>                                                 const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="288">  288</a></b>         /* Perform a point addition using Jacobian coordinate system. Input
+<b><a name="289">  289</a></b>          * and output should be multi-precision floating point integers. */
+<b><a name="290">  290</a></b>         void (*<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_jac">pt_add_jac</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * p, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * q,
+<b><a name="291">  291</a></b>                                                 <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * r, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="292">  292</a></b>         /* Perform a point doubling in Modified Jacobian coordinates. Input
+<b><a name="293">  293</a></b>          * and output should be multi-precision floating point integers. */
+<b><a name="294">  294</a></b>         void (*<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_dbl_jm">pt_dbl_jm</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jm_pt">ecfp_jm_pt</a> * p, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jm_pt">ecfp_jm_pt</a> * r,
+<b><a name="295">  295</a></b>                                            const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="296">  296</a></b>         /* Perform a point doubling using coordinates Affine -&gt; Chudnovsky
+<b><a name="297">  297</a></b>          * Jacobian. Input and output should be multi-precision floating point 
+<b><a name="298">  298</a></b>          * integers. */
+<b><a name="299">  299</a></b>         void (*<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_dbl_aff2chud">pt_dbl_aff2chud</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_aff_pt">ecfp_aff_pt</a> * p, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * r,
+<b><a name="300">  300</a></b>                                                          const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="301">  301</a></b>         /* Perform a point addition using coordinates: Modified Jacobian +
+<b><a name="302">  302</a></b>          * Chudnovsky Jacobian -&gt; Modified Jacobian. Input and output should
+<b><a name="303">  303</a></b>          * be multi-precision floating point integers. */
+<b><a name="304">  304</a></b>         void (*<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_jm_chud">pt_add_jm_chud</a>) (<a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jm_pt">ecfp_jm_pt</a> * p, <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * q,
+<b><a name="305">  305</a></b>                                                         <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jm_pt">ecfp_jm_pt</a> * r, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="306">  306</a></b>         /* Perform a point addition using Chudnovsky Jacobian coordinates.
+<b><a name="307">  307</a></b>          * Input and output should be multi-precision floating point integers. 
+<b><a name="308">  308</a></b>          */
+<b><a name="309">  309</a></b>         void (*<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#pt_add_chud">pt_add_chud</a>) (const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * p, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * q,
+<b><a name="310">  310</a></b>                                                  <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * r, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="311">  311</a></b>         /* Expects out to be an array of size 16 of Chudnovsky Jacobian
+<b><a name="312">  312</a></b>          * points. Fills in Chudnovsky Jacobian form (x, y, z, z^2, z^3), for
+<b><a name="313">  313</a></b>          * -15P, -13P, -11P, -9P, -7P, -5P, -3P, -P, P, 3P, 5P, 7P, 9P, 11P,
+<b><a name="314">  314</a></b>          * 13P, 15P */
+<b><a name="315">  315</a></b>         void (*<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#precompute_chud">precompute_chud</a>) (<a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_chud_pt">ecfp_chud_pt</a> * out, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_aff_pt">ecfp_aff_pt</a> * p,
+<b><a name="316">  316</a></b>                                                          const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="317">  317</a></b>         /* Expects out to be an array of size 16 of Jacobian points. Fills in
+<b><a name="318">  318</a></b>          * Chudnovsky Jacobian form (x, y, z), for O, P, 2P, ... 15P */
+<b><a name="319">  319</a></b>         void (*<a href="../../freebl/ecl/ecp_fpinc.c.dep.html#precompute_jac">precompute_jac</a>) (<a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_jac_pt">ecfp_jac_pt</a> * out, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#ecfp_aff_pt">ecfp_aff_pt</a> * p,
+<b><a name="320">  320</a></b>                                                         const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="321">  321</a></b> 
+<b><a name="322">  322</a></b> };
+<b><a name="323">  323</a></b> 
+<b><a name="324">  324</a></b> /* Computes r = x*y.
+<b><a name="325">  325</a></b>  * r must be different (point to different memory) than x and y.
+<b><a name="326">  326</a></b>  * Does not tidy or reduce. */
+<b><a name="327">  327</a></b> void <a href="#327">ecfp_multiply</a>(double *r, const double *x, const double *y);
+<b><a name="328">  328</a></b> 
+<b><a name="329">  329</a></b> /* Performs a "tidy" operation, which performs carrying, moving excess
+<b><a name="330">  330</a></b>  * bits from one double to the next double, so that the precision of the
+<b><a name="331">  331</a></b>  * doubles is reduced to the regular precision group-&gt;doubleBitSize. This
+<b><a name="332">  332</a></b>  * might result in some float digits being negative. */
+<b><a name="333">  333</a></b> void <a href="#333">ecfp_tidy</a>(double *t, const double *alpha, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="334">  334</a></b> 
+<b><a name="335">  335</a></b> /* Performs tidying on only the upper float digits of a multi-precision
+<b><a name="336">  336</a></b>  * floating point integer, i.e. the digits beyond the regular length which 
+<b><a name="337">  337</a></b>  * are removed in the reduction step. */
+<b><a name="338">  338</a></b> void <a href="#338">ecfp_tidyUpper</a>(double *t, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="339">  339</a></b> 
+<b><a name="340">  340</a></b> /* Performs tidying on a short multi-precision floating point integer (the 
+<b><a name="341">  341</a></b>  * lower group-&gt;numDoubles floats). */
+<b><a name="342">  342</a></b> void <a href="#342">ecfp_tidyShort</a>(double *t, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="343">  343</a></b> 
+<b><a name="344">  344</a></b> /* Performs a more mathematically precise "tidying" so that each term is
+<b><a name="345">  345</a></b>  * positive.  This is slower than the regular tidying, and is used for
+<b><a name="346">  346</a></b>  * conversion from floating point to integer. */
+<b><a name="347">  347</a></b> void <a href="#347">ecfp_positiveTidy</a>(double *t, const <a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="348">  348</a></b> 
+<b><a name="349">  349</a></b> /* Computes R = nP where R is (rx, ry) and P is (px, py). The parameters
+<b><a name="350">  350</a></b>  * a, b and p are the elliptic curve coefficients and the prime that
+<b><a name="351">  351</a></b>  * determines the field GFp.  Elliptic curve points P and R can be
+<b><a name="352">  352</a></b>  * identical.  Uses mixed Jacobian-affine coordinates. Uses 4-bit window
+<b><a name="353">  353</a></b>  * method. */
+<b><a name="354">  354</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="355">  355</a></b>  <a href="#355">ec_GFp_point_mul_jac_4w_fp</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *n, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px,
+<b><a name="356">  356</a></b>                                                         const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rx, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *ry,
+<b><a name="357">  357</a></b>                                                         const <a href="../../freebl/ecl/ecl.h.dep.html#ECGroup">ECGroup</a> *ecgroup);
+<b><a name="358">  358</a></b> 
+<b><a name="359">  359</a></b> /* Computes R = nP where R is (rx, ry) and P is the base point. The
+<b><a name="360">  360</a></b>  * parameters a, b and p are the elliptic curve coefficients and the prime 
+<b><a name="361">  361</a></b>  * that determines the field GFp.  Elliptic curve points P and R can be
+<b><a name="362">  362</a></b>  * identical.  Uses mixed Jacobian-affine coordinates (Jacobian
+<b><a name="363">  363</a></b>  * coordinates for doubles and affine coordinates for additions; based on
+<b><a name="364">  364</a></b>  * recommendation from Brown et al.). Uses window NAF method (algorithm
+<b><a name="365">  365</a></b>  * 11) for scalar-point multiplication from Brown, Hankerson, Lopez,
+<b><a name="366">  366</a></b>  * Menezes. Software Implementation of the NIST Elliptic Curves Over Prime
+<b><a name="367">  367</a></b>  * Fields. */
+<b><a name="368">  368</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#368">ec_GFp_point_mul_wNAF_fp</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *n, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px,
+<b><a name="369">  369</a></b>                                                                 const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rx, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *ry,
+<b><a name="370">  370</a></b>                                                                 const <a href="../../freebl/ecl/ecl.h.dep.html#ECGroup">ECGroup</a> *ecgroup);
+<b><a name="371">  371</a></b> 
+<b><a name="372">  372</a></b> /* Uses mixed Jacobian-affine coordinates to perform a point
+<b><a name="373">  373</a></b>  * multiplication: R = n * P, n scalar. Uses mixed Jacobian-affine
+<b><a name="374">  374</a></b>  * coordinates (Jacobian coordinates for doubles and affine coordinates
+<b><a name="375">  375</a></b>  * for additions; based on recommendation from Brown et al.). Not very
+<b><a name="376">  376</a></b>  * time efficient but quite space efficient, no precomputation needed.
+<b><a name="377">  377</a></b>  * group contains the elliptic curve coefficients and the prime that
+<b><a name="378">  378</a></b>  * determines the field GFp.  Elliptic curve points P and R can be
+<b><a name="379">  379</a></b>  * identical. Performs calculations in floating point number format, since 
+<b><a name="380">  380</a></b>  * this is faster than the integer operations on the ULTRASPARC III.
+<b><a name="381">  381</a></b>  * Uses left-to-right binary method (double &amp; add) (algorithm 9) for
+<b><a name="382">  382</a></b>  * scalar-point multiplication from Brown, Hankerson, Lopez, Menezes.
+<b><a name="383">  383</a></b>  * Software Implementation of the NIST Elliptic Curves Over Prime Fields. */
+<b><a name="384">  384</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="385">  385</a></b>  <a href="#385">ec_GFp_pt_mul_jac_fp</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *n, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *px, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *py,
+<b><a name="386">  386</a></b>                                           <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *rx, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *ry, const <a href="../../freebl/ecl/ecl.h.dep.html#ECGroup">ECGroup</a> *ecgroup);
+<b><a name="387">  387</a></b> 
+<b><a name="388">  388</a></b> /* Cleans up extra memory allocated in ECGroup for this implementation. */
+<b><a name="389">  389</a></b> void <a href="#389">ec_GFp_extra_free_fp</a>(<a href="../../freebl/ecl/ecl.h.dep.html#ECGroup">ECGroup</a> *group);
+<b><a name="390">  390</a></b> 
+<b><a name="391">  391</a></b> /* Converts from a floating point representation into an mp_int. Expects
+<b><a name="392">  392</a></b>  * that d is already reduced. */
+<b><a name="393">  393</a></b> void
+<b><a name="394">  394</a></b>  <a href="#394">ecfp_fp2i</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *mpout, double *d, const <a href="../../freebl/ecl/ecl.h.dep.html#ECGroup">ECGroup</a> *ecgroup);
+<b><a name="395">  395</a></b> 
+<b><a name="396">  396</a></b> /* Converts from an mpint into a floating point representation. */
+<b><a name="397">  397</a></b> void
+<b><a name="398">  398</a></b>  <a href="#398">ecfp_i2fp</a>(double *out, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *x, const <a href="../../freebl/ecl/ecl.h.dep.html#ECGroup">ECGroup</a> *ecgroup);
+<b><a name="399">  399</a></b> 
+<b><a name="400">  400</a></b> /* Tests what precision floating point arithmetic is set to. This should
+<b><a name="401">  401</a></b>  * be either a 53-bit mantissa (IEEE standard) or a 64-bit mantissa
+<b><a name="402">  402</a></b>  * (extended precision on x86) and sets it into the EC_group_fp. Returns
+<b><a name="403">  403</a></b>  * either 53 or 64 accordingly. */
+<b><a name="404">  404</a></b> int <a href="#404">ec_set_fp_precision</a>(<a href="../../freebl/ecl/ecp_fp.h.dep.html#EC_group_fp">EC_group_fp</a> * group);
+<b><a name="405">  405</a></b> 
+<b><a name="406">  406</a></b> #endif
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

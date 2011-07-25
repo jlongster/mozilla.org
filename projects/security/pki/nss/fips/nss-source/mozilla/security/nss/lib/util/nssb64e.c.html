@@ -1,0 +1,783 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> /*
+<b><a name="38">   38</a></b>  * Base64 encoding (binary to ascii).
+<b><a name="39">   39</a></b>  *
+<b><a name="40">   40</a></b>  * $Id$
+<b><a name="41">   41</a></b>  */
+<b><a name="42">   42</a></b> 
+<b><a name="43">   43</a></b> #include "nssb64.h"
+<b><a name="44">   44</a></b> #include "nspr.h"
+<b><a name="45">   45</a></b> #include "secitem.h"
+<b><a name="46">   46</a></b> #include "secerr.h"
+<b><a name="47">   47</a></b> 
+<b><a name="48">   48</a></b> /*
+<b><a name="49">   49</a></b>  * XXX See the big comment at the top of nssb64d.c about moving the
+<b><a name="50">   50</a></b>  * bulk of this code over into NSPR (the PL part).  It all applies
+<b><a name="51">   51</a></b>  * here but I didn't want to duplicate it, to avoid divergence problems.
+<b><a name="52">   52</a></b>  */ 
+<b><a name="53">   53</a></b> 
+<b><a name="54">   54</a></b> /*
+<b><a name="55">   55</a></b>  **************************************************************
+<b><a name="56">   56</a></b>  * XXX Beginning of base64 encoding code to be moved into NSPR.
+<b><a name="57">   57</a></b>  */
+<b><a name="58">   58</a></b> 
+<b><a name="59">   59</a></b> 
+<b><a name="60">   60</a></b> struct <a href="#60">PLBase64EncodeStateStr</a> {
+<b><a name="61">   61</a></b>     unsigned chunks;
+<b><a name="62">   62</a></b>     unsigned saved;
+<b><a name="63">   63</a></b>     unsigned char buf[3];
+<b><a name="64">   64</a></b> };
+<b><a name="65">   65</a></b> 
+<b><a name="66">   66</a></b> /*
+<b><a name="67">   67</a></b>  * This typedef would belong in the NSPR header file (i.e. plbase64.h).
+<b><a name="68">   68</a></b>  */
+<b><a name="69">   69</a></b> typedef struct <a href="#69">PLBase64Encoder</a>Str PLBase64Encoder;
+<b><a name="70">   70</a></b> 
+<b><a name="71">   71</a></b> /*
+<b><a name="72">   72</a></b>  * The following implementation of base64 encoding was based on code
+<b><a name="73">   73</a></b>  * found in libmime (specifically, in mimeenc.c).  It has been adapted to
+<b><a name="74">   74</a></b>  * use PR types and naming as well as to provide other necessary semantics
+<b><a name="75">   75</a></b>  * (like buffer-in/buffer-out in addition to "streaming" without undue
+<b><a name="76">   76</a></b>  * performance hit of extra copying if you made the buffer versions
+<b><a name="77">   77</a></b>  * use the output_fn).  It also incorporates some aspects of the current
+<b><a name="78">   78</a></b>  * NSPR base64 encoding code.  As such, you may find similarities to
+<b><a name="79">   79</a></b>  * both of those implementations.  I tried to use names that reflected
+<b><a name="80">   80</a></b>  * the original code when possible.  For this reason you may find some
+<b><a name="81">   81</a></b>  * inconsistencies -- libmime used lots of "in" and "out" whereas the
+<b><a name="82">   82</a></b>  * NSPR version uses "src" and "dest"; sometimes I changed one to the other
+<b><a name="83">   83</a></b>  * and sometimes I left them when I thought the subroutines were at least
+<b><a name="84">   84</a></b>  * self-consistent.
+<b><a name="85">   85</a></b>  */
+<b><a name="86">   86</a></b> 
+<b><a name="87">   87</a></b> PR_BEGIN_EXTERN_C
+<b><a name="88">   88</a></b> 
+<b><a name="89">   89</a></b> /*
+<b><a name="90">   90</a></b>  * Opaque object used by the encoder to store state.
+<b><a name="91">   91</a></b>  */
+<b><a name="92">   92</a></b> struct <a href="#92">PLBase64EncoderStr</a> {
+<b><a name="93">   93</a></b>     /*
+<b><a name="94">   94</a></b>      * The one or two bytes pending.  (We need 3 to create a "token",
+<b><a name="95">   95</a></b>      * and hold the leftovers here.  in_buffer_count is *only* ever
+<b><a name="96">   96</a></b>      * 0, 1, or 2.
+<b><a name="97">   97</a></b>      */
+<b><a name="98">   98</a></b>     unsigned char in_buffer[2];
+<b><a name="99">   99</a></b>     int in_buffer_count;
+<b><a name="100">  100</a></b> 
+<b><a name="101">  101</a></b>     /*
+<b><a name="102">  102</a></b>      * If the caller wants linebreaks added, line_length specifies
+<b><a name="103">  103</a></b>      * where they come out.  It must be a multiple of 4; if the caller
+<b><a name="104">  104</a></b>      * provides one that isn't, we round it down to the nearest
+<b><a name="105">  105</a></b>      * multiple of 4.
+<b><a name="106">  106</a></b>      *
+<b><a name="107">  107</a></b>      * The value of current_column counts how many characters have been
+<b><a name="108">  108</a></b>      * added since the last linebreaks (or since the beginning, on the
+<b><a name="109">  109</a></b>      * first line).  It is also always a multiple of 4; it is unused when
+<b><a name="110">  110</a></b>      * line_length is 0.
+<b><a name="111">  111</a></b>      */ 
+<b><a name="112">  112</a></b>     PRUint32 line_length;
+<b><a name="113">  113</a></b>     PRUint32 current_column;
+<b><a name="114">  114</a></b> 
+<b><a name="115">  115</a></b>     /*
+<b><a name="116">  116</a></b>      * Where to write the encoded data (used when streaming, not when
+<b><a name="117">  117</a></b>      * doing all in-memory (buffer) operations).
+<b><a name="118">  118</a></b>      *
+<b><a name="119">  119</a></b>      * Note that this definition is chosen to be compatible with PR_Write.
+<b><a name="120">  120</a></b>      */
+<b><a name="121">  121</a></b>     PRInt32 (*output_fn) (void *output_arg, const char *buf, PRInt32 size);
+<b><a name="122">  122</a></b>     void *output_arg;
+<b><a name="123">  123</a></b> 
+<b><a name="124">  124</a></b>     /*
+<b><a name="125">  125</a></b>      * Where the encoded output goes -- either temporarily (in the streaming
+<b><a name="126">  126</a></b>      * case, staged here before it goes to the output function) or what will
+<b><a name="127">  127</a></b>      * be the entire buffered result for users of the buffer version.
+<b><a name="128">  128</a></b>      */
+<b><a name="129">  129</a></b>     char *output_buffer;
+<b><a name="130">  130</a></b>     PRUint32 output_buflen;        /* the total length of allocated buffer */
+<b><a name="131">  131</a></b>     PRUint32 output_length;        /* the length that is currently populated */
+<b><a name="132">  132</a></b> };
+<b><a name="133">  133</a></b> 
+<b><a name="134">  134</a></b> PR_END_EXTERN_C
+<b><a name="135">  135</a></b> 
+<b><a name="136">  136</a></b> 
+<b><a name="137">  137</a></b> /*
+<b><a name="138">  138</a></b>  * Table to convert a binary value to its corresponding ascii "code".
+<b><a name="139">  139</a></b>  */
+<b><a name="140">  140</a></b> static unsigned char <a href="#140">base64_valuetocode</a>[64] =
+<b><a name="141">  141</a></b>     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+<b><a name="142">  142</a></b> 
+<b><a name="143">  143</a></b> #define <a href="#143">B64_PAD</a>        '='
+<b><a name="144">  144</a></b> #define <a href="#144">B64_CR</a>        '\r'
+<b><a name="145">  145</a></b> #define <a href="#145">B64_LF</a>        '\n'
+<b><a name="146">  146</a></b> 
+<b><a name="147">  147</a></b> static PRStatus
+<b><a name="148">  148</a></b> <a href="#148">pl_base64_encode_buffer</a> (<a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a> *data, const unsigned char *in,
+<b><a name="149">  149</a></b>                          PRUint32 size)
+<b><a name="150">  150</a></b> {
+<b><a name="151">  151</a></b>     const unsigned char *end = in + size;
+<b><a name="152">  152</a></b>     char *out = data-&gt;output_buffer + data-&gt;output_length;
+<b><a name="153">  153</a></b>     uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = data-&gt;<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>n_buffer_count;
+<b><a name="154">  154</a></b>     PRUint32 n = 0;
+<b><a name="155">  155</a></b>     int off;
+<b><a name="156">  156</a></b>     PRUint32 output_threshold;
+<b><a name="157">  157</a></b> 
+<b><a name="158">  158</a></b>     /* If this input buffer is too small, wait until next time. */
+<b><a name="159">  159</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ze &lt; (3 - <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)) {
+<b><a name="160">  160</a></b>         data-&gt;<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>n_buffer[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++] = <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>n[0];
+<b><a name="161">  161</a></b>         if (size &gt; 1)
+<b><a name="162">  162</a></b>             data-&gt;<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>n_buffer[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++] = <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>n[1];
+<b><a name="163">  163</a></b>         PR_ASSERT(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; 3);
+<b><a name="164">  164</a></b>         data-&gt;<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>n_buffer_count = <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="165">  165</a></b>         return PR_SUCCESS;
+<b><a name="166">  166</a></b>     }
+<b><a name="167">  167</a></b> 
+<b><a name="168">  168</a></b>     /* If there are bytes that were put back last time, take them now. */
+<b><a name="169">  169</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt; 0) {
+<b><a name="170">  170</a></b>         n = data-&gt;in_buffer[0];
+<b><a name="171">  171</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt; 1)
+<b><a name="172">  172</a></b>             n = (n &lt;&lt; 8) | data-&gt;in_buffer[1];
+<b><a name="173">  173</a></b>         data-&gt;in_buffer_count = 0;
+<b><a name="174">  174</a></b>     }
+<b><a name="175">  175</a></b> 
+<b><a name="176">  176</a></b>     /* If our total is not a multiple of three, put one or two bytes back. */
+<b><a name="177">  177</a></b>     off = (s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ze + <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) % 3;
+<b><a name="178">  178</a></b>     if (off &gt; 0) {
+<b><a name="179">  179</a></b>         size -= off;
+<b><a name="180">  180</a></b>         data-&gt;in_buffer[0] = in[size];
+<b><a name="181">  181</a></b>         if (off &gt; 1)
+<b><a name="182">  182</a></b>             data-&gt;in_buffer[1] = in[size + 1];
+<b><a name="183">  183</a></b>         data-&gt;in_buffer_count = off;
+<b><a name="184">  184</a></b>         end -= off;
+<b><a name="185">  185</a></b>     }
+<b><a name="186">  186</a></b> 
+<b><a name="187">  187</a></b>     output_threshold = data-&gt;output_buflen - 3;
+<b><a name="188">  188</a></b> 
+<b><a name="189">  189</a></b>     /*
+<b><a name="190">  190</a></b>      * Populate the output buffer with base64 data, one line (or buffer)
+<b><a name="191">  191</a></b>      * at a time.
+<b><a name="192">  192</a></b>      */
+<b><a name="193">  193</a></b>     while (in &lt; end) {
+<b><a name="194">  194</a></b>         int j, k;
+<b><a name="195">  195</a></b> 
+<b><a name="196">  196</a></b>         wh<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>le (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; 3) {
+<b><a name="197">  197</a></b>             n = (n &lt;&lt; 8) | *in++;
+<b><a name="198">  198</a></b>             <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++;
+<b><a name="199">  199</a></b>         }
+<b><a name="200">  200</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0;
+<b><a name="201">  201</a></b> 
+<b><a name="202">  202</a></b>         if (data-&gt;line_length &gt; 0) {
+<b><a name="203">  203</a></b>             if (data-&gt;current_column &gt;= data-&gt;line_length) {
+<b><a name="204">  204</a></b>                 data-&gt;current_column = 0;
+<b><a name="205">  205</a></b>                 *out++ = <a href="../util/nssb64e.c.dep.html#B64_CR">B64_CR</a>;
+<b><a name="206">  206</a></b>                 *out++ = <a href="../util/nssb64e.c.dep.html#B64_LF">B64_LF</a>;
+<b><a name="207">  207</a></b>                 data-&gt;output_length += 2;
+<b><a name="208">  208</a></b>             }
+<b><a name="209">  209</a></b>             data-&gt;current_column += 4;        /* the bytes we are about to add */
+<b><a name="210">  210</a></b>         }
+<b><a name="211">  211</a></b> 
+<b><a name="212">  212</a></b>         for (j = 18; j &gt;= 0; j -= 6) {
+<b><a name="213">  213</a></b>             k = (n &gt;&gt; j) &amp; 0x3F;
+<b><a name="214">  214</a></b>             *out++ = <a href="../util/nssb64e.c.dep.html#base64_valuetocode">base64_valuetocode</a>[k];
+<b><a name="215">  215</a></b>         }
+<b><a name="216">  216</a></b>         n = 0;
+<b><a name="217">  217</a></b>         data-&gt;output_length += 4;
+<b><a name="218">  218</a></b> 
+<b><a name="219">  219</a></b>         if (data-&gt;output_length &gt;= output_threshold) {
+<b><a name="220">  220</a></b>             PR_ASSERT(data-&gt;output_length &lt;= data-&gt;output_buflen);
+<b><a name="221">  221</a></b>             if (data-&gt;output_fn != NULL) {
+<b><a name="222">  222</a></b>                 PRInt32 output_result;
+<b><a name="223">  223</a></b> 
+<b><a name="224">  224</a></b>                 output_result = data-&gt;output_fn (data-&gt;output_arg,
+<b><a name="225">  225</a></b>                                                  data-&gt;output_buffer,
+<b><a name="226">  226</a></b>                                                  (PRInt32) data-&gt;output_length);
+<b><a name="227">  227</a></b>                 if (output_result &lt; 0)
+<b><a name="228">  228</a></b>                     return PR_FAILURE;
+<b><a name="229">  229</a></b> 
+<b><a name="230">  230</a></b>                 out = data-&gt;output_buffer;
+<b><a name="231">  231</a></b>                 data-&gt;output_length = 0;
+<b><a name="232">  232</a></b>             } else {
+<b><a name="233">  233</a></b>                 /*
+<b><a name="234">  234</a></b>                  * Check that we are about to exit the loop.  (Since we
+<b><a name="235">  235</a></b>                  * are over the threshold, there isn't enough room in the
+<b><a name="236">  236</a></b>                  * output buffer for another trip around.)
+<b><a name="237">  237</a></b>                  */
+<b><a name="238">  238</a></b>                 PR_ASSERT(in == end);
+<b><a name="239">  239</a></b>                 if (in &lt; end) {
+<b><a name="240">  240</a></b>                     PR_SetError (PR_BUFFER_OVERFLOW_ERROR, 0);
+<b><a name="241">  241</a></b>                     return PR_FAILURE;
+<b><a name="242">  242</a></b>                 }
+<b><a name="243">  243</a></b>             }
+<b><a name="244">  244</a></b>         }
+<b><a name="245">  245</a></b>     }
+<b><a name="246">  246</a></b> 
+<b><a name="247">  247</a></b>     return PR_SUCCESS;
+<b><a name="248">  248</a></b> }
+<b><a name="249">  249</a></b> 
+<b><a name="250">  250</a></b> static PRStatus
+<b><a name="251">  251</a></b> <a href="#251">pl_base64_encode_flush</a> (<a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a> *data)
+<b><a name="252">  252</a></b> {
+<b><a name="253">  253</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = data-&gt;<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>n_buffer_count;
+<b><a name="254">  254</a></b> 
+<b><a name="255">  255</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> == 0 &amp;&amp; data-&gt;output_length == 0)
+<b><a name="256">  256</a></b>         return PR_SUCCESS;
+<b><a name="257">  257</a></b> 
+<b><a name="258">  258</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt; 0) {
+<b><a name="259">  259</a></b>         char *out = data-&gt;output_buffer + data-&gt;output_length;
+<b><a name="260">  260</a></b>         PRUint32 n;
+<b><a name="261">  261</a></b>         int j, k;
+<b><a name="262">  262</a></b> 
+<b><a name="263">  263</a></b>         n = ((PRUint32) data-&gt;in_buffer[0]) &lt;&lt; 16;
+<b><a name="264">  264</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt; 1)
+<b><a name="265">  265</a></b>             n |= ((PRUint32) data-&gt;in_buffer[1] &lt;&lt; 8);
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b>         data-&gt;in_buffer_count = 0;
+<b><a name="268">  268</a></b> 
+<b><a name="269">  269</a></b>         if (data-&gt;line_length &gt; 0) {
+<b><a name="270">  270</a></b>             if (data-&gt;current_column &gt;= data-&gt;line_length) {
+<b><a name="271">  271</a></b>                 data-&gt;current_column = 0;
+<b><a name="272">  272</a></b>                 *out++ = <a href="../util/nssb64e.c.dep.html#B64_CR">B64_CR</a>;
+<b><a name="273">  273</a></b>                 *out++ = <a href="../util/nssb64e.c.dep.html#B64_LF">B64_LF</a>;
+<b><a name="274">  274</a></b>                 data-&gt;output_length += 2;
+<b><a name="275">  275</a></b>             }
+<b><a name="276">  276</a></b>         }
+<b><a name="277">  277</a></b> 
+<b><a name="278">  278</a></b>         /*
+<b><a name="279">  279</a></b>          * This will fill in more than we really have data for, but the
+<b><a name="280">  280</a></b>          * valid parts will end up in the correct position and the extras
+<b><a name="281">  281</a></b>          * will be over-written with pad characters below.
+<b><a name="282">  282</a></b>          */
+<b><a name="283">  283</a></b>         for (j = 18; j &gt;= 0; j -= 6) {
+<b><a name="284">  284</a></b>             k = (n &gt;&gt; j) &amp; 0x3F;
+<b><a name="285">  285</a></b>             *out++ = <a href="../util/nssb64e.c.dep.html#base64_valuetocode">base64_valuetocode</a>[k];
+<b><a name="286">  286</a></b>         }
+<b><a name="287">  287</a></b> 
+<b><a name="288">  288</a></b>         /* Pad with equal-signs. */
+<b><a name="289">  289</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> == 1)
+<b><a name="290">  290</a></b>             out[-2] = <a href="../util/nssb64d.c.dep.html#B64_PAD">B64_PAD</a><a href="../util/nssb64e.c.dep.html#B64_PAD"><sup>[1]</sup></a>;
+<b><a name="291">  291</a></b>         out[-1] = <a href="../util/nssb64d.c.dep.html#B64_PAD">B64_PAD</a><a href="../util/nssb64e.c.dep.html#B64_PAD"><sup>[1]</sup></a>;
+<b><a name="292">  292</a></b> 
+<b><a name="293">  293</a></b>         data-&gt;output_length += 4;
+<b><a name="294">  294</a></b>     }
+<b><a name="295">  295</a></b> 
+<b><a name="296">  296</a></b>     if (data-&gt;output_fn != NULL) {
+<b><a name="297">  297</a></b>         PRInt32 output_result;
+<b><a name="298">  298</a></b> 
+<b><a name="299">  299</a></b>         output_result = data-&gt;output_fn (data-&gt;output_arg, data-&gt;output_buffer,
+<b><a name="300">  300</a></b>                                          (PRInt32) data-&gt;output_length);
+<b><a name="301">  301</a></b>         data-&gt;output_length = 0;
+<b><a name="302">  302</a></b> 
+<b><a name="303">  303</a></b>         if (output_result &lt; 0)
+<b><a name="304">  304</a></b>             return PR_FAILURE;
+<b><a name="305">  305</a></b>     }
+<b><a name="306">  306</a></b> 
+<b><a name="307">  307</a></b>     return PR_SUCCESS;
+<b><a name="308">  308</a></b> }
+<b><a name="309">  309</a></b> 
+<b><a name="310">  310</a></b> 
+<b><a name="311">  311</a></b> /*
+<b><a name="312">  312</a></b>  * The maximum space needed to hold the output of the encoder given input
+<b><a name="313">  313</a></b>  * data of length "size", and allowing for CRLF added at least every
+<b><a name="314">  314</a></b>  * line_length bytes (we will add it at nearest lower multiple of 4).
+<b><a name="315">  315</a></b>  * There is no trailing CRLF.
+<b><a name="316">  316</a></b>  */
+<b><a name="317">  317</a></b> static PRUint32
+<b><a name="318">  318</a></b> <a href="#318">PL_Base64MaxEncodedLength</a> (PRUint32 size, PRUint32 line_length)
+<b><a name="319">  319</a></b> {
+<b><a name="320">  320</a></b>     PRUint32 tokens, tokens_per_line, full_lines, line_break_chars, remainder;
+<b><a name="321">  321</a></b> 
+<b><a name="322">  322</a></b>     tokens = (size + 2) / 3;
+<b><a name="323">  323</a></b> 
+<b><a name="324">  324</a></b>     if (line_length == 0)
+<b><a name="325">  325</a></b>         return tokens * 4;
+<b><a name="326">  326</a></b> 
+<b><a name="327">  327</a></b>     if (line_length &lt; 4)        /* too small! */
+<b><a name="328">  328</a></b>         line_length = 4;
+<b><a name="329">  329</a></b> 
+<b><a name="330">  330</a></b>     tokens_per_line = line_length / 4;
+<b><a name="331">  331</a></b>     full_lines = tokens / tokens_per_line;
+<b><a name="332">  332</a></b>     remainder = (tokens - (full_lines * tokens_per_line)) * 4;
+<b><a name="333">  333</a></b>     line_break_chars = full_lines * 2;
+<b><a name="334">  334</a></b>     if (remainder == 0)
+<b><a name="335">  335</a></b>         line_break_chars -= 2;
+<b><a name="336">  336</a></b> 
+<b><a name="337">  337</a></b>     return (full_lines * tokens_per_line * 4) + line_break_chars + remainder;
+<b><a name="338">  338</a></b> }
+<b><a name="339">  339</a></b> 
+<b><a name="340">  340</a></b> 
+<b><a name="341">  341</a></b> /*
+<b><a name="342">  342</a></b>  * A distinct internal creation function for the buffer version to use.
+<b><a name="343">  343</a></b>  * (It does not want to specify an output_fn, and we want the normal
+<b><a name="344">  344</a></b>  * Create function to require that.)  All common initialization of the
+<b><a name="345">  345</a></b>  * encoding context should be done *here*.
+<b><a name="346">  346</a></b>  *
+<b><a name="347">  347</a></b>  * Save "line_length", rounded down to nearest multiple of 4 (if not
+<b><a name="348">  348</a></b>  * already even multiple).  Allocate output_buffer, if not provided --
+<b><a name="349">  349</a></b>  * based on given size if specified, otherwise based on line_length.
+<b><a name="350">  350</a></b>  */
+<b><a name="351">  351</a></b> static <a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a> *
+<b><a name="352">  352</a></b> <a href="#352">pl_base64_create_encoder</a> (PRUint32 line_length, char *output_buffer,
+<b><a name="353">  353</a></b>                           PRUint32 output_buflen)
+<b><a name="354">  354</a></b> {
+<b><a name="355">  355</a></b>     <a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a> *data;
+<b><a name="356">  356</a></b>     PRUint32 line_tokens;
+<b><a name="357">  357</a></b> 
+<b><a name="358">  358</a></b>     data = PR_NEWZAP(<a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a>);
+<b><a name="359">  359</a></b>     if (data == NULL)
+<b><a name="360">  360</a></b>         return NULL;
+<b><a name="361">  361</a></b> 
+<b><a name="362">  362</a></b>     if (line_length &gt; 0 &amp;&amp; line_length &lt; 4)        /* too small! */
+<b><a name="363">  363</a></b>         line_length = 4;
+<b><a name="364">  364</a></b> 
+<b><a name="365">  365</a></b>     line_tokens = line_length / 4;
+<b><a name="366">  366</a></b>     data-&gt;line_length = line_tokens * 4;
+<b><a name="367">  367</a></b> 
+<b><a name="368">  368</a></b>     if (output_buffer == NULL) {
+<b><a name="369">  369</a></b>         if (output_buflen == 0) {
+<b><a name="370">  370</a></b>             if (data-&gt;line_length &gt; 0)        /* need to include room for CRLF */
+<b><a name="371">  371</a></b>                 output_buflen = data-&gt;line_length + 2;
+<b><a name="372">  372</a></b>             else
+<b><a name="373">  373</a></b>                 output_buflen = 64;                /* XXX what is a good size? */
+<b><a name="374">  374</a></b>         }
+<b><a name="375">  375</a></b> 
+<b><a name="376">  376</a></b>         output_buffer = (char *) PR_Malloc(output_buflen);
+<b><a name="377">  377</a></b>         if (output_buffer == NULL) {
+<b><a name="378">  378</a></b>             PR_Free(data);
+<b><a name="379">  379</a></b>             return NULL;
+<b><a name="380">  380</a></b>         }
+<b><a name="381">  381</a></b>     }
+<b><a name="382">  382</a></b> 
+<b><a name="383">  383</a></b>     data-&gt;output_buffer = output_buffer;
+<b><a name="384">  384</a></b>     data-&gt;output_buflen = output_buflen;
+<b><a name="385">  385</a></b>     return data;
+<b><a name="386">  386</a></b> }
+<b><a name="387">  387</a></b> 
+<b><a name="388">  388</a></b> /*
+<b><a name="389">  389</a></b>  * Function to start a base64 encoding context.
+<b><a name="390">  390</a></b>  * An "output_fn" is required; the "output_arg" parameter to that is optional.
+<b><a name="391">  391</a></b>  * If linebreaks in the encoded output are desired, "line_length" specifies
+<b><a name="392">  392</a></b>  * where to place them -- it will be rounded down to the nearest multiple of 4
+<b><a name="393">  393</a></b>  * (if it is not already an even multiple of 4).  If it is zero, no linebreaks
+<b><a name="394">  394</a></b>  * will be added.  (FYI, a linebreak is CRLF -- two characters.)
+<b><a name="395">  395</a></b>  */
+<b><a name="396">  396</a></b> static <a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a> *
+<b><a name="397">  397</a></b> <a href="#397">PL_CreateBase64Encoder</a> (PRInt32 (*output_fn) (void *, const char *, PRInt32),
+<b><a name="398">  398</a></b>                         void *output_arg, PRUint32 line_length)
+<b><a name="399">  399</a></b> {
+<b><a name="400">  400</a></b>     <a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a> *data;
+<b><a name="401">  401</a></b> 
+<b><a name="402">  402</a></b>     if (output_fn == NULL) {
+<b><a name="403">  403</a></b>         PR_SetError (PR_INVALID_ARGUMENT_ERROR, 0);
+<b><a name="404">  404</a></b>         return NULL;
+<b><a name="405">  405</a></b>     }
+<b><a name="406">  406</a></b> 
+<b><a name="407">  407</a></b>     data = <a href="../util/nssb64e.c.dep.html#pl_base64_create_encoder">pl_base64_create_encoder</a> (line_length, NULL, 0);
+<b><a name="408">  408</a></b>     if (data == NULL)
+<b><a name="409">  409</a></b>         return NULL;
+<b><a name="410">  410</a></b> 
+<b><a name="411">  411</a></b>     data-&gt;output_fn = output_fn;
+<b><a name="412">  412</a></b>     data-&gt;output_arg = output_arg;
+<b><a name="413">  413</a></b> 
+<b><a name="414">  414</a></b>     return data;
+<b><a name="415">  415</a></b> }
+<b><a name="416">  416</a></b> 
+<b><a name="417">  417</a></b> 
+<b><a name="418">  418</a></b> /*
+<b><a name="419">  419</a></b>  * Push data through the encoder, causing the output_fn (provided to Create)
+<b><a name="420">  420</a></b>  * to be called with the encoded data.
+<b><a name="421">  421</a></b>  */
+<b><a name="422">  422</a></b> static PRStatus
+<b><a name="423">  423</a></b> <a href="#423">PL_UpdateBase64Encoder</a> (<a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a> *data, const unsigned char *buffer,
+<b><a name="424">  424</a></b>                         PRUint32 size)
+<b><a name="425">  425</a></b> {
+<b><a name="426">  426</a></b>     /* XXX Should we do argument checking only in debug build? */
+<b><a name="427">  427</a></b>     if (data == NULL || buffer == NULL || size == 0) {
+<b><a name="428">  428</a></b>         PR_SetError (PR_INVALID_ARGUMENT_ERROR, 0);
+<b><a name="429">  429</a></b>         return PR_FAILURE;
+<b><a name="430">  430</a></b>     }
+<b><a name="431">  431</a></b> 
+<b><a name="432">  432</a></b>     return <a href="../util/nssb64e.c.dep.html#pl_base64_encode_buffer">pl_base64_encode_buffer</a> (data, buffer, size);
+<b><a name="433">  433</a></b> }
+<b><a name="434">  434</a></b> 
+<b><a name="435">  435</a></b> 
+<b><a name="436">  436</a></b> /*
+<b><a name="437">  437</a></b>  * When you're done encoding, call this to free the data.  If "abort_p"
+<b><a name="438">  438</a></b>  * is false, then calling this may cause the output_fn to be called
+<b><a name="439">  439</a></b>  * one last time (as the last buffered data is flushed out).
+<b><a name="440">  440</a></b>  */
+<b><a name="441">  441</a></b> static PRStatus
+<b><a name="442">  442</a></b> <a href="#442">PL_DestroyBase64Encoder</a> (<a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a> *data, PRBool abort_p)
+<b><a name="443">  443</a></b> {
+<b><a name="444">  444</a></b>     PRStatus status = PR_SUCCESS;
+<b><a name="445">  445</a></b> 
+<b><a name="446">  446</a></b>     /* XXX Should we do argument checking only in debug build? */
+<b><a name="447">  447</a></b>     if (data == NULL) {
+<b><a name="448">  448</a></b>         PR_SetError (PR_INVALID_ARGUMENT_ERROR, 0);
+<b><a name="449">  449</a></b>         return PR_FAILURE;
+<b><a name="450">  450</a></b>     }
+<b><a name="451">  451</a></b> 
+<b><a name="452">  452</a></b>     /* Flush out the last few buffered characters. */
+<b><a name="453">  453</a></b>     if (!abort_p)
+<b><a name="454">  454</a></b>         status = <a href="../util/nssb64e.c.dep.html#pl_base64_encode_flush">pl_base64_encode_flush</a> (data);
+<b><a name="455">  455</a></b> 
+<b><a name="456">  456</a></b>     if (data-&gt;output_buffer != NULL)
+<b><a name="457">  457</a></b>         PR_Free(data-&gt;output_buffer);
+<b><a name="458">  458</a></b>     PR_Free(data);
+<b><a name="459">  459</a></b> 
+<b><a name="460">  460</a></b>     return status;
+<b><a name="461">  461</a></b> }
+<b><a name="462">  462</a></b> 
+<b><a name="463">  463</a></b> 
+<b><a name="464">  464</a></b> /*
+<b><a name="465">  465</a></b>  * Perform base64 encoding from an input buffer to an output buffer.
+<b><a name="466">  466</a></b>  * The output buffer can be provided (as "dest"); you can also pass in
+<b><a name="467">  467</a></b>  * a NULL and this function will allocate a buffer large enough for you,
+<b><a name="468">  468</a></b>  * and return it.  If you do provide the output buffer, you must also
+<b><a name="469">  469</a></b>  * provide the maximum length of that buffer (as "maxdestlen").
+<b><a name="470">  470</a></b>  * The actual encoded length of output will be returned to you in
+<b><a name="471">  471</a></b>  * "output_destlen".
+<b><a name="472">  472</a></b>  *
+<b><a name="473">  473</a></b>  * If linebreaks in the encoded output are desired, "line_length" specifies
+<b><a name="474">  474</a></b>  * where to place them -- it will be rounded down to the nearest multiple of 4
+<b><a name="475">  475</a></b>  * (if it is not already an even multiple of 4).  If it is zero, no linebreaks
+<b><a name="476">  476</a></b>  * will be added.  (FYI, a linebreak is CRLF -- two characters.)
+<b><a name="477">  477</a></b>  *
+<b><a name="478">  478</a></b>  * Return value is NULL on error, the output buffer (allocated or provided)
+<b><a name="479">  479</a></b>  * otherwise.
+<b><a name="480">  480</a></b>  */
+<b><a name="481">  481</a></b> static char *
+<b><a name="482">  482</a></b> <a href="#482">PL_Base64EncodeBuffer</a> (const unsigned char *src, PRUint32 srclen,
+<b><a name="483">  483</a></b>                        PRUint32 line_length, char *dest, PRUint32 maxdestlen,
+<b><a name="484">  484</a></b>                        PRUint32 *output_destlen)
+<b><a name="485">  485</a></b> {
+<b><a name="486">  486</a></b>     PRUint32 need_length;
+<b><a name="487">  487</a></b>     <a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a> *data = NULL;
+<b><a name="488">  488</a></b>     PRStatus status;
+<b><a name="489">  489</a></b> 
+<b><a name="490">  490</a></b>     PR_ASSERT(srclen &gt; 0);
+<b><a name="491">  491</a></b>     if (srclen == 0)
+<b><a name="492">  492</a></b>         return dest;
+<b><a name="493">  493</a></b> 
+<b><a name="494">  494</a></b>     /*
+<b><a name="495">  495</a></b>      * How much space could we possibly need for encoding this input?
+<b><a name="496">  496</a></b>      */
+<b><a name="497">  497</a></b>     need_length = <a href="../util/nssb64e.c.dep.html#PL_Base64MaxEncodedLength">PL_Base64MaxEncodedLength</a> (srclen, line_length);
+<b><a name="498">  498</a></b> 
+<b><a name="499">  499</a></b>     /*
+<b><a name="500">  500</a></b>      * Make sure we have at least that much, if output buffer provided.
+<b><a name="501">  501</a></b>      */
+<b><a name="502">  502</a></b>     if (dest != NULL) {
+<b><a name="503">  503</a></b>         PR_ASSERT(maxdestlen &gt;= need_length);
+<b><a name="504">  504</a></b>         if (maxdestlen &lt; need_length) {
+<b><a name="505">  505</a></b>             PR_SetError(PR_BUFFER_OVERFLOW_ERROR, 0);
+<b><a name="506">  506</a></b>             return NULL;
+<b><a name="507">  507</a></b>         }
+<b><a name="508">  508</a></b>     } else {
+<b><a name="509">  509</a></b>         maxdestlen = need_length;
+<b><a name="510">  510</a></b>     }
+<b><a name="511">  511</a></b> 
+<b><a name="512">  512</a></b>     data = <a href="../util/nssb64e.c.dep.html#pl_base64_create_encoder">pl_base64_create_encoder</a>(line_length, dest, maxdestlen);
+<b><a name="513">  513</a></b>     if (data == NULL)
+<b><a name="514">  514</a></b>         return NULL;
+<b><a name="515">  515</a></b> 
+<b><a name="516">  516</a></b>     status = <a href="../util/nssb64e.c.dep.html#pl_base64_encode_buffer">pl_base64_encode_buffer</a> (data, src, srclen);
+<b><a name="517">  517</a></b> 
+<b><a name="518">  518</a></b>     /*
+<b><a name="519">  519</a></b>      * We do not wait for Destroy to flush, because Destroy will also
+<b><a name="520">  520</a></b>      * get rid of our encoder context, which we need to look at first!
+<b><a name="521">  521</a></b>      */
+<b><a name="522">  522</a></b>     if (status == PR_SUCCESS)
+<b><a name="523">  523</a></b>         status = <a href="../util/nssb64e.c.dep.html#pl_base64_encode_flush">pl_base64_encode_flush</a> (data);
+<b><a name="524">  524</a></b> 
+<b><a name="525">  525</a></b>     if (status != PR_SUCCESS) {
+<b><a name="526">  526</a></b>         (void) <a href="../util/nssb64e.c.dep.html#PL_DestroyBase64Encoder">PL_DestroyBase64Encoder</a> (data, PR_TRUE);
+<b><a name="527">  527</a></b>         return NULL;
+<b><a name="528">  528</a></b>     }
+<b><a name="529">  529</a></b> 
+<b><a name="530">  530</a></b>     dest = data-&gt;output_buffer;
+<b><a name="531">  531</a></b> 
+<b><a name="532">  532</a></b>     /* Must clear this or Destroy will free it. */
+<b><a name="533">  533</a></b>     data-&gt;output_buffer = NULL;
+<b><a name="534">  534</a></b> 
+<b><a name="535">  535</a></b>     *output_destlen = data-&gt;output_length;
+<b><a name="536">  536</a></b>     status = <a href="../util/nssb64e.c.dep.html#PL_DestroyBase64Encoder">PL_DestroyBase64Encoder</a> (data, PR_FALSE);
+<b><a name="537">  537</a></b>     if (status == PR_FAILURE) {
+<b><a name="538">  538</a></b>         PR_Free(dest);
+<b><a name="539">  539</a></b>         return NULL;
+<b><a name="540">  540</a></b>     }
+<b><a name="541">  541</a></b> 
+<b><a name="542">  542</a></b>     return dest;
+<b><a name="543">  543</a></b> }
+<b><a name="544">  544</a></b> 
+<b><a name="545">  545</a></b> /*
+<b><a name="546">  546</a></b>  * XXX End of base64 encoding code to be moved into NSPR.
+<b><a name="547">  547</a></b>  ********************************************************
+<b><a name="548">  548</a></b>  */
+<b><a name="549">  549</a></b> 
+<b><a name="550">  550</a></b> /*
+<b><a name="551">  551</a></b>  * This is the beginning of the NSS cover functions.  These will
+<b><a name="552">  552</a></b>  * provide the interface we want to expose as NSS-ish.  For example,
+<b><a name="553">  553</a></b>  * they will operate on our Items, do any special handling or checking
+<b><a name="554">  554</a></b>  * we want to do, etc.
+<b><a name="555">  555</a></b>  */
+<b><a name="556">  556</a></b> 
+<b><a name="557">  557</a></b> 
+<b><a name="558">  558</a></b> PR_BEGIN_EXTERN_C
+<b><a name="559">  559</a></b> 
+<b><a name="560">  560</a></b> /*
+<b><a name="561">  561</a></b>  * A boring cover structure for now.  Perhaps someday it will include
+<b><a name="562">  562</a></b>  * some more interesting fields.
+<b><a name="563">  563</a></b>  */
+<b><a name="564">  564</a></b> struct <a href="#564">NSSBase64EncoderStr</a> {
+<b><a name="565">  565</a></b>     <a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a> *pl_data;
+<b><a name="566">  566</a></b> };
+<b><a name="567">  567</a></b> 
+<b><a name="568">  568</a></b> PR_END_EXTERN_C
+<b><a name="569">  569</a></b> 
+<b><a name="570">  570</a></b> 
+<b><a name="571">  571</a></b> /*
+<b><a name="572">  572</a></b>  * Function to start a base64 encoding context.
+<b><a name="573">  573</a></b>  */
+<b><a name="574">  574</a></b> <a href="../util/nssb64t.h.dep.html#NSSBase64Encoder">NSSBase64Encoder</a> *
+<b><a name="575">  575</a></b> <a href="#575">NSSBase64Encoder_Create</a> (PRInt32 (*output_fn) (void *, const char *, PRInt32),
+<b><a name="576">  576</a></b>                          void *output_arg)
+<b><a name="577">  577</a></b> {
+<b><a name="578">  578</a></b>     <a href="../util/nssb64e.c.dep.html#PLBase64Encoder">PLBase64Encoder</a> *pl_data;
+<b><a name="579">  579</a></b>     <a href="../util/nssb64t.h.dep.html#NSSBase64Encoder">NSSBase64Encoder</a> *nss_data;
+<b><a name="580">  580</a></b> 
+<b><a name="581">  581</a></b>     nss_data = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../util/nssb64t.h.dep.html#NSSBase64Encoder">NSSBase64Encoder</a>);
+<b><a name="582">  582</a></b>     if (nss_data == NULL)
+<b><a name="583">  583</a></b>         return NULL;
+<b><a name="584">  584</a></b> 
+<b><a name="585">  585</a></b>     pl_data = <a href="../util/nssb64e.c.dep.html#PL_CreateBase64Encoder">PL_CreateBase64Encoder</a> (output_fn, output_arg, 64);
+<b><a name="586">  586</a></b>     if (pl_data == NULL) {
+<b><a name="587">  587</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(nss_data);
+<b><a name="588">  588</a></b>         return NULL;
+<b><a name="589">  589</a></b>     }
+<b><a name="590">  590</a></b> 
+<b><a name="591">  591</a></b>     nss_data-&gt;pl_data = pl_data;
+<b><a name="592">  592</a></b>     return nss_data;
+<b><a name="593">  593</a></b> }
+<b><a name="594">  594</a></b> 
+<b><a name="595">  595</a></b> 
+<b><a name="596">  596</a></b> /*
+<b><a name="597">  597</a></b>  * Push data through the encoder, causing the output_fn (provided to Create)
+<b><a name="598">  598</a></b>  * to be called with the encoded data.
+<b><a name="599">  599</a></b>  */
+<b><a name="600">  600</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="601">  601</a></b> <a href="../util/nssb64t.h.dep.html#NSSBase64Encoder">NSSBase64Encoder</a>_Update (<a href="../util/nssb64t.h.dep.html#NSSBase64Encoder">NSSBase64Encoder</a> *data, const unsigned char *buffer,
+<b><a name="602">  602</a></b>                          PRUint32 size)
+<b><a name="603">  603</a></b> {
+<b><a name="604">  604</a></b>     PRStatus pr_status;
+<b><a name="605">  605</a></b> 
+<b><a name="606">  606</a></b>     /* XXX Should we do argument checking only in debug build? */
+<b><a name="607">  607</a></b>     if (data == NULL) {
+<b><a name="608">  608</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a> (SEC_ERROR_INVALID_ARGS);
+<b><a name="609">  609</a></b>         return SECFailure;
+<b><a name="610">  610</a></b>     }
+<b><a name="611">  611</a></b> 
+<b><a name="612">  612</a></b>     pr_status = <a href="../util/nssb64e.c.dep.html#PL_UpdateBase64Encoder">PL_UpdateBase64Encoder</a> (data-&gt;pl_data, buffer, size);
+<b><a name="613">  613</a></b>     if (pr_status == PR_FAILURE)
+<b><a name="614">  614</a></b>         return SECFailure;
+<b><a name="615">  615</a></b> 
+<b><a name="616">  616</a></b>     return SECSuccess;
+<b><a name="617">  617</a></b> }
+<b><a name="618">  618</a></b> 
+<b><a name="619">  619</a></b> 
+<b><a name="620">  620</a></b> /*
+<b><a name="621">  621</a></b>  * When you're done encoding, call this to free the data.  If "abort_p"
+<b><a name="622">  622</a></b>  * is false, then calling this may cause the output_fn to be called
+<b><a name="623">  623</a></b>  * one last time (as the last buffered data is flushed out).
+<b><a name="624">  624</a></b>  */
+<b><a name="625">  625</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="626">  626</a></b> <a href="#626"><a href="../util/nssb64t.h.dep.html#NSSBase64Encoder">NSSBase64Encoder</a>_Destroy</a> (<a href="../util/nssb64t.h.dep.html#NSSBase64Encoder">NSSBase64Encoder</a> *data, PRBool abort_p)
+<b><a name="627">  627</a></b> {
+<b><a name="628">  628</a></b>     PRStatus pr_status;
+<b><a name="629">  629</a></b> 
+<b><a name="630">  630</a></b>     /* XXX Should we do argument checking only in debug build? */
+<b><a name="631">  631</a></b>     if (data == NULL) {
+<b><a name="632">  632</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a> (SEC_ERROR_INVALID_ARGS);
+<b><a name="633">  633</a></b>         return SECFailure;
+<b><a name="634">  634</a></b>     }
+<b><a name="635">  635</a></b> 
+<b><a name="636">  636</a></b>     pr_status = <a href="../util/nssb64e.c.dep.html#PL_DestroyBase64Encoder">PL_DestroyBase64Encoder</a> (data-&gt;pl_data, abort_p);
+<b><a name="637">  637</a></b> 
+<b><a name="638">  638</a></b>     <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(data);
+<b><a name="639">  639</a></b> 
+<b><a name="640">  640</a></b>     if (pr_status == PR_FAILURE)
+<b><a name="641">  641</a></b>         return SECFailure;
+<b><a name="642">  642</a></b> 
+<b><a name="643">  643</a></b>     return SECSuccess;
+<b><a name="644">  644</a></b> }
+<b><a name="645">  645</a></b> 
+<b><a name="646">  646</a></b> 
+<b><a name="647">  647</a></b> /*
+<b><a name="648">  648</a></b>  * Perform base64 encoding of binary data "inItem" to an ascii string.
+<b><a name="649">  649</a></b>  * The output buffer may be provided (as "outStrOpt"); you can also pass
+<b><a name="650">  650</a></b>  * in a NULL and the buffer will be allocated for you.  The result will
+<b><a name="651">  651</a></b>  * be null-terminated, and if the buffer is provided, "maxOutLen" must
+<b><a name="652">  652</a></b>  * specify the maximum length of the buffer and will be checked to
+<b><a name="653">  653</a></b>  * supply sufficient space space for the encoded result.  (If "outStrOpt"
+<b><a name="654">  654</a></b>  * is NULL, "maxOutLen" is ignored.)
+<b><a name="655">  655</a></b>  *
+<b><a name="656">  656</a></b>  * If "outStrOpt" is NULL, allocation will happen out of the passed-in
+<b><a name="657">  657</a></b>  * "arenaOpt", if *it* is non-NULL, otherwise standard allocation (heap)
+<b><a name="658">  658</a></b>  * will be used.
+<b><a name="659">  659</a></b>  *
+<b><a name="660">  660</a></b>  * Return value is NULL on error, the output buffer (allocated or provided)
+<b><a name="661">  661</a></b>  * otherwise.
+<b><a name="662">  662</a></b>  */
+<b><a name="663">  663</a></b> char *
+<b><a name="664">  664</a></b> <a href="#664">NSSBase64_EncodeItem</a> (PRArenaPool *arenaOpt, char *outStrOpt,
+<b><a name="665">  665</a></b>                       unsigned int maxOutLen, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *inItem)
+<b><a name="666">  666</a></b> {
+<b><a name="667">  667</a></b>     char *out_string = outStrOpt;
+<b><a name="668">  668</a></b>     PRUint32 max_out_len;
+<b><a name="669">  669</a></b>     PRUint32 out_len;
+<b><a name="670">  670</a></b>     void *mark = NULL;
+<b><a name="671">  671</a></b>     char *dummy;
+<b><a name="672">  672</a></b> 
+<b><a name="673">  673</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inItem != NULL &amp;&amp; inItem-&gt;data != NULL &amp;&amp; inItem-&gt;len != 0);
+<b><a name="674">  674</a></b>     if (inItem == NULL || inItem-&gt;data == NULL || inItem-&gt;len == 0) {
+<b><a name="675">  675</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a> (SEC_ERROR_INVALID_ARGS);
+<b><a name="676">  676</a></b>         return NULL;
+<b><a name="677">  677</a></b>     }
+<b><a name="678">  678</a></b> 
+<b><a name="679">  679</a></b>     max_out_len = <a href="../util/nssb64e.c.dep.html#PL_Base64MaxEncodedLength">PL_Base64MaxEncodedLength</a> (inItem-&gt;len, 64);
+<b><a name="680">  680</a></b> 
+<b><a name="681">  681</a></b>     if (arenaOpt != NULL)
+<b><a name="682">  682</a></b>         mark = <a href="../util/secport.c.dep.html#PORT_ArenaMark">PORT_ArenaMark</a> (arenaOpt);
+<b><a name="683">  683</a></b> 
+<b><a name="684">  684</a></b>     if (out_string == NULL) {
+<b><a name="685">  685</a></b>         if (arenaOpt != NULL)
+<b><a name="686">  686</a></b>             out_string = <a href="../util/secport.c.dep.html#PORT_ArenaAlloc">PORT_ArenaAlloc</a> (arenaOpt, max_out_len + 1);
+<b><a name="687">  687</a></b>         else
+<b><a name="688">  688</a></b>             out_string = <a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a> (max_out_len + 1);
+<b><a name="689">  689</a></b> 
+<b><a name="690">  690</a></b>         if (out_string == NULL) {
+<b><a name="691">  691</a></b>             if (arenaOpt != NULL)
+<b><a name="692">  692</a></b>                 <a href="../util/secport.c.dep.html#PORT_ArenaRelease">PORT_ArenaRelease</a> (arenaOpt, mark);
+<b><a name="693">  693</a></b>             return NULL;
+<b><a name="694">  694</a></b>         }
+<b><a name="695">  695</a></b>     } else {
+<b><a name="696">  696</a></b>         if ((max_out_len + 1) &gt; maxOutLen) {
+<b><a name="697">  697</a></b>             <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a> (SEC_ERROR_OUTPUT_LEN);
+<b><a name="698">  698</a></b>             return NULL;
+<b><a name="699">  699</a></b>         }
+<b><a name="700">  700</a></b>         max_out_len = maxOutLen;
+<b><a name="701">  701</a></b>     }
+<b><a name="702">  702</a></b> 
+<b><a name="703">  703</a></b> 
+<b><a name="704">  704</a></b>     dummy = <a href="../util/nssb64e.c.dep.html#PL_Base64EncodeBuffer">PL_Base64EncodeBuffer</a> (inItem-&gt;data, inItem-&gt;len, 64,
+<b><a name="705">  705</a></b>                                    out_string, max_out_len, &amp;out_len);
+<b><a name="706">  706</a></b>     if (dummy == NULL) {
+<b><a name="707">  707</a></b>         if (arenaOpt != NULL) {
+<b><a name="708">  708</a></b>             <a href="../util/secport.c.dep.html#PORT_ArenaRelease">PORT_ArenaRelease</a> (arenaOpt, mark);
+<b><a name="709">  709</a></b>         } else {
+<b><a name="710">  710</a></b>             <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a> (out_string);
+<b><a name="711">  711</a></b>         }
+<b><a name="712">  712</a></b>         return NULL;
+<b><a name="713">  713</a></b>     }
+<b><a name="714">  714</a></b> 
+<b><a name="715">  715</a></b>     if (arenaOpt != NULL)
+<b><a name="716">  716</a></b>         <a href="../util/secport.c.dep.html#PORT_ArenaUnmark">PORT_ArenaUnmark</a> (arenaOpt, mark);
+<b><a name="717">  717</a></b> 
+<b><a name="718">  718</a></b>     out_string[out_len] = '\0';
+<b><a name="719">  719</a></b>     return out_string;
+<b><a name="720">  720</a></b> }
+<b><a name="721">  721</a></b> 
+<b><a name="722">  722</a></b> 
+<b><a name="723">  723</a></b> /*
+<b><a name="724">  724</a></b>  * XXX Everything below is deprecated.  If you add new stuff, put it
+<b><a name="725">  725</a></b>  * *above*, not below.
+<b><a name="726">  726</a></b>  */
+<b><a name="727">  727</a></b> 
+<b><a name="728">  728</a></b> /*
+<b><a name="729">  729</a></b>  * XXX The following "BTOA" functions are provided for backward compatibility
+<b><a name="730">  730</a></b>  * with current code.  They should be considered strongly deprecated.
+<b><a name="731">  731</a></b>  * When we can convert all our code over to using the new NSSBase64Encoder_
+<b><a name="732">  732</a></b>  * functions defined above, we should get rid of these altogether.  (Remove
+<b><a name="733">  733</a></b>  * protoypes from base64.h as well -- actually, remove that file completely).
+<b><a name="734">  734</a></b>  * If someone thinks either of these functions provides such a very useful
+<b><a name="735">  735</a></b>  * interface (though, as shown, the same functionality can already be
+<b><a name="736">  736</a></b>  * obtained by calling NSSBase64_EncodeItem directly), fine -- but then
+<b><a name="737">  737</a></b>  * that API should be provided with a nice new NSSFoo name and using
+<b><a name="738">  738</a></b>  * appropriate types, etc.
+<b><a name="739">  739</a></b>  */
+<b><a name="740">  740</a></b> 
+<b><a name="741">  741</a></b> #include "base64.h"
+<b><a name="742">  742</a></b> 
+<b><a name="743">  743</a></b> /*
+<b><a name="744">  744</a></b> ** Return an PORT_Alloc'd ascii string which is the base64 encoded
+<b><a name="745">  745</a></b> ** version of the input string.
+<b><a name="746">  746</a></b> */
+<b><a name="747">  747</a></b> char *
+<b><a name="748">  748</a></b> <a href="#748">BTOA_DataToAscii</a>(const unsigned char *data, unsigned int len)
+<b><a name="749">  749</a></b> {
+<b><a name="750">  750</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> binary_item;
+<b><a name="751">  751</a></b> 
+<b><a name="752">  752</a></b>     binary_item.data = (unsigned char *)data;
+<b><a name="753">  753</a></b>     binary_item.len = len;
+<b><a name="754">  754</a></b> 
+<b><a name="755">  755</a></b>     return <a href="../util/nssb64e.c.dep.html#NSSBase64_EncodeItem">NSSBase64_EncodeItem</a> (NULL, NULL, 0, &amp;binary_item);
+<b><a name="756">  756</a></b> }
+<b><a name="757">  757</a></b> 
+<b><a name="758">  758</a></b> /*
+<b><a name="759">  759</a></b> ** Convert from binary encoding of an item to ascii.
+<b><a name="760">  760</a></b> */
+<b><a name="761">  761</a></b> char *
+<b><a name="762">  762</a></b> <a href="#762">BTOA_ConvertItemToAscii</a> (<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *binary_item)
+<b><a name="763">  763</a></b> {
+<b><a name="764">  764</a></b>     return <a href="../util/nssb64e.c.dep.html#NSSBase64_EncodeItem">NSSBase64_EncodeItem</a> (NULL, NULL, 0, binary_item);
+<b><a name="765">  765</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

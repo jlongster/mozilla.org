@@ -1,0 +1,641 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;1 Introduction to NSPR';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:04:32">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="index.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="Prtyp.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="13312"> </A><A NAME=""> </A><h2>
+Chapter&#32;1 
+&nbsp;
+
+
+
+<A NAME="13314"> </A><A NAME="Introduction to NSPR"> </A>Introduction to NSPR
+</h2>
+</center>
+<A NAME="13315"> </A>The Netscape Portable Runtime (NSPR) API allows compliant applications to use 
+system facilities such as threads, thread synchronization, I/O, interval timing, 
+atomic operations, and several other low-level services in a platform-independent 
+manner. This chapter introduces key NSPR programming concepts and illustrates 
+them with sample code.
+
+<P>
+
+<A NAME="13316"> </A>The current implementation of NSPR allows developers to compile a single source 
+code base on Macintosh (PPC), Win32 (NT 3.51, NT 4.0, WIN'95), and over twenty 
+versions of Unix. 
+
+<P>
+
+<A NAME="13317"> </A>NSPR does not provide a platform for porting existing code. It must be used from 
+the beginning of a software project.
+
+<P>
+
+<A NAME="13321"> </A><A HREF="printro.html#13332"  >NSPR Naming Conventions</A><br>
+<A HREF="printro.html#13341"  >NSPR Threads</A><br>
+<A HREF="printro.html#13407"  >NSPR Thread Synchronization</A><br>
+<A HREF="printro.html#13473"  >NSPR Sample Code</A>
+
+<P>
+
+
+
+<A NAME="13332"> </A>
+<A NAME="NSPR Naming Conventions"> </A>
+<h2>
+NSPR Naming Conventions
+</h2>
+
+
+<A NAME="13333"> </A>Naming of NSPR types, functions, and macros follows the following conventions:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="13334"> </A>Types exported by NSPR begin with <CODE>PR</CODE> and are followed by intercap-style 
+declarations, like this:
+
+<P>  <dl>
+     <DT> <A NAME="13335"> </A><CODE>PRInt</CODE>, <CODE>PRFileDesc</CODE> 
+
+<P>  </dl>
+<B>  <li></B>
+<A NAME="13336"> </A>Function definitions begin with <CODE>PR_</CODE> and are followed by intercap-style 
+declarations, like this:
+
+<P>  <dl>
+     <DT> <A NAME="13337"> </A><CODE>PR_Read</CODE>, <CODE>PR_JoinThread</CODE> 
+
+<P>  </dl>
+<B>  <li></B>
+<A NAME="13338"> </A>Preprocessor macros begin with the letters <CODE>PR</CODE> and are followed by all 
+uppercase characters separated with the underscore character (<CODE>_</CODE>), like this:
+
+<P>  <dl>
+     <DT> <A NAME="13339"> </A><CODE>PR_BYTES_PER_SHORT</CODE>, <CODE>PR_EXTERN
+</CODE>
+<P>  </dl>
+</ul>
+
+
+
+<A NAME="13341"> </A>
+<A NAME="NSPR Threads"> </A>
+<h2>
+NSPR Threads
+</h2>
+
+
+<A NAME="13342"> </A>NSPR provides an execution environment that promotes the use of lightweight 
+threads. Each thread is an execution entity that is scheduled independently from 
+other threads in the same process. A thread has a limited number of resources that 
+it truly owns. These resources include the thread stack and the CPU register set 
+(including PC). 
+
+<P>
+
+<A NAME="13343"> </A>To an NSPR client, a thread is represented by a pointer to an opaque structure of 
+type <A HREF="prthrd.html#14937"  ><CODE>PRThread</CODE></A>. A thread is created by an explicit client request and remains a 
+valid, independent execution entity until it returns from its root function or the 
+process abnormally terminates. (<CODE>PRThread</CODE> and functions for creating and 
+manipulating threads are described in detail in <A HREF="prthrd.html#14888"  >Chapter&#32;3 "Threads</A>.")
+
+<P>
+
+<A NAME="13350"> </A>NSPR threads are lightweight in the sense that they are cheaper than full-blown 
+processes, but they are not free. They achieve the cost reduction by relying on their 
+containing process to manage most of the resources that they access. This, and the 
+fact that threads share an address space with other threads in the same process, 
+makes it important to remember that <I>threads are not processes.</I> 
+
+<P>
+
+<A NAME="13351"> </A>NSPR threads are scheduled in two separate domains:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="13352"> </A><B>Local threads</B> are scheduled within a process only and are handled entirely by 
+NSPR, either by completely emulating threads on each host operating system 
+(OS) that doesn't support threads, or by using the threading facilities of each 
+host OS that does support threads to emulate a relatively large number of local 
+threads by using a relatively small number of native threads.
+
+<P><B>  <li></B>
+<A NAME="13353"> </A><B>Global threads</B> are scheduled by the host OS--not by NSPR--either within a 
+process or across processes on the entire host. Global threads correspond to 
+native threads on the host OS.
+
+<P></ul>
+
+<A NAME="13354"> </A>NSPR threads can also be either user threads or system threads. NSPR provides a 
+function, <A HREF="prinit.html#15811"  ><CODE>PR_Cleanup</CODE></A>, that synchronizes process termination. <CODE>PR_Cleanup</CODE> waits 
+for the last user thread to exit before returning, whereas it ignores system threads 
+when determining when a process should exit. This arrangement implies that a 
+system thread should not have volatile data that needs to be safely stored away. 
+
+<P>
+
+<A NAME="13358"> </A>Priorities for NSPR threads are based loosely on hints provided by the client and 
+sometimes constrained by the underlying operating system. Therefore, priorities 
+are not rigidly defined. For more information, see <A HREF="printro.html#13368"  >Thread Scheduling</A>.
+
+<P>
+
+<A NAME="13362"> </A>In general, it's preferable to create local user threads with normal priority and let 
+NSPR take care of the details as appropriate for each host OS. It's usually not 
+necessary to create a global thread explicitly unless you are planning to port your 
+code only to platforms that provide threading services with which you are familiar 
+or unless the thread will be executing code that might directly call blocking OS 
+functions.
+
+<P>
+
+<A NAME="13363"> </A>Threads can also have "per-thread-data" attached to them. Each thread has a 
+built-in per-thread error number and error string that are updated when NSPR 
+operations fail. It's also possible for NSPR clients to define their own 
+per-thread-data. For details, see <A HREF="prthrd.html#15350"  >Controlling Per-Thread Private Data</A>.
+
+<P>
+
+
+<A NAME="13368"> </A>
+<A NAME="Thread Scheduling"> </A>
+<h3>
+Thread Scheduling
+</h3>
+
+
+
+
+<A NAME="13369"> </A>NSPR threads are scheduled by priority and can be preempted or interrupted. The 
+sections that follow briefly introduce the NSPR approach to these three aspects of 
+thread scheduling.
+
+<P>
+
+<A NAME="13373"> </A><A HREF="printro.html#13385"  >Setting Thread Priorities</A> <br>
+<A HREF="printro.html#13393"  ><B>Preempting Threads</B></A> <br>
+<A HREF="printro.html#13397"  >Interrupting Threads</A> 
+
+<P>
+
+<A NAME="13380"> </A>For reference information on the NSPR API used for thread scheduling, see 
+<A HREF="prthrd.html#14888"  >Chapter&#32;3 "Threads</A>."
+
+<P>
+
+
+<A NAME="13385"> </A>
+<A NAME="Setting Thread Priorities"> </A>
+<h4>
+Setting Thread Priorities
+</h4>
+
+<A NAME="13386"> </A>The host operating systems supported by NSPR differ widely in the mechanisms 
+they use to support thread priorities. In general, an NSPR thread of higher priority 
+has a statistically better chance of running relative to threads of lower priority. 
+However, because of the multiple strategies to provide execution vehicles for 
+threads on various host platforms, priorities are not a clearly defined abstraction in 
+NSPR. At best they are intended to specify a preference with respect to the amount 
+of CPU time that a higher-priority thread might expect relative to a lower-priority 
+thread. This preference is still subject to resource availability, and must not be used 
+in place of proper synchronization. For more information on thread 
+synchronization, see <A HREF="printro.html#13407"  >NSPR Thread Synchronization</A>.
+
+<P>
+
+<A NAME="13390"> </A>The issue is further muddied by inconsistent offerings from OS vendors regarding 
+the priority of their kernel-supported threads. NSPR assumes that the priorities of 
+global threads are not manageable, but that the host OS will perform some sort of 
+fair scheduling. It's usually preferable to create local user threads with normal 
+priority and let NSPR and the host take care of the details.
+
+<P>
+
+<A NAME="13391"> </A>In some NSPR configurations, there may be an arbitrary (and perhaps large) 
+number of local threads being supported by a more limited number of <B>virtual 
+processors</B> (an internal application of global threads). In such situations, each 
+virtual processor will have some number of local threads associated with it, though 
+exactly which local threads and how many may vary over time. NSPR guarantees 
+that for each virtual processor the highest-priority, schedulable local thread is the 
+one executing. This thread implementation strategy is referred to as the <B>M x N 
+model.</B> 
+
+<P>
+
+
+<A NAME="13393"> </A>
+<A NAME="Preempting Threads"> </A>
+<h4>
+Preempting Threads
+</h4>
+
+<A NAME="13394"> </A>Preemption is the act of taking control away from a ready thread at an arbitrary 
+point and giving control to another appropriate thread. It might be viewed as 
+taking the executing thread and adding it to the end of the ready queue for its 
+appropriate priority, then simply running the scheduling algorithm to find the 
+most appropriate thread. The chosen thread may be of higher priority, of the same 
+priority, or even the same thread. It will not be a thread of lower priority. 
+
+<P>
+
+<A NAME="13395"> </A>Some operating systems cannot be made preemptable (for example, Mac OS and 
+Win 16). This puts them at some risk in supporting arbitrary code, even if the code 
+is interpreted (Java). Other systems are not thread-aware, and their runtime 
+libraries not thread-safe (most versions of Unix). These systems can support local 
+level thread abstractions that can be made preemptable, but run the risk of library 
+corruption (<CODE>libc</CODE>). Still other operating systems have a native notion of threads, 
+and their libraries are thread-aware and support locking. However, if local threads 
+are also present, and they are preemptable, they are subject to deadlock. At this 
+time, the only safe solutions are to turn off preemption (a runtime decision) or to 
+preempt global threads only. 
+
+<P>
+
+
+<A NAME="13397"> </A>
+<A NAME="Interrupting Threads"> </A>
+<h4>
+Interrupting Threads
+</h4>
+
+<A NAME="13398"> </A>NSPR threads are interruptable, with some constraints and inconsistencies. 
+
+<P>
+
+<A NAME="13402"> </A>To interrupt a thread, the caller of <A HREF="prthrd.html#15471"  ><CODE>PR_Interrupt</CODE></A> must have the NSPR reference to 
+the target thread (<A HREF="prthrd.html#14937"  ><CODE>PRThread</CODE></A><CODE>*</CODE>). When the target is interrupted, it is rescheduled 
+from the point at which it was blocked, with a status error indicating that it was 
+interrupted. NSPR recognizes only two areas where a thread may be interrupted: 
+waiting on a condition variable and waiting on I/O. In the latter case, interruption 
+does cancel the I/O operation. In neither case does being interrupted imply the 
+demise of the thread. 
+
+<P>
+
+
+
+<A NAME="13407"> </A>
+<A NAME="NSPR Thread Synchronization"> </A>
+<h2>
+NSPR Thread Synchronization
+</h2>
+
+
+<A NAME="13408"> </A>Thread synchronization has two aspects: locking and notification. Locking 
+prevents access to some resource, such as a piece of shared data: that is, it enforces 
+mutual exclusion. Notification involves passing synchronization information 
+among cooperating threads. 
+
+<P>
+
+<A NAME="13412"> </A>In NSPR, a <B>mutual exclusion lock </B>(or <B>mutex</B>) of type <A HREF="prlock.html#15996"  ><CODE>PRLock</CODE></A> controls locking, and 
+associated <B>condition variables</B> of type <A HREF="prcvar.html#16137"  ><CODE>PRCondVar</CODE></A> communicate changes in state 
+among threads. When a programmer associates a mutex with an arbitrary 
+collection of data, the mutex provides a protective <B>monitor</B> around the data. 
+
+<P>
+
+
+<A NAME="13416"> </A>
+<A NAME="Locks and Monitors"> </A>
+<h3>
+Locks and Monitors
+</h3>
+
+
+
+
+<A NAME="13417"> </A>In general, a monitor is a conceptual entity composed of a mutex, one or more 
+condition variables, and the monitored data. Monitors in this generic sense should 
+not be confused with the monitor type used in Java programming. In addition to 
+<A HREF="prlock.html#15996"  ><CODE>PRLock</CODE></A>, NSPR provides another mutex type, <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>, which is reentrant and 
+can have only one associated condition variable. <CODE>PRMonitor</CODE> is intended for use 
+with Java and reflects the Java approach to thread synchronization. 
+
+<P>
+
+<A NAME="13424"> </A>To access the data in the monitor, the thread performing the access must hold the 
+mutex, also described as being "in the monitor." Mutual exclusion guarantees that 
+only one thread can be in the monitor at a time and that no thread may observe or 
+modify the monitored data without being in the monitor.
+
+<P>
+
+<A NAME="13425"> </A>Monitoring is about protecting data, not code. A <B>monitored invariant</B> is a Boolean 
+expression over the monitored data. The expression may be false only when a 
+thread is in the monitor (holding the monitor's mutex). This requirement implies 
+that when a thread first enters the monitor, an evaluation of the invariant 
+expression must yield a <CODE>true</CODE>. The thread must also reinstate the monitored 
+invariant before exiting the monitor. Therefore, evaluation of the expression must 
+also yield a true at that point in execution.
+
+<P>
+
+<A NAME="13426"> </A>A trivial example might be as follows. Suppose an object has three values, <CODE>v1</CODE>, <CODE>v2</CODE>, 
+and <CODE>sum</CODE>. The invariant is that the third value is the sum of the other two. Expressed 
+mathematically, the invariant is <CODE>sum = v1 + v2</CODE>. Any modification of <CODE>v1</CODE> or <CODE>v2</CODE> 
+requires modification of <CODE>sum</CODE>. Since that is a <I>complex</I> operation, it must be 
+monitored. Furthermore, any type of access to <CODE>sum</CODE> must also be monitored to 
+ensure that neither <CODE>v1 n</CODE>or <CODE>v2</CODE> are in flux. 
+
+<P>
+
+<P>
+<A NAME="13432"> </A>
+
+<BR>
+<HR SIZE="1">
+<TABLE BORDER="0" CELLPADDING="5" WIDTH="75%">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="13429"> </A>
+<B>
+Note
+</B>
+
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="13431"> </A>Evaluation of the invariant expression is a conceptual requirement 
+and is rarely done in practice. It is valuable to formally define the 
+expression during design, write it down, and adhere to it. It is also 
+useful to implement the expression during development and test it 
+where appropriate. The thread makes an absolute assertion of the 
+expression's evaluation both on entering and on exiting the monitor. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+<HR SIZE="1">
+<BR>
+
+<P>
+
+
+<A NAME="13433"> </A>Acquiring a lock is a synchronous operation. Once the lock primitive is called, the 
+thread returns only when it has acquired the lock. Should another thread (or the 
+same thread) already have the lock held, the calling thread blocks, waiting for the 
+situation to improve. That blocked state is not interruptible, nor is it timed. 
+
+<P>
+
+
+<A NAME="13434"> </A>
+<A NAME="Condition Variables"> </A>
+<h3>
+Condition Variables
+</h3>
+
+
+
+
+<A NAME="13435"> </A>Condition variables facilitate communication between threads. The 
+communication available is a semantic-free notification whose context must be 
+supplied by the programmer. Conditions are closely associated with a single 
+monitor. 
+
+<P>
+
+<A NAME="13436"> </A>The association between a condition and a monitor is established when a condition 
+variable is created, and the association persists for the life of the condition variable. 
+In addition, a static association exists between the condition and some data within 
+the monitor. This data is what will be manipulated by the program under the 
+protection of the monitor. A thread may wait on notification of a condition that 
+signals changes in the state of the associated data. Other threads may notify the 
+condition when changes occur. 
+
+<P>
+
+<A NAME="13437"> </A>Condition variables are always monitored. The relevant operations on conditions 
+are always performed from within the monitor. They are used to communicate 
+changes in the state of the monitored data (though still preserving the monitored 
+invariant). Condition variables allow one or more threads to wait for a 
+predetermined condition to exist, and they allow another thread to notify them 
+when the condition occurs. Condition variables themselves do not carry the 
+semantics of the state change, but simply provide a mechanism for indicating that 
+something has changed. It is the programmer's responsibility to associate a 
+condition with the state of the data. 
+
+<P>
+
+<A NAME="13438"> </A>A thread may be designed to wait for a particular situation to exist in some 
+monitored data. Since the nature of the situation is not an attribute of the condition, 
+the program must test that itself. Since this testing involves the monitored data, it 
+must be done from within the monitor. The wait operation atomically exits the 
+monitor and blocks the calling thread in a waiting condition state. When the thread 
+is resumed after the wait, it will have reentered the monitor, making operations on 
+the data safe.
+
+<P>
+
+<A NAME="13439"> </A>There is a subtle interaction between the thread(s) waiting on a condition and those 
+notifying it. The notification must take place within a monitor--the same monitor 
+that protects the data being manipulated by the notifier. In pseudocode, the 
+sequence looks like this: 
+
+<P>
+
+<PRE>
+<A NAME="13440"></A>enter(monitor); <br>... manipulate the monitored data <br>notify(condition); <br>exit(monitor);
+</PRE>
+<P>
+<A NAME="13441"> </A>Notifications to a condition do not accumulate. Nor is it required that any thread be 
+waiting on a condition when the notification occurs. The design of the code that 
+waits on a condition must take these facts into account. Therefore, the pseudocode 
+for the waiting thread might look like this: 
+
+<P>
+
+<PRE>
+<A NAME="13442"></A>enter(monitor) <br>while (!expression) wait(condition); <br>... manipulate monitored data <br>exit(monitor);
+</PRE>
+<P>
+<A NAME="13443"> </A>The need to evaluate the Boolean expression again after rescheduling from a wait 
+may appear unnecessary, but it is vital to the correct execution of the program. The 
+notification promotes a thread waiting on a condition to a ready state. When that 
+thread actually gets scheduled is determined by the thread scheduler and cannot 
+be predicted. If multiple threads are actually processing the notifications, one or 
+more of them could be scheduled ahead of the one explicitly promoted by the 
+notification. One such thread could enter the monitor and perform the work 
+indicated by the notification, and exit. In this case the thread would resume from 
+the wait only to find that there's nothing to do. 
+
+<P>
+
+<A NAME="13444"> </A>For example, suppose the defined rule of a function is that it should wait until there 
+is an object available and that it should return a reference to that object. Writing the 
+code as follows could potentially return a null reference, violating the invariant of 
+the function: 
+
+<P>
+
+<PRE>
+<A NAME="13445"></A>void *dequeue() <br>{ <br>&nbsp;&nbsp;&nbsp;void *db; <br>&nbsp;&nbsp;&nbsp;enter(monitor); <br>&nbsp;&nbsp;&nbsp;if ((db = delink()) == null) <br>&nbsp;&nbsp;&nbsp;{ <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait(condition); <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;db = delink(); <br>&nbsp;&nbsp;&nbsp;} <br>&nbsp;&nbsp;&nbsp;exit(monitor); <br>&nbsp;&nbsp;&nbsp;return db; <br>}
+</PRE>
+<P>
+<A NAME="13446"> </A>The same function would be more appropriately written as follows: 
+
+<P>
+
+<PRE>
+<A NAME="13447"></A>void *dequeue() <br>{ <br>&nbsp;&nbsp;&nbsp;void *db; <br>&nbsp;&nbsp;&nbsp;enter(monitor); <br>&nbsp;&nbsp;&nbsp;while ((db = delink()) == null) <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait(condition); <br>&nbsp;&nbsp;&nbsp;exit(monitor); <br>&nbsp;&nbsp;&nbsp;return db; <br>}
+</PRE>
+<P>
+<P>
+<A NAME="13456"> </A>
+
+<BR>
+<HR SIZE="1">
+<TABLE BORDER="0" CELLPADDING="5" WIDTH="75%">
+  <TR>
+    <TD VALIGN=TOP>
+<P>
+<A NAME="13450"> </A>
+<B>
+Caution
+</B>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="13455"> </A>The semantics of <A HREF="prcvar.html#16197"  ><CODE>PR_WaitCondVar</CODE></A> assume that the monitor is about 
+to be exited. This assumption implies that the monitored invariant 
+must be reinstated before calling <CODE>PR_WaitCondVar</CODE>. Failure to do this 
+will cause subtle but painful bugs. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+<HR SIZE="1">
+<BR>
+
+<P>
+
+
+<A NAME="13457"> </A>To modify monitored data safely, a thread must be in the monitor. Since no other 
+thread may modify or (in most cases) even observe the protected data from outside 
+the monitor, the thread can safely make any modifications needed. When the 
+changes have been completed, the thread notifies the condition associated with the 
+data and exits the monitor using <A HREF="prcvar.html#16229"  ><CODE>PR_NotifyCondVar</CODE></A>. Logically, each such 
+notification promotes one thread that was waiting on the condition to a ready state. 
+An alternate form of notification (<A HREF="prcvar.html#16250"  ><CODE>PR_NotifyAllCondVar</CODE></A>) promotes all threads 
+waiting on a condition to the ready state. If no threads were waiting, the 
+notification is a no-op. 
+
+<P>
+
+<A NAME="13464"> </A>Waiting on a condition variable is an interruptible operation. Another thread could 
+target the waiting thread and issue a <A HREF="prthrd.html#15471"  ><CODE>PR_Interrupt</CODE></A>, causing a waiting thread to 
+resume. In such cases the return from the wait operation indicates a failure and 
+definitively indicates that the cause of the failure is an interrupt. 
+
+<P>
+
+<A NAME="13471"> </A>A call to <A HREF="prcvar.html#16197"  ><CODE>PR_WaitCondVar</CODE></A> may also resume because the interval specified on the 
+wait call has expired. However, this fact cannot be unambiguously delivered, so no 
+attempt is made to do so. If the logic of a program allows for timing of waits on 
+conditions, then the clock must be treated as part of the monitored data and the 
+amount of time elapsed re-asserted when the call returns. Philosophically, timeouts 
+should be treated as explicit notifications, and therefore require the testing of the 
+monitored data upon resumption.
+
+<P>
+
+
+
+<A NAME="13473"> </A>
+<A NAME="NSPR Sample Code"> </A>
+<h2>
+NSPR Sample Code
+</h2>
+
+
+<A NAME="13474"> </A>The documents linked here present two sample programs, including detailed 
+annotations: <CODE><A HREF="prlayer.html">layer.html</A></CODE> and <A HREF="prswitch.html"><CODE>switch.html</A></CODE>. In addition to these annotated HTML 
+versions, the same samples are available in <A HREF="./samples/">pure source form</A>. 
+
+<P>
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="index.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="Prtyp.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

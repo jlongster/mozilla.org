@@ -1,0 +1,1765 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * RSA Security, Inc.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *   Dr Vipul Gupta &lt;vipul.gupta@sun.com&gt;, Sun Microsystems Laboratories
+<b><a name="23">   23</a></b>  *
+<b><a name="24">   24</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="25">   25</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="26">   26</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="27">   27</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="28">   28</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="29">   29</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="30">   30</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="31">   31</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="32">   32</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="33">   33</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="34">   34</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="35">   35</a></b>  *
+<b><a name="36">   36</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="37">   37</a></b> /* License to copy and use this software is granted provided that it is
+<b><a name="38">   38</a></b>  * identified as "RSA Security Inc. PKCS #11 Cryptographic Token Interface
+<b><a name="39">   39</a></b>  * (Cryptoki)" in all material mentioning or referencing this software.
+<b><a name="40">   40</a></b> 
+<b><a name="41">   41</a></b>  * License is also granted to make and use derivative works provided that
+<b><a name="42">   42</a></b>  * such works are identified as "derived from the RSA Security Inc. PKCS #11
+<b><a name="43">   43</a></b>  * Cryptographic Token Interface (Cryptoki)" in all material mentioning or
+<b><a name="44">   44</a></b>  * referencing the derived work.
+<b><a name="45">   45</a></b> 
+<b><a name="46">   46</a></b>  * RSA Security Inc. makes no representations concerning either the
+<b><a name="47">   47</a></b>  * merchantability of this software or the suitability of this software for
+<b><a name="48">   48</a></b>  * any particular purpose. It is provided "as is" without express or implied
+<b><a name="49">   49</a></b>  * warranty of any kind.
+<b><a name="50">   50</a></b>  */
+<b><a name="51">   51</a></b> 
+<b><a name="52">   52</a></b> 
+<b><a name="53">   53</a></b> #ifndef <a href="../softoken/pkcs11t.h.dep.html#_PKCS11T_H_">_PKCS11T_H_</a>
+<b><a name="54">   54</a></b> #define <a href="#54">_PKCS11T_H_</a> 1
+<b><a name="55">   55</a></b> 
+<b><a name="56">   56</a></b> #define <a href="#56">CK_TRUE</a> 1
+<b><a name="57">   57</a></b> #define <a href="#57">CK_FALSE</a> 0
+<b><a name="58">   58</a></b> 
+<b><a name="59">   59</a></b> #include "prtypes.h"
+<b><a name="60">   60</a></b> 
+<b><a name="61">   61</a></b> #define <a href="#61">CK_PTR</a> *
+<b><a name="62">   62</a></b> #define <a href="#62">CK_NULL_PTR</a> 0
+<b><a name="63">   63</a></b> #define <a href="#63">CK_CALLBACK_FUNCTION</a>(rv,func) rv (PR_CALLBACK * func)
+<b><a name="64">   64</a></b> #define <a href="#64">CK_DECLARE_FUNCTION</a>(rv,func) PR_EXTERN(rv) func
+<b><a name="65">   65</a></b> #define <a href="#65">CK_DECLARE_FUNCTION_POINTER</a>(rv,func) rv (PR_CALLBACK * func)
+<b><a name="66">   66</a></b> 
+<b><a name="67">   67</a></b> #define <a href="#67">CK_INVALID_SESSION</a>    0
+<b><a name="68">   68</a></b> 
+<b><a name="69">   69</a></b> /* an unsigned 8-bit value */
+<b><a name="70">   70</a></b> typedef unsigned char     <a href="#70">CK_BYTE</a>;
+<b><a name="71">   71</a></b> 
+<b><a name="72">   72</a></b> /* an unsigned 8-bit character */
+<b><a name="73">   73</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE">CK_BYTE</a>           <a href="#73">CK_CHAR</a>;
+<b><a name="74">   74</a></b> 
+<b><a name="75">   75</a></b> /* an 8-bit UTF-8 character */
+<b><a name="76">   76</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE">CK_BYTE</a>           <a href="#76">CK_UTF8CHAR</a>;
+<b><a name="77">   77</a></b> 
+<b><a name="78">   78</a></b> /* a BYTE-sized Boolean flag */
+<b><a name="79">   79</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE">CK_BYTE</a>           <a href="#79">CK_BBOOL</a>;
+<b><a name="80">   80</a></b> 
+<b><a name="81">   81</a></b> /* an unsigned value, at least 32 bits long */
+<b><a name="82">   82</a></b> typedef unsigned long int <a href="#82">CK_ULONG</a>;
+<b><a name="83">   83</a></b> 
+<b><a name="84">   84</a></b> /* a signed value, the same size as a CK_ULONG */
+<b><a name="85">   85</a></b> /* CK_LONG is new for v2.0 */
+<b><a name="86">   86</a></b> typedef long int          <a href="#86">CK_LONG</a>;
+<b><a name="87">   87</a></b> 
+<b><a name="88">   88</a></b> /* at least 32 bits; each bit is a Boolean flag */
+<b><a name="89">   89</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#89">CK_FLAGS</a>;
+<b><a name="90">   90</a></b> 
+<b><a name="91">   91</a></b> 
+<b><a name="92">   92</a></b> /* some special values for certain CK_ULONG variables */
+<b><a name="93">   93</a></b> #define <a href="#93">CK_UNAVAILABLE_INFORMATION</a> (~0UL)
+<b><a name="94">   94</a></b> #define <a href="#94">CK_EFFECTIVELY_INFINITE</a>    0
+<b><a name="95">   95</a></b> 
+<b><a name="96">   96</a></b> 
+<b><a name="97">   97</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE">CK_BYTE</a>     <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE">CK_BYTE</a>_PTR;
+<b><a name="98">   98</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_CHAR">CK_CHAR</a>     <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a>   <a href="#98"><a href="../softoken/pkcs11t.h.dep.html#CK_CHAR">CK_CHAR</a>_PTR</a>;
+<b><a name="99">   99</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR">CK_UTF8CHAR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a>   <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR">CK_UTF8CHAR</a>_PTR;
+<b><a name="100">  100</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>    <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a>   <a href="#100"><a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>_PTR</a>;
+<b><a name="101">  101</a></b> typedef void        <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a>   <a href="#101">CK_VOID_PTR</a>;
+<b><a name="102">  102</a></b> 
+<b><a name="103">  103</a></b> /* Pointer to a CK_VOID_PTR-- i.e., pointer to pointer to void */
+<b><a name="104">  104</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#104"><a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a>_PTR</a>;
+<b><a name="105">  105</a></b> 
+<b><a name="106">  106</a></b> 
+<b><a name="107">  107</a></b> /* The following value is always invalid if used as a session */
+<b><a name="108">  108</a></b> /* handle or object handle */
+<b><a name="109">  109</a></b> #define <a href="#109">CK_INVALID_HANDLE</a> 0
+<b><a name="110">  110</a></b> 
+<b><a name="111">  111</a></b> 
+<b><a name="112">  112</a></b> /* pack */
+<b><a name="113">  113</a></b> #include "pkcs11p.h"
+<b><a name="114">  114</a></b> 
+<b><a name="115">  115</a></b> typedef struct <a href="#115">CK_VERSION</a> {
+<b><a name="116">  116</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE">CK_BYTE</a>       major;  /* integer portion of version number */
+<b><a name="117">  117</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE">CK_BYTE</a>       minor;  /* 1/100ths portion of version number */
+<b><a name="118">  118</a></b> } <a href="#118">CK_VERSION</a>;
+<b><a name="119">  119</a></b> 
+<b><a name="120">  120</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_VERSION">CK_VERSION</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#120"><a href="../softoken/pkcs11t.h.dep.html#CK_VERSION">CK_VERSION</a></a>_PTR</a>;
+<b><a name="121">  121</a></b> 
+<b><a name="122">  122</a></b> 
+<b><a name="123">  123</a></b> typedef struct <a href="#123">CK_INFO</a> {
+<b><a name="124">  124</a></b>   /* manufacturerID and libraryDecription have been changed from
+<b><a name="125">  125</a></b>    * CK_CHAR to CK_UTF8CHAR for v2.10 */
+<b><a name="126">  126</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VERSION">CK_VERSION</a></a>    cryptokiVersion;     /* PKCS #11 interface ver */
+<b><a name="127">  127</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR">CK_UTF8CHAR</a>   <a href="../softoken/pkcs11.c.dep.html#manufacturerID">manufacturerID</a>[32];  /* blank padded */
+<b><a name="128">  128</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_FLAGS">CK_FLAGS</a>      flags;               /* must be zero */
+<b><a name="129">  129</a></b> 
+<b><a name="130">  130</a></b>   /* libraryDescription and libraryVersion are new for v2.0 */
+<b><a name="131">  131</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR">CK_UTF8CHAR</a>   <a href="../softoken/pkcs11.c.dep.html#libraryDescription">libraryDescription</a>[32];  /* blank padded */
+<b><a name="132">  132</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VERSION">CK_VERSION</a></a>    libraryVersion;          /* version of library */
+<b><a name="133">  133</a></b> } <a href="#133">CK_INFO</a>;
+<b><a name="134">  134</a></b> 
+<b><a name="135">  135</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_INFO">CK_INFO</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a>    <a href="#135"><a href="../softoken/pkcs11t.h.dep.html#CK_INFO">CK_INFO</a></a>_PTR</a>;
+<b><a name="136">  136</a></b> 
+<b><a name="137">  137</a></b> 
+<b><a name="138">  138</a></b> /* CK_NOTIFICATION enumerates the types of notifications that
+<b><a name="139">  139</a></b>  * PKCS #11 provides to an application */
+<b><a name="140">  140</a></b> /* CK_NOTIFICATION has been changed from an enum to a CK_ULONG
+<b><a name="141">  141</a></b>  * for v2.0 */
+<b><a name="142">  142</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> <a href="#142">CK_NOTIFICATION</a>;
+<b><a name="143">  143</a></b> #define <a href="#143">CKN_SURRENDER</a>       0
+<b><a name="144">  144</a></b> 
+<b><a name="145">  145</a></b> 
+<b><a name="146">  146</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#146">CK_SLOT_ID</a>;
+<b><a name="147">  147</a></b> 
+<b><a name="148">  148</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a>_PTR;
+<b><a name="149">  149</a></b> 
+<b><a name="150">  150</a></b> 
+<b><a name="151">  151</a></b> /* CK_SLOT_INFO provides information about a slot */
+<b><a name="152">  152</a></b> typedef struct <a href="#152">CK_SLOT_INFO</a> {
+<b><a name="153">  153</a></b>   /* slotDescription and manufacturerID have been changed from
+<b><a name="154">  154</a></b>    * CK_CHAR to CK_UTF8CHAR for v2.10 */
+<b><a name="155">  155</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR">CK_UTF8CHAR</a>   slotDescription[64];  /* blank padded */
+<b><a name="156">  156</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR">CK_UTF8CHAR</a>   <a href="../softoken/pkcs11.c.dep.html#manufacturerID">manufacturerID</a>[32];   /* blank padded */
+<b><a name="157">  157</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_FLAGS">CK_FLAGS</a>      flags;
+<b><a name="158">  158</a></b> 
+<b><a name="159">  159</a></b>   /* hardwareVersion and firmwareVersion are new for v2.0 */
+<b><a name="160">  160</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VERSION">CK_VERSION</a></a>    hardwareVersion;  /* version of hardware */
+<b><a name="161">  161</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VERSION">CK_VERSION</a></a>    firmwareVersion;  /* version of firmware */
+<b><a name="162">  162</a></b> } <a href="#162">CK_SLOT_INFO</a>;
+<b><a name="163">  163</a></b> 
+<b><a name="164">  164</a></b> /* flags: bit flags that provide capabilities of the slot
+<b><a name="165">  165</a></b>  *      Bit Flag              Mask        Meaning
+<b><a name="166">  166</a></b>  */
+<b><a name="167">  167</a></b> #define <a href="#167">CKF_TOKEN_PRESENT</a>     0x00000001  /* a token is there */
+<b><a name="168">  168</a></b> #define <a href="#168">CKF_REMOVABLE_DEVICE</a>  0x00000002  /* removable devices*/
+<b><a name="169">  169</a></b> #define <a href="#169">CKF_HW_SLOT</a>           0x00000004  /* hardware slot */
+<b><a name="170">  170</a></b> 
+<b><a name="171">  171</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_INFO">CK_SLOT_INFO</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#171"><a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_INFO">CK_SLOT_INFO</a></a>_PTR</a>;
+<b><a name="172">  172</a></b> 
+<b><a name="173">  173</a></b> 
+<b><a name="174">  174</a></b> /* CK_TOKEN_INFO provides information about a token */
+<b><a name="175">  175</a></b> typedef struct <a href="#175">CK_TOKEN_INFO</a> {
+<b><a name="176">  176</a></b>   /* label, manufacturerID, and model have been changed from
+<b><a name="177">  177</a></b>    * CK_CHAR to CK_UTF8CHAR for v2.10 */
+<b><a name="178">  178</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR">CK_UTF8CHAR</a>   label[32];           /* blank padded */
+<b><a name="179">  179</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR">CK_UTF8CHAR</a>   <a href="../softoken/pkcs11.c.dep.html#manufacturerID">manufacturerID</a>[32];  /* blank padded */
+<b><a name="180">  180</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR">CK_UTF8CHAR</a>   model[16];           /* blank padded */
+<b><a name="181">  181</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_CHAR">CK_CHAR</a>       serialNumber[16];    /* blank padded */
+<b><a name="182">  182</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_FLAGS">CK_FLAGS</a>      flags;               /* see below */
+<b><a name="183">  183</a></b> 
+<b><a name="184">  184</a></b>   /* ulMaxSessionCount, ulSessionCount, ulMaxRwSessionCount,
+<b><a name="185">  185</a></b>    * ulRwSessionCount, ulMaxPinLen, and ulMinPinLen have all been
+<b><a name="186">  186</a></b>    * changed from CK_USHORT to CK_ULONG for v2.0 */
+<b><a name="187">  187</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulMaxSessionCount;     /* max open sessions */
+<b><a name="188">  188</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulSessionCount;        /* sess. now open */
+<b><a name="189">  189</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulMaxRwSessionCount;   /* max R/W sessions */
+<b><a name="190">  190</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulRwSessionCount;      /* R/W sess. now open */
+<b><a name="191">  191</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulMaxPinLen;           /* in bytes */
+<b><a name="192">  192</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulMinPinLen;           /* in bytes */
+<b><a name="193">  193</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulTotalPublicMemory;   /* in bytes */
+<b><a name="194">  194</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulFreePublicMemory;    /* in bytes */
+<b><a name="195">  195</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulTotalPrivateMemory;  /* in bytes */
+<b><a name="196">  196</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulFreePrivateMemory;   /* in bytes */
+<b><a name="197">  197</a></b> 
+<b><a name="198">  198</a></b>   /* hardwareVersion, firmwareVersion, and time are new for
+<b><a name="199">  199</a></b>    * v2.0 */
+<b><a name="200">  200</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VERSION">CK_VERSION</a></a>    hardwareVersion;       /* version of hardware */
+<b><a name="201">  201</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VERSION">CK_VERSION</a></a>    firmwareVersion;       /* version of firmware */
+<b><a name="202">  202</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_CHAR">CK_CHAR</a>       utcTime[16];           /* time */
+<b><a name="203">  203</a></b> } <a href="#203">CK_TOKEN_INFO</a>;
+<b><a name="204">  204</a></b> 
+<b><a name="205">  205</a></b> /* The flags parameter is defined as follows:
+<b><a name="206">  206</a></b>  *      Bit Flag                    Mask        Meaning
+<b><a name="207">  207</a></b>  */
+<b><a name="208">  208</a></b> #define <a href="#208">CKF_RNG</a>                     0x00000001  /* has random #
+<b><a name="209">  209</a></b>                                                  * generator */
+<b><a name="210">  210</a></b> #define <a href="#210">CKF_WRITE_PROTECTED</a>         0x00000002  /* token is
+<b><a name="211">  211</a></b>                                                  * write-
+<b><a name="212">  212</a></b>                                                  * protected */
+<b><a name="213">  213</a></b> #define <a href="#213">CKF_LOGIN_REQUIRED</a>          0x00000004  /* user must
+<b><a name="214">  214</a></b>                                                  * login */
+<b><a name="215">  215</a></b> #define <a href="#215">CKF_USER_PIN_INITIALIZED</a>    0x00000008  /* normal user's
+<b><a name="216">  216</a></b>                                                  * PIN is set */
+<b><a name="217">  217</a></b> 
+<b><a name="218">  218</a></b> /* CKF_RESTORE_KEY_NOT_NEEDED is new for v2.0.  If it is set,
+<b><a name="219">  219</a></b>  * that means that *every* time the state of cryptographic
+<b><a name="220">  220</a></b>  * operations of a session is successfully saved, all keys
+<b><a name="221">  221</a></b>  * needed to continue those operations are stored in the state */
+<b><a name="222">  222</a></b> #define <a href="#222">CKF_RESTORE_KEY_NOT_NEEDED</a>  0x00000020
+<b><a name="223">  223</a></b> 
+<b><a name="224">  224</a></b> /* CKF_CLOCK_ON_TOKEN is new for v2.0.  If it is set, that means
+<b><a name="225">  225</a></b>  * that the token has some sort of clock.  The time on that
+<b><a name="226">  226</a></b>  * clock is returned in the token info structure */
+<b><a name="227">  227</a></b> #define <a href="#227">CKF_CLOCK_ON_TOKEN</a>          0x00000040
+<b><a name="228">  228</a></b> 
+<b><a name="229">  229</a></b> /* CKF_PROTECTED_AUTHENTICATION_PATH is new for v2.0.  If it is
+<b><a name="230">  230</a></b>  * set, that means that there is some way for the user to login
+<b><a name="231">  231</a></b>  * without sending a PIN through the PKCS #11 library itself */
+<b><a name="232">  232</a></b> #define <a href="#232">CKF_PROTECTED_AUTHENTICATION_PATH</a> 0x00000100
+<b><a name="233">  233</a></b> 
+<b><a name="234">  234</a></b> /* CKF_DUAL_CRYPTO_OPERATIONS is new for v2.0.  If it is true,
+<b><a name="235">  235</a></b>  * that means that a single session with the token can perform
+<b><a name="236">  236</a></b>  * dual simultaneous cryptographic operations (digest and
+<b><a name="237">  237</a></b>  * encrypt; decrypt and digest; sign and encrypt; and decrypt
+<b><a name="238">  238</a></b>  * and sign) */
+<b><a name="239">  239</a></b> #define <a href="#239">CKF_DUAL_CRYPTO_OPERATIONS</a>  0x00000200
+<b><a name="240">  240</a></b> 
+<b><a name="241">  241</a></b> /* CKF_TOKEN_INITIALIZED if new for v2.10. If it is true, the
+<b><a name="242">  242</a></b>  * token has been initialized using C_InitializeToken or an
+<b><a name="243">  243</a></b>  * equivalent mechanism outside the scope of PKCS #11.
+<b><a name="244">  244</a></b>  * Calling C_InitializeToken when this flag is set will cause
+<b><a name="245">  245</a></b>  * the token to be reinitialized. */
+<b><a name="246">  246</a></b> #define <a href="#246">CKF_TOKEN_INITIALIZED</a>       0x00000400
+<b><a name="247">  247</a></b> 
+<b><a name="248">  248</a></b> /* CKF_SECONDARY_AUTHENTICATION if new for v2.10. If it is
+<b><a name="249">  249</a></b>  * true, the token supports secondary authentication for
+<b><a name="250">  250</a></b>  * private key objects. This flag is deprecated in v2.11 and
+<b><a name="251">  251</a></b>    onwards. */
+<b><a name="252">  252</a></b> #define <a href="#252">CKF_SECONDARY_AUTHENTICATION</a>  0x00000800
+<b><a name="253">  253</a></b> 
+<b><a name="254">  254</a></b> /* CKF_USER_PIN_COUNT_LOW if new for v2.10. If it is true, an
+<b><a name="255">  255</a></b>  * incorrect user login PIN has been entered at least once
+<b><a name="256">  256</a></b>  * since the last successful authentication. */
+<b><a name="257">  257</a></b> #define <a href="#257">CKF_USER_PIN_COUNT_LOW</a>       0x00010000
+<b><a name="258">  258</a></b> 
+<b><a name="259">  259</a></b> /* CKF_USER_PIN_FINAL_TRY if new for v2.10. If it is true,
+<b><a name="260">  260</a></b>  * supplying an incorrect user PIN will it to become locked. */
+<b><a name="261">  261</a></b> #define <a href="#261">CKF_USER_PIN_FINAL_TRY</a>       0x00020000
+<b><a name="262">  262</a></b> 
+<b><a name="263">  263</a></b> /* CKF_USER_PIN_LOCKED if new for v2.10. If it is true, the
+<b><a name="264">  264</a></b>  * user PIN has been locked. User login to the token is not
+<b><a name="265">  265</a></b>  * possible. */
+<b><a name="266">  266</a></b> #define <a href="#266">CKF_USER_PIN_LOCKED</a>          0x00040000
+<b><a name="267">  267</a></b> 
+<b><a name="268">  268</a></b> /* CKF_USER_PIN_TO_BE_CHANGED if new for v2.10. If it is true,
+<b><a name="269">  269</a></b>  * the user PIN value is the default value set by token
+<b><a name="270">  270</a></b>  * initialization or manufacturing, or the PIN has been
+<b><a name="271">  271</a></b>  * expired by the card. */
+<b><a name="272">  272</a></b> #define <a href="#272">CKF_USER_PIN_TO_BE_CHANGED</a>   0x00080000
+<b><a name="273">  273</a></b> 
+<b><a name="274">  274</a></b> /* CKF_SO_PIN_COUNT_LOW if new for v2.10. If it is true, an
+<b><a name="275">  275</a></b>  * incorrect SO login PIN has been entered at least once since
+<b><a name="276">  276</a></b>  * the last successful authentication. */
+<b><a name="277">  277</a></b> #define <a href="#277">CKF_SO_PIN_COUNT_LOW</a>         0x00100000
+<b><a name="278">  278</a></b> 
+<b><a name="279">  279</a></b> /* CKF_SO_PIN_FINAL_TRY if new for v2.10. If it is true,
+<b><a name="280">  280</a></b>  * supplying an incorrect SO PIN will it to become locked. */
+<b><a name="281">  281</a></b> #define <a href="#281">CKF_SO_PIN_FINAL_TRY</a>         0x00200000
+<b><a name="282">  282</a></b> 
+<b><a name="283">  283</a></b> /* CKF_SO_PIN_LOCKED if new for v2.10. If it is true, the SO
+<b><a name="284">  284</a></b>  * PIN has been locked. SO login to the token is not possible.
+<b><a name="285">  285</a></b>  */
+<b><a name="286">  286</a></b> #define <a href="#286">CKF_SO_PIN_LOCKED</a>            0x00400000
+<b><a name="287">  287</a></b> 
+<b><a name="288">  288</a></b> /* CKF_SO_PIN_TO_BE_CHANGED if new for v2.10. If it is true,
+<b><a name="289">  289</a></b>  * the SO PIN value is the default value set by token
+<b><a name="290">  290</a></b>  * initialization or manufacturing, or the PIN has been
+<b><a name="291">  291</a></b>  * expired by the card. */
+<b><a name="292">  292</a></b> #define <a href="#292">CKF_SO_PIN_TO_BE_CHANGED</a>     0x00800000
+<b><a name="293">  293</a></b> 
+<b><a name="294">  294</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_TOKEN_INFO">CK_TOKEN_INFO</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_TOKEN_INFO">CK_TOKEN_INFO</a></a>_PTR;
+<b><a name="295">  295</a></b> 
+<b><a name="296">  296</a></b> 
+<b><a name="297">  297</a></b> /* CK_SESSION_HANDLE is a PKCS #11-assigned value that
+<b><a name="298">  298</a></b>  * identifies a session */
+<b><a name="299">  299</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#299">CK_SESSION_HANDLE</a>;
+<b><a name="300">  300</a></b> 
+<b><a name="301">  301</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#301"><a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a>_PTR</a>;
+<b><a name="302">  302</a></b> 
+<b><a name="303">  303</a></b> 
+<b><a name="304">  304</a></b> /* CK_USER_TYPE enumerates the types of PKCS #11 users */
+<b><a name="305">  305</a></b> /* CK_USER_TYPE has been changed from an enum to a CK_ULONG for
+<b><a name="306">  306</a></b>  * v2.0 */
+<b><a name="307">  307</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#307">CK_USER_TYPE</a>;
+<b><a name="308">  308</a></b> /* Security Officer */
+<b><a name="309">  309</a></b> #define <a href="#309">CKU_SO</a>    0
+<b><a name="310">  310</a></b> /* Normal user */
+<b><a name="311">  311</a></b> #define <a href="#311">CKU_USER</a>  1
+<b><a name="312">  312</a></b> /* Context specific (added in v2.20) */
+<b><a name="313">  313</a></b> #define <a href="#313">CKU_CONTEXT_SPECIFIC</a>   2
+<b><a name="314">  314</a></b> 
+<b><a name="315">  315</a></b> /* CK_STATE enumerates the session states */
+<b><a name="316">  316</a></b> /* CK_STATE has been changed from an enum to a CK_ULONG for
+<b><a name="317">  317</a></b>  * v2.0 */
+<b><a name="318">  318</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#318">CK_STATE</a>;
+<b><a name="319">  319</a></b> #define <a href="#319">CKS_RO_PUBLIC_SESSION</a>  0
+<b><a name="320">  320</a></b> #define <a href="#320">CKS_RO_USER_FUNCTIONS</a>  1
+<b><a name="321">  321</a></b> #define <a href="#321">CKS_RW_PUBLIC_SESSION</a>  2
+<b><a name="322">  322</a></b> #define <a href="#322">CKS_RW_USER_FUNCTIONS</a>  3
+<b><a name="323">  323</a></b> #define <a href="#323">CKS_RW_SO_FUNCTIONS</a>    4
+<b><a name="324">  324</a></b> 
+<b><a name="325">  325</a></b> 
+<b><a name="326">  326</a></b> /* CK_SESSION_INFO provides information about a session */
+<b><a name="327">  327</a></b> typedef struct <a href="#327">CK_SESSION_INFO</a> {
+<b><a name="328">  328</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a>    slotID;
+<b><a name="329">  329</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_STATE">CK_STATE</a>      state;
+<b><a name="330">  330</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_FLAGS">CK_FLAGS</a>      flags;          /* see below */
+<b><a name="331">  331</a></b> 
+<b><a name="332">  332</a></b>   /* ulDeviceError was changed from CK_USHORT to CK_ULONG for
+<b><a name="333">  333</a></b>    * v2.0 */
+<b><a name="334">  334</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulDeviceError;  /* device-dependent error code */
+<b><a name="335">  335</a></b> } <a href="#335">CK_SESSION_INFO</a>;
+<b><a name="336">  336</a></b> 
+<b><a name="337">  337</a></b> /* The flags are defined in the following table:
+<b><a name="338">  338</a></b>  *      Bit Flag                Mask        Meaning
+<b><a name="339">  339</a></b>  */
+<b><a name="340">  340</a></b> #define <a href="#340">CKF_RW_SESSION</a>          0x00000002  /* session is r/w */
+<b><a name="341">  341</a></b> #define <a href="#341">CKF_SERIAL_SESSION</a>      0x00000004  /* no parallel */
+<b><a name="342">  342</a></b> 
+<b><a name="343">  343</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_INFO">CK_SESSION_INFO</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#343"><a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_INFO">CK_SESSION_INFO</a></a>_PTR</a>;
+<b><a name="344">  344</a></b> 
+<b><a name="345">  345</a></b> 
+<b><a name="346">  346</a></b> /* CK_OBJECT_HANDLE is a token-specific identifier for an
+<b><a name="347">  347</a></b>  * object  */
+<b><a name="348">  348</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#348">CK_OBJECT_HANDLE</a>;
+<b><a name="349">  349</a></b> 
+<b><a name="350">  350</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#350"><a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a>_PTR</a>;
+<b><a name="351">  351</a></b> 
+<b><a name="352">  352</a></b> 
+<b><a name="353">  353</a></b> /* CK_OBJECT_CLASS is a value that identifies the classes (or
+<b><a name="354">  354</a></b>  * types) of objects that PKCS #11 recognizes.  It is defined
+<b><a name="355">  355</a></b>  * as follows: */
+<b><a name="356">  356</a></b> /* CK_OBJECT_CLASS was changed from CK_USHORT to CK_ULONG for
+<b><a name="357">  357</a></b>  * v2.0 */
+<b><a name="358">  358</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#358">CK_OBJECT_CLASS</a>;
+<b><a name="359">  359</a></b> 
+<b><a name="360">  360</a></b> /* The following classes of objects are defined: */
+<b><a name="361">  361</a></b> /* CKO_HW_FEATURE is new for v2.10 */
+<b><a name="362">  362</a></b> /* CKO_DOMAIN_PARAMETERS is new for v2.11 */
+<b><a name="363">  363</a></b> /* CKO_MECHANISM is new for v2.20 */
+<b><a name="364">  364</a></b> #define <a href="#364">CKO_DATA</a>              0x00000000
+<b><a name="365">  365</a></b> #define <a href="#365">CKO_CERTIFICATE</a>       0x00000001
+<b><a name="366">  366</a></b> #define <a href="#366">CKO_PUBLIC_KEY</a>        0x00000002
+<b><a name="367">  367</a></b> #define <a href="#367">CKO_PRIVATE_KEY</a>       0x00000003
+<b><a name="368">  368</a></b> #define <a href="#368">CKO_SECRET_KEY</a>        0x00000004
+<b><a name="369">  369</a></b> #define <a href="#369">CKO_HW_FEATURE</a>        0x00000005
+<b><a name="370">  370</a></b> #define <a href="#370">CKO_DOMAIN_PARAMETERS</a> 0x00000006
+<b><a name="371">  371</a></b> #define <a href="#371">CKO_MECHANISM</a>         0x00000007
+<b><a name="372">  372</a></b> #define <a href="#372">CKO_VENDOR_DEFINED</a>    0x80000000
+<b><a name="373">  373</a></b> 
+<b><a name="374">  374</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#374"><a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a>_PTR</a>;
+<b><a name="375">  375</a></b> 
+<b><a name="376">  376</a></b> /* CK_HW_FEATURE_TYPE is new for v2.10. CK_HW_FEATURE_TYPE is a
+<b><a name="377">  377</a></b>  * value that identifies the hardware feature type of an object
+<b><a name="378">  378</a></b>  * with CK_OBJECT_CLASS equal to CKO_HW_FEATURE. */
+<b><a name="379">  379</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#379">CK_HW_FEATURE_TYPE</a>;
+<b><a name="380">  380</a></b> 
+<b><a name="381">  381</a></b> /* The following hardware feature types are defined */
+<b><a name="382">  382</a></b> /* CKH_USER_INTERFACE is new for v2.20 */
+<b><a name="383">  383</a></b> #define <a href="#383">CKH_MONOTONIC_COUNTER</a>  0x00000001
+<b><a name="384">  384</a></b> #define <a href="#384">CKH_CLOCK</a>           0x00000002
+<b><a name="385">  385</a></b> #define <a href="#385">CKH_USER_INTERFACE</a>  0x00000003
+<b><a name="386">  386</a></b> #define <a href="#386">CKH_VENDOR_DEFINED</a>  0x80000000
+<b><a name="387">  387</a></b> 
+<b><a name="388">  388</a></b> /* CK_KEY_TYPE is a value that identifies a key type */
+<b><a name="389">  389</a></b> /* CK_KEY_TYPE was changed from CK_USHORT to CK_ULONG for v2.0 */
+<b><a name="390">  390</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#390">CK_KEY_TYPE</a>;
+<b><a name="391">  391</a></b> 
+<b><a name="392">  392</a></b> /* the following key types are defined: */
+<b><a name="393">  393</a></b> #define <a href="#393">CKK_RSA</a>             0x00000000
+<b><a name="394">  394</a></b> #define <a href="#394">CKK_DSA</a>             0x00000001
+<b><a name="395">  395</a></b> #define <a href="#395">CKK_DH</a>              0x00000002
+<b><a name="396">  396</a></b> 
+<b><a name="397">  397</a></b> /* CKK_ECDSA and CKK_KEA are new for v2.0 */
+<b><a name="398">  398</a></b> /* CKK_ECDSA is deprecated in v2.11, CKK_EC is preferred. */
+<b><a name="399">  399</a></b> #define <a href="#399">CKK_ECDSA</a>           0x00000003
+<b><a name="400">  400</a></b> #define <a href="#400">CKK_EC</a>              0x00000003
+<b><a name="401">  401</a></b> #define <a href="#401">CKK_X9_42_DH</a>        0x00000004
+<b><a name="402">  402</a></b> #define <a href="#402">CKK_KEA</a>             0x00000005
+<b><a name="403">  403</a></b> 
+<b><a name="404">  404</a></b> #define <a href="#404">CKK_GENERIC_SECRET</a>  0x00000010
+<b><a name="405">  405</a></b> #define <a href="#405">CKK_RC2</a>             0x00000011
+<b><a name="406">  406</a></b> #define <a href="#406">CKK_RC4</a>             0x00000012
+<b><a name="407">  407</a></b> #define <a href="#407">CKK_DES</a>             0x00000013
+<b><a name="408">  408</a></b> #define <a href="#408">CKK_DES2</a>            0x00000014
+<b><a name="409">  409</a></b> #define <a href="#409">CKK_DES3</a>            0x00000015
+<b><a name="410">  410</a></b> 
+<b><a name="411">  411</a></b> /* all these key types are new for v2.0 */
+<b><a name="412">  412</a></b> #define <a href="#412">CKK_CAST</a>            0x00000016
+<b><a name="413">  413</a></b> #define <a href="#413">CKK_CAST3</a>           0x00000017
+<b><a name="414">  414</a></b> /* CKK_CAST5 is deprecated in v2.11, CKK_CAST128 is preferred. */
+<b><a name="415">  415</a></b> #define <a href="#415">CKK_CAST5</a>           0x00000018
+<b><a name="416">  416</a></b> #define <a href="#416">CKK_CAST128</a>         0x00000018
+<b><a name="417">  417</a></b> #define <a href="#417">CKK_RC5</a>             0x00000019
+<b><a name="418">  418</a></b> #define <a href="#418">CKK_IDEA</a>            0x0000001A
+<b><a name="419">  419</a></b> #define <a href="#419">CKK_SKIPJACK</a>        0x0000001B
+<b><a name="420">  420</a></b> #define <a href="#420">CKK_BATON</a>           0x0000001C
+<b><a name="421">  421</a></b> #define <a href="#421">CKK_JUNIPER</a>         0x0000001D
+<b><a name="422">  422</a></b> #define <a href="#422">CKK_CDMF</a>            0x0000001E
+<b><a name="423">  423</a></b> #define <a href="#423">CKK_AES</a>             0x0000001F
+<b><a name="424">  424</a></b> 
+<b><a name="425">  425</a></b> /* BlowFish and TwoFish are new for v2.20 */
+<b><a name="426">  426</a></b> #define <a href="#426">CKK_BLOWFISH</a>        0x00000020
+<b><a name="427">  427</a></b> #define <a href="#427">CKK_TWOFISH</a>         0x00000021
+<b><a name="428">  428</a></b> 
+<b><a name="429">  429</a></b> #define <a href="#429">CKK_VENDOR_DEFINED</a>  0x80000000
+<b><a name="430">  430</a></b> 
+<b><a name="431">  431</a></b> 
+<b><a name="432">  432</a></b> /* CK_CERTIFICATE_TYPE is a value that identifies a certificate
+<b><a name="433">  433</a></b>  * type */
+<b><a name="434">  434</a></b> /* CK_CERTIFICATE_TYPE was changed from CK_USHORT to CK_ULONG
+<b><a name="435">  435</a></b>  * for v2.0 */
+<b><a name="436">  436</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#436">CK_CERTIFICATE_TYPE</a>;
+<b><a name="437">  437</a></b> 
+<b><a name="438">  438</a></b> /* The following certificate types are defined: */
+<b><a name="439">  439</a></b> /* CKC_X_509_ATTR_CERT is new for v2.10 */
+<b><a name="440">  440</a></b> /* CKC_WTLS is new for v2.20 */
+<b><a name="441">  441</a></b> #define <a href="#441">CKC_X_509</a>           0x00000000
+<b><a name="442">  442</a></b> #define <a href="#442">CKC_X_509_ATTR_CERT</a> 0x00000001
+<b><a name="443">  443</a></b> #define <a href="#443">CKC_WTLS</a>            0x00000002
+<b><a name="444">  444</a></b> #define <a href="#444">CKC_VENDOR_DEFINED</a>  0x80000000
+<b><a name="445">  445</a></b> 
+<b><a name="446">  446</a></b> 
+<b><a name="447">  447</a></b> /* CK_ATTRIBUTE_TYPE is a value that identifies an attribute
+<b><a name="448">  448</a></b>  * type */
+<b><a name="449">  449</a></b> /* CK_ATTRIBUTE_TYPE was changed from CK_USHORT to CK_ULONG for
+<b><a name="450">  450</a></b>  * v2.0 */
+<b><a name="451">  451</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#451">CK_ATTRIBUTE_TYPE</a>;
+<b><a name="452">  452</a></b> 
+<b><a name="453">  453</a></b> /* The CKF_ARRAY_ATTRIBUTE flag identifies an attribute which
+<b><a name="454">  454</a></b>    consists of an array of values. */
+<b><a name="455">  455</a></b> #define <a href="#455">CKF_ARRAY_ATTRIBUTE</a>    0x40000000
+<b><a name="456">  456</a></b> 
+<b><a name="457">  457</a></b> /* The following attribute types are defined: */
+<b><a name="458">  458</a></b> #define <a href="#458">CKA_CLASS</a>              0x00000000
+<b><a name="459">  459</a></b> #define <a href="#459">CKA_TOKEN</a>              0x00000001
+<b><a name="460">  460</a></b> #define <a href="#460">CKA_PRIVATE</a>            0x00000002
+<b><a name="461">  461</a></b> #define <a href="#461">CKA_LABEL</a>              0x00000003
+<b><a name="462">  462</a></b> #define <a href="#462">CKA_APPLICATION</a>        0x00000010
+<b><a name="463">  463</a></b> #define <a href="#463">CKA_VALUE</a>              0x00000011
+<b><a name="464">  464</a></b> 
+<b><a name="465">  465</a></b> /* CKA_OBJECT_ID is new for v2.10 */
+<b><a name="466">  466</a></b> #define <a href="#466">CKA_OBJECT_ID</a>          0x00000012
+<b><a name="467">  467</a></b> 
+<b><a name="468">  468</a></b> #define <a href="#468">CKA_CERTIFICATE_TYPE</a>   0x00000080
+<b><a name="469">  469</a></b> #define <a href="#469">CKA_ISSUER</a>             0x00000081
+<b><a name="470">  470</a></b> #define <a href="#470">CKA_SERIAL_NUMBER</a>      0x00000082
+<b><a name="471">  471</a></b> 
+<b><a name="472">  472</a></b> /* CKA_AC_ISSUER, CKA_OWNER, and CKA_ATTR_TYPES are new
+<b><a name="473">  473</a></b>  * for v2.10 */
+<b><a name="474">  474</a></b> #define <a href="#474">CKA_AC_ISSUER</a>          0x00000083
+<b><a name="475">  475</a></b> #define <a href="#475">CKA_OWNER</a>              0x00000084
+<b><a name="476">  476</a></b> #define <a href="#476">CKA_ATTR_TYPES</a>         0x00000085
+<b><a name="477">  477</a></b> 
+<b><a name="478">  478</a></b> /* CKA_TRUSTED is new for v2.11 */
+<b><a name="479">  479</a></b> #define <a href="#479">CKA_TRUSTED</a>            0x00000086
+<b><a name="480">  480</a></b> 
+<b><a name="481">  481</a></b> /* CKA_CERTIFICATE_CATEGORY ...
+<b><a name="482">  482</a></b>  * CKA_CHECK_VALUE are new for v2.20 */
+<b><a name="483">  483</a></b> #define <a href="#483">CKA_CERTIFICATE_CATEGORY</a>        0x00000087
+<b><a name="484">  484</a></b> #define <a href="#484">CKA_JAVA_MIDP_SECURITY_DOMAIN</a>   0x00000088
+<b><a name="485">  485</a></b> #define <a href="#485">CKA_URL</a>                         0x00000089
+<b><a name="486">  486</a></b> #define <a href="#486">CKA_HASH_OF_SUBJECT_PUBLIC_KEY</a>  0x0000008A
+<b><a name="487">  487</a></b> #define <a href="#487">CKA_HASH_OF_ISSUER_PUBLIC_KEY</a>   0x0000008B
+<b><a name="488">  488</a></b> #define <a href="#488">CKA_CHECK_VALUE</a>                 0x00000090
+<b><a name="489">  489</a></b> 
+<b><a name="490">  490</a></b> #define <a href="#490">CKA_KEY_TYPE</a>           0x00000100
+<b><a name="491">  491</a></b> #define <a href="#491">CKA_SUBJECT</a>            0x00000101
+<b><a name="492">  492</a></b> #define <a href="#492">CKA_ID</a>                 0x00000102
+<b><a name="493">  493</a></b> #define <a href="#493">CKA_SENSITIVE</a>          0x00000103
+<b><a name="494">  494</a></b> #define <a href="#494">CKA_ENCRYPT</a>            0x00000104
+<b><a name="495">  495</a></b> #define <a href="#495">CKA_DECRYPT</a>            0x00000105
+<b><a name="496">  496</a></b> #define <a href="#496">CKA_WRAP</a>               0x00000106
+<b><a name="497">  497</a></b> #define <a href="#497">CKA_UNWRAP</a>             0x00000107
+<b><a name="498">  498</a></b> #define <a href="#498">CKA_SIGN</a>               0x00000108
+<b><a name="499">  499</a></b> #define <a href="#499">CKA_SIGN_RECOVER</a>       0x00000109
+<b><a name="500">  500</a></b> #define <a href="#500">CKA_VERIFY</a>             0x0000010A
+<b><a name="501">  501</a></b> #define <a href="#501">CKA_VERIFY_RECOVER</a>     0x0000010B
+<b><a name="502">  502</a></b> #define <a href="#502">CKA_DERIVE</a>             0x0000010C
+<b><a name="503">  503</a></b> #define <a href="#503">CKA_START_DATE</a>         0x00000110
+<b><a name="504">  504</a></b> #define <a href="#504">CKA_END_DATE</a>           0x00000111
+<b><a name="505">  505</a></b> #define <a href="#505">CKA_MODULUS</a>            0x00000120
+<b><a name="506">  506</a></b> #define <a href="#506">CKA_MODULUS_BITS</a>       0x00000121
+<b><a name="507">  507</a></b> #define <a href="#507">CKA_PUBLIC_EXPONENT</a>    0x00000122
+<b><a name="508">  508</a></b> #define <a href="#508">CKA_PRIVATE_EXPONENT</a>   0x00000123
+<b><a name="509">  509</a></b> #define <a href="#509">CKA_PRIME_1</a>            0x00000124
+<b><a name="510">  510</a></b> #define <a href="#510">CKA_PRIME_2</a>            0x00000125
+<b><a name="511">  511</a></b> #define <a href="#511">CKA_EXPONENT_1</a>         0x00000126
+<b><a name="512">  512</a></b> #define <a href="#512">CKA_EXPONENT_2</a>         0x00000127
+<b><a name="513">  513</a></b> #define <a href="#513">CKA_COEFFICIENT</a>        0x00000128
+<b><a name="514">  514</a></b> #define <a href="#514">CKA_PRIME</a>              0x00000130
+<b><a name="515">  515</a></b> #define <a href="#515">CKA_SUBPRIME</a>           0x00000131
+<b><a name="516">  516</a></b> #define <a href="#516">CKA_BASE</a>               0x00000132
+<b><a name="517">  517</a></b> 
+<b><a name="518">  518</a></b> /* CKA_PRIME_BITS and CKA_SUB_PRIME_BITS are new for v2.11 */
+<b><a name="519">  519</a></b> #define <a href="#519">CKA_PRIME_BITS</a>         0x00000133
+<b><a name="520">  520</a></b> #define <a href="#520">CKA_SUBPRIME_BITS</a>      0x00000134
+<b><a name="521">  521</a></b> #define <a href="#521">CKA_SUB_PRIME_BITS</a>     <a href="../softoken/pkcs11t.h.dep.html#CKA_SUBPRIME_BITS">CKA_SUBPRIME_BITS</a>
+<b><a name="522">  522</a></b> /* (To retain backwards-compatibility) */
+<b><a name="523">  523</a></b> 
+<b><a name="524">  524</a></b> #define <a href="#524">CKA_VALUE_BITS</a>         0x00000160
+<b><a name="525">  525</a></b> #define <a href="#525">CKA_VALUE_LEN</a>          0x00000161
+<b><a name="526">  526</a></b> 
+<b><a name="527">  527</a></b> /* CKA_EXTRACTABLE, CKA_LOCAL, CKA_NEVER_EXTRACTABLE,
+<b><a name="528">  528</a></b>  * CKA_ALWAYS_SENSITIVE, CKA_MODIFIABLE, CKA_ECDSA_PARAMS,
+<b><a name="529">  529</a></b>  * and CKA_EC_POINT are new for v2.0 */
+<b><a name="530">  530</a></b> #define <a href="#530">CKA_EXTRACTABLE</a>        0x00000162
+<b><a name="531">  531</a></b> #define <a href="#531">CKA_LOCAL</a>              0x00000163
+<b><a name="532">  532</a></b> #define <a href="#532">CKA_NEVER_EXTRACTABLE</a>  0x00000164
+<b><a name="533">  533</a></b> #define <a href="#533">CKA_ALWAYS_SENSITIVE</a>   0x00000165
+<b><a name="534">  534</a></b> 
+<b><a name="535">  535</a></b> /* CKA_KEY_GEN_MECHANISM is new for v2.11 */
+<b><a name="536">  536</a></b> #define <a href="#536">CKA_KEY_GEN_MECHANISM</a>  0x00000166
+<b><a name="537">  537</a></b> 
+<b><a name="538">  538</a></b> #define <a href="#538">CKA_MODIFIABLE</a>         0x00000170
+<b><a name="539">  539</a></b> 
+<b><a name="540">  540</a></b> /* CKA_ECDSA_PARAMS is deprecated in v2.11,
+<b><a name="541">  541</a></b>  * CKA_EC_PARAMS is preferred. */
+<b><a name="542">  542</a></b> #define <a href="#542">CKA_ECDSA_PARAMS</a>       0x00000180
+<b><a name="543">  543</a></b> #define <a href="#543">CKA_EC_PARAMS</a>          0x00000180
+<b><a name="544">  544</a></b> 
+<b><a name="545">  545</a></b> #define <a href="#545">CKA_EC_POINT</a>           0x00000181
+<b><a name="546">  546</a></b> 
+<b><a name="547">  547</a></b> /* CKA_SECONDARY_AUTH, CKA_AUTH_PIN_FLAGS,
+<b><a name="548">  548</a></b>  * are new for v2.10. Deprecated in v2.11 and onwards. */
+<b><a name="549">  549</a></b> #define <a href="#549">CKA_SECONDARY_AUTH</a>     0x00000200
+<b><a name="550">  550</a></b> #define <a href="#550">CKA_AUTH_PIN_FLAGS</a>     0x00000201
+<b><a name="551">  551</a></b> 
+<b><a name="552">  552</a></b> /* CKA_ALWAYS_AUTHENTICATE ...
+<b><a name="553">  553</a></b>  * CKA_UNWRAP_TEMPLATE are new for v2.20 */
+<b><a name="554">  554</a></b> #define <a href="#554">CKA_ALWAYS_AUTHENTICATE</a>  0x00000202
+<b><a name="555">  555</a></b> 
+<b><a name="556">  556</a></b> #define <a href="#556">CKA_WRAP_WITH_TRUSTED</a>    0x00000210
+<b><a name="557">  557</a></b> #define <a href="#557">CKA_WRAP_TEMPLATE</a>        (<a href="../softoken/pkcs11t.h.dep.html#CKF_ARRAY_ATTRIBUTE">CKF_ARRAY_ATTRIBUTE</a>|0x00000211)
+<b><a name="558">  558</a></b> #define <a href="#558">CKA_UNWRAP_TEMPLATE</a>      (<a href="../softoken/pkcs11t.h.dep.html#CKF_ARRAY_ATTRIBUTE">CKF_ARRAY_ATTRIBUTE</a>|0x00000212)
+<b><a name="559">  559</a></b> 
+<b><a name="560">  560</a></b> /* CKA_HW_FEATURE_TYPE, CKA_RESET_ON_INIT, and CKA_HAS_RESET
+<b><a name="561">  561</a></b>  * are new for v2.10 */
+<b><a name="562">  562</a></b> #define <a href="#562">CKA_HW_FEATURE_TYPE</a>    0x00000300
+<b><a name="563">  563</a></b> #define <a href="#563">CKA_RESET_ON_INIT</a>      0x00000301
+<b><a name="564">  564</a></b> #define <a href="#564">CKA_HAS_RESET</a>          0x00000302
+<b><a name="565">  565</a></b> 
+<b><a name="566">  566</a></b> /* The following attributes are new for v2.20 */
+<b><a name="567">  567</a></b> #define <a href="#567">CKA_PIXEL_X</a>                     0x00000400
+<b><a name="568">  568</a></b> #define <a href="#568">CKA_PIXEL_Y</a>                     0x00000401
+<b><a name="569">  569</a></b> #define <a href="#569">CKA_RESOLUTION</a>                  0x00000402
+<b><a name="570">  570</a></b> #define <a href="#570">CKA_CHAR_ROWS</a>                   0x00000403
+<b><a name="571">  571</a></b> #define <a href="#571">CKA_CHAR_COLUMNS</a>                0x00000404
+<b><a name="572">  572</a></b> #define <a href="#572">CKA_COLOR</a>                       0x00000405
+<b><a name="573">  573</a></b> #define <a href="#573">CKA_BITS_PER_PIXEL</a>              0x00000406
+<b><a name="574">  574</a></b> #define <a href="#574">CKA_CHAR_SETS</a>                   0x00000480
+<b><a name="575">  575</a></b> #define <a href="#575">CKA_ENCODING_METHODS</a>            0x00000481
+<b><a name="576">  576</a></b> #define <a href="#576">CKA_MIME_TYPES</a>                  0x00000482
+<b><a name="577">  577</a></b> #define <a href="#577">CKA_MECHANISM_TYPE</a>              0x00000500
+<b><a name="578">  578</a></b> #define <a href="#578">CKA_REQUIRED_CMS_ATTRIBUTES</a>     0x00000501
+<b><a name="579">  579</a></b> #define <a href="#579">CKA_DEFAULT_CMS_ATTRIBUTES</a>      0x00000502
+<b><a name="580">  580</a></b> #define <a href="#580">CKA_SUPPORTED_CMS_ATTRIBUTES</a>    0x00000503
+<b><a name="581">  581</a></b> #define <a href="#581">CKA_ALLOWED_MECHANISMS</a>          (<a href="../softoken/pkcs11t.h.dep.html#CKF_ARRAY_ATTRIBUTE">CKF_ARRAY_ATTRIBUTE</a>|0x00000600)
+<b><a name="582">  582</a></b> 
+<b><a name="583">  583</a></b> #define <a href="#583">CKA_VENDOR_DEFINED</a>     0x80000000
+<b><a name="584">  584</a></b> 
+<b><a name="585">  585</a></b> 
+<b><a name="586">  586</a></b> /* CK_ATTRIBUTE is a structure that includes the type, length
+<b><a name="587">  587</a></b>  * and value of an attribute */
+<b><a name="588">  588</a></b> typedef struct <a href="#588">CK_ATTRIBUTE</a> {
+<b><a name="589">  589</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type;
+<b><a name="590">  590</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a>       pValue;
+<b><a name="591">  591</a></b> 
+<b><a name="592">  592</a></b>   /* ulValueLen went from CK_USHORT to CK_ULONG for v2.0 */
+<b><a name="593">  593</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          ulValueLen;  /* in bytes */
+<b><a name="594">  594</a></b> } <a href="#594">CK_ATTRIBUTE</a>;
+<b><a name="595">  595</a></b> 
+<b><a name="596">  596</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE">CK_ATTRIBUTE</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#596"><a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE">CK_ATTRIBUTE</a></a>_PTR</a>;
+<b><a name="597">  597</a></b> 
+<b><a name="598">  598</a></b> 
+<b><a name="599">  599</a></b> /* CK_DATE is a structure that defines a date */
+<b><a name="600">  600</a></b> typedef struct <a href="#600">CK_DATE</a>{
+<b><a name="601">  601</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_CHAR">CK_CHAR</a>       year[4];   /* the year ("1900" - "9999") */
+<b><a name="602">  602</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_CHAR">CK_CHAR</a>       month[2];  /* the month ("01" - "12") */
+<b><a name="603">  603</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_CHAR">CK_CHAR</a>       day[2];    /* the day   ("01" - "31") */
+<b><a name="604">  604</a></b> } <a href="#604">CK_DATE</a>;
+<b><a name="605">  605</a></b> 
+<b><a name="606">  606</a></b> 
+<b><a name="607">  607</a></b> /* CK_MECHANISM_TYPE is a value that identifies a mechanism
+<b><a name="608">  608</a></b>  * type */
+<b><a name="609">  609</a></b> /* CK_MECHANISM_TYPE was changed from CK_USHORT to CK_ULONG for
+<b><a name="610">  610</a></b>  * v2.0 */
+<b><a name="611">  611</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#611">CK_MECHANISM_TYPE</a>;
+<b><a name="612">  612</a></b> 
+<b><a name="613">  613</a></b> /* the following mechanism types are defined: */
+<b><a name="614">  614</a></b> #define <a href="#614">CKM_RSA_PKCS_KEY_PAIR_GEN</a>      0x00000000
+<b><a name="615">  615</a></b> #define <a href="#615">CKM_RSA_PKCS</a>                   0x00000001
+<b><a name="616">  616</a></b> #define <a href="#616">CKM_RSA_9796</a>                   0x00000002
+<b><a name="617">  617</a></b> #define <a href="#617">CKM_RSA_X_509</a>                  0x00000003
+<b><a name="618">  618</a></b> 
+<b><a name="619">  619</a></b> /* CKM_MD2_RSA_PKCS, CKM_MD5_RSA_PKCS, and CKM_SHA1_RSA_PKCS
+<b><a name="620">  620</a></b>  * are new for v2.0.  They are mechanisms which hash and sign */
+<b><a name="621">  621</a></b> #define <a href="#621">CKM_MD2_RSA_PKCS</a>               0x00000004
+<b><a name="622">  622</a></b> #define <a href="#622">CKM_MD5_RSA_PKCS</a>               0x00000005
+<b><a name="623">  623</a></b> #define <a href="#623">CKM_SHA1_RSA_PKCS</a>              0x00000006
+<b><a name="624">  624</a></b> 
+<b><a name="625">  625</a></b> /* CKM_RIPEMD128_RSA_PKCS, CKM_RIPEMD160_RSA_PKCS, and
+<b><a name="626">  626</a></b>  * CKM_RSA_PKCS_OAEP are new for v2.10 */
+<b><a name="627">  627</a></b> #define <a href="#627">CKM_RIPEMD128_RSA_PKCS</a>         0x00000007
+<b><a name="628">  628</a></b> #define <a href="#628">CKM_RIPEMD160_RSA_PKCS</a>         0x00000008
+<b><a name="629">  629</a></b> #define <a href="#629">CKM_RSA_PKCS_OAEP</a>              0x00000009
+<b><a name="630">  630</a></b> 
+<b><a name="631">  631</a></b> /* CKM_RSA_X9_31_KEY_PAIR_GEN, CKM_RSA_X9_31, CKM_SHA1_RSA_X9_31,
+<b><a name="632">  632</a></b>  * CKM_RSA_PKCS_PSS, and CKM_SHA1_RSA_PKCS_PSS are new for v2.11 */
+<b><a name="633">  633</a></b> #define <a href="#633">CKM_RSA_X9_31_KEY_PAIR_GEN</a>     0x0000000A
+<b><a name="634">  634</a></b> #define <a href="#634">CKM_RSA_X9_31</a>                  0x0000000B
+<b><a name="635">  635</a></b> #define <a href="#635">CKM_SHA1_RSA_X9_31</a>             0x0000000C
+<b><a name="636">  636</a></b> #define <a href="#636">CKM_RSA_PKCS_PSS</a>               0x0000000D
+<b><a name="637">  637</a></b> #define <a href="#637">CKM_SHA1_RSA_PKCS_PSS</a>          0x0000000E
+<b><a name="638">  638</a></b> 
+<b><a name="639">  639</a></b> #define <a href="#639">CKM_DSA_KEY_PAIR_GEN</a>           0x00000010
+<b><a name="640">  640</a></b> #define <a href="#640">CKM_DSA</a>                        0x00000011
+<b><a name="641">  641</a></b> #define <a href="#641">CKM_DSA_SHA1</a>                   0x00000012
+<b><a name="642">  642</a></b> #define <a href="#642">CKM_DH_PKCS_KEY_PAIR_GEN</a>       0x00000020
+<b><a name="643">  643</a></b> #define <a href="#643">CKM_DH_PKCS_DERIVE</a>             0x00000021
+<b><a name="644">  644</a></b> 
+<b><a name="645">  645</a></b> /* CKM_X9_42_DH_KEY_PAIR_GEN, CKM_X9_42_DH_DERIVE,
+<b><a name="646">  646</a></b>  * CKM_X9_42_DH_HYBRID_DERIVE, and CKM_X9_42_MQV_DERIVE are new for
+<b><a name="647">  647</a></b>  * v2.11 */
+<b><a name="648">  648</a></b> #define <a href="#648">CKM_X9_42_DH_KEY_PAIR_GEN</a>      0x00000030
+<b><a name="649">  649</a></b> #define <a href="#649">CKM_X9_42_DH_DERIVE</a>            0x00000031
+<b><a name="650">  650</a></b> #define <a href="#650">CKM_X9_42_DH_HYBRID_DERIVE</a>     0x00000032
+<b><a name="651">  651</a></b> #define <a href="#651">CKM_X9_42_MQV_DERIVE</a>           0x00000033
+<b><a name="652">  652</a></b> 
+<b><a name="653">  653</a></b> /* CKM_SHA256/384/512 are new for v2.20 */
+<b><a name="654">  654</a></b> #define <a href="#654">CKM_SHA256_RSA_PKCS</a>            0x00000040
+<b><a name="655">  655</a></b> #define <a href="#655">CKM_SHA384_RSA_PKCS</a>            0x00000041
+<b><a name="656">  656</a></b> #define <a href="#656">CKM_SHA512_RSA_PKCS</a>            0x00000042
+<b><a name="657">  657</a></b> #define <a href="#657">CKM_SHA256_RSA_PKCS_PSS</a>        0x00000043
+<b><a name="658">  658</a></b> #define <a href="#658">CKM_SHA384_RSA_PKCS_PSS</a>        0x00000044
+<b><a name="659">  659</a></b> #define <a href="#659">CKM_SHA512_RSA_PKCS_PSS</a>        0x00000045
+<b><a name="660">  660</a></b> 
+<b><a name="661">  661</a></b> #define <a href="#661">CKM_RC2_KEY_GEN</a>                0x00000100
+<b><a name="662">  662</a></b> #define <a href="#662">CKM_RC2_ECB</a>                    0x00000101
+<b><a name="663">  663</a></b> #define <a href="#663">CKM_RC2_CBC</a>                    0x00000102
+<b><a name="664">  664</a></b> #define <a href="#664">CKM_RC2_MAC</a>                    0x00000103
+<b><a name="665">  665</a></b> 
+<b><a name="666">  666</a></b> /* CKM_RC2_MAC_GENERAL and CKM_RC2_CBC_PAD are new for v2.0 */
+<b><a name="667">  667</a></b> #define <a href="#667">CKM_RC2_MAC_GENERAL</a>            0x00000104
+<b><a name="668">  668</a></b> #define <a href="#668">CKM_RC2_CBC_PAD</a>                0x00000105
+<b><a name="669">  669</a></b> 
+<b><a name="670">  670</a></b> #define <a href="#670">CKM_RC4_KEY_GEN</a>                0x00000110
+<b><a name="671">  671</a></b> #define <a href="#671">CKM_RC4</a>                        0x00000111
+<b><a name="672">  672</a></b> #define <a href="#672">CKM_DES_KEY_GEN</a>                0x00000120
+<b><a name="673">  673</a></b> #define <a href="#673">CKM_DES_ECB</a>                    0x00000121
+<b><a name="674">  674</a></b> #define <a href="#674">CKM_DES_CBC</a>                    0x00000122
+<b><a name="675">  675</a></b> #define <a href="#675">CKM_DES_MAC</a>                    0x00000123
+<b><a name="676">  676</a></b> 
+<b><a name="677">  677</a></b> /* CKM_DES_MAC_GENERAL and CKM_DES_CBC_PAD are new for v2.0 */
+<b><a name="678">  678</a></b> #define <a href="#678">CKM_DES_MAC_GENERAL</a>            0x00000124
+<b><a name="679">  679</a></b> #define <a href="#679">CKM_DES_CBC_PAD</a>                0x00000125
+<b><a name="680">  680</a></b> 
+<b><a name="681">  681</a></b> #define <a href="#681">CKM_DES2_KEY_GEN</a>               0x00000130
+<b><a name="682">  682</a></b> #define <a href="#682">CKM_DES3_KEY_GEN</a>               0x00000131
+<b><a name="683">  683</a></b> #define <a href="#683">CKM_DES3_ECB</a>                   0x00000132
+<b><a name="684">  684</a></b> #define <a href="#684">CKM_DES3_CBC</a>                   0x00000133
+<b><a name="685">  685</a></b> #define <a href="#685">CKM_DES3_MAC</a>                   0x00000134
+<b><a name="686">  686</a></b> 
+<b><a name="687">  687</a></b> /* CKM_DES3_MAC_GENERAL, CKM_DES3_CBC_PAD, CKM_CDMF_KEY_GEN,
+<b><a name="688">  688</a></b>  * CKM_CDMF_ECB, CKM_CDMF_CBC, CKM_CDMF_MAC,
+<b><a name="689">  689</a></b>  * CKM_CDMF_MAC_GENERAL, and CKM_CDMF_CBC_PAD are new for v2.0 */
+<b><a name="690">  690</a></b> #define <a href="#690">CKM_DES3_MAC_GENERAL</a>           0x00000135
+<b><a name="691">  691</a></b> #define <a href="#691">CKM_DES3_CBC_PAD</a>               0x00000136
+<b><a name="692">  692</a></b> #define <a href="#692">CKM_CDMF_KEY_GEN</a>               0x00000140
+<b><a name="693">  693</a></b> #define <a href="#693">CKM_CDMF_ECB</a>                   0x00000141
+<b><a name="694">  694</a></b> #define <a href="#694">CKM_CDMF_CBC</a>                   0x00000142
+<b><a name="695">  695</a></b> #define <a href="#695">CKM_CDMF_MAC</a>                   0x00000143
+<b><a name="696">  696</a></b> #define <a href="#696">CKM_CDMF_MAC_GENERAL</a>           0x00000144
+<b><a name="697">  697</a></b> #define <a href="#697">CKM_CDMF_CBC_PAD</a>               0x00000145
+<b><a name="698">  698</a></b> 
+<b><a name="699">  699</a></b> /* the following four DES mechanisms are new for v2.20 */
+<b><a name="700">  700</a></b> #define <a href="#700">CKM_DES_OFB64</a>                  0x00000150
+<b><a name="701">  701</a></b> #define <a href="#701">CKM_DES_OFB8</a>                   0x00000151
+<b><a name="702">  702</a></b> #define <a href="#702">CKM_DES_CFB64</a>                  0x00000152
+<b><a name="703">  703</a></b> #define <a href="#703">CKM_DES_CFB8</a>                   0x00000153
+<b><a name="704">  704</a></b> 
+<b><a name="705">  705</a></b> #define <a href="#705">CKM_MD2</a>                        0x00000200
+<b><a name="706">  706</a></b> 
+<b><a name="707">  707</a></b> /* CKM_MD2_HMAC and CKM_MD2_HMAC_GENERAL are new for v2.0 */
+<b><a name="708">  708</a></b> #define <a href="#708">CKM_MD2_HMAC</a>                   0x00000201
+<b><a name="709">  709</a></b> #define <a href="#709">CKM_MD2_HMAC_GENERAL</a>           0x00000202
+<b><a name="710">  710</a></b> 
+<b><a name="711">  711</a></b> #define <a href="#711">CKM_MD5</a>                        0x00000210
+<b><a name="712">  712</a></b> 
+<b><a name="713">  713</a></b> /* CKM_MD5_HMAC and CKM_MD5_HMAC_GENERAL are new for v2.0 */
+<b><a name="714">  714</a></b> #define <a href="#714">CKM_MD5_HMAC</a>                   0x00000211
+<b><a name="715">  715</a></b> #define <a href="#715">CKM_MD5_HMAC_GENERAL</a>           0x00000212
+<b><a name="716">  716</a></b> 
+<b><a name="717">  717</a></b> #define <a href="#717">CKM_SHA_1</a>                      0x00000220
+<b><a name="718">  718</a></b> 
+<b><a name="719">  719</a></b> /* CKM_SHA_1_HMAC and CKM_SHA_1_HMAC_GENERAL are new for v2.0 */
+<b><a name="720">  720</a></b> #define <a href="#720">CKM_SHA_1_HMAC</a>                 0x00000221
+<b><a name="721">  721</a></b> #define <a href="#721">CKM_SHA_1_HMAC_GENERAL</a>         0x00000222
+<b><a name="722">  722</a></b> 
+<b><a name="723">  723</a></b> /* CKM_RIPEMD128, CKM_RIPEMD128_HMAC,
+<b><a name="724">  724</a></b>  * CKM_RIPEMD128_HMAC_GENERAL, CKM_RIPEMD160, CKM_RIPEMD160_HMAC,
+<b><a name="725">  725</a></b>  * and CKM_RIPEMD160_HMAC_GENERAL are new for v2.10 */
+<b><a name="726">  726</a></b> #define <a href="#726">CKM_RIPEMD128</a>                  0x00000230
+<b><a name="727">  727</a></b> #define <a href="#727">CKM_RIPEMD128_HMAC</a>             0x00000231
+<b><a name="728">  728</a></b> #define <a href="#728">CKM_RIPEMD128_HMAC_GENERAL</a>     0x00000232
+<b><a name="729">  729</a></b> #define <a href="#729">CKM_RIPEMD160</a>                  0x00000240
+<b><a name="730">  730</a></b> #define <a href="#730">CKM_RIPEMD160_HMAC</a>             0x00000241
+<b><a name="731">  731</a></b> #define <a href="#731">CKM_RIPEMD160_HMAC_GENERAL</a>     0x00000242
+<b><a name="732">  732</a></b> 
+<b><a name="733">  733</a></b> /* CKM_SHA256/384/512 are new for v2.20 */
+<b><a name="734">  734</a></b> #define <a href="#734">CKM_SHA256</a>                     0x00000250
+<b><a name="735">  735</a></b> #define <a href="#735">CKM_SHA256_HMAC</a>                0x00000251
+<b><a name="736">  736</a></b> #define <a href="#736">CKM_SHA256_HMAC_GENERAL</a>        0x00000252
+<b><a name="737">  737</a></b> #define <a href="#737">CKM_SHA384</a>                     0x00000260
+<b><a name="738">  738</a></b> #define <a href="#738">CKM_SHA384_HMAC</a>                0x00000261
+<b><a name="739">  739</a></b> #define <a href="#739">CKM_SHA384_HMAC_GENERAL</a>        0x00000262
+<b><a name="740">  740</a></b> #define <a href="#740">CKM_SHA512</a>                     0x00000270
+<b><a name="741">  741</a></b> #define <a href="#741">CKM_SHA512_HMAC</a>                0x00000271
+<b><a name="742">  742</a></b> #define <a href="#742">CKM_SHA512_HMAC_GENERAL</a>        0x00000272
+<b><a name="743">  743</a></b> 
+<b><a name="744">  744</a></b> /* All of the following mechanisms are new for v2.0 */
+<b><a name="745">  745</a></b> /* Note that CAST128 and CAST5 are the same algorithm */
+<b><a name="746">  746</a></b> #define <a href="#746">CKM_CAST_KEY_GEN</a>               0x00000300
+<b><a name="747">  747</a></b> #define <a href="#747">CKM_CAST_ECB</a>                   0x00000301
+<b><a name="748">  748</a></b> #define <a href="#748">CKM_CAST_CBC</a>                   0x00000302
+<b><a name="749">  749</a></b> #define <a href="#749">CKM_CAST_MAC</a>                   0x00000303
+<b><a name="750">  750</a></b> #define <a href="#750">CKM_CAST_MAC_GENERAL</a>           0x00000304
+<b><a name="751">  751</a></b> #define <a href="#751">CKM_CAST_CBC_PAD</a>               0x00000305
+<b><a name="752">  752</a></b> #define <a href="#752">CKM_CAST3_KEY_GEN</a>              0x00000310
+<b><a name="753">  753</a></b> #define <a href="#753">CKM_CAST3_ECB</a>                  0x00000311
+<b><a name="754">  754</a></b> #define <a href="#754">CKM_CAST3_CBC</a>                  0x00000312
+<b><a name="755">  755</a></b> #define <a href="#755">CKM_CAST3_MAC</a>                  0x00000313
+<b><a name="756">  756</a></b> #define <a href="#756">CKM_CAST3_MAC_GENERAL</a>          0x00000314
+<b><a name="757">  757</a></b> #define <a href="#757">CKM_CAST3_CBC_PAD</a>              0x00000315
+<b><a name="758">  758</a></b> #define <a href="#758">CKM_CAST5_KEY_GEN</a>              0x00000320
+<b><a name="759">  759</a></b> #define <a href="#759">CKM_CAST128_KEY_GEN</a>            0x00000320
+<b><a name="760">  760</a></b> #define <a href="#760">CKM_CAST5_ECB</a>                  0x00000321
+<b><a name="761">  761</a></b> #define <a href="#761">CKM_CAST128_ECB</a>                0x00000321
+<b><a name="762">  762</a></b> #define <a href="#762">CKM_CAST5_CBC</a>                  0x00000322
+<b><a name="763">  763</a></b> #define <a href="#763">CKM_CAST128_CBC</a>                0x00000322
+<b><a name="764">  764</a></b> #define <a href="#764">CKM_CAST5_MAC</a>                  0x00000323
+<b><a name="765">  765</a></b> #define <a href="#765">CKM_CAST128_MAC</a>                0x00000323
+<b><a name="766">  766</a></b> #define <a href="#766">CKM_CAST5_MAC_GENERAL</a>          0x00000324
+<b><a name="767">  767</a></b> #define <a href="#767">CKM_CAST128_MAC_GENERAL</a>        0x00000324
+<b><a name="768">  768</a></b> #define <a href="#768">CKM_CAST5_CBC_PAD</a>              0x00000325
+<b><a name="769">  769</a></b> #define <a href="#769">CKM_CAST128_CBC_PAD</a>            0x00000325
+<b><a name="770">  770</a></b> #define <a href="#770">CKM_RC5_KEY_GEN</a>                0x00000330
+<b><a name="771">  771</a></b> #define <a href="#771">CKM_RC5_ECB</a>                    0x00000331
+<b><a name="772">  772</a></b> #define <a href="#772">CKM_RC5_CBC</a>                    0x00000332
+<b><a name="773">  773</a></b> #define <a href="#773">CKM_RC5_MAC</a>                    0x00000333
+<b><a name="774">  774</a></b> #define <a href="#774">CKM_RC5_MAC_GENERAL</a>            0x00000334
+<b><a name="775">  775</a></b> #define <a href="#775">CKM_RC5_CBC_PAD</a>                0x00000335
+<b><a name="776">  776</a></b> #define <a href="#776">CKM_IDEA_KEY_GEN</a>               0x00000340
+<b><a name="777">  777</a></b> #define <a href="#777">CKM_IDEA_ECB</a>                   0x00000341
+<b><a name="778">  778</a></b> #define <a href="#778">CKM_IDEA_CBC</a>                   0x00000342
+<b><a name="779">  779</a></b> #define <a href="#779">CKM_IDEA_MAC</a>                   0x00000343
+<b><a name="780">  780</a></b> #define <a href="#780">CKM_IDEA_MAC_GENERAL</a>           0x00000344
+<b><a name="781">  781</a></b> #define <a href="#781">CKM_IDEA_CBC_PAD</a>               0x00000345
+<b><a name="782">  782</a></b> #define <a href="#782">CKM_GENERIC_SECRET_KEY_GEN</a>     0x00000350
+<b><a name="783">  783</a></b> #define <a href="#783">CKM_CONCATENATE_BASE_AND_KEY</a>   0x00000360
+<b><a name="784">  784</a></b> #define <a href="#784">CKM_CONCATENATE_BASE_AND_DATA</a>  0x00000362
+<b><a name="785">  785</a></b> #define <a href="#785">CKM_CONCATENATE_DATA_AND_BASE</a>  0x00000363
+<b><a name="786">  786</a></b> #define <a href="#786">CKM_XOR_BASE_AND_DATA</a>          0x00000364
+<b><a name="787">  787</a></b> #define <a href="#787">CKM_EXTRACT_KEY_FROM_KEY</a>       0x00000365
+<b><a name="788">  788</a></b> #define <a href="#788">CKM_SSL3_PRE_MASTER_KEY_GEN</a>    0x00000370
+<b><a name="789">  789</a></b> #define <a href="#789">CKM_SSL3_MASTER_KEY_DERIVE</a>     0x00000371
+<b><a name="790">  790</a></b> #define <a href="#790">CKM_SSL3_KEY_AND_MAC_DERIVE</a>    0x00000372
+<b><a name="791">  791</a></b> 
+<b><a name="792">  792</a></b> /* CKM_SSL3_MASTER_KEY_DERIVE_DH, CKM_TLS_PRE_MASTER_KEY_GEN,
+<b><a name="793">  793</a></b>  * CKM_TLS_MASTER_KEY_DERIVE, CKM_TLS_KEY_AND_MAC_DERIVE, and
+<b><a name="794">  794</a></b>  * CKM_TLS_MASTER_KEY_DERIVE_DH are new for v2.11 */
+<b><a name="795">  795</a></b> #define <a href="#795">CKM_SSL3_MASTER_KEY_DERIVE_DH</a>  0x00000373
+<b><a name="796">  796</a></b> #define <a href="#796">CKM_TLS_PRE_MASTER_KEY_GEN</a>     0x00000374
+<b><a name="797">  797</a></b> #define <a href="#797">CKM_TLS_MASTER_KEY_DERIVE</a>      0x00000375
+<b><a name="798">  798</a></b> #define <a href="#798">CKM_TLS_KEY_AND_MAC_DERIVE</a>     0x00000376
+<b><a name="799">  799</a></b> #define <a href="#799">CKM_TLS_MASTER_KEY_DERIVE_DH</a>   0x00000377
+<b><a name="800">  800</a></b> 
+<b><a name="801">  801</a></b> /* CKM_TLS_PRF is new for v2.20 */
+<b><a name="802">  802</a></b> #define <a href="#802">CKM_TLS_PRF</a>                    0x00000378
+<b><a name="803">  803</a></b> 
+<b><a name="804">  804</a></b> #define <a href="#804">CKM_SSL3_MD5_MAC</a>               0x00000380
+<b><a name="805">  805</a></b> #define <a href="#805">CKM_SSL3_SHA1_MAC</a>              0x00000381
+<b><a name="806">  806</a></b> #define <a href="#806">CKM_MD5_KEY_DERIVATION</a>         0x00000390
+<b><a name="807">  807</a></b> #define <a href="#807">CKM_MD2_KEY_DERIVATION</a>         0x00000391
+<b><a name="808">  808</a></b> #define <a href="#808">CKM_SHA1_KEY_DERIVATION</a>        0x00000392
+<b><a name="809">  809</a></b> 
+<b><a name="810">  810</a></b> /* CKM_SHA256/384/512 are new for v2.20 */
+<b><a name="811">  811</a></b> #define <a href="#811">CKM_SHA256_KEY_DERIVATION</a>      0x00000393
+<b><a name="812">  812</a></b> #define <a href="#812">CKM_SHA384_KEY_DERIVATION</a>      0x00000394
+<b><a name="813">  813</a></b> #define <a href="#813">CKM_SHA512_KEY_DERIVATION</a>      0x00000395
+<b><a name="814">  814</a></b> 
+<b><a name="815">  815</a></b> #define <a href="#815">CKM_PBE_MD2_DES_CBC</a>            0x000003A0
+<b><a name="816">  816</a></b> #define <a href="#816">CKM_PBE_MD5_DES_CBC</a>            0x000003A1
+<b><a name="817">  817</a></b> #define <a href="#817">CKM_PBE_MD5_CAST_CBC</a>           0x000003A2
+<b><a name="818">  818</a></b> #define <a href="#818">CKM_PBE_MD5_CAST3_CBC</a>          0x000003A3
+<b><a name="819">  819</a></b> #define <a href="#819">CKM_PBE_MD5_CAST5_CBC</a>          0x000003A4
+<b><a name="820">  820</a></b> #define <a href="#820">CKM_PBE_MD5_CAST128_CBC</a>        0x000003A4
+<b><a name="821">  821</a></b> #define <a href="#821">CKM_PBE_SHA1_CAST5_CBC</a>         0x000003A5
+<b><a name="822">  822</a></b> #define <a href="#822">CKM_PBE_SHA1_CAST128_CBC</a>       0x000003A5
+<b><a name="823">  823</a></b> #define <a href="#823">CKM_PBE_SHA1_RC4_128</a>           0x000003A6
+<b><a name="824">  824</a></b> #define <a href="#824">CKM_PBE_SHA1_RC4_40</a>            0x000003A7
+<b><a name="825">  825</a></b> #define <a href="#825">CKM_PBE_SHA1_DES3_EDE_CBC</a>      0x000003A8
+<b><a name="826">  826</a></b> #define <a href="#826">CKM_PBE_SHA1_DES2_EDE_CBC</a>      0x000003A9
+<b><a name="827">  827</a></b> #define <a href="#827">CKM_PBE_SHA1_RC2_128_CBC</a>       0x000003AA
+<b><a name="828">  828</a></b> #define <a href="#828">CKM_PBE_SHA1_RC2_40_CBC</a>        0x000003AB
+<b><a name="829">  829</a></b> 
+<b><a name="830">  830</a></b> /* CKM_PKCS5_PBKD2 is new for v2.10 */
+<b><a name="831">  831</a></b> #define <a href="#831">CKM_PKCS5_PBKD2</a>                0x000003B0
+<b><a name="832">  832</a></b> 
+<b><a name="833">  833</a></b> #define <a href="#833">CKM_PBA_SHA1_WITH_SHA1_HMAC</a>    0x000003C0
+<b><a name="834">  834</a></b> 
+<b><a name="835">  835</a></b> /* WTLS mechanisms are new for v2.20 */
+<b><a name="836">  836</a></b> #define <a href="#836">CKM_WTLS_PRE_MASTER_KEY_GEN</a>         0x000003D0
+<b><a name="837">  837</a></b> #define <a href="#837">CKM_WTLS_MASTER_KEY_DERIVE</a>          0x000003D1
+<b><a name="838">  838</a></b> #define <a href="#838">CKM_WTLS_MASTER_KEY_DERIVE_DH_ECC</a>   0x000003D2
+<b><a name="839">  839</a></b> #define <a href="#839">CKM_WTLS_PRF</a>                        0x000003D3
+<b><a name="840">  840</a></b> #define <a href="#840">CKM_WTLS_SERVER_KEY_AND_MAC_DERIVE</a>  0x000003D4
+<b><a name="841">  841</a></b> #define <a href="#841">CKM_WTLS_CLIENT_KEY_AND_MAC_DERIVE</a>  0x000003D5
+<b><a name="842">  842</a></b> 
+<b><a name="843">  843</a></b> #define <a href="#843">CKM_KEY_WRAP_LYNKS</a>             0x00000400
+<b><a name="844">  844</a></b> #define <a href="#844">CKM_KEY_WRAP_SET_OAEP</a>          0x00000401
+<b><a name="845">  845</a></b> 
+<b><a name="846">  846</a></b> /* CKM_CMS_SIG is new for v2.20 */
+<b><a name="847">  847</a></b> #define <a href="#847">CKM_CMS_SIG</a>                    0x00000500
+<b><a name="848">  848</a></b> 
+<b><a name="849">  849</a></b> /* Fortezza mechanisms */
+<b><a name="850">  850</a></b> #define <a href="#850">CKM_SKIPJACK_KEY_GEN</a>           0x00001000
+<b><a name="851">  851</a></b> #define <a href="#851">CKM_SKIPJACK_ECB64</a>             0x00001001
+<b><a name="852">  852</a></b> #define <a href="#852">CKM_SKIPJACK_CBC64</a>             0x00001002
+<b><a name="853">  853</a></b> #define <a href="#853">CKM_SKIPJACK_OFB64</a>             0x00001003
+<b><a name="854">  854</a></b> #define <a href="#854">CKM_SKIPJACK_CFB64</a>             0x00001004
+<b><a name="855">  855</a></b> #define <a href="#855">CKM_SKIPJACK_CFB32</a>             0x00001005
+<b><a name="856">  856</a></b> #define <a href="#856">CKM_SKIPJACK_CFB16</a>             0x00001006
+<b><a name="857">  857</a></b> #define <a href="#857">CKM_SKIPJACK_CFB8</a>              0x00001007
+<b><a name="858">  858</a></b> #define <a href="#858">CKM_SKIPJACK_WRAP</a>              0x00001008
+<b><a name="859">  859</a></b> #define <a href="#859">CKM_SKIPJACK_PRIVATE_WRAP</a>      0x00001009
+<b><a name="860">  860</a></b> #define <a href="#860">CKM_SKIPJACK_RELAYX</a>            0x0000100a
+<b><a name="861">  861</a></b> #define <a href="#861">CKM_KEA_KEY_PAIR_GEN</a>           0x00001010
+<b><a name="862">  862</a></b> #define <a href="#862">CKM_KEA_KEY_DERIVE</a>             0x00001011
+<b><a name="863">  863</a></b> #define <a href="#863">CKM_FORTEZZA_TIMESTAMP</a>         0x00001020
+<b><a name="864">  864</a></b> #define <a href="#864">CKM_BATON_KEY_GEN</a>              0x00001030
+<b><a name="865">  865</a></b> #define <a href="#865">CKM_BATON_ECB128</a>               0x00001031
+<b><a name="866">  866</a></b> #define <a href="#866">CKM_BATON_ECB96</a>                0x00001032
+<b><a name="867">  867</a></b> #define <a href="#867">CKM_BATON_CBC128</a>               0x00001033
+<b><a name="868">  868</a></b> #define <a href="#868">CKM_BATON_COUNTER</a>              0x00001034
+<b><a name="869">  869</a></b> #define <a href="#869">CKM_BATON_SHUFFLE</a>              0x00001035
+<b><a name="870">  870</a></b> #define <a href="#870">CKM_BATON_WRAP</a>                 0x00001036
+<b><a name="871">  871</a></b> 
+<b><a name="872">  872</a></b> /* CKM_ECDSA_KEY_PAIR_GEN is deprecated in v2.11,
+<b><a name="873">  873</a></b>  * CKM_EC_KEY_PAIR_GEN is preferred */
+<b><a name="874">  874</a></b> #define <a href="#874">CKM_ECDSA_KEY_PAIR_GEN</a>         0x00001040
+<b><a name="875">  875</a></b> #define <a href="#875">CKM_EC_KEY_PAIR_GEN</a>            0x00001040
+<b><a name="876">  876</a></b> 
+<b><a name="877">  877</a></b> #define <a href="#877">CKM_ECDSA</a>                      0x00001041
+<b><a name="878">  878</a></b> #define <a href="#878">CKM_ECDSA_SHA1</a>                 0x00001042
+<b><a name="879">  879</a></b> 
+<b><a name="880">  880</a></b> /* CKM_ECDH1_DERIVE, CKM_ECDH1_COFACTOR_DERIVE, and CKM_ECMQV_DERIVE
+<b><a name="881">  881</a></b>  * are new for v2.11 */
+<b><a name="882">  882</a></b> #define <a href="#882">CKM_ECDH1_DERIVE</a>               0x00001050
+<b><a name="883">  883</a></b> #define <a href="#883">CKM_ECDH1_COFACTOR_DERIVE</a>      0x00001051
+<b><a name="884">  884</a></b> #define <a href="#884">CKM_ECMQV_DERIVE</a>               0x00001052
+<b><a name="885">  885</a></b> 
+<b><a name="886">  886</a></b> #define <a href="#886">CKM_JUNIPER_KEY_GEN</a>            0x00001060
+<b><a name="887">  887</a></b> #define <a href="#887">CKM_JUNIPER_ECB128</a>             0x00001061
+<b><a name="888">  888</a></b> #define <a href="#888">CKM_JUNIPER_CBC128</a>             0x00001062
+<b><a name="889">  889</a></b> #define <a href="#889">CKM_JUNIPER_COUNTER</a>            0x00001063
+<b><a name="890">  890</a></b> #define <a href="#890">CKM_JUNIPER_SHUFFLE</a>            0x00001064
+<b><a name="891">  891</a></b> #define <a href="#891">CKM_JUNIPER_WRAP</a>               0x00001065
+<b><a name="892">  892</a></b> #define <a href="#892">CKM_FASTHASH</a>                   0x00001070
+<b><a name="893">  893</a></b> 
+<b><a name="894">  894</a></b> /* CKM_AES_KEY_GEN, CKM_AES_ECB, CKM_AES_CBC, CKM_AES_MAC,
+<b><a name="895">  895</a></b>  * CKM_AES_MAC_GENERAL, CKM_AES_CBC_PAD, CKM_DSA_PARAMETER_GEN,
+<b><a name="896">  896</a></b>  * CKM_DH_PKCS_PARAMETER_GEN, and CKM_X9_42_DH_PARAMETER_GEN are
+<b><a name="897">  897</a></b>  * new for v2.11 */
+<b><a name="898">  898</a></b> #define <a href="#898">CKM_AES_KEY_GEN</a>                0x00001080
+<b><a name="899">  899</a></b> #define <a href="#899">CKM_AES_ECB</a>                    0x00001081
+<b><a name="900">  900</a></b> #define <a href="#900">CKM_AES_CBC</a>                    0x00001082
+<b><a name="901">  901</a></b> #define <a href="#901">CKM_AES_MAC</a>                    0x00001083
+<b><a name="902">  902</a></b> #define <a href="#902">CKM_AES_MAC_GENERAL</a>            0x00001084
+<b><a name="903">  903</a></b> #define <a href="#903">CKM_AES_CBC_PAD</a>                0x00001085
+<b><a name="904">  904</a></b> 
+<b><a name="905">  905</a></b> /* BlowFish and TwoFish are new for v2.20 */
+<b><a name="906">  906</a></b> #define <a href="#906">CKM_BLOWFISH_KEY_GEN</a>           0x00001090
+<b><a name="907">  907</a></b> #define <a href="#907">CKM_BLOWFISH_CBC</a>               0x00001091
+<b><a name="908">  908</a></b> #define <a href="#908">CKM_TWOFISH_KEY_GEN</a>            0x00001092
+<b><a name="909">  909</a></b> #define <a href="#909">CKM_TWOFISH_CBC</a>                0x00001093
+<b><a name="910">  910</a></b> 
+<b><a name="911">  911</a></b> 
+<b><a name="912">  912</a></b> /* CKM_xxx_ENCRYPT_DATA mechanisms are new for v2.20 */
+<b><a name="913">  913</a></b> #define <a href="#913">CKM_DES_ECB_ENCRYPT_DATA</a>       0x00001100
+<b><a name="914">  914</a></b> #define <a href="#914">CKM_DES_CBC_ENCRYPT_DATA</a>       0x00001101
+<b><a name="915">  915</a></b> #define <a href="#915">CKM_DES3_ECB_ENCRYPT_DATA</a>      0x00001102
+<b><a name="916">  916</a></b> #define <a href="#916">CKM_DES3_CBC_ENCRYPT_DATA</a>      0x00001103
+<b><a name="917">  917</a></b> #define <a href="#917">CKM_AES_ECB_ENCRYPT_DATA</a>       0x00001104
+<b><a name="918">  918</a></b> #define <a href="#918">CKM_AES_CBC_ENCRYPT_DATA</a>       0x00001105
+<b><a name="919">  919</a></b> 
+<b><a name="920">  920</a></b> #define <a href="#920">CKM_DSA_PARAMETER_GEN</a>          0x00002000
+<b><a name="921">  921</a></b> #define <a href="#921">CKM_DH_PKCS_PARAMETER_GEN</a>      0x00002001
+<b><a name="922">  922</a></b> #define <a href="#922">CKM_X9_42_DH_PARAMETER_GEN</a>     0x00002002
+<b><a name="923">  923</a></b> 
+<b><a name="924">  924</a></b> #define <a href="#924">CKM_VENDOR_DEFINED</a>             0x80000000
+<b><a name="925">  925</a></b> 
+<b><a name="926">  926</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#926"><a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a>_PTR</a>;
+<b><a name="927">  927</a></b> 
+<b><a name="928">  928</a></b> 
+<b><a name="929">  929</a></b> /* CK_MECHANISM is a structure that specifies a particular
+<b><a name="930">  930</a></b>  * mechanism  */
+<b><a name="931">  931</a></b> typedef struct <a href="#931">CK_MECHANISM</a> {
+<b><a name="932">  932</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a> mechanism;
+<b><a name="933">  933</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a>       pParameter;
+<b><a name="934">  934</a></b> 
+<b><a name="935">  935</a></b>   /* ulParameterLen was changed from CK_USHORT to CK_ULONG for
+<b><a name="936">  936</a></b>    * v2.0 */
+<b><a name="937">  937</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          ulParameterLen;  /* in bytes */
+<b><a name="938">  938</a></b> } <a href="#938">CK_MECHANISM</a>;
+<b><a name="939">  939</a></b> 
+<b><a name="940">  940</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM">CK_MECHANISM</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM">CK_MECHANISM</a></a>_PTR;
+<b><a name="941">  941</a></b> 
+<b><a name="942">  942</a></b> 
+<b><a name="943">  943</a></b> /* CK_MECHANISM_INFO provides information about a particular
+<b><a name="944">  944</a></b>  * mechanism */
+<b><a name="945">  945</a></b> typedef struct <a href="#945">CK_MECHANISM_INFO</a> {
+<b><a name="946">  946</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>    ulMinKeySize;
+<b><a name="947">  947</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>    ulMaxKeySize;
+<b><a name="948">  948</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_FLAGS">CK_FLAGS</a>    flags;
+<b><a name="949">  949</a></b> } <a href="#949">CK_MECHANISM_INFO</a>;
+<b><a name="950">  950</a></b> 
+<b><a name="951">  951</a></b> /* The flags are defined as follows:
+<b><a name="952">  952</a></b>  *      Bit Flag               Mask        Meaning */
+<b><a name="953">  953</a></b> #define <a href="#953">CKF_HW</a>                 0x00000001  /* performed by HW */
+<b><a name="954">  954</a></b> 
+<b><a name="955">  955</a></b> /* The flags CKF_ENCRYPT, CKF_DECRYPT, CKF_DIGEST, CKF_SIGN,
+<b><a name="956">  956</a></b>  * CKG_SIGN_RECOVER, CKF_VERIFY, CKF_VERIFY_RECOVER,
+<b><a name="957">  957</a></b>  * CKF_GENERATE, CKF_GENERATE_KEY_PAIR, CKF_WRAP, CKF_UNWRAP,
+<b><a name="958">  958</a></b>  * and CKF_DERIVE are new for v2.0.  They specify whether or not
+<b><a name="959">  959</a></b>  * a mechanism can be used for a particular task */
+<b><a name="960">  960</a></b> #define <a href="#960">CKF_ENCRYPT</a>            0x00000100
+<b><a name="961">  961</a></b> #define <a href="#961">CKF_DECRYPT</a>            0x00000200
+<b><a name="962">  962</a></b> #define <a href="#962">CKF_DIGEST</a>             0x00000400
+<b><a name="963">  963</a></b> #define <a href="#963">CKF_SIGN</a>               0x00000800
+<b><a name="964">  964</a></b> #define <a href="#964">CKF_SIGN_RECOVER</a>       0x00001000
+<b><a name="965">  965</a></b> #define <a href="#965">CKF_VERIFY</a>             0x00002000
+<b><a name="966">  966</a></b> #define <a href="#966">CKF_VERIFY_RECOVER</a>     0x00004000
+<b><a name="967">  967</a></b> #define <a href="#967">CKF_GENERATE</a>           0x00008000
+<b><a name="968">  968</a></b> #define <a href="#968">CKF_GENERATE_KEY_PAIR</a>  0x00010000
+<b><a name="969">  969</a></b> #define <a href="#969">CKF_WRAP</a>               0x00020000
+<b><a name="970">  970</a></b> #define <a href="#970">CKF_UNWRAP</a>             0x00040000
+<b><a name="971">  971</a></b> #define <a href="#971">CKF_DERIVE</a>             0x00080000
+<b><a name="972">  972</a></b> 
+<b><a name="973">  973</a></b> /* CKF_EC_F_P, CKF_EC_F_2M, CKF_EC_ECPARAMETERS, CKF_EC_NAMEDCURVE,
+<b><a name="974">  974</a></b>  * CKF_EC_UNCOMPRESS, and CKF_EC_COMPRESS are new for v2.11. They
+<b><a name="975">  975</a></b>  * describe a token's EC capabilities not available in mechanism
+<b><a name="976">  976</a></b>  * information. */
+<b><a name="977">  977</a></b> #define <a href="#977">CKF_EC_F_P</a>             0x00100000
+<b><a name="978">  978</a></b> #define <a href="#978">CKF_EC_F_2M</a>            0x00200000
+<b><a name="979">  979</a></b> #define <a href="#979">CKF_EC_ECPARAMETERS</a>    0x00400000
+<b><a name="980">  980</a></b> #define <a href="#980">CKF_EC_NAMEDCURVE</a>      0x00800000
+<b><a name="981">  981</a></b> #define <a href="#981">CKF_EC_UNCOMPRESS</a>      0x01000000
+<b><a name="982">  982</a></b> #define <a href="#982">CKF_EC_COMPRESS</a>        0x02000000
+<b><a name="983">  983</a></b> 
+<b><a name="984">  984</a></b> #define <a href="#984">CKF_EXTENSION</a>          0x80000000 /* FALSE for this version */
+<b><a name="985">  985</a></b> 
+<b><a name="986">  986</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_INFO">CK_MECHANISM_INFO</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#986"><a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_INFO">CK_MECHANISM_INFO</a></a>_PTR</a>;
+<b><a name="987">  987</a></b> 
+<b><a name="988">  988</a></b> 
+<b><a name="989">  989</a></b> /* CK_RV is a value that identifies the return value of a
+<b><a name="990">  990</a></b>  * PKCS #11 function */
+<b><a name="991">  991</a></b> /* CK_RV was changed from CK_USHORT to CK_ULONG for v2.0 */
+<b><a name="992">  992</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#992">CK_RV</a>;
+<b><a name="993">  993</a></b> 
+<b><a name="994">  994</a></b> #define <a href="#994">CKR_OK</a>                                0x00000000
+<b><a name="995">  995</a></b> #define <a href="#995">CKR_CANCEL</a>                            0x00000001
+<b><a name="996">  996</a></b> #define <a href="#996">CKR_HOST_MEMORY</a>                       0x00000002
+<b><a name="997">  997</a></b> #define <a href="#997">CKR_SLOT_ID_INVALID</a>                   0x00000003
+<b><a name="998">  998</a></b> 
+<b><a name="999">  999</a></b> /* CKR_FLAGS_INVALID was removed for v2.0 */
+<b><a name="1000"> 1000</a></b> 
+<b><a name="1001"> 1001</a></b> /* CKR_GENERAL_ERROR and CKR_FUNCTION_FAILED are new for v2.0 */
+<b><a name="1002"> 1002</a></b> #define <a href="#1002">CKR_GENERAL_ERROR</a>                     0x00000005
+<b><a name="1003"> 1003</a></b> #define <a href="#1003">CKR_FUNCTION_FAILED</a>                   0x00000006
+<b><a name="1004"> 1004</a></b> 
+<b><a name="1005"> 1005</a></b> /* CKR_ARGUMENTS_BAD, CKR_NO_EVENT, CKR_NEED_TO_CREATE_THREADS,
+<b><a name="1006"> 1006</a></b>  * and CKR_CANT_LOCK are new for v2.01 */
+<b><a name="1007"> 1007</a></b> #define <a href="#1007">CKR_ARGUMENTS_BAD</a>                     0x00000007
+<b><a name="1008"> 1008</a></b> #define <a href="#1008">CKR_NO_EVENT</a>                          0x00000008
+<b><a name="1009"> 1009</a></b> #define <a href="#1009">CKR_NEED_TO_CREATE_THREADS</a>            0x00000009
+<b><a name="1010"> 1010</a></b> #define <a href="#1010">CKR_CANT_LOCK</a>                         0x0000000A
+<b><a name="1011"> 1011</a></b> 
+<b><a name="1012"> 1012</a></b> #define <a href="#1012">CKR_ATTRIBUTE_READ_ONLY</a>               0x00000010
+<b><a name="1013"> 1013</a></b> #define <a href="#1013">CKR_ATTRIBUTE_SENSITIVE</a>               0x00000011
+<b><a name="1014"> 1014</a></b> #define <a href="#1014">CKR_ATTRIBUTE_TYPE_INVALID</a>            0x00000012
+<b><a name="1015"> 1015</a></b> #define <a href="#1015">CKR_ATTRIBUTE_VALUE_INVALID</a>           0x00000013
+<b><a name="1016"> 1016</a></b> #define <a href="#1016">CKR_DATA_INVALID</a>                      0x00000020
+<b><a name="1017"> 1017</a></b> #define <a href="#1017">CKR_DATA_LEN_RANGE</a>                    0x00000021
+<b><a name="1018"> 1018</a></b> #define <a href="#1018">CKR_DEVICE_ERROR</a>                      0x00000030
+<b><a name="1019"> 1019</a></b> #define <a href="#1019">CKR_DEVICE_MEMORY</a>                     0x00000031
+<b><a name="1020"> 1020</a></b> #define <a href="#1020">CKR_DEVICE_REMOVED</a>                    0x00000032
+<b><a name="1021"> 1021</a></b> #define <a href="#1021">CKR_ENCRYPTED_DATA_INVALID</a>            0x00000040
+<b><a name="1022"> 1022</a></b> #define <a href="#1022">CKR_ENCRYPTED_DATA_LEN_RANGE</a>          0x00000041
+<b><a name="1023"> 1023</a></b> #define <a href="#1023">CKR_FUNCTION_CANCELED</a>                 0x00000050
+<b><a name="1024"> 1024</a></b> #define <a href="#1024">CKR_FUNCTION_NOT_PARALLEL</a>             0x00000051
+<b><a name="1025"> 1025</a></b> 
+<b><a name="1026"> 1026</a></b> /* CKR_FUNCTION_NOT_SUPPORTED is new for v2.0 */
+<b><a name="1027"> 1027</a></b> #define <a href="#1027">CKR_FUNCTION_NOT_SUPPORTED</a>            0x00000054
+<b><a name="1028"> 1028</a></b> 
+<b><a name="1029"> 1029</a></b> #define <a href="#1029">CKR_KEY_HANDLE_INVALID</a>                0x00000060
+<b><a name="1030"> 1030</a></b> 
+<b><a name="1031"> 1031</a></b> /* CKR_KEY_SENSITIVE was removed for v2.0 */
+<b><a name="1032"> 1032</a></b> 
+<b><a name="1033"> 1033</a></b> #define <a href="#1033">CKR_KEY_SIZE_RANGE</a>                    0x00000062
+<b><a name="1034"> 1034</a></b> #define <a href="#1034">CKR_KEY_TYPE_INCONSISTENT</a>             0x00000063
+<b><a name="1035"> 1035</a></b> 
+<b><a name="1036"> 1036</a></b> /* CKR_KEY_NOT_NEEDED, CKR_KEY_CHANGED, CKR_KEY_NEEDED,
+<b><a name="1037"> 1037</a></b>  * CKR_KEY_INDIGESTIBLE, CKR_KEY_FUNCTION_NOT_PERMITTED,
+<b><a name="1038"> 1038</a></b>  * CKR_KEY_NOT_WRAPPABLE, and CKR_KEY_UNEXTRACTABLE are new for
+<b><a name="1039"> 1039</a></b>  * v2.0 */
+<b><a name="1040"> 1040</a></b> #define <a href="#1040">CKR_KEY_NOT_NEEDED</a>                    0x00000064
+<b><a name="1041"> 1041</a></b> #define <a href="#1041">CKR_KEY_CHANGED</a>                       0x00000065
+<b><a name="1042"> 1042</a></b> #define <a href="#1042">CKR_KEY_NEEDED</a>                        0x00000066
+<b><a name="1043"> 1043</a></b> #define <a href="#1043">CKR_KEY_INDIGESTIBLE</a>                  0x00000067
+<b><a name="1044"> 1044</a></b> #define <a href="#1044">CKR_KEY_FUNCTION_NOT_PERMITTED</a>        0x00000068
+<b><a name="1045"> 1045</a></b> #define <a href="#1045">CKR_KEY_NOT_WRAPPABLE</a>                 0x00000069
+<b><a name="1046"> 1046</a></b> #define <a href="#1046">CKR_KEY_UNEXTRACTABLE</a>                 0x0000006A
+<b><a name="1047"> 1047</a></b> 
+<b><a name="1048"> 1048</a></b> #define <a href="#1048">CKR_MECHANISM_INVALID</a>                 0x00000070
+<b><a name="1049"> 1049</a></b> #define <a href="#1049">CKR_MECHANISM_PARAM_INVALID</a>           0x00000071
+<b><a name="1050"> 1050</a></b> 
+<b><a name="1051"> 1051</a></b> /* CKR_OBJECT_CLASS_INCONSISTENT and CKR_OBJECT_CLASS_INVALID
+<b><a name="1052"> 1052</a></b>  * were removed for v2.0 */
+<b><a name="1053"> 1053</a></b> #define <a href="#1053">CKR_OBJECT_HANDLE_INVALID</a>             0x00000082
+<b><a name="1054"> 1054</a></b> #define <a href="#1054">CKR_OPERATION_ACTIVE</a>                  0x00000090
+<b><a name="1055"> 1055</a></b> #define <a href="#1055">CKR_OPERATION_NOT_INITIALIZED</a>         0x00000091
+<b><a name="1056"> 1056</a></b> #define <a href="#1056">CKR_PIN_INCORRECT</a>                     0x000000A0
+<b><a name="1057"> 1057</a></b> #define <a href="#1057">CKR_PIN_INVALID</a>                       0x000000A1
+<b><a name="1058"> 1058</a></b> #define <a href="#1058">CKR_PIN_LEN_RANGE</a>                     0x000000A2
+<b><a name="1059"> 1059</a></b> 
+<b><a name="1060"> 1060</a></b> /* CKR_PIN_EXPIRED and CKR_PIN_LOCKED are new for v2.0 */
+<b><a name="1061"> 1061</a></b> #define <a href="#1061">CKR_PIN_EXPIRED</a>                       0x000000A3
+<b><a name="1062"> 1062</a></b> #define <a href="#1062">CKR_PIN_LOCKED</a>                        0x000000A4
+<b><a name="1063"> 1063</a></b> 
+<b><a name="1064"> 1064</a></b> #define <a href="#1064">CKR_SESSION_CLOSED</a>                    0x000000B0
+<b><a name="1065"> 1065</a></b> #define <a href="#1065">CKR_SESSION_COUNT</a>                     0x000000B1
+<b><a name="1066"> 1066</a></b> #define <a href="#1066">CKR_SESSION_HANDLE_INVALID</a>            0x000000B3
+<b><a name="1067"> 1067</a></b> #define <a href="#1067">CKR_SESSION_PARALLEL_NOT_SUPPORTED</a>    0x000000B4
+<b><a name="1068"> 1068</a></b> #define <a href="#1068">CKR_SESSION_READ_ONLY</a>                 0x000000B5
+<b><a name="1069"> 1069</a></b> #define <a href="#1069">CKR_SESSION_EXISTS</a>                    0x000000B6
+<b><a name="1070"> 1070</a></b> 
+<b><a name="1071"> 1071</a></b> /* CKR_SESSION_READ_ONLY_EXISTS and
+<b><a name="1072"> 1072</a></b>  * CKR_SESSION_READ_WRITE_SO_EXISTS are new for v2.0 */
+<b><a name="1073"> 1073</a></b> #define <a href="#1073">CKR_SESSION_READ_ONLY_EXISTS</a>          0x000000B7
+<b><a name="1074"> 1074</a></b> #define <a href="#1074">CKR_SESSION_READ_WRITE_SO_EXISTS</a>      0x000000B8
+<b><a name="1075"> 1075</a></b> 
+<b><a name="1076"> 1076</a></b> #define <a href="#1076">CKR_SIGNATURE_INVALID</a>                 0x000000C0
+<b><a name="1077"> 1077</a></b> #define <a href="#1077">CKR_SIGNATURE_LEN_RANGE</a>               0x000000C1
+<b><a name="1078"> 1078</a></b> #define <a href="#1078">CKR_TEMPLATE_INCOMPLETE</a>               0x000000D0
+<b><a name="1079"> 1079</a></b> #define <a href="#1079">CKR_TEMPLATE_INCONSISTENT</a>             0x000000D1
+<b><a name="1080"> 1080</a></b> #define <a href="#1080">CKR_TOKEN_NOT_PRESENT</a>                 0x000000E0
+<b><a name="1081"> 1081</a></b> #define <a href="#1081">CKR_TOKEN_NOT_RECOGNIZED</a>              0x000000E1
+<b><a name="1082"> 1082</a></b> #define <a href="#1082">CKR_TOKEN_WRITE_PROTECTED</a>             0x000000E2
+<b><a name="1083"> 1083</a></b> #define <a href="#1083">CKR_UNWRAPPING_KEY_HANDLE_INVALID</a>     0x000000F0
+<b><a name="1084"> 1084</a></b> #define <a href="#1084">CKR_UNWRAPPING_KEY_SIZE_RANGE</a>         0x000000F1
+<b><a name="1085"> 1085</a></b> #define <a href="#1085">CKR_UNWRAPPING_KEY_TYPE_INCONSISTENT</a>  0x000000F2
+<b><a name="1086"> 1086</a></b> #define <a href="#1086">CKR_USER_ALREADY_LOGGED_IN</a>            0x00000100
+<b><a name="1087"> 1087</a></b> #define <a href="#1087">CKR_USER_NOT_LOGGED_IN</a>                0x00000101
+<b><a name="1088"> 1088</a></b> #define <a href="#1088">CKR_USER_PIN_NOT_INITIALIZED</a>          0x00000102
+<b><a name="1089"> 1089</a></b> #define <a href="#1089">CKR_USER_TYPE_INVALID</a>                 0x00000103
+<b><a name="1090"> 1090</a></b> 
+<b><a name="1091"> 1091</a></b> /* CKR_USER_ANOTHER_ALREADY_LOGGED_IN and CKR_USER_TOO_MANY_TYPES
+<b><a name="1092"> 1092</a></b>  * are new to v2.01 */
+<b><a name="1093"> 1093</a></b> #define <a href="#1093">CKR_USER_ANOTHER_ALREADY_LOGGED_IN</a>    0x00000104
+<b><a name="1094"> 1094</a></b> #define <a href="#1094">CKR_USER_TOO_MANY_TYPES</a>               0x00000105
+<b><a name="1095"> 1095</a></b> 
+<b><a name="1096"> 1096</a></b> #define <a href="#1096">CKR_WRAPPED_KEY_INVALID</a>               0x00000110
+<b><a name="1097"> 1097</a></b> #define <a href="#1097">CKR_WRAPPED_KEY_LEN_RANGE</a>             0x00000112
+<b><a name="1098"> 1098</a></b> #define <a href="#1098">CKR_WRAPPING_KEY_HANDLE_INVALID</a>       0x00000113
+<b><a name="1099"> 1099</a></b> #define <a href="#1099">CKR_WRAPPING_KEY_SIZE_RANGE</a>           0x00000114
+<b><a name="1100"> 1100</a></b> #define <a href="#1100">CKR_WRAPPING_KEY_TYPE_INCONSISTENT</a>    0x00000115
+<b><a name="1101"> 1101</a></b> #define <a href="#1101">CKR_RANDOM_SEED_NOT_SUPPORTED</a>         0x00000120
+<b><a name="1102"> 1102</a></b> 
+<b><a name="1103"> 1103</a></b> /* These are new to v2.0 */
+<b><a name="1104"> 1104</a></b> #define <a href="#1104">CKR_RANDOM_NO_RNG</a>                     0x00000121
+<b><a name="1105"> 1105</a></b> 
+<b><a name="1106"> 1106</a></b> /* These are new to v2.11 */
+<b><a name="1107"> 1107</a></b> #define <a href="#1107">CKR_DOMAIN_PARAMS_INVALID</a>             0x00000130
+<b><a name="1108"> 1108</a></b> 
+<b><a name="1109"> 1109</a></b> /* These are new to v2.0 */
+<b><a name="1110"> 1110</a></b> #define <a href="#1110">CKR_BUFFER_TOO_SMALL</a>                  0x00000150
+<b><a name="1111"> 1111</a></b> #define <a href="#1111">CKR_SAVED_STATE_INVALID</a>               0x00000160
+<b><a name="1112"> 1112</a></b> #define <a href="#1112">CKR_INFORMATION_SENSITIVE</a>             0x00000170
+<b><a name="1113"> 1113</a></b> #define <a href="#1113">CKR_STATE_UNSAVEABLE</a>                  0x00000180
+<b><a name="1114"> 1114</a></b> 
+<b><a name="1115"> 1115</a></b> /* These are new to v2.01 */
+<b><a name="1116"> 1116</a></b> #define <a href="#1116">CKR_CRYPTOKI_NOT_INITIALIZED</a>          0x00000190
+<b><a name="1117"> 1117</a></b> #define <a href="#1117">CKR_CRYPTOKI_ALREADY_INITIALIZED</a>      0x00000191
+<b><a name="1118"> 1118</a></b> #define <a href="#1118">CKR_MUTEX_BAD</a>                         0x000001A0
+<b><a name="1119"> 1119</a></b> #define <a href="#1119">CKR_MUTEX_NOT_LOCKED</a>                  0x000001A1
+<b><a name="1120"> 1120</a></b> 
+<b><a name="1121"> 1121</a></b> /* This is new to v2.20 */
+<b><a name="1122"> 1122</a></b> #define <a href="#1122">CKR_FUNCTION_REJECTED</a>                 0x00000200
+<b><a name="1123"> 1123</a></b> 
+<b><a name="1124"> 1124</a></b> #define <a href="#1124">CKR_VENDOR_DEFINED</a>                    0x80000000
+<b><a name="1125"> 1125</a></b> 
+<b><a name="1126"> 1126</a></b> 
+<b><a name="1127"> 1127</a></b> /* CK_NOTIFY is an application callback that processes events */
+<b><a name="1128"> 1128</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_CALLBACK_FUNCTION">CK_CALLBACK_FUNCTION</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>, CK_NOTIFY)(
+<b><a name="1129"> 1129</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,     /* the session's handle */
+<b><a name="1130"> 1130</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_NOTIFICATION">CK_NOTIFICATION</a>   event,
+<b><a name="1131"> 1131</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a>       pApplication  /* passed to C_OpenSession */
+<b><a name="1132"> 1132</a></b> );
+<b><a name="1133"> 1133</a></b> 
+<b><a name="1134"> 1134</a></b> 
+<b><a name="1135"> 1135</a></b> /* CK_FUNCTION_LIST is a structure holding a PKCS #11 spec
+<b><a name="1136"> 1136</a></b>  * version and pointers of appropriate types to all the
+<b><a name="1137"> 1137</a></b>  * PKCS #11 functions */
+<b><a name="1138"> 1138</a></b> /* CK_FUNCTION_LIST is new for v2.0 */
+<b><a name="1139"> 1139</a></b> typedef struct <a href="#1139">CK_FUNCTION_LIST</a> CK_FUNCTION_LIST;
+<b><a name="1140"> 1140</a></b> 
+<b><a name="1141"> 1141</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_FUNCTION_LIST">CK_FUNCTION_LIST</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1141"><a href="../softoken/pkcs11t.h.dep.html#CK_FUNCTION_LIST">CK_FUNCTION_LIST</a>_PTR</a>;
+<b><a name="1142"> 1142</a></b> 
+<b><a name="1143"> 1143</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_FUNCTION_LIST_PTR">CK_FUNCTION_LIST_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1143"><a href="../softoken/pkcs11t.h.dep.html#CK_FUNCTION_LIST_PTR">CK_FUNCTION_LIST_PTR</a>_PTR</a>;
+<b><a name="1144"> 1144</a></b> 
+<b><a name="1145"> 1145</a></b> 
+<b><a name="1146"> 1146</a></b> /* CK_CREATEMUTEX is an application callback for creating a
+<b><a name="1147"> 1147</a></b>  * mutex object */
+<b><a name="1148"> 1148</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_CALLBACK_FUNCTION">CK_CALLBACK_FUNCTION</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>, CK_CREATEMUTEX)(
+<b><a name="1149"> 1149</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR_PTR">CK_VOID_PTR_PTR</a> <a href="#1149">ppMutex</a>  /* location to receive ptr to mutex */
+<b><a name="1150"> 1150</a></b> );
+<b><a name="1151"> 1151</a></b> 
+<b><a name="1152"> 1152</a></b> 
+<b><a name="1153"> 1153</a></b> /* CK_DESTROYMUTEX is an application callback for destroying a
+<b><a name="1154"> 1154</a></b>  * mutex object */
+<b><a name="1155"> 1155</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_CALLBACK_FUNCTION">CK_CALLBACK_FUNCTION</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>, CK_DESTROYMUTEX)(
+<b><a name="1156"> 1156</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> <a href="#1156">pMutex</a>  /* pointer to mutex */
+<b><a name="1157"> 1157</a></b> );
+<b><a name="1158"> 1158</a></b> 
+<b><a name="1159"> 1159</a></b> 
+<b><a name="1160"> 1160</a></b> /* CK_LOCKMUTEX is an application callback for locking a mutex */
+<b><a name="1161"> 1161</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_CALLBACK_FUNCTION">CK_CALLBACK_FUNCTION</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>, CK_LOCKMUTEX)(
+<b><a name="1162"> 1162</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> <a href="#1162">pMutex</a>  /* pointer to mutex */
+<b><a name="1163"> 1163</a></b> );
+<b><a name="1164"> 1164</a></b> 
+<b><a name="1165"> 1165</a></b> 
+<b><a name="1166"> 1166</a></b> /* CK_UNLOCKMUTEX is an application callback for unlocking a
+<b><a name="1167"> 1167</a></b>  * mutex */
+<b><a name="1168"> 1168</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_CALLBACK_FUNCTION">CK_CALLBACK_FUNCTION</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>, CK_UNLOCKMUTEX)(
+<b><a name="1169"> 1169</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> <a href="#1169">pMutex</a>  /* pointer to mutex */
+<b><a name="1170"> 1170</a></b> );
+<b><a name="1171"> 1171</a></b> 
+<b><a name="1172"> 1172</a></b> 
+<b><a name="1173"> 1173</a></b> /* CK_C_INITIALIZE_ARGS provides the optional arguments to
+<b><a name="1174"> 1174</a></b>  * C_Initialize */
+<b><a name="1175"> 1175</a></b> typedef struct <a href="#1175">CK_C_INITIALIZE_ARGS</a> {
+<b><a name="1176"> 1176</a></b>   CK_CREATEMUTEX CreateMutex;
+<b><a name="1177"> 1177</a></b>   CK_DESTROYMUTEX DestroyMutex;
+<b><a name="1178"> 1178</a></b>   CK_LOCKMUTEX LockMutex;
+<b><a name="1179"> 1179</a></b>   CK_UNLOCKMUTEX UnlockMutex;
+<b><a name="1180"> 1180</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_FLAGS">CK_FLAGS</a> flags;
+<b><a name="1181"> 1181</a></b>   /* The official PKCS #11 spec does not have a 'LibraryParameters' field, but
+<b><a name="1182"> 1182</a></b>    * a reserved field. NSS needs a way to pass instance-specific information
+<b><a name="1183"> 1183</a></b>    * to the library (like where to find its config files, etc). This
+<b><a name="1184"> 1184</a></b>    * information is usually provided by the installer and passed uninterpreted
+<b><a name="1185"> 1185</a></b>    * by NSS to the library, though NSS does know the specifics of the softoken
+<b><a name="1186"> 1186</a></b>    * version of this parameter. Most compliant PKCS#11 modules expect this 
+<b><a name="1187"> 1187</a></b>    * parameter to be NULL, and will return CKR_ARGUMENTS_BAD from
+<b><a name="1188"> 1188</a></b>    * C_Initialize if Library parameters is supplied. */
+<b><a name="1189"> 1189</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a> *LibraryParameters;
+<b><a name="1190"> 1190</a></b>   /* This field is only present if the LibraryParameters is not NULL. It must
+<b><a name="1191"> 1191</a></b>    * be NULL in all cases */
+<b><a name="1192"> 1192</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> pReserved;
+<b><a name="1193"> 1193</a></b> } <a href="#1193">CK_C_INITIALIZE_ARGS</a>;
+<b><a name="1194"> 1194</a></b> 
+<b><a name="1195"> 1195</a></b> /* flags: bit flags that provide capabilities of the slot
+<b><a name="1196"> 1196</a></b>  *      Bit Flag                           Mask       Meaning
+<b><a name="1197"> 1197</a></b>  */
+<b><a name="1198"> 1198</a></b> #define <a href="#1198">CKF_LIBRARY_CANT_CREATE_OS_THREADS</a> 0x00000001
+<b><a name="1199"> 1199</a></b> #define <a href="#1199">CKF_OS_LOCKING_OK</a>                  0x00000002
+<b><a name="1200"> 1200</a></b> 
+<b><a name="1201"> 1201</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_C_INITIALIZE_ARGS">CK_C_INITIALIZE_ARGS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_C_INITIALIZE_ARGS">CK_C_INITIALIZE_ARGS</a></a>_PTR;
+<b><a name="1202"> 1202</a></b> 
+<b><a name="1203"> 1203</a></b> 
+<b><a name="1204"> 1204</a></b> /* additional flags for parameters to functions */
+<b><a name="1205"> 1205</a></b> 
+<b><a name="1206"> 1206</a></b> /* CKF_DONT_BLOCK is for the function C_WaitForSlotEvent */
+<b><a name="1207"> 1207</a></b> #define <a href="#1207">CKF_DONT_BLOCK</a>     1
+<b><a name="1208"> 1208</a></b> 
+<b><a name="1209"> 1209</a></b> /* CK_RSA_PKCS_OAEP_MGF_TYPE is new for v2.10.
+<b><a name="1210"> 1210</a></b>  * CK_RSA_PKCS_OAEP_MGF_TYPE  is used to indicate the Message
+<b><a name="1211"> 1211</a></b>  * Generation Function (MGF) applied to a message block when
+<b><a name="1212"> 1212</a></b>  * formatting a message block for the PKCS #1 OAEP encryption
+<b><a name="1213"> 1213</a></b>  * scheme. */
+<b><a name="1214"> 1214</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> <a href="#1214">CK_RSA_PKCS_MGF_TYPE</a>;
+<b><a name="1215"> 1215</a></b> 
+<b><a name="1216"> 1216</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_RSA_PKCS_MGF_TYPE">CK_RSA_PKCS_MGF_TYPE</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_RSA_PKCS_MGF_TYPE">CK_RSA_PKCS_MGF_TYPE</a>_PTR;
+<b><a name="1217"> 1217</a></b> 
+<b><a name="1218"> 1218</a></b> /* The following MGFs are defined */
+<b><a name="1219"> 1219</a></b> /* CKG_MGF1_SHA256, CKG_MGF1_SHA384, and CKG_MGF1_SHA512
+<b><a name="1220"> 1220</a></b>  * are new for v2.20 */
+<b><a name="1221"> 1221</a></b> #define <a href="#1221">CKG_MGF1_SHA1</a>         0x00000001
+<b><a name="1222"> 1222</a></b> #define <a href="#1222">CKG_MGF1_SHA256</a>       0x00000002
+<b><a name="1223"> 1223</a></b> #define <a href="#1223">CKG_MGF1_SHA384</a>       0x00000003
+<b><a name="1224"> 1224</a></b> #define <a href="#1224">CKG_MGF1_SHA512</a>       0x00000004
+<b><a name="1225"> 1225</a></b> 
+<b><a name="1226"> 1226</a></b> /* CK_RSA_PKCS_OAEP_SOURCE_TYPE is new for v2.10.
+<b><a name="1227"> 1227</a></b>  * CK_RSA_PKCS_OAEP_SOURCE_TYPE  is used to indicate the source
+<b><a name="1228"> 1228</a></b>  * of the encoding parameter when formatting a message block
+<b><a name="1229"> 1229</a></b>  * for the PKCS #1 OAEP encryption scheme. */
+<b><a name="1230"> 1230</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> <a href="#1230">CK_RSA_PKCS_OAEP_SOURCE_TYPE</a>;
+<b><a name="1231"> 1231</a></b> 
+<b><a name="1232"> 1232</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_RSA_PKCS_OAEP_SOURCE_TYPE">CK_RSA_PKCS_OAEP_SOURCE_TYPE</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_RSA_PKCS_OAEP_SOURCE_TYPE">CK_RSA_PKCS_OAEP_SOURCE_TYPE</a>_PTR;
+<b><a name="1233"> 1233</a></b> 
+<b><a name="1234"> 1234</a></b> /* The following encoding parameter sources are defined */
+<b><a name="1235"> 1235</a></b> #define <a href="#1235">CKZ_DATA_SPECIFIED</a>    0x00000001
+<b><a name="1236"> 1236</a></b> 
+<b><a name="1237"> 1237</a></b> /* CK_RSA_PKCS_OAEP_PARAMS is new for v2.10.
+<b><a name="1238"> 1238</a></b>  * CK_RSA_PKCS_OAEP_PARAMS provides the parameters to the
+<b><a name="1239"> 1239</a></b>  * CKM_RSA_PKCS_OAEP mechanism. */
+<b><a name="1240"> 1240</a></b> typedef struct <a href="#1240">CK_RSA_PKCS_OAEP_PARAMS</a> {
+<b><a name="1241"> 1241</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a> hashAlg;
+<b><a name="1242"> 1242</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_RSA_PKCS_MGF_TYPE">CK_RSA_PKCS_MGF_TYPE</a> mgf;
+<b><a name="1243"> 1243</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_RSA_PKCS_OAEP_SOURCE_TYPE">CK_RSA_PKCS_OAEP_SOURCE_TYPE</a> source;
+<b><a name="1244"> 1244</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> pSourceData;
+<b><a name="1245"> 1245</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulSourceDataLen;
+<b><a name="1246"> 1246</a></b> } <a href="#1246">CK_RSA_PKCS_OAEP_PARAMS</a>;
+<b><a name="1247"> 1247</a></b> 
+<b><a name="1248"> 1248</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_RSA_PKCS_OAEP_PARAMS">CK_RSA_PKCS_OAEP_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1248"><a href="../softoken/pkcs11t.h.dep.html#CK_RSA_PKCS_OAEP_PARAMS">CK_RSA_PKCS_OAEP_PARAMS</a></a>_PTR</a>;
+<b><a name="1249"> 1249</a></b> 
+<b><a name="1250"> 1250</a></b> /* CK_RSA_PKCS_PSS_PARAMS is new for v2.11.
+<b><a name="1251"> 1251</a></b>  * CK_RSA_PKCS_PSS_PARAMS provides the parameters to the
+<b><a name="1252"> 1252</a></b>  * CKM_RSA_PKCS_PSS mechanism(s). */
+<b><a name="1253"> 1253</a></b> typedef struct <a href="#1253">CK_RSA_PKCS_PSS_PARAMS</a> {
+<b><a name="1254"> 1254</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a>    hashAlg;
+<b><a name="1255"> 1255</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_RSA_PKCS_MGF_TYPE">CK_RSA_PKCS_MGF_TYPE</a> mgf;
+<b><a name="1256"> 1256</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>             sLen;
+<b><a name="1257"> 1257</a></b> } <a href="#1257">CK_RSA_PKCS_PSS_PARAMS</a>;
+<b><a name="1258"> 1258</a></b> 
+<b><a name="1259"> 1259</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_RSA_PKCS_PSS_PARAMS">CK_RSA_PKCS_PSS_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_RSA_PKCS_PSS_PARAMS">CK_RSA_PKCS_PSS_PARAMS</a></a>_PTR;
+<b><a name="1260"> 1260</a></b> 
+<b><a name="1261"> 1261</a></b> /* CK_EC_KDF_TYPE is new for v2.11. */
+<b><a name="1262"> 1262</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> <a href="#1262">CK_EC_KDF_TYPE</a>;
+<b><a name="1263"> 1263</a></b> 
+<b><a name="1264"> 1264</a></b> /* The following EC Key Derivation Functions are defined */
+<b><a name="1265"> 1265</a></b> #define <a href="#1265">CKD_NULL</a>                 0x00000001
+<b><a name="1266"> 1266</a></b> #define <a href="#1266">CKD_SHA1_KDF</a>             0x00000002
+<b><a name="1267"> 1267</a></b> 
+<b><a name="1268"> 1268</a></b> /* CK_ECDH1_DERIVE_PARAMS is new for v2.11.
+<b><a name="1269"> 1269</a></b>  * CK_ECDH1_DERIVE_PARAMS provides the parameters to the
+<b><a name="1270"> 1270</a></b>  * CKM_ECDH1_DERIVE and CKM_ECDH1_COFACTOR_DERIVE mechanisms,
+<b><a name="1271"> 1271</a></b>  * where each party contributes one key pair.
+<b><a name="1272"> 1272</a></b>  */
+<b><a name="1273"> 1273</a></b> typedef struct <a href="#1273">CK_ECDH1_DERIVE_PARAMS</a> {
+<b><a name="1274"> 1274</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_EC_KDF_TYPE">CK_EC_KDF_TYPE</a> kdf;
+<b><a name="1275"> 1275</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulSharedDataLen;
+<b><a name="1276"> 1276</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pSharedData;
+<b><a name="1277"> 1277</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPublicDataLen;
+<b><a name="1278"> 1278</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPublicData;
+<b><a name="1279"> 1279</a></b> } <a href="#1279">CK_ECDH1_DERIVE_PARAMS</a>;
+<b><a name="1280"> 1280</a></b> 
+<b><a name="1281"> 1281</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ECDH1_DERIVE_PARAMS">CK_ECDH1_DERIVE_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_ECDH1_DERIVE_PARAMS">CK_ECDH1_DERIVE_PARAMS</a></a>_PTR;
+<b><a name="1282"> 1282</a></b> 
+<b><a name="1283"> 1283</a></b> 
+<b><a name="1284"> 1284</a></b> /* CK_ECDH2_DERIVE_PARAMS is new for v2.11.
+<b><a name="1285"> 1285</a></b>  * CK_ECDH2_DERIVE_PARAMS provides the parameters to the
+<b><a name="1286"> 1286</a></b>  * CKM_ECMQV_DERIVE mechanism, where each party contributes two key pairs. */
+<b><a name="1287"> 1287</a></b> typedef struct <a href="#1287">CK_ECDH2_DERIVE_PARAMS</a> {
+<b><a name="1288"> 1288</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_EC_KDF_TYPE">CK_EC_KDF_TYPE</a> kdf;
+<b><a name="1289"> 1289</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulSharedDataLen;
+<b><a name="1290"> 1290</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pSharedData;
+<b><a name="1291"> 1291</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPublicDataLen;
+<b><a name="1292"> 1292</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPublicData;
+<b><a name="1293"> 1293</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPrivateDataLen;
+<b><a name="1294"> 1294</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hPrivateData;
+<b><a name="1295"> 1295</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPublicDataLen2;
+<b><a name="1296"> 1296</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPublicData2;
+<b><a name="1297"> 1297</a></b> } <a href="#1297">CK_ECDH2_DERIVE_PARAMS</a>;
+<b><a name="1298"> 1298</a></b> 
+<b><a name="1299"> 1299</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ECDH2_DERIVE_PARAMS">CK_ECDH2_DERIVE_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1299"><a href="../softoken/pkcs11t.h.dep.html#CK_ECDH2_DERIVE_PARAMS">CK_ECDH2_DERIVE_PARAMS</a></a>_PTR</a>;
+<b><a name="1300"> 1300</a></b> 
+<b><a name="1301"> 1301</a></b> typedef struct <a href="#1301">CK_ECMQV_DERIVE_PARAMS</a> {
+<b><a name="1302"> 1302</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_EC_KDF_TYPE">CK_EC_KDF_TYPE</a> kdf;
+<b><a name="1303"> 1303</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulSharedDataLen;
+<b><a name="1304"> 1304</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pSharedData;
+<b><a name="1305"> 1305</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPublicDataLen;
+<b><a name="1306"> 1306</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPublicData;
+<b><a name="1307"> 1307</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPrivateDataLen;
+<b><a name="1308"> 1308</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hPrivateData;
+<b><a name="1309"> 1309</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPublicDataLen2;
+<b><a name="1310"> 1310</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPublicData2;
+<b><a name="1311"> 1311</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> publicKey;
+<b><a name="1312"> 1312</a></b> } <a href="#1312">CK_ECMQV_DERIVE_PARAMS</a>;
+<b><a name="1313"> 1313</a></b> 
+<b><a name="1314"> 1314</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ECMQV_DERIVE_PARAMS">CK_ECMQV_DERIVE_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_ECMQV_DERIVE_PARAMS">CK_ECMQV_DERIVE_PARAMS</a></a>_PTR;
+<b><a name="1315"> 1315</a></b> 
+<b><a name="1316"> 1316</a></b> /* Typedefs and defines for the CKM_X9_42_DH_KEY_PAIR_GEN and the
+<b><a name="1317"> 1317</a></b>  * CKM_X9_42_DH_PARAMETER_GEN mechanisms (new for PKCS #11 v2.11) */
+<b><a name="1318"> 1318</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> <a href="#1318">CK_X9_42_DH_KDF_TYPE</a>;
+<b><a name="1319"> 1319</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_X9_42_DH_KDF_TYPE">CK_X9_42_DH_KDF_TYPE</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1319"><a href="../softoken/pkcs11t.h.dep.html#CK_X9_42_DH_KDF_TYPE">CK_X9_42_DH_KDF_TYPE</a>_PTR</a>;
+<b><a name="1320"> 1320</a></b> 
+<b><a name="1321"> 1321</a></b> /* The following X9.42 DH key derivation functions are defined
+<b><a name="1322"> 1322</a></b>    (besides CKD_NULL already defined : */
+<b><a name="1323"> 1323</a></b> #define <a href="#1323">CKD_SHA1_KDF_ASN1</a>        0x00000003
+<b><a name="1324"> 1324</a></b> #define <a href="#1324">CKD_SHA1_KDF_CONCATENATE</a> 0x00000004
+<b><a name="1325"> 1325</a></b> 
+<b><a name="1326"> 1326</a></b> /* CK_X9_42_DH1_DERIVE_PARAMS is new for v2.11.
+<b><a name="1327"> 1327</a></b>  * CK_X9_42_DH1_DERIVE_PARAMS provides the parameters to the
+<b><a name="1328"> 1328</a></b>  * CKM_X9_42_DH_DERIVE key derivation mechanism, where each party
+<b><a name="1329"> 1329</a></b>  * contributes one key pair */
+<b><a name="1330"> 1330</a></b> typedef struct <a href="#1330">CK_X9_42_DH1_DERIVE_PARAMS</a> {
+<b><a name="1331"> 1331</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_X9_42_DH_KDF_TYPE">CK_X9_42_DH_KDF_TYPE</a> kdf;
+<b><a name="1332"> 1332</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulOtherInfoLen;
+<b><a name="1333"> 1333</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pOtherInfo;
+<b><a name="1334"> 1334</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPublicDataLen;
+<b><a name="1335"> 1335</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPublicData;
+<b><a name="1336"> 1336</a></b> } <a href="#1336">CK_X9_42_DH1_DERIVE_PARAMS</a>;
+<b><a name="1337"> 1337</a></b> 
+<b><a name="1338"> 1338</a></b> typedef struct <a href="../softoken/pkcs11t.h.dep.html#CK_X9_42_DH1_DERIVE_PARAMS">CK_X9_42_DH1_DERIVE_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1338"><a href="../softoken/pkcs11t.h.dep.html#CK_X9_42_DH1_DERIVE_PARAMS">CK_X9_42_DH1_DERIVE_PARAMS</a></a>_PTR</a>;
+<b><a name="1339"> 1339</a></b> 
+<b><a name="1340"> 1340</a></b> /* CK_X9_42_DH2_DERIVE_PARAMS is new for v2.11.
+<b><a name="1341"> 1341</a></b>  * CK_X9_42_DH2_DERIVE_PARAMS provides the parameters to the
+<b><a name="1342"> 1342</a></b>  * CKM_X9_42_DH_HYBRID_DERIVE and CKM_X9_42_MQV_DERIVE key derivation
+<b><a name="1343"> 1343</a></b>  * mechanisms, where each party contributes two key pairs */
+<b><a name="1344"> 1344</a></b> typedef struct <a href="#1344">CK_X9_42_DH2_DERIVE_PARAMS</a> {
+<b><a name="1345"> 1345</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_X9_42_DH_KDF_TYPE">CK_X9_42_DH_KDF_TYPE</a> kdf;
+<b><a name="1346"> 1346</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulOtherInfoLen;
+<b><a name="1347"> 1347</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pOtherInfo;
+<b><a name="1348"> 1348</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPublicDataLen;
+<b><a name="1349"> 1349</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPublicData;
+<b><a name="1350"> 1350</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPrivateDataLen;
+<b><a name="1351"> 1351</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hPrivateData;
+<b><a name="1352"> 1352</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPublicDataLen2;
+<b><a name="1353"> 1353</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPublicData2;
+<b><a name="1354"> 1354</a></b> } <a href="#1354">CK_X9_42_DH2_DERIVE_PARAMS</a>;
+<b><a name="1355"> 1355</a></b> 
+<b><a name="1356"> 1356</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_X9_42_DH2_DERIVE_PARAMS">CK_X9_42_DH2_DERIVE_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_X9_42_DH2_DERIVE_PARAMS">CK_X9_42_DH2_DERIVE_PARAMS</a></a>_PTR;
+<b><a name="1357"> 1357</a></b> 
+<b><a name="1358"> 1358</a></b> typedef struct <a href="#1358">CK_X9_42_MQV_DERIVE_PARAMS</a> {
+<b><a name="1359"> 1359</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_X9_42_DH_KDF_TYPE">CK_X9_42_DH_KDF_TYPE</a> kdf;
+<b><a name="1360"> 1360</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulOtherInfoLen;
+<b><a name="1361"> 1361</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pOtherInfo;
+<b><a name="1362"> 1362</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPublicDataLen;
+<b><a name="1363"> 1363</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPublicData;
+<b><a name="1364"> 1364</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPrivateDataLen;
+<b><a name="1365"> 1365</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hPrivateData;
+<b><a name="1366"> 1366</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPublicDataLen2;
+<b><a name="1367"> 1367</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPublicData2;
+<b><a name="1368"> 1368</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> publicKey;
+<b><a name="1369"> 1369</a></b> } <a href="#1369">CK_X9_42_MQV_DERIVE_PARAMS</a>;
+<b><a name="1370"> 1370</a></b> 
+<b><a name="1371"> 1371</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_X9_42_MQV_DERIVE_PARAMS">CK_X9_42_MQV_DERIVE_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1371"><a href="../softoken/pkcs11t.h.dep.html#CK_X9_42_MQV_DERIVE_PARAMS">CK_X9_42_MQV_DERIVE_PARAMS</a></a>_PTR</a>;
+<b><a name="1372"> 1372</a></b> 
+<b><a name="1373"> 1373</a></b> /* CK_KEA_DERIVE_PARAMS provides the parameters to the
+<b><a name="1374"> 1374</a></b>  * CKM_KEA_DERIVE mechanism */
+<b><a name="1375"> 1375</a></b> /* CK_KEA_DERIVE_PARAMS is new for v2.0 */
+<b><a name="1376"> 1376</a></b> typedef struct <a href="#1376">CK_KEA_DERIVE_PARAMS</a> {
+<b><a name="1377"> 1377</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a>      isSender;
+<b><a name="1378"> 1378</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulRandomLen;
+<b><a name="1379"> 1379</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pRandomA;
+<b><a name="1380"> 1380</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pRandomB;
+<b><a name="1381"> 1381</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulPublicDataLen;
+<b><a name="1382"> 1382</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pPublicData;
+<b><a name="1383"> 1383</a></b> } <a href="#1383">CK_KEA_DERIVE_PARAMS</a>;
+<b><a name="1384"> 1384</a></b> 
+<b><a name="1385"> 1385</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_KEA_DERIVE_PARAMS">CK_KEA_DERIVE_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_KEA_DERIVE_PARAMS">CK_KEA_DERIVE_PARAMS</a></a>_PTR;
+<b><a name="1386"> 1386</a></b> 
+<b><a name="1387"> 1387</a></b> 
+<b><a name="1388"> 1388</a></b> /* CK_RC2_PARAMS provides the parameters to the CKM_RC2_ECB and
+<b><a name="1389"> 1389</a></b>  * CKM_RC2_MAC mechanisms.  An instance of CK_RC2_PARAMS just
+<b><a name="1390"> 1390</a></b>  * holds the effective keysize */
+<b><a name="1391"> 1391</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#1391">CK_RC2_PARAMS</a>;
+<b><a name="1392"> 1392</a></b> 
+<b><a name="1393"> 1393</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_RC2_PARAMS">CK_RC2_PARAMS</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_RC2_PARAMS">CK_RC2_PARAMS</a>_PTR;
+<b><a name="1394"> 1394</a></b> 
+<b><a name="1395"> 1395</a></b> 
+<b><a name="1396"> 1396</a></b> /* CK_RC2_CBC_PARAMS provides the parameters to the CKM_RC2_CBC
+<b><a name="1397"> 1397</a></b>  * mechanism */
+<b><a name="1398"> 1398</a></b> typedef struct <a href="#1398">CK_RC2_CBC_PARAMS</a> {
+<b><a name="1399"> 1399</a></b>   /* ulEffectiveBits was changed from CK_USHORT to CK_ULONG for
+<b><a name="1400"> 1400</a></b>    * v2.0 */
+<b><a name="1401"> 1401</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulEffectiveBits;  /* effective bits (1-1024) */
+<b><a name="1402"> 1402</a></b> 
+<b><a name="1403"> 1403</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE">CK_BYTE</a>       iv[8];            /* IV for CBC mode */
+<b><a name="1404"> 1404</a></b> } <a href="#1404">CK_RC2_CBC_PARAMS</a>;
+<b><a name="1405"> 1405</a></b> 
+<b><a name="1406"> 1406</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_RC2_CBC_PARAMS">CK_RC2_CBC_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1406"><a href="../softoken/pkcs11t.h.dep.html#CK_RC2_CBC_PARAMS">CK_RC2_CBC_PARAMS</a></a>_PTR</a>;
+<b><a name="1407"> 1407</a></b> 
+<b><a name="1408"> 1408</a></b> 
+<b><a name="1409"> 1409</a></b> /* CK_RC2_MAC_GENERAL_PARAMS provides the parameters for the
+<b><a name="1410"> 1410</a></b>  * CKM_RC2_MAC_GENERAL mechanism */
+<b><a name="1411"> 1411</a></b> /* CK_RC2_MAC_GENERAL_PARAMS is new for v2.0 */
+<b><a name="1412"> 1412</a></b> typedef struct <a href="#1412">CK_RC2_MAC_GENERAL_PARAMS</a> {
+<b><a name="1413"> 1413</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulEffectiveBits;  /* effective bits (1-1024) */
+<b><a name="1414"> 1414</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulMacLength;      /* Length of MAC in bytes */
+<b><a name="1415"> 1415</a></b> } <a href="#1415">CK_RC2_MAC_GENERAL_PARAMS</a>;
+<b><a name="1416"> 1416</a></b> 
+<b><a name="1417"> 1417</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_RC2_MAC_GENERAL_PARAMS">CK_RC2_MAC_GENERAL_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> \
+<b><a name="1418"> 1418</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_RC2_MAC_GENERAL_PARAMS_PTR">CK_RC2_MAC_GENERAL_PARAMS_PTR</a>;
+<b><a name="1419"> 1419</a></b> 
+<b><a name="1420"> 1420</a></b> 
+<b><a name="1421"> 1421</a></b> /* CK_RC5_PARAMS provides the parameters to the CKM_RC5_ECB and
+<b><a name="1422"> 1422</a></b>  * CKM_RC5_MAC mechanisms */
+<b><a name="1423"> 1423</a></b> /* CK_RC5_PARAMS is new for v2.0 */
+<b><a name="1424"> 1424</a></b> typedef struct <a href="#1424">CK_RC5_PARAMS</a> {
+<b><a name="1425"> 1425</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulWordsize;  /* wordsize in bits */
+<b><a name="1426"> 1426</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulRounds;    /* number of rounds */
+<b><a name="1427"> 1427</a></b> } <a href="#1427">CK_RC5_PARAMS</a>;
+<b><a name="1428"> 1428</a></b> 
+<b><a name="1429"> 1429</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_RC5_PARAMS">CK_RC5_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1429"><a href="../softoken/pkcs11t.h.dep.html#CK_RC5_PARAMS">CK_RC5_PARAMS</a></a>_PTR</a>;
+<b><a name="1430"> 1430</a></b> 
+<b><a name="1431"> 1431</a></b> 
+<b><a name="1432"> 1432</a></b> /* CK_RC5_CBC_PARAMS provides the parameters to the CKM_RC5_CBC
+<b><a name="1433"> 1433</a></b>  * mechanism */
+<b><a name="1434"> 1434</a></b> /* CK_RC5_CBC_PARAMS is new for v2.0 */
+<b><a name="1435"> 1435</a></b> typedef struct <a href="#1435">CK_RC5_CBC_PARAMS</a> {
+<b><a name="1436"> 1436</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulWordsize;  /* wordsize in bits */
+<b><a name="1437"> 1437</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulRounds;    /* number of rounds */
+<b><a name="1438"> 1438</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pIv;         /* pointer to IV */
+<b><a name="1439"> 1439</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulIvLen;     /* length of IV in bytes */
+<b><a name="1440"> 1440</a></b> } <a href="#1440">CK_RC5_CBC_PARAMS</a>;
+<b><a name="1441"> 1441</a></b> 
+<b><a name="1442"> 1442</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_RC5_CBC_PARAMS">CK_RC5_CBC_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1442"><a href="../softoken/pkcs11t.h.dep.html#CK_RC5_CBC_PARAMS">CK_RC5_CBC_PARAMS</a></a>_PTR</a>;
+<b><a name="1443"> 1443</a></b> 
+<b><a name="1444"> 1444</a></b> 
+<b><a name="1445"> 1445</a></b> /* CK_RC5_MAC_GENERAL_PARAMS provides the parameters for the
+<b><a name="1446"> 1446</a></b>  * CKM_RC5_MAC_GENERAL mechanism */
+<b><a name="1447"> 1447</a></b> /* CK_RC5_MAC_GENERAL_PARAMS is new for v2.0 */
+<b><a name="1448"> 1448</a></b> typedef struct <a href="#1448">CK_RC5_MAC_GENERAL_PARAMS</a> {
+<b><a name="1449"> 1449</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulWordsize;   /* wordsize in bits */
+<b><a name="1450"> 1450</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulRounds;     /* number of rounds */
+<b><a name="1451"> 1451</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulMacLength;  /* Length of MAC in bytes */
+<b><a name="1452"> 1452</a></b> } <a href="#1452">CK_RC5_MAC_GENERAL_PARAMS</a>;
+<b><a name="1453"> 1453</a></b> 
+<b><a name="1454"> 1454</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_RC5_MAC_GENERAL_PARAMS">CK_RC5_MAC_GENERAL_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> \
+<b><a name="1455"> 1455</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_RC5_MAC_GENERAL_PARAMS_PTR">CK_RC5_MAC_GENERAL_PARAMS_PTR</a>;
+<b><a name="1456"> 1456</a></b> 
+<b><a name="1457"> 1457</a></b> 
+<b><a name="1458"> 1458</a></b> /* CK_MAC_GENERAL_PARAMS provides the parameters to most block
+<b><a name="1459"> 1459</a></b>  * ciphers' MAC_GENERAL mechanisms.  Its value is the length of
+<b><a name="1460"> 1460</a></b>  * the MAC */
+<b><a name="1461"> 1461</a></b> /* CK_MAC_GENERAL_PARAMS is new for v2.0 */
+<b><a name="1462"> 1462</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          <a href="#1462">CK_MAC_GENERAL_PARAMS</a>;
+<b><a name="1463"> 1463</a></b> 
+<b><a name="1464"> 1464</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_MAC_GENERAL_PARAMS">CK_MAC_GENERAL_PARAMS</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1464"><a href="../softoken/pkcs11t.h.dep.html#CK_MAC_GENERAL_PARAMS">CK_MAC_GENERAL_PARAMS</a>_PTR</a>;
+<b><a name="1465"> 1465</a></b> 
+<b><a name="1466"> 1466</a></b> /* CK_DES/AES_ECB/CBC_ENCRYPT_DATA_PARAMS are new for v2.20 */
+<b><a name="1467"> 1467</a></b> typedef struct <a href="#1467">CK_DES_CBC_ENCRYPT_DATA_PARAMS</a> {
+<b><a name="1468"> 1468</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE">CK_BYTE</a>      iv[8];
+<b><a name="1469"> 1469</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pData;
+<b><a name="1470"> 1470</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>     length;
+<b><a name="1471"> 1471</a></b> } <a href="#1471">CK_DES_CBC_ENCRYPT_DATA_PARAMS</a>;
+<b><a name="1472"> 1472</a></b> 
+<b><a name="1473"> 1473</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_DES_CBC_ENCRYPT_DATA_PARAMS">CK_DES_CBC_ENCRYPT_DATA_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_DES_CBC_ENCRYPT_DATA_PARAMS">CK_DES_CBC_ENCRYPT_DATA_PARAMS</a></a>_PTR;
+<b><a name="1474"> 1474</a></b> 
+<b><a name="1475"> 1475</a></b> typedef struct <a href="#1475">CK_AES_CBC_ENCRYPT_DATA_PARAMS</a> {
+<b><a name="1476"> 1476</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE">CK_BYTE</a>      iv[16];
+<b><a name="1477"> 1477</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pData;
+<b><a name="1478"> 1478</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>     length;
+<b><a name="1479"> 1479</a></b> } <a href="#1479">CK_AES_CBC_ENCRYPT_DATA_PARAMS</a>;
+<b><a name="1480"> 1480</a></b> 
+<b><a name="1481"> 1481</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_AES_CBC_ENCRYPT_DATA_PARAMS">CK_AES_CBC_ENCRYPT_DATA_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1481"><a href="../softoken/pkcs11t.h.dep.html#CK_AES_CBC_ENCRYPT_DATA_PARAMS">CK_AES_CBC_ENCRYPT_DATA_PARAMS</a></a>_PTR</a>;
+<b><a name="1482"> 1482</a></b> 
+<b><a name="1483"> 1483</a></b> /* CK_SKIPJACK_PRIVATE_WRAP_PARAMS provides the parameters to the
+<b><a name="1484"> 1484</a></b>  * CKM_SKIPJACK_PRIVATE_WRAP mechanism */
+<b><a name="1485"> 1485</a></b> /* CK_SKIPJACK_PRIVATE_WRAP_PARAMS is new for v2.0 */
+<b><a name="1486"> 1486</a></b> typedef struct <a href="#1486">CK_SKIPJACK_PRIVATE_WRAP_PARAMS</a> {
+<b><a name="1487"> 1487</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulPasswordLen;
+<b><a name="1488"> 1488</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pPassword;
+<b><a name="1489"> 1489</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulPublicDataLen;
+<b><a name="1490"> 1490</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pPublicData;
+<b><a name="1491"> 1491</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulPAndGLen;
+<b><a name="1492"> 1492</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulQLen;
+<b><a name="1493"> 1493</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulRandomLen;
+<b><a name="1494"> 1494</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pRandomA;
+<b><a name="1495"> 1495</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pPrimeP;
+<b><a name="1496"> 1496</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pBaseG;
+<b><a name="1497"> 1497</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pSubprimeQ;
+<b><a name="1498"> 1498</a></b> } <a href="#1498">CK_SKIPJACK_PRIVATE_WRAP_PARAMS</a>;
+<b><a name="1499"> 1499</a></b> 
+<b><a name="1500"> 1500</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_SKIPJACK_PRIVATE_WRAP_PARAMS">CK_SKIPJACK_PRIVATE_WRAP_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> \
+<b><a name="1501"> 1501</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_SKIPJACK_PRIVATE_WRAP_PTR">CK_SKIPJACK_PRIVATE_WRAP_PTR</a>;
+<b><a name="1502"> 1502</a></b> 
+<b><a name="1503"> 1503</a></b> 
+<b><a name="1504"> 1504</a></b> /* CK_SKIPJACK_RELAYX_PARAMS provides the parameters to the
+<b><a name="1505"> 1505</a></b>  * CKM_SKIPJACK_RELAYX mechanism */
+<b><a name="1506"> 1506</a></b> /* CK_SKIPJACK_RELAYX_PARAMS is new for v2.0 */
+<b><a name="1507"> 1507</a></b> typedef struct <a href="#1507">CK_SKIPJACK_RELAYX_PARAMS</a> {
+<b><a name="1508"> 1508</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulOldWrappedXLen;
+<b><a name="1509"> 1509</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pOldWrappedX;
+<b><a name="1510"> 1510</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulOldPasswordLen;
+<b><a name="1511"> 1511</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pOldPassword;
+<b><a name="1512"> 1512</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulOldPublicDataLen;
+<b><a name="1513"> 1513</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pOldPublicData;
+<b><a name="1514"> 1514</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulOldRandomLen;
+<b><a name="1515"> 1515</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pOldRandomA;
+<b><a name="1516"> 1516</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulNewPasswordLen;
+<b><a name="1517"> 1517</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pNewPassword;
+<b><a name="1518"> 1518</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulNewPublicDataLen;
+<b><a name="1519"> 1519</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pNewPublicData;
+<b><a name="1520"> 1520</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulNewRandomLen;
+<b><a name="1521"> 1521</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pNewRandomA;
+<b><a name="1522"> 1522</a></b> } <a href="#1522">CK_SKIPJACK_RELAYX_PARAMS</a>;
+<b><a name="1523"> 1523</a></b> 
+<b><a name="1524"> 1524</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_SKIPJACK_RELAYX_PARAMS">CK_SKIPJACK_RELAYX_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> \
+<b><a name="1525"> 1525</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_SKIPJACK_RELAYX_PARAMS_PTR">CK_SKIPJACK_RELAYX_PARAMS_PTR</a>;
+<b><a name="1526"> 1526</a></b> 
+<b><a name="1527"> 1527</a></b> 
+<b><a name="1528"> 1528</a></b> typedef struct <a href="#1528">CK_PBE_PARAMS</a> {
+<b><a name="1529"> 1529</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>      pInitVector;
+<b><a name="1530"> 1530</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR_PTR">CK_UTF8CHAR_PTR</a>  pPassword;
+<b><a name="1531"> 1531</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>         ulPasswordLen;
+<b><a name="1532"> 1532</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>      pSalt;
+<b><a name="1533"> 1533</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>         ulSaltLen;
+<b><a name="1534"> 1534</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>         ulIteration;
+<b><a name="1535"> 1535</a></b> } <a href="#1535">CK_PBE_PARAMS</a>;
+<b><a name="1536"> 1536</a></b> 
+<b><a name="1537"> 1537</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1537"><a href="../softoken/pkcs11t.h.dep.html#CK_PBE_PARAMS">CK_PBE_PARAMS</a></a>_PTR</a>;
+<b><a name="1538"> 1538</a></b> 
+<b><a name="1539"> 1539</a></b> 
+<b><a name="1540"> 1540</a></b> /* CK_KEY_WRAP_SET_OAEP_PARAMS provides the parameters to the
+<b><a name="1541"> 1541</a></b>  * CKM_KEY_WRAP_SET_OAEP mechanism */
+<b><a name="1542"> 1542</a></b> /* CK_KEY_WRAP_SET_OAEP_PARAMS is new for v2.0 */
+<b><a name="1543"> 1543</a></b> typedef struct <a href="#1543">CK_KEY_WRAP_SET_OAEP_PARAMS</a> {
+<b><a name="1544"> 1544</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE">CK_BYTE</a>       bBC;     /* block contents byte */
+<b><a name="1545"> 1545</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>   pX;      /* extra data */
+<b><a name="1546"> 1546</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>      ulXLen;  /* length of extra data in bytes */
+<b><a name="1547"> 1547</a></b> } <a href="#1547">CK_KEY_WRAP_SET_OAEP_PARAMS</a>;
+<b><a name="1548"> 1548</a></b> 
+<b><a name="1549"> 1549</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_KEY_WRAP_SET_OAEP_PARAMS">CK_KEY_WRAP_SET_OAEP_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> \
+<b><a name="1550"> 1550</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_KEY_WRAP_SET_OAEP_PARAMS_PTR">CK_KEY_WRAP_SET_OAEP_PARAMS_PTR</a>;
+<b><a name="1551"> 1551</a></b> 
+<b><a name="1552"> 1552</a></b> 
+<b><a name="1553"> 1553</a></b> typedef struct <a href="#1553">CK_SSL3_RANDOM_DATA</a> {
+<b><a name="1554"> 1554</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pClientRandom;
+<b><a name="1555"> 1555</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>     ulClientRandomLen;
+<b><a name="1556"> 1556</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pServerRandom;
+<b><a name="1557"> 1557</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>     ulServerRandomLen;
+<b><a name="1558"> 1558</a></b> } <a href="#1558">CK_SSL3_RANDOM_DATA</a>;
+<b><a name="1559"> 1559</a></b> 
+<b><a name="1560"> 1560</a></b> 
+<b><a name="1561"> 1561</a></b> typedef struct <a href="#1561">CK_SSL3_MASTER_KEY_DERIVE_PARAMS</a> {
+<b><a name="1562"> 1562</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_SSL3_RANDOM_DATA">CK_SSL3_RANDOM_DATA</a></a> RandomInfo;
+<b><a name="1563"> 1563</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_VERSION_PTR">CK_VERSION_PTR</a> pVersion;
+<b><a name="1564"> 1564</a></b> } <a href="#1564">CK_SSL3_MASTER_KEY_DERIVE_PARAMS</a>;
+<b><a name="1565"> 1565</a></b> 
+<b><a name="1566"> 1566</a></b> typedef struct <a href="../softoken/pkcs11t.h.dep.html#CK_SSL3_MASTER_KEY_DERIVE_PARAMS">CK_SSL3_MASTER_KEY_DERIVE_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> \
+<b><a name="1567"> 1567</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_SSL3_MASTER_KEY_DERIVE_PARAMS_PTR">CK_SSL3_MASTER_KEY_DERIVE_PARAMS_PTR</a>;
+<b><a name="1568"> 1568</a></b> 
+<b><a name="1569"> 1569</a></b> 
+<b><a name="1570"> 1570</a></b> typedef struct <a href="#1570">CK_SSL3_KEY_MAT_OUT</a> {
+<b><a name="1571"> 1571</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hClientMacSecret;
+<b><a name="1572"> 1572</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hServerMacSecret;
+<b><a name="1573"> 1573</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hClientKey;
+<b><a name="1574"> 1574</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hServerKey;
+<b><a name="1575"> 1575</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>      pIVClient;
+<b><a name="1576"> 1576</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>      pIVServer;
+<b><a name="1577"> 1577</a></b> } <a href="#1577">CK_SSL3_KEY_MAT_OUT</a>;
+<b><a name="1578"> 1578</a></b> 
+<b><a name="1579"> 1579</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_SSL3_KEY_MAT_OUT">CK_SSL3_KEY_MAT_OUT</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_SSL3_KEY_MAT_OUT">CK_SSL3_KEY_MAT_OUT</a></a>_PTR;
+<b><a name="1580"> 1580</a></b> 
+<b><a name="1581"> 1581</a></b> 
+<b><a name="1582"> 1582</a></b> typedef struct <a href="#1582">CK_SSL3_KEY_MAT_PARAMS</a> {
+<b><a name="1583"> 1583</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                ulMacSizeInBits;
+<b><a name="1584"> 1584</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                ulKeySizeInBits;
+<b><a name="1585"> 1585</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                ulIVSizeInBits;
+<b><a name="1586"> 1586</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a>                bIsExport;
+<b><a name="1587"> 1587</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_SSL3_RANDOM_DATA">CK_SSL3_RANDOM_DATA</a></a>     RandomInfo;
+<b><a name="1588"> 1588</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_SSL3_KEY_MAT_OUT_PTR">CK_SSL3_KEY_MAT_OUT_PTR</a> pReturnedKeyMaterial;
+<b><a name="1589"> 1589</a></b> } <a href="#1589">CK_SSL3_KEY_MAT_PARAMS</a>;
+<b><a name="1590"> 1590</a></b> 
+<b><a name="1591"> 1591</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_SSL3_KEY_MAT_PARAMS">CK_SSL3_KEY_MAT_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1591"><a href="../softoken/pkcs11t.h.dep.html#CK_SSL3_KEY_MAT_PARAMS">CK_SSL3_KEY_MAT_PARAMS</a></a>_PTR</a>;
+<b><a name="1592"> 1592</a></b> 
+<b><a name="1593"> 1593</a></b> /* CK_TLS_PRF_PARAMS is new for version 2.20 */
+<b><a name="1594"> 1594</a></b> typedef struct <a href="#1594">CK_TLS_PRF_PARAMS</a> {
+<b><a name="1595"> 1595</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pSeed;
+<b><a name="1596"> 1596</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>     ulSeedLen;
+<b><a name="1597"> 1597</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pLabel;
+<b><a name="1598"> 1598</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>     ulLabelLen;
+<b><a name="1599"> 1599</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pOutput;
+<b><a name="1600"> 1600</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pulOutputLen;
+<b><a name="1601"> 1601</a></b> } <a href="#1601">CK_TLS_PRF_PARAMS</a>;
+<b><a name="1602"> 1602</a></b> 
+<b><a name="1603"> 1603</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_TLS_PRF_PARAMS">CK_TLS_PRF_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1603"><a href="../softoken/pkcs11t.h.dep.html#CK_TLS_PRF_PARAMS">CK_TLS_PRF_PARAMS</a></a>_PTR</a>;
+<b><a name="1604"> 1604</a></b> 
+<b><a name="1605"> 1605</a></b> /* WTLS is new for version 2.20 */
+<b><a name="1606"> 1606</a></b> typedef struct <a href="#1606">CK_WTLS_RANDOM_DATA</a> {
+<b><a name="1607"> 1607</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pClientRandom;
+<b><a name="1608"> 1608</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>    ulClientRandomLen;
+<b><a name="1609"> 1609</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pServerRandom;
+<b><a name="1610"> 1610</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>    ulServerRandomLen;
+<b><a name="1611"> 1611</a></b> } <a href="#1611">CK_WTLS_RANDOM_DATA</a>;
+<b><a name="1612"> 1612</a></b> 
+<b><a name="1613"> 1613</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_RANDOM_DATA">CK_WTLS_RANDOM_DATA</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_RANDOM_DATA">CK_WTLS_RANDOM_DATA</a></a>_PTR;
+<b><a name="1614"> 1614</a></b> 
+<b><a name="1615"> 1615</a></b> typedef struct <a href="#1615">CK_WTLS_MASTER_KEY_DERIVE_PARAMS</a> {
+<b><a name="1616"> 1616</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a>   DigestMechanism;
+<b><a name="1617"> 1617</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_RANDOM_DATA">CK_WTLS_RANDOM_DATA</a></a> RandomInfo;
+<b><a name="1618"> 1618</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>         pVersion;
+<b><a name="1619"> 1619</a></b> } <a href="#1619">CK_WTLS_MASTER_KEY_DERIVE_PARAMS</a>;
+<b><a name="1620"> 1620</a></b> 
+<b><a name="1621"> 1621</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_MASTER_KEY_DERIVE_PARAMS">CK_WTLS_MASTER_KEY_DERIVE_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> \
+<b><a name="1622"> 1622</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_MASTER_KEY_DERIVE_PARAMS_PTR">CK_WTLS_MASTER_KEY_DERIVE_PARAMS_PTR</a>;
+<b><a name="1623"> 1623</a></b> 
+<b><a name="1624"> 1624</a></b> typedef struct <a href="#1624">CK_WTLS_PRF_PARAMS</a> {
+<b><a name="1625"> 1625</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a> DigestMechanism;
+<b><a name="1626"> 1626</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>       pSeed;
+<b><a name="1627"> 1627</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          ulSeedLen;
+<b><a name="1628"> 1628</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>       pLabel;
+<b><a name="1629"> 1629</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>          ulLabelLen;
+<b><a name="1630"> 1630</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>       pOutput;
+<b><a name="1631"> 1631</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a>      pulOutputLen;
+<b><a name="1632"> 1632</a></b> } <a href="#1632">CK_WTLS_PRF_PARAMS</a>;
+<b><a name="1633"> 1633</a></b> 
+<b><a name="1634"> 1634</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_PRF_PARAMS">CK_WTLS_PRF_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1634"><a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_PRF_PARAMS">CK_WTLS_PRF_PARAMS</a></a>_PTR</a>;
+<b><a name="1635"> 1635</a></b> 
+<b><a name="1636"> 1636</a></b> typedef struct <a href="#1636">CK_WTLS_KEY_MAT_OUT</a> {
+<b><a name="1637"> 1637</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hMacSecret;
+<b><a name="1638"> 1638</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hKey;
+<b><a name="1639"> 1639</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>      pIV;
+<b><a name="1640"> 1640</a></b> } <a href="#1640">CK_WTLS_KEY_MAT_OUT</a>;
+<b><a name="1641"> 1641</a></b> 
+<b><a name="1642"> 1642</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_KEY_MAT_OUT">CK_WTLS_KEY_MAT_OUT</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1642"><a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_KEY_MAT_OUT">CK_WTLS_KEY_MAT_OUT</a></a>_PTR</a>;
+<b><a name="1643"> 1643</a></b> 
+<b><a name="1644"> 1644</a></b> typedef struct <a href="#1644">CK_WTLS_KEY_MAT_PARAMS</a> {
+<b><a name="1645"> 1645</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a>       DigestMechanism;
+<b><a name="1646"> 1646</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                ulMacSizeInBits;
+<b><a name="1647"> 1647</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                ulKeySizeInBits;
+<b><a name="1648"> 1648</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                ulIVSizeInBits;
+<b><a name="1649"> 1649</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                ulSequenceNumber;
+<b><a name="1650"> 1650</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a>                bIsExport;
+<b><a name="1651"> 1651</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_RANDOM_DATA">CK_WTLS_RANDOM_DATA</a></a>     RandomInfo;
+<b><a name="1652"> 1652</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_KEY_MAT_OUT_PTR">CK_WTLS_KEY_MAT_OUT_PTR</a> pReturnedKeyMaterial;
+<b><a name="1653"> 1653</a></b> } <a href="#1653">CK_WTLS_KEY_MAT_PARAMS</a>;
+<b><a name="1654"> 1654</a></b> 
+<b><a name="1655"> 1655</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_KEY_MAT_PARAMS">CK_WTLS_KEY_MAT_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_WTLS_KEY_MAT_PARAMS">CK_WTLS_KEY_MAT_PARAMS</a></a>_PTR;
+<b><a name="1656"> 1656</a></b> 
+<b><a name="1657"> 1657</a></b> /* CMS is new for version 2.20 */
+<b><a name="1658"> 1658</a></b> typedef struct <a href="#1658">CK_CMS_SIG_PARAMS</a> {
+<b><a name="1659"> 1659</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a>      certificateHandle;
+<b><a name="1660"> 1660</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a>      pSigningMechanism;
+<b><a name="1661"> 1661</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a>      pDigestMechanism;
+<b><a name="1662"> 1662</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR_PTR">CK_UTF8CHAR_PTR</a>       pContentType;
+<b><a name="1663"> 1663</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>           pRequestedAttributes;
+<b><a name="1664"> 1664</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>              ulRequestedAttributesLen;
+<b><a name="1665"> 1665</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>           pRequiredAttributes;
+<b><a name="1666"> 1666</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>              ulRequiredAttributesLen;
+<b><a name="1667"> 1667</a></b> } <a href="#1667">CK_CMS_SIG_PARAMS</a>;
+<b><a name="1668"> 1668</a></b> 
+<b><a name="1669"> 1669</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_CMS_SIG_PARAMS">CK_CMS_SIG_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_CMS_SIG_PARAMS">CK_CMS_SIG_PARAMS</a></a>_PTR;
+<b><a name="1670"> 1670</a></b> 
+<b><a name="1671"> 1671</a></b> typedef struct <a href="#1671">CK_KEY_DERIVATION_STRING_DATA</a> {
+<b><a name="1672"> 1672</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pData;
+<b><a name="1673"> 1673</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>    ulLen;
+<b><a name="1674"> 1674</a></b> } <a href="#1674">CK_KEY_DERIVATION_STRING_DATA</a>;
+<b><a name="1675"> 1675</a></b> 
+<b><a name="1676"> 1676</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_KEY_DERIVATION_STRING_DATA">CK_KEY_DERIVATION_STRING_DATA</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> \
+<b><a name="1677"> 1677</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_KEY_DERIVATION_STRING_DATA_PTR">CK_KEY_DERIVATION_STRING_DATA_PTR</a>;
+<b><a name="1678"> 1678</a></b> 
+<b><a name="1679"> 1679</a></b> 
+<b><a name="1680"> 1680</a></b> /* The CK_EXTRACT_PARAMS is used for the
+<b><a name="1681"> 1681</a></b>  * CKM_EXTRACT_KEY_FROM_KEY mechanism.  It specifies which bit
+<b><a name="1682"> 1682</a></b>  * of the base key should be used as the first bit of the
+<b><a name="1683"> 1683</a></b>  * derived key */
+<b><a name="1684"> 1684</a></b> /* CK_EXTRACT_PARAMS is new for v2.0 */
+<b><a name="1685"> 1685</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> <a href="#1685">CK_EXTRACT_PARAMS</a>;
+<b><a name="1686"> 1686</a></b> 
+<b><a name="1687"> 1687</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_EXTRACT_PARAMS">CK_EXTRACT_PARAMS</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_EXTRACT_PARAMS">CK_EXTRACT_PARAMS</a>_PTR;
+<b><a name="1688"> 1688</a></b> 
+<b><a name="1689"> 1689</a></b> /* CK_PKCS5_PBKD2_PSEUDO_RANDOM_FUNCTION_TYPE is new for v2.10.
+<b><a name="1690"> 1690</a></b>  * CK_PKCS5_PBKD2_PSEUDO_RANDOM_FUNCTION_TYPE is used to
+<b><a name="1691"> 1691</a></b>  * indicate the Pseudo-Random Function (PRF) used to generate
+<b><a name="1692"> 1692</a></b>  * key bits using PKCS #5 PBKDF2. */
+<b><a name="1693"> 1693</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> <a href="#1693">CK_PKCS5_PBKD2_PSEUDO_RANDOM_FUNCTION_TYPE</a>;
+<b><a name="1694"> 1694</a></b> 
+<b><a name="1695"> 1695</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_PKCS5_PBKD2_PSEUDO_RANDOM_FUNCTION_TYPE">CK_PKCS5_PBKD2_PSEUDO_RANDOM_FUNCTION_TYPE</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="#1695"><a href="../softoken/pkcs11t.h.dep.html#CK_PKCS5_PBKD2_PSEUDO_RANDOM_FUNCTION_TYPE">CK_PKCS5_PBKD2_PSEUDO_RANDOM_FUNCTION_TYPE</a>_PTR</a>;
+<b><a name="1696"> 1696</a></b> 
+<b><a name="1697"> 1697</a></b> /* The following PRFs are defined in PKCS #5 v2.0. */
+<b><a name="1698"> 1698</a></b> #define <a href="#1698">CKP_PKCS5_PBKD2_HMAC_SHA1</a> 0x00000001
+<b><a name="1699"> 1699</a></b> 
+<b><a name="1700"> 1700</a></b> 
+<b><a name="1701"> 1701</a></b> /* CK_PKCS5_PBKDF2_SALT_SOURCE_TYPE is new for v2.10.
+<b><a name="1702"> 1702</a></b>  * CK_PKCS5_PBKDF2_SALT_SOURCE_TYPE is used to indicate the
+<b><a name="1703"> 1703</a></b>  * source of the salt value when deriving a key using PKCS #5
+<b><a name="1704"> 1704</a></b>  * PBKDF2. */
+<b><a name="1705"> 1705</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> <a href="#1705">CK_PKCS5_PBKDF2_SALT_SOURCE_TYPE</a>;
+<b><a name="1706"> 1706</a></b> 
+<b><a name="1707"> 1707</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_PKCS5_PBKDF2_SALT_SOURCE_TYPE">CK_PKCS5_PBKDF2_SALT_SOURCE_TYPE</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PKCS5_PBKDF2_SALT_SOURCE_TYPE">CK_PKCS5_PBKDF2_SALT_SOURCE_TYPE</a>_PTR;
+<b><a name="1708"> 1708</a></b> 
+<b><a name="1709"> 1709</a></b> /* The following salt value sources are defined in PKCS #5 v2.0. */
+<b><a name="1710"> 1710</a></b> #define <a href="#1710">CKZ_SALT_SPECIFIED</a>        0x00000001
+<b><a name="1711"> 1711</a></b> 
+<b><a name="1712"> 1712</a></b> /* CK_PKCS5_PBKD2_PARAMS is new for v2.10.
+<b><a name="1713"> 1713</a></b>  * CK_PKCS5_PBKD2_PARAMS is a structure that provides the
+<b><a name="1714"> 1714</a></b>  * parameters to the CKM_PKCS5_PBKD2 mechanism. */
+<b><a name="1715"> 1715</a></b> typedef struct <a href="#1715">CK_PKCS5_PBKD2_PARAMS</a> {
+<b><a name="1716"> 1716</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_PKCS5_PBKDF2_SALT_SOURCE_TYPE">CK_PKCS5_PBKDF2_SALT_SOURCE_TYPE</a>           saltSource;
+<b><a name="1717"> 1717</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a>                                pSaltSourceData;
+<b><a name="1718"> 1718</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                                   ulSaltSourceDataLen;
+<b><a name="1719"> 1719</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                                   iterations;
+<b><a name="1720"> 1720</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_PKCS5_PBKD2_PSEUDO_RANDOM_FUNCTION_TYPE">CK_PKCS5_PBKD2_PSEUDO_RANDOM_FUNCTION_TYPE</a> prf;
+<b><a name="1721"> 1721</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a>                                pPrfData;
+<b><a name="1722"> 1722</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>                                   ulPrfDataLen;
+<b><a name="1723"> 1723</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_UTF8CHAR_PTR">CK_UTF8CHAR_PTR</a>                            pPassword;
+<b><a name="1724"> 1724</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a>                               ulPasswordLen;
+<b><a name="1725"> 1725</a></b> } <a href="#1725">CK_PKCS5_PBKD2_PARAMS</a>;
+<b><a name="1726"> 1726</a></b> 
+<b><a name="1727"> 1727</a></b> typedef <a href="../softoken/pkcs11t.h.dep.html#CK_PKCS5_PBKD2_PARAMS">CK_PKCS5_PBKD2_PARAMS</a></a> <a href="../softoken/pkcs11t.h.dep.html#CK_PTR">CK_PTR</a> <a href="../softoken/pkcs11t.h.dep.html#CK_PKCS5_PBKD2_PARAMS">CK_PKCS5_PBKD2_PARAMS</a></a>_PTR;
+<b><a name="1728"> 1728</a></b> 
+<b><a name="1729"> 1729</a></b> /* NSS Specific defines */
+<b><a name="1730"> 1730</a></b> 
+<b><a name="1731"> 1731</a></b> /* defines that have been deprecated in 2.20, but maintained in our
+<b><a name="1732"> 1732</a></b>  * header file for backward compatibility */
+<b><a name="1733"> 1733</a></b> #define <a href="#1733">CKO_KG_PARAMETERS</a>     <a href="../softoken/pkcs11t.h.dep.html#CKO_DOMAIN_PARAMETERS">CKO_DOMAIN_PARAMETERS</a>
+<b><a name="1734"> 1734</a></b> #define <a href="#1734">CKF_EC_FP</a>             <a href="../softoken/pkcs11t.h.dep.html#CKF_EC_F_P">CKF_EC_F_P</a>
+<b><a name="1735"> 1735</a></b> /* new in v2.11 deprecated by 2.20 */
+<b><a name="1736"> 1736</a></b> #define <a href="#1736">CKR_KEY_PARAMS_INVALID</a>                0x0000006B
+<b><a name="1737"> 1737</a></b> 
+<b><a name="1738"> 1738</a></b> /* stuff that for historic reasons is in this header file but should have
+<b><a name="1739"> 1739</a></b>  * been in pkcs11n.h */
+<b><a name="1740"> 1740</a></b> #define <a href="#1740">CKK_INVALID_KEY_TYPE</a>  0xffffffff
+<b><a name="1741"> 1741</a></b> 
+<b><a name="1742"> 1742</a></b> #include "pkcs11n.h"
+<b><a name="1743"> 1743</a></b> 
+<b><a name="1744"> 1744</a></b> /* undo packing */
+<b><a name="1745"> 1745</a></b> #include "pkcs11u.h"
+<b><a name="1746"> 1746</a></b> 
+<b><a name="1747"> 1747</a></b> #endif
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

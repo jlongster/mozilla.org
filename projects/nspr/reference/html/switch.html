@@ -1,0 +1,195 @@
+<?php
+
+$html_title = 'NSPR 2.0: Thread management';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<PRE>
+
+<B>  1</B> /* Copyright © 1998 Netscape Communications Corporation */
+<B>  2</B> 
+<B>  3</B> #include "prinit.h"
+<B>  4</B> #include "prlock.h"
+<B>  5</B> #include "prcvar.h"
+<B>  6</B> #include "prmem.h"
+<B>  7</B> #include "prinrval.h"
+<B>  8</B> #include "prlog.h"
+<B>  9</B> #include "prthread.h"
+<B> 10</B> #include "prprf.h"
+<B> 11</B> #include "plerror.h"
+<B> 12</B> 
+<B> 13</B> #define INNER_LOOPS 100
+<B> 14</B> #define DEFAULT_LOOPS 100
+<B> 15</B> #define DEFAULT_THREADS 10
+<B> 16</B> 
+<B> 17</B> typedef struct Shared
+<B> 18</B> {
+<B> 19</B>     PRLock *ml;
+<B> 20</B>     PRCondVar *cv;
+<B> 21</B>     PRBool twiddle;
+<B> 22</B>     PRThread *thread;
+<B> 23</B>     struct Shared *next;
+<B> 24</B> } Shared;
+<B> 25</B> 
+<B> 26</B> static PRFileDesc *debug_out = NULL;
+<B> 27</B> static PRBool debug_mode = PR_FALSE, verbosity = PR_TRUE, failed = PR_FALSE;
+<B> 28</B> static Shared home;
+<B> 29</B> 
+<B> 30</B> static void Help(void);
+<B> 31</B> static void PR_CALLBACK Notified(void *arg);
+<B> 32</B> static PRIntn PR_CALLBACK Switch(PRIntn argc, char **argv);
+<B> 33</B> 
+<B> 34</B> /* Root function for the threads in this sample (except primordial thread, which runs main) */
+<B> 35</B> static void PR_CALLBACK Notified(void *arg)
+<B> 36</B> {
+<B> 37</B>     Shared *shared = arg;
+<B> 38</B>     PRStatus status = PR_SUCCESS;
+<B> 39</B>     while (PR_SUCCESS == status)
+<B> 40</B>     {
+<B> 41</B>         PR_Lock(shared->ml);
+<B> 42</B>         while (shared->twiddle && (PR_SUCCESS == status))
+<B> 43</B>             status = PR_WaitCondVar(shared->cv, PR_INTERVAL_NO_TIMEOUT);
+<B> 44</B>         if (verbosity) PR_fprintf(debug_out, "+");
+<B> 45</B>         shared->twiddle = PR_TRUE;
+<B> 46</B>         shared->next->twiddle = PR_FALSE;
+<B> 47</B>         PR_NotifyCondVar(shared->next->cv);
+<B> 48</B>         PR_Unlock(shared->ml);
+<B> 49</B>     }
+<B> 50</B> }  /* Notified */
+<B> 51</B> 
+<B> 52</B> static PRIntn PR_CALLBACK Switch(PRIntn argc, char **argv)
+<B> 53</B> {
+<B> 54</B>     PRStatus status;
+<B> 55</B>     PRBool help = PR_FALSE;
+<B> 56</B>     PRUintn concurrency = 1;
+<B> 57</B>     Shared *shared, *link;
+<B> 58</B>     PRIntervalTime timein, timeout;
+<B> 59</B>     PRBool global_threads = PR_FALSE;
+<B> 60</B>     PRThreadScope thread_scope = PR_LOCAL_THREAD;
+<B> 61</B>     PRUintn thread_count, inner_count, loop_count, average;
+<B> 62</B>     PRUintn thread_limit = DEFAULT_THREADS, loop_limit = DEFAULT_LOOPS;
+<B> 63</B>    
+<B> 64</B>     if (help) return -1;
+<B> 65</B> 
+<B> 66</B>     if (PR_TRUE == debug_mode)
+<B> 67</B>     {
+<B> 68</B>         debug_out = PR_STDOUT;
+<B> 69</B>         PR_fprintf(debug_out, "Test parameters\n");
+<B> 70</B>         PR_fprintf(debug_out, "\tThreads involved: %d\n", thread_limit);
+<B> 71</B>         PR_fprintf(debug_out, "\tIteration limit: %d\n", loop_limit);
+<B> 72</B>         PR_fprintf(debug_out, "\tConcurrency: %d\n", concurrency);
+<B> 73</B>         PR_fprintf(
+<B> 74</B>             debug_out, "\tThread type: %s\n",
+<B> 75</B>             (PR_GLOBAL_THREAD == thread_scope) ? "GLOBAL" : "LOCAL");
+<B> 76</B>     }
+<B> 77</B> 
+<B> 78</B>     PR_SetConcurrency(concurrency);
+<B> 79</B> 
+<B> 80</B> /*'home' is "Shared" object for the primordial thread, at the end of the chain. */
+<B> 81</B>     link = &home;
+<B> 82</B>     home.ml = PR_NewLock();
+<B> 83</B>     home.cv = PR_NewCondVar(home.ml);
+<B> 84</B>     home.twiddle = PR_TRUE;
+<B> 85</B>     home.next = NULL;
+<B> 86</B>     timeout = 0;
+<B> 87</B> 
+<B> 88</B> /* Create "thread_limit" number of additional threads, each with its own "Shared" object. */
+<B> 89</B>     for (thread_count = 1; thread_count <= thread_limit; ++thread_count)
+<B> 90</B>     {
+<B> 91</B>         shared = PR_NEWZAP(Shared);
+<B> 92</B>         shared->ml = home.ml;
+<B> 93</B>         shared->cv = PR_NewCondVar(home.ml);
+<B> 94</B>         shared->twiddle = PR_TRUE;
+<B> 95</B>         shared->next = link;
+<B> 96</B>         link = shared;
+<B> 97</B>         shared->thread = PR_CreateThread(
+<B> 98</B>             PR_USER_THREAD, Notified, shared,
+<B> 99</B>             PR_PRIORITY_HIGH, thread_scope,
+<B>100</B>             PR_JOINABLE_THREAD, 0);
+<B>101</B>         PR_ASSERT(shared->thread != NULL);
+<B>102</B>         if (NULL == shared->thread)
+<B>103</B>             failed = PR_TRUE;
+<B>104</B>     }
+<B>105</B> 
+<B>106</B> /* "Shared" now points to the head of the chain, and "home" is the tail of the chain. */
+<B>107</B>     for (loop_count = 1; loop_count <= loop_limit; ++loop_count)
+<B>108</B>     {
+<B>109</B>         timein = PR_IntervalNow();
+<B>110</B>         for (inner_count = 0; inner_count < INNER_LOOPS; ++inner_count)
+<B>111</B>         {
+<B>112</B>             PR_Lock(home.ml);
+<B>113</B>             home.twiddle = PR_TRUE;
+<B>114</B>             shared->twiddle = PR_FALSE;
+<B>115</B>             PR_NotifyCondVar(shared->cv);
+<B>116</B>             while (home.twiddle)
+<B>117</B>             {
+<B>118</B>                 status = PR_WaitCondVar(home.cv, PR_INTERVAL_NO_TIMEOUT);
+<B>119</B>                 if (PR_FAILURE == status)
+<B>120</B>                     failed = PR_TRUE;
+<B>121</B>             }
+<B>122</B>             PR_Unlock(home.ml);
+<B>123</B>         }
+<B>124</B>         timeout += (PR_IntervalNow() - timein);
+<B>125</B>     }
+<B>126</B> 
+<B>127</B>     if (debug_mode)
+<B>128</B>     {
+<B>129</B>         average = PR_IntervalToMicroseconds(timeout)
+<B>130</B>             / (INNER_LOOPS * loop_limit * thread_count);
+<B>131</B>         PR_fprintf(
+<B>132</B>             debug_out, "Average switch times %d usecs for %d threads\n",
+<B>133</B>             average, thread_limit);
+<B>134</B>     }
+<B>135</B>     /* Test completed. Remainder of sample cleanly shuts down the test. */
+<B>136</B>     link = shared;
+<B>137</B>     for (thread_count = 1; thread_count <= thread_limit; ++thread_count)
+<B>138</B>     {
+<B>139</B>         if (&home == link) break;
+<B>140</B>         status = PR_Interrupt(link->thread);
+<B>141</B>         if (PR_SUCCESS != status)
+<B>142</B>         {
+<B>143</B>             failed = PR_TRUE;
+<B>144</B>             if (debug_mode)
+<B>145</B>                 PL_FPrintError(debug_out, "Failed to interrupt");
+<B>146</B>         }
+<B>147</B>         link = link->next; 
+<B>148</B>     }
+<B>149</B> 
+<B>150</B>     for (thread_count = 1; thread_count <= thread_limit; ++thread_count)
+<B>151</B>     {
+<B>152</B>         link = shared->next;
+<B>153</B>         status = PR_JoinThread(shared->thread);
+<B>154</B>         if (PR_SUCCESS != status)
+<B>155</B>         {
+<B>156</B>             failed = PR_TRUE;
+<B>157</B>             if (debug_mode)
+<B>158</B>                 PL_FPrintError(debug_out, "Failed to join");
+<B>159</B>         }
+<B>160</B>         PR_DestroyCondVar(shared->cv);
+<B>161</B>         PR_DELETE(shared);
+<B>162</B>         if (&home == link) break;
+<B>163</B>         shared = link;
+<B>164</B>     }
+<B>165</B>     PR_DestroyCondVar(home.cv);
+<B>166</B>     PR_DestroyLock(home.ml);
+<B>167</B> 
+<B>168</B>     PR_fprintf(PR_STDOUT, ((failed) ? "FAILED\n" : "PASSED\n"));
+<B>169</B>     return ((failed) ? 1 : 0);
+<B>170</B> }  /* Switch */
+<B>171</B> 
+<B>172</B> PRIntn main(PRIntn argc, char **argv)
+<B>173</B> {
+<B>174</B>     PRIntn result;
+<B>175</B>     PR_STDIO_INIT();
+<B>176</B>     result = PR_Initialize(Switch, argc, argv, 0);
+<B
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

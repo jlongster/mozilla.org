@@ -1,0 +1,346 @@
+<?php
+
+$html_title = 'Instructions for Disabling SSL 2 in Netscape Servers';
+$page_title = 'Instructions for Disabling SSL 2 in Netscape Servers';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<h3>Last updated 2004-09-16</h3>
+This document describes how to disable SSL 2 and all the SSL 2 cipher
+suites in the following Netscape servers.<br>
+<ul>
+  <li><a href="#NES6">Netscape Enterprise Server NES: versions 6.0 and
+later</a></li>
+  <li><a href="#NES4">Netscape Enterprise Server NES version 4.x</a><br>
+  </li>
+  <li><a href="#NDS">Directory Server: versions 6.0, 6.01, 6.02, 6.1,
+6.11, and 6.2</a></li>
+  <li><a href="#CMS">CMS: versions 4.1, 4.2, 4.5, 6.0, 6.01, 6.1, and
+6.2</a></li>
+  <li><a href="#Admin">Administration Server:</a> versions contained in
+  </li>
+  <ul>
+    <li>CMS 4.x</li>
+    <li>CMS 6.x</li>
+    <li>Directory Server 4.x </li>
+    <li>Directory Server 6.x<br>
+    </li>
+  </ul>
+</ul>
+<hr style="width: 100%; height: 2px;">
+<h2><a name="NES6"></a>Netscape Enterprise Server NES 6.0 and later<br>
+</h2>
+These instructions apply to NES 6.0 and later (including all service
+packs).<br>
+<br>
+To disable SSL 2 via the NES admin server:<br>
+<ol>
+  <li>Log into admin</li>
+  <li>Select the instance you want (or stay in and configure the admin
+server)</li>
+  <li>Select the Preferences tab</li>
+  <li>For the listen socket that has SSL enabled, select Attributes</li>
+  <li>Under Ciphers select SSL2</li>
+  <li>Uncheck "SSL version 2". One may also disable all of the SSL 2
+ciphers here.</li>
+  <li>Click Ok, then Quit to get rid of the window</li>
+  <li>Click Apply in upper-right of browser</li>
+  <li>Click Apply Changes and restart the server</li>
+  <li>Enter your SSL password when prompted</li>
+</ol>
+To disable it manually via the configuration files:<br>
+<br>
+1. Edit &lt;server-root&gt;/http-&lt;instance&gt;/config/server.xml:<br>
+<ul>
+  <li>In the SSLPARAMS element there is an ssl2 attribute. Set this to
+"off".</li>
+  <li>To also disable all of the ssl2 ciphers, replace "+" with "-" in
+the ssl2ciphers attribute for all of the ciphers listed.</li>
+</ul>
+<div style="margin-left: 40px;">Here is an example:<br>
+<br>
+<code>&lt;SSLPARAMS servercertnickname="Server-Cert" ssl2="off" </code><br>
+<code><span style="text-decoration: underline;">ssl2ciphers="-rc4,-rc4export,-rc2,-rc2export,-des,-desede3"</span>
+ssl3="on" </code><br>
+<code>ssl3tlsciphers="+rsa_rc4_128_md5,+rsa_3des_sha,+rsa_des_sha,+rsa_rc4_40_md5,+rsa_rc2_40_md5,-rsa_null_md5"</code><code>/&gt;</code><br>
+<code></code></div>
+<br>
+2. Stop and restart NES<br>
+<br>
+<hr style="width: 100%; height: 2px;">
+<h2><a name="NES4"></a>Netscape Enterprise Server NES 4.x</h2>
+<ol>
+  <li>Log into admin</li>
+  <li>Select the instance you want (or stay in and configure the admin
+server)</li>
+  <li>Select the Preferences tab</li>
+  <li>Select Encryption Preferences</li>
+  <li>Uncheck "SSL version 2". One may also disable all of the SSL 2
+ciphers here.</li>
+  <li>Click Ok, then Ok again to acknowledge that your changes have
+been saved.</li>
+  <li>Click&nbsp; "Save and Apply" to apply the changes and restart the
+server.</li>
+</ol>
+<br>
+<hr style="width: 100%; height: 2px;">
+<h2><a name="NDS"></a>Directory Server: versions 6.0, 6.01, 6.02, 6.1,
+6.11, and 6.2</h2>
+This applies to Directory Server versions 6.0, 6.01, 6.02, 6.1, 6.11,
+and 6.2.&nbsp; <br>
+<span style="text-decoration: underline;">These steps are not necessary
+on later versions of Directory Server.</span><br>
+<br>
+If you have enabled SSL on your Administration Server, please also
+follow the instructions below to disable SSL 2 ciphers for that server,
+also.<br>
+<br>
+<ol>
+  <li>Stop Directory Server.</li>
+&lt;&gt;Open the
+&lt;server_root&gt;/slapd-&lt;instance&gt;/config/dse.ldif
+file in an editor.&nbsp; You need to disable all of the SSL 2 ciphers
+in the "dn:cn=encryption,cn=config" entry, by adding the follwing to
+the comma separated list of ciphers in the "nsSSL3ciphers" attribute:<code><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+-rc4,-rc4export,-rc2,-rc2export,-des,-desede3</code><li>Restart
+Directory Server</li>
+</ol>
+Here's an example of the nsSSL3ciphers attribute with the correct
+ciphers disabled:&nbsp; This should be one line, but it is broken into
+multiple lines here to be more readable.<br>
+<br>
+<div style="margin-left: 40px;"><code>nsSSL3Ciphers:
+-rsa_null_md5,+rsa_rc4_128_md5,+rsa_rc4_40_md5,+rsa_rc2_40_md5,</code><br>
+<code>+rsa_des_sha,+rsa_fips_des_sha,+rsa_3des_sha,+rsa_fips_3des_sha,+fortezza,</code><br>
+<code>+fortezza_rc4_128_sha,+fortezza_null,+tls_rsa_export1024_with_rc4_56_sha,</code><br>
+<code>+tls_rsa_export1024_with_des_cbc_sha,<span  style="text-decoration: underline;">-rc4,-rc4export,-rc2,-rc2export,-des,-desede3</span></code><br>
+</div>
+<br>
+Notes: <br>
+<ul>
+  <li>It is important that you include the hyphen character before each
+cipher when modifying the "nsSSL3ciphers" attribute.&nbsp; That tells
+Directory Server to not enable those ciphers.</li>
+  <li>If you modify your cipher preferences through Directory Server
+Console again, you will lose these manually added ciphers.&nbsp; You
+would then need to go through this procedure of modifying the dse.ldif
+file again</li>
+</ul>
+<br>
+<hr style="width: 100%; height: 2px;">
+<h2><a name="CMS"></a>CMS: versions 4.1, 4.2, 4.5, 6.0, 6.01, 6.1, and
+6.2</h2>
+If you have enabled SSL on your Administration Server, please also
+follow the instructions under that product to disable SSL 2 ciphers.<br>
+<br>
+If you have enabled SSL on your Directory Server, please also follow
+the instructions under that product to disable SSL 2 ciphers for each
+instance of DS.<br>
+<br>
+To disable SSL 2 ciphers in CMS 4.1, 4.2, 4.5, and all
+subsequent 4.x patches/service packs, perform the following steps for
+each instance of CMS:<br>
+<ol>
+  <li><code>cd &lt;server_root&gt;/cert-&lt;instance&gt;/</code></li>
+  <li><code>./stop-cert</code></li>
+  <li><code>cd &lt;server_root&gt;/cert-&lt;instance&gt;/config/</code></li>
+  <li>edit CMS.cfg and change the line "jss.ssl.cipherpref=" to&nbsp; <code>jss.ssl.cipherpref=rsa_rc4_40_md5,rsa_rc4_128_md5,rsa_des_sha,rsa_3des_sha,rsa_fips_3des_sha,rsa_fips_des_sha
+    </code> <span style="font-family: monospace;"></span></li>
+  <li><code>cd &lt;server_root&gt;/cert-&lt;instance&gt;/</code></li>
+  <li><code>./start-cert</code></li>
+</ol>
+<br>
+To disable SSL 2 ciphers in CMS 6.0, 6.01, 6.1, 6.2, and
+all subsequent 6.x patches/service packs, disable them manually
+via the configuration files, according to the following steps:
+<ul>
+  <li>To disable SSL 2 for each instance of CMS <span  style="text-decoration: underline;">that has already been
+created,</span>&nbsp; for the given &lt;server_root&gt;:
+    <ol>
+      <li><code>cd &lt;server_root&gt;/cert-&lt;instance&gt;/</code></li>
+      <li><code>./stop-cert</code></li>
+      <li><code>cd
+&lt;server_root&gt;/cert-&lt;instance&gt;/config/</code></li>
+      <li>edit
+&lt;server_root&gt;/bin/cert-&lt;instance&gt;/config/server.xml:
+        <ul>
+          <li>In the SSLPARAMS element there is an
+ssl2 attribute. Set this to "off".</li>
+          <li>To also disable all of the ssl2
+ciphers, replace "+" with "-" in the ssl2ciphers attribute
+for all of the ciphers listed.</li>
+        </ul>
+      </li>
+      <li><code>cd &lt;server_root&gt;/cert-&lt;instance&gt;/</code></li>
+      <li><code>./start-cert<br>
+        <br>
+        </code></li>
+    </ol>
+    <div style="margin-left: 40px;">Here is an example:<br>
+    </div>
+    <br>
+    <div style="margin-left: 40px;"><code>&lt;SSLPARAMS
+servercertnickname="Server-Cert" ssl2="off" <span  style="text-decoration: underline;">ssl2ciphers="-rc4,-rc4export,-rc2,-rc2export,-des,-desede3"</span></code><br>
+    <code>ssl3="on"
+ssl3tlsciphers="+rsa_rc4_128_md5,+rsa_3des_sha,+rsa_des_sha,+rsa_rc4_40_md5,+rsa_rc2_40_md5,-rsa_null_md5"/&gt;<br>
+    </code><br>
+    <code></code></div>
+  </li>
+  <li>To disable SSL 2 in all <span style="text-decoration: underline;">future</span>
+instances of CMS for the given
+&lt;server_root&gt;: <br>
+    <ol>
+      <li><code>cd
+&lt;server_root&gt;/bin/cert/templates/https/config/</code></li>
+      <li>edit
+&lt;server_root&gt;/bin/cert/templates/https/config/server.xml:
+        <ul>
+          <li>In the SSLPARAMS element there is an ssl2 attribute. Set
+this to "off".</li>
+          <li>To also disable all of the ssl2 ciphers, replace "+" with
+"-" in the ssl2ciphers attribute for all of
+the ciphers listed.</li>
+        </ul>
+      </li>
+    </ol>
+    <br>
+    <div style="margin-left: 40px;">Here is an example:&nbsp; It
+has been broken into multiple lines here to be more readable.<br>
+    </div>
+    <br>
+    <div style="margin-left: 40px;"><code>&lt;SSLPARAMS
+servercertnickname="Server-Cert" ssl2="off" <span  style="text-decoration: underline;">ssl2ciphers="-rc4,-rc4export,-rc2,-rc2export,-des,-desede3"</span></code><br>
+    <code>ssl3="on"
+ssl3tlsciphers="+rsa_rc4_128_md5,+rsa_3des_sha,+rsa_des_sha,+rsa_rc4_40_md5,+rsa_rc2_40_md5,-rsa_null_md5"/&gt;<br>
+    </code><br>
+    <code></code></div>
+  </li>
+</ul>
+<hr style="width: 100%; height: 2px;">
+<h2><a name="Admin"></a>Administration Servers for&nbsp; Directory
+Server and CMS</h2>
+<br>
+To disable SSL 2 ciphers in Administration Servers
+contained in Directory Server 4.x and CMS 4.x and all subsequent 4.x
+patches/service packs, perform the following steps via the
+Administration Console:<br>
+<ol>
+  <li>Launch a console and login</li>
+  <li>From the primary Console tab, open the &lt;hostname&gt; by
+clicking on the '+' sign immediately preceding it, and then open the
+Server Group by clicking on the '+' sign immediately preceding it</li>
+  <li>Highlight the Administration Server, and click on the Open button
+on the right-hand side of the console</li>
+  <li>From the Administration Console, select the Configuration tab</li>
+  <li>On the right-hand side of the Configuration frame, select the
+Encryption tab</li>
+  <li>Presuming that SSL has been enabled, click on the Cipher
+Preferences button.&nbsp; A dialog will be displayed containing all of
+the ciphers; deselect all checkboxes under SSL 2.0 ciphers including:
+    <ul>
+      <li>RC4 with 40 bit encryption and MD5 message authentication</li>
+      <li>RC2 with 40 bit encryption and MD5 message authentication</li>
+      <li>RC4 with 128 bit encryption and MD5 message authentication</li>
+      <li>RC2 with 128 bit encryption and MD5 message authentication</li>
+      <li>DES with 56 bit encryption and MD5 message authentication</li>
+      <li>Triple DES with 168 bit encryption and MD5 message
+authentication</li>
+    </ul>
+  </li>
+  <li>Deselect the main SSL 2.0 ciphers checkbox</li>
+  <li>Click the OK button</li>
+  <li>Click the Save button</li>
+  <li>Close the Administration Console</li>
+  <li>Close the primary Console</li>
+  <li><code>cd &lt;server_root&gt;/</code></li>
+  <li><code>./stop-admin</code></li>
+  <li><code>./start-admin</code></li>
+</ol>
+To disable&nbsp; SSL 2 ciphers in Administration Servers
+contained in Directory Server 6.x and CMS 6.x and all subsequent 6.x
+patches/service packs, perform the following steps via the
+Administration Console:<br>
+<ol>
+  <li>Launch a console and login</li>
+  <li>From the primary Console tab, open the &lt;hostname&gt;
+by clicking on the '+' sign immediately preceding it, and then
+open the Server Group by clicking on the '+' sign immediately preceding
+it</li>
+  <li>Highlight the Administration Server, and click on the
+Open button on the right-hand side of the console</li>
+  <li>From the Administration Console, select the
+Configuration tab</li>
+  <li>On the right-hand side of the Configuration frame,
+select the Encryption tab</li>
+  <li>Presuming that SSL has been enabled, click on the
+Settings button located after the Cipher: label</li>
+  <li>A dialog entitled Cipher Preference will be displayed
+containing all of the ciphers; select the SSL 2.0 tab</li>
+  <li>Deselect all checkboxes under SSL 2.0 ciphers including:
+    <ul>
+      <li><code>DES&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+56&nbsp;&nbsp;&nbsp;&nbsp; MD5</code></li>
+      <li><code>RC2 (Export)&nbsp;&nbsp;
+40&nbsp;&nbsp;&nbsp;&nbsp; MD5</code></li>
+      <li><code>RC4 (Export)&nbsp;&nbsp;
+40&nbsp;&nbsp;&nbsp;&nbsp; MD5</code></li>
+      <li><code>DES&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+168&nbsp;&nbsp;&nbsp; MD5</code></li>
+      <li><code>RC4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+128&nbsp;&nbsp;&nbsp; MD5</code></li>
+      <li><code>RC2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+128&nbsp;&nbsp;&nbsp; MD5</code></li>
+    </ul>
+  </li>
+  <li>Click the OK button</li>
+  <li>Click the Save button</li>
+  <li>Close the Administration Console</li>
+  <li>Close the primary Console</li>
+  <li><code>cd &lt;server_root&gt;/</code></li>
+  <li><code>./stop-admin</code></li>
+  <li><code>./start-admin</code></li>
+</ol>
+To ensure that the Administration Server has disabled SSL 2.0, check
+the following configuration file manually:<br>
+<ol>
+  <li><code>cd &lt;server_root&gt;/</code></li>
+  <li><code>./stop-admin</code></li>
+  <li><code>cd &lt;server_root&gt;/admin-serve/config/</code></li>
+  <li>edit &lt;server_root&gt;/admin-serv/config/server.xml:
+    <ul>
+      <li>In the SSLPARAMS element there is an ssl2
+attribute. Set this to "off".</li>
+      <li>To also disable all of the ssl2 ciphers,
+replace "+" with "-" in the ssl2ciphers attribute for all
+of the SSl2 ciphers listed.</li>
+    </ul>
+  </li>
+  <li><code>cd &lt;server_root&gt;/</code></li>
+  <li><code>./start-admin</code></li>
+</ol>
+<div style="margin-left: 40px;">Here is an example.&nbsp; (It has been
+broken into two lines here for
+readability, but should be one line)<br>
+</div>
+<br>
+<div style="margin-left: 40px;"><code>&lt;SSLPARAMS
+servercertnickname="Server-Cert" ssl2="off"
+<span style="text-decoration: underline;">ssl2ciphers="-rc4,-rc4export,-rc2,-rc2export,-des,-desede3"</span></code><br>
+<code>ssl3="on"
+ssl3tlsciphers="+rsa_rc4_128_md5,+rsa_3des_sha,+rsa_des_sha,+rsa_rc4_40_md5,+rsa_rc2_40_md5,-rsa_null_md5"/&gt;</code><br>
+<code></code></div>
+<br>
+<hr style="width: 100%; height: 2px;"><br>
+<br>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

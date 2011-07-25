@@ -1,0 +1,239 @@
+<?php
+
+$html_title = 'OS/2 Code in Mozilla: Raptor gfx';
+$page_title = 'Raptor Gfx';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<p>
+Files in mozilla/gfx/src/os2/
+<br>
+(not yet checked in to mozilla.org cvs)
+
+<p>
+This is the cross-platform graphics engine, at the same sort of level
+as the GPI - it includes <a href="#print">printing</a>.
+Here's an approximate mapping, but do read the notes below.
+
+<p>
+<table border cellpadding = 4>
+ <tr>
+  <th align="center">Gfx object</th>
+  <th align="center">GPI object</th>
+  <th align="center">Implemented in</th>
+ </tr>
+ <tr>
+  <td align="center"><a href="http://lxr.mozilla.org/mozilla/source/gfx/public/nsIRegion.h">nsIRegion</a></td>
+  <td align="center">HRGN</td>
+  <td align="center"><a href="#regions">nsRegionOS2.cpp</a></td>
+ </tr>
+ <tr>
+  <td align="center"><a href="http://lxr.mozilla.org/mozilla/source/gfx/public/nsIFontMetrics.h">nsIFontMetrics</a></td>
+  <td align="center">FONTMETRICS<br>FATTRS</td>
+  <td align="center"><a href="#fonts">nsFontMetricsOS2.cpp</a></td>
+ </tr>
+ <tr>
+  <td align="center"><a href="http://lxr.mozilla.org/mozilla/source/gfx/public/nsIImage.h">nsIImage</a></td>
+  <td align="center">HBITMAP</td>
+  <td align="center"><a href="#bitmap">nsImageOS2.cpp</a></td>
+ </tr>
+ <tr>
+  <td align="center"><a href="http://lxr.mozilla.org/mozilla/source/gfx/public/nsIDeviceContext.h">nsIDeviceContext</a></td>
+  <td align="center">HDC</td>
+  <td align="center"><a href="#dcs">nsDeviceContextOS2.cpp</a></td>
+ </tr>
+ <tr>
+  <td align="center"><a href="http://lxr.mozilla.org/mozilla/source/gfx/public/nsIRenderingContext.h">nsIRenderingContext</a><br>
+                     (<a href="http://lxr.mozilla.org/mozilla/source/gfx/public/nsIDrawingSurface.h">nsIDrawingSurface</a>)<br>
+                     nsDrawingSurfaceOS2</td>
+  <td align="center">HPS</td>
+  <td align="center"><a href="#hps">nsRenderingContextOS2.cpp<br>
+                                    nsDrawingSurfaceOS2.cpp</a></td>
+ </tr>
+</table>
+
+<p><a name="dcs">
+<strong>Device contexts</strong>
+<p>
+Device contexts can be obtained for the screen or a
+<a href="#print">printer</a>.  Different members of the class are set
+depending on which it is: eventually, this should be changed.
+<p>
+The device context is the root of the gfx system: you need a DC to create
+a <a href="#hps">rendering context</a>.  <a href="#fonts">Font resolution</a>
+and <a href="#color">colour management</a> is done on a per-DC basis.
+<p>
+<img src="hamm.gif">Split up into screenDC and printDC
+
+<p><a name="color">
+<strong>Colour management</strong>
+<p>
+Raptor specifies colours in RGB.  The GPI provides three ways of managing
+this:
+<ol>
+<li>RGB colour tables (<strong>LCOLF_RGB</strong>)
+<li>Indexed colour tables (<strong>LCOLF_INDRGB</strong>)
+<li>Palette mananger (<strong>LCOLF_PALETTE</strong>)
+</ol>
+<p>
+These are all referred to as `palettes' in the code.
+<p>
+The method used depends on the colour depth of the DC in question and whether
+it supports palette manager.  The method selection and use is wrapped up by
+the <strong>nsIPaletteOS2</strong> interface, defined and implemented in
+nsPaletteOS2.h and nsPaletteOS2.cpp.
+<p>
+Palettes are allocated as required on a per-DC basis.
+<p>
+<img src="hamm.gif">There is now a single shared palette.  This may cause
+problems with printing (different device class), and should be looked at.
+
+<p><a name="hps">
+<strong>Presentation spaces and painting</strong>
+<p>
+There is no exact analogue of <strong>HPS</strong>.  A rendering context
+(RC) is very much like a presentation space, in that it has methods for
+drawing lines, setting colours, selecting <a href="#fonts">fonts</a> and
+so on.  The RC also has double-buffering built in: it has two PSs, one
+in-memory (with associated HDC and HBITMAP) and the other for the device
+(screen or printer).  Each PS is stored in a <em>Drawing Surface</em>,
+of which there are three types defined and implemented in
+nsDrawingSurfaceOS2.h and nsDrawingSurfaceOS2.cpp.  Note that an RC always
+has two references to drawing surfaces: when the RC is not in double-buffer
+mode, those references are to the same (onscreen) drawing surface.
+<p>
+The interface to the drawing surface class is very messy at the moment.
+<p>
+Note that (offscreen) drawing surfaces may outlive the RC which created them
+and be reused in another RC.
+<p>
+Because logical fonts are managed by PM on a per-PS basis,
+<a href="#fonts">font information</a> is stored in the drawing surface.
+<p><a name="coordsys">
+Under OS/2, the positive coordinates run up and to the right.  In the rest
+of the world, including raptor, positive coordinates run down and to the
+right.  This means that, in order to draw anything, we need to know the
+height of the target object: if the target is a printer, the height of the
+page; if a screen-PS for a window, the height of that window, and so on.
+Thus there is a method in nsRenderingContextOS2, <em>GetTargetHeight</em>
+which does this.
+<p>
+<img src="hamm.gif">The base nsDrawingSurfaceOS2 class should support the
+new(ish) nsIDrawingSurface interface.  This allows clients to access the bits
+of the surface directly, and is needed for the new compositor.
+<br>
+<img src="hamm.gif">Support <em>LockSurface</em> and <em>UnlockSurface</em>
+methods; this should follow easily from supporting the nsIDrawingSurface
+interface.
+<br>
+<img src="hamm.gif">Draw unicode text
+<br>
+<img src="hamm.gif">Allow for devices which don't have square pixels
+<br>
+<img src="hamm.gif">Fix <em>GetClipRect</em> method
+
+<p><a name="bitmap">
+<strong>Images and blending</strong>
+<p>
+The guts of the image-processing code lives in libimg.  The role of
+the nsImageOS2 class is to provide a buffer of bits into which libimg can
+write.  There's support for simple transparency too, whereby each image
+gets two pixmaps, one `real' and a monochrome mask.
+<p>
+In fact <strong>HBITMAP</strong>s are never created, basically because they
+are device-dependent: when you ask raptor to print an image, it will use the 
+same nsImageOS2 object.  I am also told that <em>GpiDrawBits</em> is more
+efficient than <em>GpiWCBitBlt</em>.
+<p>
+The nsBlenderOS2 class provides compositing, that is mixing pixmaps together.
+The guts of this resides in the fairly-XP code in
+<a href="http://lxr.mozilla.org/mozilla/source/gfx/src/nsBlender.cpp">nsBlender.cpp</a>.
+<p>
+<img src="hamm.gif">Need to support blending of rendering contexts; this
+should follow easily from supporting the nsIDrawingSurface interface.
+
+<p><a name="fonts">
+<strong>Font management</strong>
+<p>
+Objects of class <a href="http://lxr.mozilla.org/mozilla/source/gfx/public/nsFont.h">nsFont</a>
+are used to represent platform-independent fonts.  They correspond roughly to
+the <strong>FATTRS</strong> structure.  Objects of the nsFontMetricsOS2 class
+are built from an nsFont, and are specific to a device (actually to a device
+class).
+<p>
+An instance of nsFontMetricsOS2 contains both metrics for the font (eg.
+the max advance in application units) and a thing called the <em>font
+handle</em>.  This is an XP object whose job it is to hold the information
+necessary to select the font represented by the nsFontMetrics into a
+drawing surface.  On OS/2, this is a <strong>FATTRS</strong> and a
+<strong>SIZEL</strong> to set the size of the font.
+<p>
+Each nsDrawingSurfaceOS2 contains a table of LCIDs keyed by font handle.
+<p>
+There is currently nowhere specified the encoding (codepage) required for
+the font, so codepage 1004 is always used.
+
+<p><a name="regions">
+<strong>Regions</strong>
+<p>
+nsRegionOS2 is a wrapped-up <strong>HRGN</strong> with one little quirk:
+coordinate systems.  Coordinates are in device units and also in the mozilla
+coordinate system (see <a href="#coordsys">above</a>) -- but there's no way
+of knowing the height of the target object, and so translation to the OS/2
+system is not possible.
+<p>
+So regions are stored in a third coordinate space, which is transformed into
+OS/2 at the time the native region handle is extracted.
+<p>
+Note that the <em>GetNativeRegion</em> method is unlikely to do what you want.
+
+<p><a name="print">
+<strong>Printing</strong>
+<p>
+Setting up for printing is a bit tortous.  Here's how the various classes
+are supposed to be used:
+<ul>
+ <li>Create an nsDeviceContextSpecFactoryOS2
+ <li>Call the <em>CreateDeviceContextSpec</em> method in the factory.
+     <br>
+     This pops up the select-queue dialog; job properties can be done.
+     <br>
+     Eventually we end up with an nsDeviceContextSpecOS2.  This is basically
+     a <strong>PRQINFO3</strong> structure.
+ <li>Call the <em>GetDeviceContextFor</em> method in the (screen) DC which
+     you want the print DC to be compatible with.
+     <br>
+     This creates a new DC, which has an <strong>HDC</strong> and
+     <strong>HPS</strong> for the chosen printer.
+ <li>Use the various printing-specific methods in the new DC to control
+     document and page breaks.
+ <li>Create RCs from the print DC and output to the printer.
+</ul>
+<p>
+Most of the work talking to the spooler and so on is done by code in
+libprint.c, which is more-or-less independent from the rest of the code.
+<p>
+<img src="hamm.gif">Look in to margin problems
+<br>
+<img src="hamm.gif">Allow for non-square pixels
+
+<p>
+<hr>
+<table width="100%">
+<tr>
+<th align="left"><a href="wzbase.html">Back to Raptor base</a></th>
+<th align="right"><a href="wzwidget.html">On to Raptor widget</a></th>
+</tr>
+</table>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

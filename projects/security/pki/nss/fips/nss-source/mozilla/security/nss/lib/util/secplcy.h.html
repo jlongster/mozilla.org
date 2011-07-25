@@ -1,0 +1,154 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> #ifndef <a href="../util/secplcy.h.dep.html#__secplcy_h__">__secplcy_h__</a>
+<b><a name="38">   38</a></b> #define <a href="#38">__secplcy_h__</a>
+<b><a name="39">   39</a></b> 
+<b><a name="40">   40</a></b> #include "prtypes.h"
+<b><a name="41">   41</a></b> 
+<b><a name="42">   42</a></b> /*
+<b><a name="43">   43</a></b> ** Cipher policy enforcement. This code isn't very pretty, but it accomplishes
+<b><a name="44">   44</a></b> ** the purpose of obscuring policy information from potential fortifiers. :-)
+<b><a name="45">   45</a></b> **
+<b><a name="46">   46</a></b> ** The following routines are generic and intended for anywhere where cipher
+<b><a name="47">   47</a></b> ** policy enforcement is to be done, e.g. SSL and PKCS7&amp;12.
+<b><a name="48">   48</a></b> */
+<b><a name="49">   49</a></b> 
+<b><a name="50">   50</a></b> #define <a href="#50">SEC_CIPHER_NOT_ALLOWED</a> 0
+<b><a name="51">   51</a></b> #define <a href="#51">SEC_CIPHER_ALLOWED</a> 1
+<b><a name="52">   52</a></b> #define <a href="#52">SEC_CIPHER_RESTRICTED</a> 2 /* cipher is allowed in limited cases 
+<b><a name="53">   53</a></b>                                    e.g. step-up */
+<b><a name="54">   54</a></b> 
+<b><a name="55">   55</a></b> /* The length of the header string for each cipher table. 
+<b><a name="56">   56</a></b>    (It's the same regardless of whether we're using md5 strings or not.) */
+<b><a name="57">   57</a></b> #define <a href="#57">SEC_POLICY_HEADER_LENGTH</a> 48
+<b><a name="58">   58</a></b> 
+<b><a name="59">   59</a></b> /* If we're testing policy stuff, we may want to use the plaintext version */
+<b><a name="60">   60</a></b> #define <a href="#60">SEC_POLICY_USE_MD5_STRINGS</a> 1
+<b><a name="61">   61</a></b> 
+<b><a name="62">   62</a></b> #define <a href="#62">SEC_POLICY_THIS_IS_THE</a> \
+<b><a name="63">   63</a></b>     "\x2a\x3a\x51\xbf\x2f\x71\xb7\x73\xaa\xca\x6b\x57\x70\xcd\xc8\x9f"
+<b><a name="64">   64</a></b> #define <a href="#64">SEC_POLICY_STRING_FOR_THE</a> \
+<b><a name="65">   65</a></b>     "\x97\x15\xe2\x70\xd2\x8a\xde\xa9\xe7\xa7\x6a\xe2\x83\xe5\xb1\xf6"
+<b><a name="66">   66</a></b> #define <a href="#66">SEC_POLICY_SSL_TAIL</a> \
+<b><a name="67">   67</a></b>     "\x70\x16\x25\xc0\x2a\xb2\x4a\xca\xb6\x67\xb1\x89\x20\xdf\x87\xca"
+<b><a name="68">   68</a></b> #define <a href="#68">SEC_POLICY_SMIME_TAIL</a> \
+<b><a name="69">   69</a></b>     "\xdf\xd4\xe7\x2a\xeb\xc4\x1b\xb5\xd8\xe5\xe0\x2a\x16\x9f\xc4\xb9"
+<b><a name="70">   70</a></b> #define <a href="#70">SEC_POLICY_PKCS12_TAIL</a> \
+<b><a name="71">   71</a></b>     "\x1c\xf8\xa4\x85\x4a\xc6\x8a\xfe\xe6\xca\x03\x72\x50\x1c\xe2\xc8"
+<b><a name="72">   72</a></b> 
+<b><a name="73">   73</a></b> #if defined(<a href="../util/secplcy.h.dep.html#SEC_POLICY_USE_MD5_STRINGS">SEC_POLICY_USE_MD5_STRINGS</a>)
+<b><a name="74">   74</a></b> 
+<b><a name="75">   75</a></b> /* We're not testing. 
+<b><a name="76">   76</a></b>    Use md5 checksums of the strings. */
+<b><a name="77">   77</a></b> 
+<b><a name="78">   78</a></b> #define <a href="#78">SEC_POLICY_SSL_HEADER</a> \
+<b><a name="79">   79</a></b>     <a href="../util/secplcy.h.dep.html#SEC_POLICY_THIS_IS_THE">SEC_POLICY_THIS_IS_THE</a> <a href="../util/secplcy.h.dep.html#SEC_POLICY_STRING_FOR_THE">SEC_POLICY_STRING_FOR_THE</a> <a href="../util/secplcy.h.dep.html#SEC_POLICY_SSL_TAIL">SEC_POLICY_SSL_TAIL</a>
+<b><a name="80">   80</a></b> 
+<b><a name="81">   81</a></b> #define <a href="#81">SEC_POLICY_SMIME_HEADER</a> \
+<b><a name="82">   82</a></b>     <a href="../util/secplcy.h.dep.html#SEC_POLICY_THIS_IS_THE">SEC_POLICY_THIS_IS_THE</a> <a href="../util/secplcy.h.dep.html#SEC_POLICY_STRING_FOR_THE">SEC_POLICY_STRING_FOR_THE</a> <a href="../util/secplcy.h.dep.html#SEC_POLICY_SMIME_TAIL">SEC_POLICY_SMIME_TAIL</a>
+<b><a name="83">   83</a></b> 
+<b><a name="84">   84</a></b> #define <a href="#84">SEC_POLICY_PKCS12_HEADER</a> \
+<b><a name="85">   85</a></b>     <a href="../util/secplcy.h.dep.html#SEC_POLICY_THIS_IS_THE">SEC_POLICY_THIS_IS_THE</a> <a href="../util/secplcy.h.dep.html#SEC_POLICY_STRING_FOR_THE">SEC_POLICY_STRING_FOR_THE</a> <a href="../util/secplcy.h.dep.html#SEC_POLICY_PKCS12_TAIL">SEC_POLICY_PKCS12_TAIL</a>
+<b><a name="86">   86</a></b> 
+<b><a name="87">   87</a></b> #else
+<b><a name="88">   88</a></b> 
+<b><a name="89">   89</a></b> /* We're testing. 
+<b><a name="90">   90</a></b>    Use plaintext versions of the strings, for testing purposes. */
+<b><a name="91">   91</a></b> #define <a href="#91">SEC_POLICY_SSL_HEADER</a> \
+<b><a name="92">   92</a></b>     "This is the string for the SSL policy table.    "
+<b><a name="93">   93</a></b> #define <a href="#93">SEC_POLICY_SMIME_HEADER</a> \
+<b><a name="94">   94</a></b>     "This is the string for the <a href="../util/secoid.c.dep.html#PKCS7">PKCS7</a> policy table.  "
+<b><a name="95">   95</a></b> #define <a href="#95">SEC_POLICY_PKCS12_HEADER</a> \
+<b><a name="96">   96</a></b>     "This is the string for the <a href="../util/secoid.c.dep.html#PKCS12">PKCS12</a> policy table. "
+<b><a name="97">   97</a></b> 
+<b><a name="98">   98</a></b> #endif
+<b><a name="99">   99</a></b> 
+<b><a name="100">  100</a></b> /* Local cipher tables have to have these members at the top. */
+<b><a name="101">  101</a></b> typedef struct <a href="#101">_sec_cp_struct</a>
+<b><a name="102">  102</a></b> {
+<b><a name="103">  103</a></b>   char policy_string[<a href="../util/secplcy.h.dep.html#SEC_POLICY_HEADER_LENGTH">SEC_POLICY_HEADER_LENGTH</a>];
+<b><a name="104">  104</a></b>   long unused; /* placeholder for max keybits in pkcs12 struct */
+<b><a name="105">  105</a></b>   char num_ciphers;
+<b><a name="106">  106</a></b>   char begin_ciphers;
+<b><a name="107">  107</a></b>   /* cipher policy settings follow. each is a char. */
+<b><a name="108">  108</a></b> } <a href="#108">secCPStruct</a>;
+<b><a name="109">  109</a></b> 
+<b><a name="110">  110</a></b> struct <a href="#110">SECCipherFindStr</a>
+<b><a name="111">  111</a></b> {
+<b><a name="112">  112</a></b>   /* (policy) and (ciphers) are opaque to the outside world */
+<b><a name="113">  113</a></b>   void *policy;
+<b><a name="114">  114</a></b>   void *<a href="../softoken/pk11pars.h.dep.html#ciphers">ciphers</a>;
+<b><a name="115">  115</a></b>   long index;
+<b><a name="116">  116</a></b>   PRBool onlyAllowed;
+<b><a name="117">  117</a></b> };
+<b><a name="118">  118</a></b> 
+<b><a name="119">  119</a></b> typedef struct <a href="../util/secplcy.h.dep.html#<a href="#119">SECCipherFind</a>Str">SECCipherFindStr</a> SECCipherFind;
+<b><a name="120">  120</a></b> 
+<b><a name="121">  121</a></b> <a href="../util/seccomon.h.dep.html#SEC_BEGIN_PROTOS">SEC_BEGIN_PROTOS</a></a>
+<b><a name="122">  122</a></b> 
+<b><a name="123">  123</a></b> <a href="../util/secplcy.h.dep.html#SECCipherFind">SECCipherFind</a> *<a href="#123">sec_CipherFindInit</a>(PRBool onlyAllowed,
+<b><a name="124">  124</a></b>                                   <a href="../util/secplcy.h.dep.html#secCPStruct">secCPStruct</a> *policy,
+<b><a name="125">  125</a></b>                                   long *<a href="../softoken/pk11pars.h.dep.html#ciphers">ciphers</a>);
+<b><a name="126">  126</a></b> 
+<b><a name="127">  127</a></b> long <a href="#127">sec_CipherFindNext</a>(<a href="../util/secplcy.h.dep.html#SECCipherFind">SECCipherFind</a> *find);
+<b><a name="128">  128</a></b> 
+<b><a name="129">  129</a></b> char <a href="#129">sec_IsCipherAllowed</a>(long cipher, <a href="../util/secplcy.h.dep.html#secCPStruct">secCPStruct</a> *policies,
+<b><a name="130">  130</a></b>                          long *<a href="../softoken/pk11pars.h.dep.html#ciphers">ciphers</a>);
+<b><a name="131">  131</a></b> 
+<b><a name="132">  132</a></b> void <a href="#132">sec_CipherFindEnd</a>(<a href="../util/secplcy.h.dep.html#SECCipherFind">SECCipherFind</a> *find);
+<b><a name="133">  133</a></b> 
+<b><a name="134">  134</a></b> <a href="../util/secasn1.h.dep.html#SEC_END_PROTOS">SEC_END_PROTOS</a><a href="../util/seccomon.h.dep.html#SEC_END_PROTOS"><sup>[1]</sup></a></a>
+<b><a name="135">  135</a></b> 
+<b><a name="136">  136</a></b> #endif /* __SECPLCY_H__ */
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

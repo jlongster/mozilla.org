@@ -1,0 +1,212 @@
+<html>
+<title> nsIAccessible Interface Test Case </title>
+<!-- Descrpt: Test nsIAccessibleHyperLink Interface method for HTML tag "IMG"
+   - getURI,getObject, isValid
+   - Attibute: anchors
+   - Author: jessie.li@sun.com
+   - Copyright (C) 2002 Sun Microsystems Inc.  All Rights Reserved.
+  -->
+<head>
+
+
+<script type="text/javascript" src="accessibility.js"></script>
+
+<script type="text/javascript">
+
+function getDomNodeTable()
+{
+ try{
+  netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+  netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+
+  var node = document.getElementsByTagName("img").item(0);
+  return node;
+ }
+ catch(e){
+  alert("Exception: " + e);
+ }
+}
+
+function executeTestCase()
+{
+  
+  var domNode = getDomNodeTable();
+  if(domNode == null)
+  {
+    res = res + "Could not get the DOM Node";
+    submitToCookie();
+  }
+  else
+  { //else1
+    accNode = getAccessibleHyperLinkNode(domNode); 
+    if(accNode == "Exception")
+    {
+      res = res + "The Node you selected is not an Accessible Node";
+      submitToCookie();
+    }
+    else
+    { //else2
+     try{
+	   netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+	   netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+
+	   setTimeout("constructResults();", 2000);
+     }
+     catch(e){
+      alert("Exception**: " + e);
+     }
+    }//else2
+  } //else1
+}
+
+function constructResults()
+{
+ try{
+   netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+   netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+   
+   var anchors = accNode.anchors;
+   var URI_1 = accNode.getURI(0);
+   var URI_2 = accNode.getURI(3);
+   var URISpec_1 = URI_1.spec;
+   var URISpec_2 = URI_2.spec;
+   var object_1 = accNode.getObject(0);
+   var object_2 = accNode.getObject(3);
+   var objectValue_1 = object_1.accValue;
+   var objectValue_2 = object_2.accValue;
+   var isValid = accNode.isValid();
+   
+   var expectedAnchors = "6";
+   var expectedURISpec_1 = "http://finance.yahoo.com/?u";
+   var expectedURISpec_2 = "http://dir.yahoo.com/new/";
+   var expectedObjectValue_1 = "http://finance.yahoo.com/?u";
+   var expectedObjectValue_2 = "http://dir.yahoo.com/new/";
+   var expectedIsValue = true;
+
+   var row0 = new Array("Property/Method", "Expected Values", "Actual Values", "Result");
+   var row1 = new Array("anchors->", expectedAnchors, anchors);
+   var row2 = new Array("URIspec_1->", expectedURISpec_1, URISpec_1);
+   var row3 = new Array("URIspec_2->", expectedURISpec_2, URISpec_2);
+   var row4 = new Array("objectValue_1->", expectedObjectValue_1, objectValue_1);
+   var row5 = new Array("objectValue_2->", expectedObjectValue_2, objectValue_2);
+   var row6 = new Array("isValid->", expectedIsValue, isValid);
+
+   if (anchors == expectedAnchors)                  row1[3] = "PASS"; else row1[3] = "FAIL";
+   if (URISpec_1 == expectedURISpec_1)              row2[3] = "PASS"; else row2[3] = "FAIL";
+   if (URISpec_2 == expectedURISpec_2)              row3[3] = "PASS"; else row3[3] = "FAIL";
+   if (objectValue_1 == expectedObjectValue_1)      row4[3] = "PASS"; else row4[3] = "FAIL";
+   if (objectValue_2 == expectedObjectValue_2)      row5[3] = "PASS"; else row5[3] = "FAIL";
+   if (isValid == expectedIsValue)                  row6[3] = "PASS"; else row6[3] = "FAIL";
+
+   res += "<table border cols=4 width='70%'>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+     res += "<td><b>" + row0[col] + "</b></td>";
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row1[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row1[col] + "</td>";
+    else
+     res += "<td>" + row1[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row2[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row2[col] + "</td>";
+    else
+     res += "<td>" + row2[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row3[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row3[col] + "</td>";
+    else
+     res += "<td>" + row3[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row4[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row4[col] + "</td>";
+    else
+     res += "<td>" + row4[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row5[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row5[col] + "</td>";
+    else
+     res += "<td>" + row5[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "<tr>";
+   for(col=0; col<4; col++)
+   {
+    if(row6[col] == "FAIL")
+     res += "<td bgcolor='#FF0000'>" + row6[col] + "</td>";
+    else
+     res += "<td>" + row6[col] + "</td>";
+   }
+   res += "</tr>";
+   res += "</table>";
+
+   submitToCookie();
+ }
+ catch(e){
+  alert("Exception**: " + e);
+ }
+}
+
+function submitToCookie()
+{
+  createCookie("nsIAccessibleTestHyperLinkNode", res, 14);
+  setTimeout("window.location.reload();", 1000);
+}
+
+</script>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var res = "<b><u> Results for HTML Anchor Node:</u></b><br><br>";
+if(readCookie("nsIAccessibleTestHyperLinkNode") == null)
+{
+  <!-- Test Links -->
+  document.write('<br><br><b> Testing Link:</b><br><br>');
+  document.write('This is the first link:<br>');
+  document.write('<a href="http://home.netscape.com">Netscape Home</a><br><br>');
+  document.write('<a href="http://www.mozilla.org"">Second Link(mozilla.org)</a><br>');
+  document.write('<br>Client-side Image Map:<br>');
+  document.write('<map name="m">');
+  document.write('<area coords="0,0,60,52" href="http://finance.yahoo.com/?u">');
+  document.write('<area coords="61,0,130,52" href="http://messenger.yahoo.com/">');
+  document.write('<area coords="131,0,210,52" href="http://mail.yahoo.com/?.intl=us">');
+  document.write('<area coords="450,0,530,52" href="http://dir.yahoo.com/new/">');
+  document.write('<area coords="531,0,605,52" href="http://my.yahoo.com/">');
+  document.write('<area coords="606,0,668,52" href="http://help.yahoo.com/">');
+  document.write('</map>');
+  document.write('<img width="668" height="53" border="0" usemap="#m" src="imagemap.gif" alt="Yahoo">');
+  document.write('<br>');
+
+  setTimeout("executeTestCase();", 1000);
+}
+else
+{
+  var cookieValue = readCookie("nsIAccessibleTestHyperLinkNode");
+  eraseCookie("nsIAccessibleTestHyperLinkNode");
+  displayResults(cookieValue);
+}
+
+</script>
+</body>
+</html>

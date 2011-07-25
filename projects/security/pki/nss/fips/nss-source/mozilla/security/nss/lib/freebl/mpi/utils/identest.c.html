@@ -1,0 +1,97 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> #include &lt;stdio.h&gt;
+<b><a name="2">    2</a></b> #include &lt;stdlib.h&gt;
+<b><a name="3">    3</a></b> #include "mpi.h"
+<b><a name="4">    4</a></b> #include "mpprime.h"
+<b><a name="5">    5</a></b> #include &lt;sys/types.h&gt;
+<b><a name="6">    6</a></b> #include &lt;time.h&gt;
+<b><a name="7">    7</a></b> 
+<b><a name="8">    8</a></b> #define <a href="#8">MAX_PREC</a> (4096 / <a href="../../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_BIT">MP_DIGIT_BIT</a>)
+<b><a name="9">    9</a></b> 
+<b><a name="10">   10</a></b> <a href="../../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="#10">identity_test</a>(void)
+<b><a name="11">   11</a></b> {
+<b><a name="12">   12</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a>       preca, precb;
+<b><a name="13">   13</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>        <a href="../../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="14">   14</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a>        a, b;
+<b><a name="15">   15</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a>        t1, t2, t3, t4, t5;
+<b><a name="16">   16</a></b> 
+<b><a name="17">   17</a></b>   preca = (rand() % <a href="../../../freebl/mpi/utils/identest.c.dep.html#MAX_PREC">MAX_PREC</a>) + 1;
+<b><a name="18">   18</a></b>   precb = (rand() % <a href="../../../freebl/mpi/utils/identest.c.dep.html#MAX_PREC">MAX_PREC</a>) + 1;
+<b><a name="19">   19</a></b> 
+<b><a name="20">   20</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;a) = 0;
+<b><a name="21">   21</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;b) = 0;
+<b><a name="22">   22</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;t1) = 0;
+<b><a name="23">   23</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;t2) = 0;
+<b><a name="24">   24</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;t3) = 0;
+<b><a name="25">   25</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;t4) = 0;
+<b><a name="26">   26</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;t5) = 0;
+<b><a name="27">   27</a></b> 
+<b><a name="28">   28</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;a)  );
+<b><a name="29">   29</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;b)  );
+<b><a name="30">   30</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;t1) );
+<b><a name="31">   31</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;t2) );
+<b><a name="32">   32</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;t3) );
+<b><a name="33">   33</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;t4) );
+<b><a name="34">   34</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;t5) );
+<b><a name="35">   35</a></b> 
+<b><a name="36">   36</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpprime.c.dep.html#mpp_random_size">mpp_random_size</a>(&amp;a, preca) );
+<b><a name="37">   37</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpprime.c.dep.html#mpp_random_size">mpp_random_size</a>(&amp;b, precb) );
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b>   if (<a href="../../../freebl/mpi/mpi.c.dep.html#mp_cmp">mp_cmp</a>(&amp;a, &amp;b) &lt; 0)
+<b><a name="40">   40</a></b>     <a href="../../../freebl/mpi/mpi.c.dep.html#mp_exch">mp_exch</a>(&amp;a, &amp;b);
+<b><a name="41">   41</a></b> 
+<b><a name="42">   42</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_mod">mp_mod</a>(&amp;a, &amp;b, &amp;t1) );       /* t1 = a%b */
+<b><a name="43">   43</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_div">mp_div</a>(&amp;a, &amp;b, &amp;t2, NULL) ); /* t2 = a/b */
+<b><a name="44">   44</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_mul">mp_mul</a>(&amp;b, &amp;t2, &amp;t3) );      /* t3 = (a/b)*b */
+<b><a name="45">   45</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_add">mp_add</a>(&amp;t1, &amp;t3, &amp;t4) );     /* t4 = a%b + (a/b)*b */
+<b><a name="46">   46</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../../freebl/mpi/mpi.c.dep.html#mp_sub">mp_sub</a>(&amp;t4, &amp;a, &amp;t5) );      /* t5 = a%b + (a/b)*b - a */
+<b><a name="47">   47</a></b>   if (<a href="../../../freebl/mpi/mpi.c.dep.html#mp_cmp_z">mp_cmp_z</a>(&amp;t5) != 0) {
+<b><a name="48">   48</a></b>     <a href="../../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../../freebl/mpi/mpi.h.dep.html#MP_UNDEF">MP_UNDEF</a>;
+<b><a name="49">   49</a></b>     goto CLEANUP;
+<b><a name="50">   50</a></b>   }
+<b><a name="51">   51</a></b> 
+<b><a name="52">   52</a></b> CLEANUP:
+<b><a name="53">   53</a></b>   <a href="../../../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;t5);
+<b><a name="54">   54</a></b>   <a href="../../../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;t4);
+<b><a name="55">   55</a></b>   <a href="../../../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;t3);
+<b><a name="56">   56</a></b>   <a href="../../../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;t2);
+<b><a name="57">   57</a></b>   <a href="../../../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;t1);
+<b><a name="58">   58</a></b>   <a href="../../../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;b);
+<b><a name="59">   59</a></b>   <a href="../../../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;a);
+<b><a name="60">   60</a></b>   return <a href="../../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="61">   61</a></b> }
+<b><a name="62">   62</a></b> 
+<b><a name="63">   63</a></b> int
+<b><a name="64">   64</a></b> <a href="#64">main</a>(void)
+<b><a name="65">   65</a></b> {
+<b><a name="66">   66</a></b>   unsigned int  seed = (unsigned int)time(NULL);
+<b><a name="67">   67</a></b>   unsigned long count = 0;
+<b><a name="68">   68</a></b>   <a href="../../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>        <a href="../../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="69">   69</a></b> 
+<b><a name="70">   70</a></b>   srand(seed);
+<b><a name="71">   71</a></b> 
+<b><a name="72">   72</a></b>   while (<a href="../../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a> == (<a href="../../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../../freebl/mpi/utils/identest.c.dep.html#identity_test">identity_test</a>())) {
+<b><a name="73">   73</a></b>      if ((++count % 100) == 0)
+<b><a name="74">   74</a></b>        fputc('.', stderr);
+<b><a name="75">   75</a></b>   }
+<b><a name="76">   76</a></b> 
+<b><a name="77">   77</a></b>   fprintf(stderr, "\ntest failed, err %d\n", <a href="../../../freebl/mpi/mpi-test.c.dep.html#res">res</a>);
+<b><a name="78">   78</a></b>   return <a href="../../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="79">   79</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

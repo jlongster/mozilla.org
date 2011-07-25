@@ -1,0 +1,151 @@
+<?php
+
+$html_title = 'Signed Scripts &amp; Privileges: An Example';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="DC.author" content="Mitch Stoltz">
+<meta name="DC.creator" content="Mitch Stoltz">
+<meta name="DC.title" content="Signed Scripts &amp; Privileges: An Example">
+<meta name="DC.subject" content="Signed Scripts &amp; Privileges: An Example">
+<meta name="DC.date.created" content="2001-01-10T16:51:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2006-09-10T09:54:03+11:00" scheme="W3CDTF">
+<link rel="up" href="../" title="Security project homepage">
+<link rel="contents" href="./" title="Component Security in Mozilla">
+<link rel="section" href="#privaction" title="A Privileged Action">
+<link rel="section" href="#signedscripts" title="Signed Scripts">
+<link rel="section" href="#levels" title="Levels of Security">
+<link rel="section" href="#granttrust" title="Granting Trust Remotely">
+<link rel="glossary" href="terms.html" title="Terminology in JavaScript Security">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<table cellspacing="0" cellpadding="4">
+  <tbody>
+    <tr style="background-color: #F5F5DC; color: inherit;">
+      <td><a rel="up" href="../">Security projects</a></td>
+      <td>&gt;</td>
+      <td><a rel="contents" href="./">Component Security</a></td>
+      <td>&gt;</td>
+      <td>Signed Scripts &amp; Privileges: An Example</td>
+    </tr>
+  </tbody>
+</table>
+
+<h1>Signed Scripts & Privileges: An Example</h1>
+
+<address class="author">Mitch Stoltz</address>
+
+<p>This page demonstrates using signed scripts to perform actions not 
+normally permitted to JavaScript on a web page. This example assumes a 
+basic familiarity with the concept of code signing. See the links in the 
+provided documentation at the 
+<a href="index.html#docs">Component Security main page</a> for more 
+information.</p>
+
+<h2><a name="privaction">A Privileged Action</a></h2>
+
+<p><a href="jssec.html#privs-list">JavaScript Security</a> gives a partial 
+list of the actions prohibited to untrusted scripts. One example is access 
+to browser preferences using the <code>navigator.preference</code> property. 
+If an untrusted script attempts to use this property, an exception is thrown. 
+For example, a call such as</p>
+
+<pre class="code">
+<code>var homepage = navigator.preference("browser.startup.homepage");</code>
+</pre>
+
+<p>... will fail, and throw an "<code>access to property denied</code>" exception.</p>
+
+<h2><a name="signedscripts">Signed Scripts</a></h2>
+
+<p>Accessing sensitive information or functions requires that a 
+<a href="terms.html#priv">privilege</a> be granted using the <code>netscape.security.PrivilegeManager.enablePrivilege()</code> function. 
+Only a signed script (or a script loaded from a file on the user's hard drive) 
+can call <code>enablePrivilege</code>. Scripts (and their associated HTML 
+files) are signed using a <a href="terms.html#cert">digital signature</a> 
+and a signature-generating utility such as
+<a href="http://developer.netscape.com/software/signedobj/jarpack.html#signtool1.3">Signtool</a>.</p>
+
+<p>In our example, the privilege that controls access to browser 
+preferences is <code>UniversalPreferencesRead</code>. A script which is 
+signed and loaded from a jar file can call<br>
+<code>netscape.security.PrivilegeManager.enablePrivilege("UniversalPreferencesRead");</code><br>
+If the user has not stored a preference as to whether this privilege should be granted to this signer, a
+confirmation dialog appears.</p>
+
+<p> The link below runs the following JavaScript function:</p>
+
+<pre class="code">
+function privilegedAction() {
+  try {
+    netscape.security.PrivilegeManager.enablePrivilege("UniversalPreferencesRead");   
+    var hp = navigator.preference("browser.startup.homepage");
+    alert("Permission to read preferences is granted. Your home page is "+hp);
+  } catch (e) {
+    alert("Permission to read preferences was denied.");
+  }
+}
+</pre>
+
+<p><a href="jar:http://www.mozilla.org/projects/security/components/signed-script-demo.jar!/signed-script-demo.html">
+Run the Signed Script Example</a> (This link will only work in 
+Mozilla-based browsers)</p>
+
+<p>If you see the "Permission to read preferences was denied" dialog, either 
+you clicked "No" in the security confirmation dialog, or your browser was 
+already configured to deny the <code>UniversalPreferencesRead</code> 
+privilege to scripts signed by this particular certificate.</p>
+
+<h2><a name="levels">Levels of Security</a></h2>
+
+<p>The philosophy behind this policy is that in order for a script 
+from the Web to perform sensitive actions, the user must trust the 
+author of the script. In order for the user to trust the author of 
+the script, the user must have proof of the author's identity, and 
+assurance that the script has not been modified with malicious intent. 
+It follows from these requirements that two conditions must be met 
+in order for a script to perform potentially dangerous actions:</p>
+
+<ol>
+  <li>The script must be signed with a valid digital certificate. This 
+establishes the identity of the script's origin and gives evidence of 
+any modifications to the script after signing.</li>
+  <li>The user must grant permission for the signer to perform the 
+requested action. This permission can be preconfigured in browser 
+preferences or granted through a confirmation dialog.</li>
+</ol>
+
+<h2><a name="granttrust">Granting Trust Remotely</a></h2>
+
+<p>Some embedders and distributors of Mozilla may require the ability 
+to perform privileged actions without a dialog box being displayed to 
+the user. While this feature is not present in mozilla.org's software 
+releases, it can be added by other distributors. This feature is explained 
+in <a href="master-cert.html">The Master Certificate API</a>.</p>
+
+<table cellspacing="0" cellpadding="4">
+  <tbody>
+    <tr style="background-color: #F5F5DC; color: inherit;">
+      <td><a rel="up" href="../">Security projects</a></td>
+      <td>&gt;</td>
+      <td><a rel="contents" href="./">Component Security</a></td>
+      <td>&gt;</td>
+      <td>Signed Scripts &amp; Privileges: An Example</td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

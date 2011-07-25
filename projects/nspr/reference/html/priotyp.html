@@ -1,0 +1,2159 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;9 I/O Types';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:04:53">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="prcmon.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="priofnc.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="16720"> </A><A NAME=""> </A><h2>
+Chapter&#32;9 
+&nbsp;
+
+
+
+<A NAME="16721"> </A><A NAME="I/O Types"> </A>I/O Types
+</h2>
+</center>
+<A NAME="16722"> </A>This chapter describes the most common NSPR types, enumerations, and 
+structures used with the functions described in <A HREF="priofnc.html#17588"  >Chapter&#32;10 "I/O Functions</A>" and 
+<A HREF="prntdb.html#20283"  >Chapter&#32;11 "Network Addresses</A>." These include the types used for system 
+access, normal file I/O, and socket (network) I/O. 
+
+<P>
+
+<A NAME="16729"> </A>Types unique to a particular function are described with the function itself.
+
+<P>
+
+<A NAME="16733"> </A>For sample code that illustrates basic I/O operations, see <A HREF="printro.html#13314"  >Introduction to NSPR</A>.
+
+<P>
+
+<A NAME="16737"> </A><A HREF="priotyp.html#16757"  >Directory Type</A><br>
+<A HREF="priotyp.html#16779"  >File Descriptor Types</A><br>
+<A HREF="priotyp.html#17013"  >File Info Types</A><br>
+<A HREF="priotyp.html#17129"  >Network Address Types</A><br>
+<A HREF="priotyp.html#17191"  >Types Used with Socket Options Functions</A><br>
+<A HREF="priotyp.html#17437"  >Type Used with Memory-Mapped I/O</A><br>
+<A HREF="priotyp.html#17465"  >Offset Interpretation for Seek Functions</A>
+
+<P>
+
+
+
+<A NAME="16757"> </A>
+<A NAME="Directory Type"> </A>
+<h2>
+Directory Type
+</h2>
+
+
+<A NAME="16759"> </A><A NAME="PRDir"> </A><h4>
+PRDir
+</h4>
+
+<A NAME="16763"> </A>Directory structure used with <A HREF="priofnc.html#18353"  >Directory I/O Functions</A>.
+
+<P>
+
+<BR>
+<A NAME="16764"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16765"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="16766"></A>typedef struct PRDir PRDir;
+</PRE>
+<P>
+<BR>
+<A NAME="16767"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16768"> </A>The opaque structure <CODE>PRDir</CODE> represents an open directory in the file system. The 
+function <A HREF="priofnc.html#18371"  ><CODE>PR_OpenDir</CODE></A> opens a specified directory and returns a pointer to a <CODE>PRDir</CODE> 
+structure, which can be passed to <A HREF="priofnc.html#18406"  ><CODE>PR_ReadDir</CODE></A> repeatedly to obtain successive 
+entries (files or subdirectories in the open directory). To close the directory, pass 
+the <CODE>PRDir</CODE> pointer to <A HREF="priofnc.html#18468"  ><CODE>PR_CloseDir</CODE></A>. 
+
+<P>
+
+
+
+<A NAME="16779"> </A>
+<A NAME="File Descriptor Types"> </A>
+<h2>
+File Descriptor Types
+</h2>
+
+
+<A NAME="16780"> </A>NSPR represents I/O objects, such as open files and sockets, by file descriptors of 
+type <A HREF="priotyp.html#16807"  ><CODE>PRFileDesc</CODE></A>. This section introduces <CODE>PRFileDesc</CODE> and related types.
+
+<P>
+
+<A NAME="16787"> </A><A HREF="priotyp.html#16807"  ><CODE>PRFileDesc</CODE></A><CODE><br>
+</CODE><A HREF="priotyp.html#16863"  ><CODE>PRIOMethods</CODE></A><CODE><br>
+</CODE><A HREF="priotyp.html#16993"  ><CODE>PRFilePrivate</CODE></A><CODE><br>
+</CODE><A HREF="priotyp.html#17001"  ><CODE>PRDescIdentity</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="16797"> </A>Note that the NSPR documentation follows the Unix convention of using the term 
+<I>files</I> to refer to many kinds of I/O objects. To refer specifically to the files in a file 
+system (that is, disk files), this documentation uses the term <I>normal files.</I> 
+
+<P>
+
+<A NAME="16798"> </A><CODE>PRFileDesc</CODE> has an object-oriented flavor. An I/O function on a <CODE>PRFileDesc</CODE> 
+structure is carried out by invoking the corresponding "method" in the I/O 
+methods table (a structure of type <A HREF="priotyp.html#16863"  ><CODE>PRIOMethods</CODE></A>) of the <CODE>PRFileDesc</CODE> structure (the 
+"object"). Different kinds of I/O objects (such as files and sockets) have different 
+I/O methods tables, thus implementing different behavior in response to the same 
+I/O function call.
+
+<P>
+
+<A NAME="16802"> </A>NSPR supports the implementation of layered I/O. Each layer is represented by a 
+<CODE>PRFileDesc</CODE> structure, and the <CODE>PRFileDesc</CODE> structures for the layers are chained 
+together. Each <CODE>PRFileDesc</CODE> structure has a field (of type <A HREF="priotyp.html#17001"  ><CODE>PRDescIdentity</CODE></A>) to 
+identify itself in the layers. For example, the Netscape implementation of the 
+Secure Sockets Layer (SSL) protocol is implemented as an I/O layer on top of 
+NSPR's socket layer.
+
+<P>
+
+<A NAME="16807"> </A><A NAME="PRFileDesc"> </A><h4>
+PRFileDesc
+</h4>
+
+<A NAME="16808"> </A>A file descriptor used to represent any open file, such as a normal file, an end point 
+of a pipe, or a socket (end point of network communication). 
+
+<P>
+
+<BR>
+<A NAME="16809"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16810"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="16811"></A>struct PRFileDesc {<br>&nbsp;&nbsp;&nbsp;PRIOMethods *methods;<br>&nbsp;&nbsp;&nbsp;PRFilePrivate *secret;<br>&nbsp;&nbsp;&nbsp;PRFileDesc *lower, *higher;<br>&nbsp;&nbsp;&nbsp;void (*dtor)(PRFileDesc *fd);<br>&nbsp;&nbsp;&nbsp;PRDescIdentity identity;<br>};
+</PRE>
+<P>
+<PRE>
+<A NAME="16812"></A>typedef struct PRFileDesc PRFileDesc;
+</PRE>
+<P>
+<BR>
+<A NAME="16813"> </A><A NAME="Fields"> </A><h5>
+Fields
+</h5>
+
+
+<A NAME="16814"> </A>The structure has the following fields: 
+
+<P>
+
+<P>
+<A NAME="16849"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16817"></A>methods
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16822"> </A>The I/O methods table. See <A HREF="priotyp.html#16863"  ><CODE>PRIOMethods</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16824"></A>secret
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16829"> </A>Layer-dependent implementation data. See <A HREF="priotyp.html#16993"  ><CODE>PRFilePrivate</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16831"></A>lower
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16833"> </A>Pointer to lower layer.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16835"></A>higher
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16837"> </A>Pointer to higher layer.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16839"></A>dtor
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16841"> </A>A destructor function for the layer.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16843"></A>identity
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16848"> </A>Identity of this particular layer. See <A HREF="priotyp.html#17001"  ><CODE>PRDescIdentity</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16850"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16851"> </A>The fields of this structure are significant only if you are implementing a layer on 
+top of NSPR, such as SSL. Otherwise, you use functions such as <A HREF="priofnc.html#17649"  ><CODE>PR_Open</CODE></A> and 
+<A HREF="priofnc.html#18671"  ><CODE>PR_NewTCPSocket</CODE></A> to obtain a file descriptor, which you should treat as an opaque 
+structure.
+
+<P>
+
+<A NAME="16860"> </A>For more details about the use of <CODE>PRFileDesc</CODE> and related structures, see <A HREF="priotyp.html#16779"  >File 
+Descriptor Types</A>.
+
+<P>
+
+<A NAME="16863"> </A><A NAME="PRIOMethods"> </A><h4>
+PRIOMethods
+</h4>
+
+<A NAME="16864"> </A>The table of I/O methods used in a file descriptor.
+
+<P>
+
+<BR>
+<A NAME="16865"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16866"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="16867"></A>struct PRIOMethods {<br>&nbsp;&nbsp;&nbsp;PRDescType file_type;<br>&nbsp;&nbsp;&nbsp;PRCloseFN close;<br>&nbsp;&nbsp;&nbsp;PRReadFN read;<br>&nbsp;&nbsp;&nbsp;PRWriteFN write;<br>&nbsp;&nbsp;&nbsp;PRAvailableFN available;<br>&nbsp;&nbsp;&nbsp;PRAvailable64FN available64;<br>&nbsp;&nbsp;&nbsp;PRFsyncFN fsync;<br>&nbsp;&nbsp;&nbsp;PRSeekFN seek;<br>&nbsp;&nbsp;&nbsp;PRSeek64FN seek64;<br>&nbsp;&nbsp;&nbsp;PRFileInfoFN fileInfo;<br>&nbsp;&nbsp;&nbsp;PRFileInfo64FN fileInfo64;<br>&nbsp;&nbsp;&nbsp;PRWritevFN writev;<br>&nbsp;&nbsp;&nbsp;PRConnectFN connect;<br>&nbsp;&nbsp;&nbsp;PRAcceptFN accept;<br>&nbsp;&nbsp;&nbsp;PRBindFN bind;<br>&nbsp;&nbsp;&nbsp;PRListenFN listen;<br>&nbsp;&nbsp;&nbsp;PRShutdownFN shutdown;<br>&nbsp;&nbsp;&nbsp;PRRecvFN recv;<br>&nbsp;&nbsp;&nbsp;PRSendFN send;<br>&nbsp;&nbsp;&nbsp;PRRecvfromFN recvfrom;<br>&nbsp;&nbsp;&nbsp;PRSendtoFN sendto;<br>&nbsp;&nbsp;&nbsp;PRPollFN poll;<br>&nbsp;&nbsp;&nbsp;PRAcceptreadFN acceptread;<br>&nbsp;&nbsp;&nbsp;PRTransmitfileFN transmitfile;<br>&nbsp;&nbsp;&nbsp;PRGetsocknameFN getsockname;<br>&nbsp;&nbsp;&nbsp;PRGetpeernameFN getpeername;<br>&nbsp;&nbsp;&nbsp;PRGetsockoptFN getsockopt;<br>&nbsp;&nbsp;&nbsp;PRSetsockoptFN setsockopt;<br>};
+</PRE>
+<P>
+<PRE>
+<A NAME="16868"></A>typedef struct PRIOMethods PRIOMethods;
+</PRE>
+<P>
+<BR>
+<A NAME="16869"> </A><A NAME="Fields"> </A><h5>
+Fields
+</h5>
+
+
+<A NAME="16870"> </A>The structure has the following fields: 
+
+<P>
+
+<P>
+<A NAME="16984"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16873"></A>file_type
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16875"> </A>Type of file represented (tos). 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16877"></A>close
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16879"> </A>Close file and destroy descriptor.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16881"></A>read
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16883"> </A>Read up to the specified number of bytes into buffer.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16885"></A>write
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16887"> </A>Write specified number of bytes from buffer.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16889"></A>available
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16891"> </A>Determine number of bytes available for reading.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16893"></A>available64
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16895"> </A>Same as previous field, except 64-bit.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16897"></A>fsync
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16899"> </A>Flush all in-memory buffers of file to permanent store.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16901"></A>seek
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16903"> </A>Position the file pointer to the desired place.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16905"></A>seek64
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16907"> </A>Same as previous field, except 64-bit.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16909"></A>fileInfo
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16911"> </A>Get information about an open file.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16913"></A>fileInfo64
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16915"> </A>Same as previous field, except 64-bit.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16917"></A>writev
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16919"> </A>Write from a vector of buffers. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16921"></A>connect
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16923"> </A>Connect to the specified network address.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16925"></A>accept
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16927"> </A>Accept a connection from a network peer.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16929"></A>bind
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16931"> </A>Associate a network address with the file descriptor.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16933"></A>listen
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16935"> </A>Prepare to listen for network connections.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16937"></A>shutdown
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16939"> </A>Shut down a network connection.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16941"></A>recv
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16943"> </A>Receive up to the specified number of bytes. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16945"></A>send
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16947"> </A>Send all the bytes specified.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16949"></A>recvfrom
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16951"> </A>Receive up to the specified number of bytes and report 
+network source.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16953"></A>sendto
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16955"> </A>Send bytes to specified network address.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16957"></A>poll
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16959"> </A>Test the file descriptor to see if it is ready for I/O.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16961"></A>acceptread
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16963"> </A>Accept and read from a new network file descriptor. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16965"></A>transmitfile
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16967"> </A>Transmit an entire file to the specified socket.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16969"></A>getsockname
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16971"> </A>Get network address associated with a file descriptor.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16973"></A>getpeername
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16975"> </A>Get peer's network address.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16977"></A>getsockopt
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16979"> </A>Get current setting of specified socket option.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16981"></A>setsockopt
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16983"> </A>Set value of specified socket option.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16985"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16986"> </A>You don't need to know the type declaration for each function listed in the method 
+table unless you are implementing a layer. For information about each function, see 
+the corresponding function description in this document. For example, the <CODE>write</CODE> 
+method in <CODE>PRIOMethods</CODE> implements the <A HREF="priofnc.html#17945"  ><CODE>PR_Write</CODE></A> function. For type definition 
+details, see <CODE>prio.h</CODE>.
+
+<P>
+
+<A NAME="16990"> </A>The I/O methods table provides procedural access to the functions of the file 
+descriptor. It is the responsibility of a layer implementor to provide suitable 
+functions at every entry point (that is, for every function in the I/O methods table). 
+If a layer provides no functionality, it should call the next lower (higher) function 
+of the same name (for example, the "close" method would return 
+<CODE>fd-&gt;lower-&gt;method-&gt;close(fd-&gt;lower)</CODE>).
+
+<P>
+
+<A NAME="16991"> </A>Not all functions in the methods table are implemented for all types of files. For 
+example, the <CODE>seek</CODE> method is implemented for normal files but not for sockets. In 
+cases where this partial implementation occurs, the function returns an error 
+indication with an error code of <CODE>PR_INVALID_METHOD_ERROR</CODE>.
+
+<P>
+
+<A NAME="16993"> </A><A NAME="PRFilePrivate"> </A><h4>
+PRFilePrivate
+</h4>
+
+<A NAME="16994"> </A>Layer-dependent implementation data.
+
+<P>
+
+<BR>
+<A NAME="16995"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16996"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="16997"></A>typedef struct PRFilePrivate PRFilePrivate;
+</PRE>
+<P>
+<BR>
+<A NAME="16998"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16999"> </A>A layer implementor should collect all the private data of the layer in the 
+<CODE>PRFilePrivate</CODE> structure. Each layer has its own definition of <CODE>PRFilePrivate</CODE>, 
+which is hidden from other layers as well as from the users of the layer. 
+
+<P>
+
+<A NAME="17001"> </A><A NAME="PRDescIdentity"> </A><h4>
+PRDescIdentity
+</h4>
+
+<A NAME="17002"> </A>The identity of a file descriptor's layer.
+
+<P>
+
+<BR>
+<A NAME="17003"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17004"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17005"></A>typedef PRUintn PRDescIdentity;
+</PRE>
+<P>
+<BR>
+<A NAME="17006"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="17007"> </A>File descriptors may be layered. Each layer has it own identity. Identities are 
+allocated by the runtime and are to be associated (by the layer implementor) with 
+all file descriptors of that layer. It is then possible to scan the chain of layers and 
+find a layer that one recognizes, then predict that it will implement a desired 
+protocol.
+
+<P>
+
+<A NAME="17008"> </A>A string may be associated with a layer when the layer is created. The string is 
+copied by the runtime, and <A HREF="priofnc.html#19814"  ><CODE>PR_GetNameForIdentity</CODE></A> returns a reference to that 
+copy. There is no way to delete a layer's identity after the layer is created.
+
+<P>
+
+
+
+<A NAME="17013"> </A>
+<A NAME="File Info Types"> </A>
+<h2>
+File Info Types
+</h2>
+
+
+<A NAME="17017"> </A><A HREF="priotyp.html#17025"  ><CODE>PRFileInfo</CODE></A><CODE><br>
+</CODE><A HREF="priotyp.html#17063"  ><CODE>PRFileInfo64</CODE></A><CODE><br>
+</CODE><A HREF="priotyp.html#17101"  ><CODE>PRFileType</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="17025"> </A><A NAME="PRFileInfo"> </A><h4>
+PRFileInfo
+</h4>
+
+<A NAME="17029"> </A>File information structure used with <A HREF="priofnc.html#17723"  ><CODE>PR_GetFileInfo</CODE></A> and <A HREF="priofnc.html#18034"  ><CODE>PR_GetOpenFileInfo</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="17033"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17034"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17035"></A>struct PRFileInfo {<br>&nbsp;&nbsp;&nbsp;PRFileType type;<br>&nbsp;&nbsp;&nbsp;PRUint32 size;<br>&nbsp;&nbsp;&nbsp;PRTime creationTime;<br>&nbsp;&nbsp;&nbsp;PRTime modifyTime;<br>};
+</PRE>
+<P>
+<PRE>
+<A NAME="17036"></A>typedef struct PRFileInfo PRFileInfo;
+</PRE>
+<P>
+<BR>
+<A NAME="17037"> </A><A NAME="Fields"> </A><h5>
+Fields
+</h5>
+
+
+<A NAME="17038"> </A>The structure has the following fields: 
+
+<P>
+
+<P>
+<A NAME="17059"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17041"></A>type
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17046"> </A>Type of file. See <A HREF="priotyp.html#17101"  ><CODE>PRFileType</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17048"></A>size
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17050"> </A>Size, in bytes, of file's contents. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17052"></A>creationTime
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17054"> </A>Creation time per definition of <CODE>PRTime</CODE>. See <CODE>prtime.h</CODE>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17056"></A>modifyTime
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17058"> </A>Last modification time per definition of <CODE>PRTime</CODE>. See 
+<CODE>prtime.h</CODE>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="17060"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="17061"> </A>The <CODE>PRFileInfo</CODE> structure provides information about a file, a directory, or some 
+other kind of file system object, as specified by the <CODE>type</CODE> field. 
+
+<P>
+
+<A NAME="17063"> </A><A NAME="PRFileInfo64"> </A><h4>
+PRFileInfo64
+</h4>
+
+<A NAME="17067"> </A>File information structure used with <A HREF="priofnc.html#17758"  ><CODE>PR_GetFileInfo64</CODE></A> and 
+<A HREF="priofnc.html#18072"  ><CODE>PR_GetOpenFileInfo64</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="17071"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17072"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17073"></A>struct PRFileInfo64 {<br>&nbsp;&nbsp;&nbsp;PRFileType type;<br>&nbsp;&nbsp;&nbsp;PRUint64 size;<br>&nbsp;&nbsp;&nbsp;PRTime creationTime;<br>&nbsp;&nbsp;&nbsp;PRTime modifyTime;<br>};
+</PRE>
+<P>
+<PRE>
+<A NAME="17074"></A>typedef struct PRFileInfo64 PRFileInfo64;
+</PRE>
+<P>
+<BR>
+<A NAME="17075"> </A><A NAME="Fields"> </A><h5>
+Fields
+</h5>
+
+
+<A NAME="17076"> </A>The structure has the following fields: 
+
+<P>
+
+<P>
+<A NAME="17097"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17079"></A>type
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17084"> </A>Type of file. See <A HREF="priotyp.html#17101"  ><CODE>PRFileType</CODE></A>. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17086"></A>size
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17088"> </A>64-bit size, in bytes, of file's contents.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17090"></A>creationTime
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17092"> </A>Creation time per definition of <CODE>PRTime</CODE>. See <CODE>prtime.h</CODE>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17094"></A>modifyTime
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17096"> </A>Last modification time per definition of <CODE>PRTime</CODE>. See 
+<CODE>prtime.h</CODE>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="17098"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="17099"> </A>The <CODE>PRFileInfo64</CODE> structure provides information about a file, a directory, or some 
+other kind of file system object, as specified by the <CODE>type</CODE> field. 
+
+<P>
+
+<A NAME="17101"> </A><A NAME="PRFileType"> </A><h4>
+PRFileType
+</h4>
+
+<A NAME="17105"> </A>Type for enumerators used in the <CODE>type</CODE> field of the <A HREF="priotyp.html#17025"  ><CODE>PRFileInfo</CODE></A> and <A HREF="priotyp.html#17063"  ><CODE>PRFileInfo64</CODE></A> 
+structures.
+
+<P>
+
+<BR>
+<A NAME="17109"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17110"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17111"></A>typedef enum PRFileType{<br>&nbsp;&nbsp;&nbsp;PR_FILE_FILE = 1,<br>&nbsp;&nbsp;&nbsp;PR_FILE_DIRECTORY = 2,<br>&nbsp;&nbsp;&nbsp;PR_FILE_OTHER = 3<br>} PRFileType;
+</PRE>
+<P>
+<BR>
+<A NAME="17112"> </A><A NAME="Enumerators"> </A><h5>
+Enumerators
+</h5>
+
+
+<A NAME="17113"> </A>The enumeration has the following enumerators: 
+
+<P>
+
+<P>
+<A NAME="17127"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17116"></A>PR_FILE_FILE
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17118"> </A>The information in the structure describes a file.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17120"></A>PR_FILE_DIRECTORY
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17122"> </A>The information in the structure describes a directory.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17124"></A>PR_FILE_OTHER
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17126"> </A>The information in the structure describes some other kind of 
+file system object.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+
+
+<A NAME="17129"> </A>
+<A NAME="Network Address Types"> </A>
+<h2>
+Network Address Types
+</h2>
+
+
+<A NAME="17133"> </A><A HREF="priotyp.html#17138"  ><CODE>PRNetAddr</CODE></A><CODE><br>
+</CODE><A HREF="priotyp.html#17180"  ><CODE>PRIPv6Addr</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="17138"> </A><A NAME="PRNetAddr"> </A><h4>
+PRNetAddr
+</h4>
+
+<A NAME="17142"> </A>Type used with <A HREF="priofnc.html#18579"  >Socket Manipulation Functions</A> to specify a network address.
+
+<P>
+
+<BR>
+<A NAME="17143"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17144"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17145"></A>union PRNetAddr {<br>&nbsp;&nbsp;&nbsp;struct {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUint16 family;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;char data[14];<br>&nbsp;&nbsp;&nbsp;} raw;<br>&nbsp;&nbsp;&nbsp;struct {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUint16 family;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUint16 port;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUint32 ip;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;char pad[8];<br>&nbsp;&nbsp;&nbsp;} inet;<br>#if defined(_PR_INET6)<br>&nbsp;&nbsp;&nbsp;struct {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUint16 family;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUint16 port;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUint32 flowinfo;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRIPv6Addr ip;<br>&nbsp;&nbsp;&nbsp;} ipv6;<br>#endif /* defined(_PR_INET6) */<br>};
+</PRE>
+<P>
+<PRE>
+<A NAME="17146"></A>typedef union PRNetAddr PRNetAddr;
+</PRE>
+<P>
+<BR>
+<A NAME="17147"> </A><A NAME="Fields"> </A><h5>
+Fields
+</h5>
+
+
+<A NAME="17148"> </A>The structure has the following fields: 
+
+<P>
+
+<P>
+<A NAME="17174"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17151"></A>family
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17153"> </A>Address family: <CODE>PR_AF_INET|PR_AF_INET6</CODE> for <CODE>raw.family</CODE>, <CODE>PR_AF_INET</CODE> for 
+i<CODE>net.family</CODE>, <CODE>PR_AF_INET6</CODE> for <CODE>ipv6.family</CODE>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17155"></A>data
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17157"> </A>Raw address data.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17159"></A>port
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17161"> </A>Port number of TCP or UDP, in network byte order.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17163"></A>ip
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17165"> </A>The actual 32 (for <CODE>inet.ip</CODE>) or 128 (for <CODE>ipv6.ip</CODE>) bits of IP address. The 
+<CODE>inet.ip</CODE> field is in network byte order. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17167"></A>pad
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17169"> </A>Unused. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17171"></A>flowinfo
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17173"> </A>Routing information.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="17175"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="17176"> </A>The union <CODE>PRNetAddr</CODE> represents a network address. NSPR supports only the 
+Internet address family. By default, NSPR is built to support only IPv4, but it's 
+possible to build the NSPR library to support both IPv4 and IPv6. Therefore, the 
+<CODE>family</CODE> field can be <CODE>PR_AF_INET</CODE> only for default NSPR, and can also be <CODE>PR_AF_INET6</CODE> if the 
+binary supports <CODE>IPv6</CODE>. 
+
+<P>
+
+<A NAME="17177"> </A><CODE>PRNetAddr</CODE> is binary-compatible with the socket address structures in the familiar 
+Berkeley socket interface, although this fact should not be relied upon. The <CODE>raw</CODE> 
+member of the union is equivalent to <CODE>struct sockaddr</CODE>, the <CODE>inet</CODE> member is 
+equivalent to <CODE>struct sockaddr_in</CODE>, and if the binary is built with <CODE>IPv6</CODE> support, 
+the <CODE>ipv6</CODE> member is equivalent to <CODE>struct sockaddr_in6</CODE>. (Note that <CODE>PRNetAddr</CODE> 
+does not have the <CODE>length</CODE> field that is present in <CODE>struct sockaddr_in</CODE> on some 
+Unix platforms.) 
+
+<P>
+
+<A NAME="17178"> </A>The macros <CODE>PR_AF_INET</CODE>, <CODE>PR_AF_INET6</CODE>, <CODE>PR_INADDR_ANY</CODE>, <CODE>PR_INADDR_LOOPBACK</CODE> are defined if 
+<CODE>prio.h</CODE> is included. <CODE>PR_INADDR_ANY</CODE> and <CODE>PR_INADDR_LOOPBACK</CODE> are special IPv4 addresses 
+in host byte order, so they must be converted to network byte order before being 
+assigned to the <CODE>inet.ip</CODE> field.
+
+<P>
+
+<A NAME="17180"> </A><A NAME="PRIPv6Addr"> </A><h4>
+PRIPv6Addr
+</h4>
+
+<A NAME="17184"> </A>Type used in the <CODE>ipv6.ip</CODE> field of the <A HREF="priotyp.html#17138"  ><CODE>PRNetAddr</CODE></A> structure.
+
+<P>
+
+<BR>
+<A NAME="17185"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17186"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17187"></A>#if defined(_PR_INET6)<br>&nbsp;&nbsp;&nbsp;typedef struct in6_addr PRIPv6Addr;<br>#endif /* defined(_PR_INET6) */
+</PRE>
+<P>
+<BR>
+<A NAME="17188"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="17189"> </A><CODE>PRIPv6Addr</CODE> represents a 128-bit IPv6 address. It is equivalent to <CODE>struct in6_addr</CODE> 
+in the Berkeley socket interface. <CODE>PRIPv6Addr</CODE> is always manipulated as a byte array. 
+Unlike the IPv4 address (a 4-byte unsigned integer) or the port number (a 2-byte 
+unsigned integer), it has no network or host byte order. 
+
+<P>
+
+
+
+<A NAME="17191"> </A>
+<A NAME="Types Used with Socket Options Functions"> </A>
+<h2>
+Types Used with Socket Options Functions
+</h2>
+
+
+<A NAME="17195"> </A><A HREF="priotyp.html#17206"  ><CODE>PRSocketOptionData</CODE></A><CODE><br>
+</CODE><A HREF="priotyp.html#17284"  ><CODE>PRSockOption</CODE></A><CODE><br>
+</CODE><A HREF="priotyp.html#17366"  ><CODE>PRLinger</CODE></A><CODE><br>
+</CODE><A HREF="priotyp.html#17407"  ><CODE>PRMcastRequest</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="17206"> </A><A NAME="PRSocketOptionData"> </A><h4>
+PRSocketOptionData
+</h4>
+
+<A NAME="17210"> </A>Type for structure used with <A HREF="priofnc.html#19306"  ><CODE>PR_GetSocketOption</CODE></A> and <A HREF="priofnc.html#19337"  ><CODE>PR_SetSocketOption</CODE></A> to 
+specify options for file descriptors that represent sockets.
+
+<P>
+
+<BR>
+<A NAME="17214"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17215"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17216"></A>typedef struct PRSocketOptionData<br>{<br>&nbsp;&nbsp;&nbsp;PRSockOption option;<br>&nbsp;&nbsp;&nbsp;union<br>&nbsp;&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUintn ip_ttl;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUintn mcast_ttl;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRUintn tos;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRBool non_blocking;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRBool reuse_addr;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRBool keep_alive;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRBool mcast_loopback;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRBool no_delay;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRSize max_segment;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRSize recv_buffer_size;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRSize send_buffer_size;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRLinger linger;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRMcastRequest add_member;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRMcastRequest drop_member; <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRNetAddr mcast_if;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>&nbsp;&nbsp;&nbsp;} value;<br>} PRSocketOptionData;
+</PRE>
+<P>
+<BR>
+<A NAME="17217"> </A><A NAME="Fields"> </A><h5>
+Fields
+</h5>
+
+
+<A NAME="17218"> </A>The structure has the following fields: 
+
+<P>
+
+<P>
+<A NAME="17280"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17221"></A>ip_ttl
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17223"> </A>IP time-to-live.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17225"></A>mcast_ttl
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17227"> </A>IP multicast time-to-live.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17229"></A>tos
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17231"> </A>IP type-of-service and precedence.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17233"></A>non_blocking
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17235"> </A>Nonblocking (network) I/O.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17237"></A>reuse_addr
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17239"> </A>Allow local address reuse.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17241"></A>keep_alive
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17243"> </A>Periodically test whether connection is still alive.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17245"></A>mcast_loopback
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17247"> </A>IP multicast loopback.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17249"></A>no_delay
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17251"> </A>Disable Nagle algorithm. Don't delay send to coalesce 
+packets.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17253"></A>max_segment
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17255"> </A>TCP maximum segment size.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17257"></A>recv_buffer_size
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17259"> </A>Receive buffer size.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17261"></A>send_buffer_size
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17263"> </A>Send buffer size.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17265"></A>linger
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17267"> </A>Time to linger on close if data are present in socket send 
+buffer.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17269"></A>add_member
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17271"> </A>Join an IP multicast group.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17273"></A>drop_member
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17275"> </A>Leave an IP multicast group.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17277"></A>mcast_if
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17279"> </A>IP multicast interface address.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="17281"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="17282"> </A><CODE>PRSocketOptionData</CODE> is a name-value pair for a socket option. The <CODE>option</CODE> field (of 
+enumeration type <CODE>PRSockOption</CODE>) specifies the name of the socket option, and the 
+<CODE>value</CODE> field (a union of all possible values) specifies the value of the option. 
+
+<P>
+
+<A NAME="17284"> </A><A NAME="PRSockOption"> </A><h4>
+PRSockOption
+</h4>
+
+<A NAME="17288"> </A>Enumeration type used in the <CODE>option</CODE> field of <A HREF="priotyp.html#17206"  ><CODE>PRSocketOptionData</CODE></A> to form the 
+name portion of a name-value pair. 
+
+<P>
+
+<BR>
+<A NAME="17289"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17290"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17291"></A>typedef enum PRSockOption {<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_Nonblocking,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_Linger,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_Reuseaddr,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_Keepalive,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_RecvBufferSize,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_SendBufferSize,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_IpTimeToLive,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_IpTypeOfService,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_AddMember,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_DropMember,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_McastInterface,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_McastTimeToLive,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_McastLoopback,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_NoDelay,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_MaxSegment,<br>&nbsp;&nbsp;&nbsp;PR_SockOpt_Last<br>} PRSockOption;
+</PRE>
+<P>
+<BR>
+<A NAME="17292"> </A><A NAME="Enumerators"> </A><h5>
+Enumerators
+</h5>
+
+
+<A NAME="17293"> </A>The enumeration has the following enumerators: 
+
+<P>
+
+<P>
+<A NAME="17362"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17296"></A>PR_SockOpt_Nonblocking
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17298"> </A>Nonblocking I/O.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17301"></A>PR_SockOpt_Linger
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17303"> </A>Time to linger on close if data is present in the 
+socket send buffer.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17305"></A>PR_SockOpt_Reuseaddr
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17307"> </A>Allow local address reuse.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17309"></A>PR_SockOpt_Keepalive
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17311"> </A>Periodically test whether connection is still 
+alive.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17313"></A>PR_SockOpt_RecvBufferSize
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17315"> </A>Receive buffer size.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17317"></A>PR_SockOpt_SendBufferSize
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17319"> </A>Send buffer size.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17321"></A>PR_SockOpt_IpTimeToLive
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17323"> </A>IP time-to-live.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17325"></A>PR_SockOpt_IpTypeOfService
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17327"> </A>IP type-of-service and precedence.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17330"></A>PR_SockOpt_AddMember
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17332"> </A>Join an IP multicast group.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17335"></A>PR_SockOpt_DropMember
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17337"> </A>Leave an IP multicast group.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17339"></A>PR_SockOpt_McastInterface
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17341"> </A>IP multicast interface address.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17343"></A>PR_SockOpt_McastTimeToLive
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17345"> </A>IP multicast time-to-live.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17347"></A>PR_SockOpt_McastLoopback
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17349"> </A>IP multicast loopback.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17351"></A>PR_SockOpt_NoDelay
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17353"> </A>Disable Nagle algorithm. Don't delay send to 
+coalesce packets.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17355"></A>PR_SockOpt_MaxSegment
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17357"> </A>Maximum segment size.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17359"></A>PR_SockOpt_Last
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17361"> </A>Always one greater than the maximum valid 
+socket option numerator.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="17363"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="17364"> </A>The <CODE>PRSockOption</CODE> enumeration consists of all the socket options supported by 
+NSPR. The <CODE>option</CODE> field of <CODE>PRSocketOptionData</CODE> should be set to an enumerator of 
+type <CODE>PRSockOption</CODE>.
+
+<P>
+
+<A NAME="17366"> </A><A NAME="PRLinger"> </A><h4>
+PRLinger
+</h4>
+
+<A NAME="17370"> </A>Structure used with the <A HREF="priotyp.html#17301"  ><CODE>PR_SockOpt_Linger</CODE></A> socket option to specify the time 
+interval (in <A HREF="prinrvl.html#20947"  ><CODE>PRIntervalTime</CODE></A> units) to linger on closing a socket if any data remain 
+in the socket send buffer.
+
+<P>
+
+<BR>
+<A NAME="17374"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17375"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17376"></A>typedef struct PRLinger {<br>&nbsp;&nbsp;&nbsp;PRBool polarity;<br>&nbsp;&nbsp;&nbsp;PRIntervalTime linger;<br>} PRLinger;
+</PRE>
+<P>
+<BR>
+<A NAME="17377"> </A><A NAME="Fields"> </A><h5>
+Fields
+</h5>
+
+
+<A NAME="17378"> </A>The structure has the following fields: 
+
+<P>
+
+<P>
+<A NAME="17394"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17381"></A>polarity
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17383"> </A>Polarity of the option's setting: <CODE>PR_FALSE</CODE> means the option is off, in 
+which case the value of <CODE>linger</CODE> is ignored. <CODE>PR_TRUE</CODE> means the 
+option is on, and the value of <CODE>linger</CODE> will be used to determine how 
+long <A HREF="priofnc.html#17887"  ><CODE>PR_Close</CODE></A> waits before returning.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17388"></A>linger
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17393"> </A>Time (in <A HREF="prinrvl.html#20947"  ><CODE>PRIntervalTime</CODE></A> units) to linger before closing if any data 
+remain in the socket send buffer.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="17395"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="17399"> </A>By default, <A HREF="priofnc.html#17887"  ><CODE>PR_Close</CODE></A> returns immediately, but if there are any data remaining in 
+the socket send buffer, the system attempts to deliver the data to the peer. The 
+<A HREF="priotyp.html#17301"  ><CODE>PR_SockOpt_Linger</CODE></A> socket option, with a value represented by a structure of type 
+<CODE>PRLinger</CODE>, makes it possible to change this default as follows: 
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="17403"> </A>If <CODE>polarity</CODE> is set to <CODE>PR_FALSE</CODE>, <CODE>PR_Close</CODE> returns immediately, but if there are 
+any data remaining in the socket send buffer, the runtime attempts to deliver 
+the data to the peer.
+
+<P><B>  <li></B>
+<A NAME="17404"> </A>If <CODE>polarity</CODE> is set to <CODE>PR_TRUE</CODE> and <CODE>linger</CODE> is set to 0 (<CODE>PR_INTERVAL_NO_WAIT</CODE>), 
+the runtime aborts the connection when it is closed and discards any data 
+remaining in the socket send buffer.
+
+<P><B>  <li></B>
+<A NAME="17405"> </A>If <CODE>polarity</CODE> is set to <CODE>PR_TRUE</CODE> and <CODE>linger</CODE> is nonzero, the runtime <I>lingers</I> when 
+the socket is closed. That is, if any data remains in the socket send buffer, 
+<CODE>PR_Close</CODE> blocks until either all the data is sent and acknowledged by the peer 
+or the interval specified by <CODE>linger</CODE> expires.
+
+<P></ul>
+
+<A NAME="17407"> </A><A NAME="PRMcastRequest"> </A><h4>
+PRMcastRequest
+</h4>
+
+<A NAME="17411"> </A>Structure used to specify values for the <A HREF="priotyp.html#17330"  ><CODE>PR_SockOpt_AddMember</CODE></A> and 
+<A HREF="priotyp.html#17335"  ><CODE>PR_SockOpt_DropMember</CODE></A> socket options that define a request to join or leave a 
+multicast group.
+
+<P>
+
+<BR>
+<A NAME="17415"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17416"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17417"></A>struct PRMcastRequest {<br>&nbsp;&nbsp;&nbsp;PRNetAddr mcaddr;<br>&nbsp;&nbsp;&nbsp;PRNetAddr ifaddr;<br>};
+</PRE>
+<P>
+<PRE>
+<A NAME="17418"></A>typedef struct PRMcastRequest PRMcastRequest;
+</PRE>
+<P>
+<BR>
+<A NAME="17419"> </A><A NAME="Fields"> </A><h5>
+Fields
+</h5>
+
+
+<A NAME="17420"> </A>The structure has the following fields: 
+
+<P>
+
+<P>
+<A NAME="17430"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17423"></A>mcaddr
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17425"> </A>IP multicast address of group.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17427"></A>ifaddr
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17429"> </A>Local IP address of interface.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="17431"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="17435"> </A>The <CODE>mcaddr</CODE> and <CODE>ifaddr</CODE> fields are of the type <A HREF="priotyp.html#17138"  ><CODE>PRNetAddr</CODE></A>, but their <CODE>port</CODE> fields are 
+ignored. Only the IP address (<CODE>inet.ip</CODE>) fields are used. 
+
+<P>
+
+
+
+<A NAME="17437"> </A>
+<A NAME="Type Used with Memory-Mapped I/O"> </A>
+<h2>
+Type Used with Memory-Mapped I/O
+</h2>
+
+
+<A NAME="17439"> </A><A NAME="PRFileMap"> </A><h4>
+PRFileMap
+</h4>
+
+<A NAME="17446"> </A>Type returned by <A HREF="priofnc.html#19470"  ><CODE>PR_CreateFileMap</CODE></A> and passed to <A HREF="priofnc.html#19516"  ><CODE>PR_MemMap</CODE></A> and 
+<A HREF="priofnc.html#19576"  ><CODE>PR_CloseFileMap</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="17450"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17451"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17452"></A>typedef struct PRFileMap PRFileMap;
+</PRE>
+<P>
+<BR>
+<A NAME="17453"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="17454"> </A>The opaque structure <CODE>PRFileMap</CODE> represents a memory-mapped file object. Before 
+actually mapping a file to memory, you must create a memory-mapped file object 
+by calling <A HREF="priofnc.html#19470"  ><CODE>PR_CreateFileMap</CODE></A>, which returns a pointer to <CODE>PRFileMap</CODE>. Then sections 
+of the file can be mapped into memory by passing the <CODE>PRFileMap</CODE> pointer to 
+<A HREF="priofnc.html#19516"  ><CODE>PR_MemMap</CODE></A>. The memory-mapped file object is closed by passing the <CODE>PRFileMap</CODE> 
+pointer to <A HREF="priofnc.html#19576"  ><CODE>PR_CloseFileMap</CODE></A>. 
+
+<P>
+
+
+
+<A NAME="17465"> </A>
+<A NAME="Offset Interpretation for Seek Functions"> </A>
+<h2>
+Offset Interpretation for Seek Functions
+</h2>
+
+
+<A NAME="17467"> </A><A NAME="PRSeekWhence"> </A><h4>
+PRSeekWhence
+</h4>
+
+<A NAME="17468"> </A>Specifies how to interpret the <CODE>offset</CODE> parameter in setting the file pointer 
+associated with the <CODE>fd</CODE> parameter for the <A HREF="priofnc.html#18113"  ><CODE>PR_Seek</CODE></A> and <A HREF="priofnc.html#18159"  ><CODE>PR_Seek64</CODE></A> functions.
+
+<P>
+
+<BR>
+<A NAME="17475"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="17476"></A>#include &lt;prio.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="17477"></A>typedef PRSeekWhence {<br>&nbsp;&nbsp;&nbsp;PR_SEEK_SET = 0,<br>&nbsp;&nbsp;&nbsp;PR_SEEK_CUR = 1,<br>&nbsp;&nbsp;&nbsp;PR_SEEK_END = 2<br>} PRSeekWhence;
+</PRE>
+<P>
+<BR>
+<A NAME="17478"> </A><A NAME="Enumerators"> </A><h5>
+Enumerators
+</h5>
+
+
+<A NAME="17479"> </A>The enumeration has the following enumerators: 
+
+<P>
+
+<P>
+<A NAME="17493"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17482"></A>PR_SEEK_SET
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17484"> </A>Sets the file pointer to the value of the <CODE>offset</CODE> parameter.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17486"></A>PR_SEEK_CUR
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17488"> </A>Sets the file pointer to its current location plus the value of the 
+<CODE>offset</CODE> parameter.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="17490"></A>PR_SEEK_END
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="17492"> </A>Sets the file pointer to the size of the file plus the value of the 
+<CODE>offset</CODE> parameter.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="prcmon.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="priofnc.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

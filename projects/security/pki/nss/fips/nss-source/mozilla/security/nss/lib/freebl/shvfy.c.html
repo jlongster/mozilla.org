@@ -1,0 +1,313 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> 
+<b><a name="2">    2</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="3">    3</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="4">    4</a></b>  *
+<b><a name="5">    5</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="6">    6</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="7">    7</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="8">    8</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="9">    9</a></b>  *
+<b><a name="10">   10</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="11">   11</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="12">   12</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="13">   13</a></b>  * License.
+<b><a name="14">   14</a></b>  *
+<b><a name="15">   15</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Initial Developer of the Original Code is
+<b><a name="18">   18</a></b>  * Netscape Communications Corporation.
+<b><a name="19">   19</a></b>  * Portions created by the Initial Developer are Copyright (C) 2003
+<b><a name="20">   20</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="21">   21</a></b>  *
+<b><a name="22">   22</a></b>  * Contributor(s):
+<b><a name="23">   23</a></b>  *
+<b><a name="24">   24</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="25">   25</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="26">   26</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="27">   27</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="28">   28</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="29">   29</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="30">   30</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="31">   31</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="32">   32</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="33">   33</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="34">   34</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="35">   35</a></b>  *
+<b><a name="36">   36</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="37">   37</a></b> /* $Id$ */
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> #include "shsign.h"
+<b><a name="40">   40</a></b> #include "prlink.h"
+<b><a name="41">   41</a></b> #include "prio.h"
+<b><a name="42">   42</a></b> #include "blapi.h"
+<b><a name="43">   43</a></b> #include "seccomon.h"
+<b><a name="44">   44</a></b> #include "stdio.h"
+<b><a name="45">   45</a></b> #include "prmem.h"
+<b><a name="46">   46</a></b> 
+<b><a name="47">   47</a></b> /* #define DEBUG_SHVERIFY 1 */
+<b><a name="48">   48</a></b> 
+<b><a name="49">   49</a></b> static char *
+<b><a name="50">   50</a></b> <a href="#50">mkCheckFileName</a>(const char *libName)
+<b><a name="51">   51</a></b> {
+<b><a name="52">   52</a></b>     int ln_len = <a href="../util/secport.h.dep.html#PORT_Strlen">PORT_Strlen</a>(libName);
+<b><a name="53">   53</a></b>     char *output = <a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(ln_len+sizeof(<a href="../freebl/shsign.h.dep.html#SGN_SUFFIX">SGN_SUFFIX</a>));
+<b><a name="54">   54</a></b>     int index = ln_len + 1 - sizeof("."SHLIB_SUFFIX);
+<b><a name="55">   55</a></b> 
+<b><a name="56">   56</a></b>     if ((index &gt; 0) &amp;&amp;
+<b><a name="57">   57</a></b>         (<a href="../util/secport.h.dep.html#PORT_Strncmp">PORT_Strncmp</a>(&amp;libName[index],
+<b><a name="58">   58</a></b>                         "."SHLIB_SUFFIX,sizeof("."SHLIB_SUFFIX)) == 0)) {
+<b><a name="59">   59</a></b>         ln_len = index;
+<b><a name="60">   60</a></b>     }
+<b><a name="61">   61</a></b>     <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(output,libName,ln_len);
+<b><a name="62">   62</a></b>     <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(&amp;output[ln_len],<a href="../freebl/shsign.h.dep.html#SGN_SUFFIX">SGN_SUFFIX</a>,sizeof(<a href="../freebl/shsign.h.dep.html#SGN_SUFFIX">SGN_SUFFIX</a>));
+<b><a name="63">   63</a></b>     return output;
+<b><a name="64">   64</a></b> }
+<b><a name="65">   65</a></b> 
+<b><a name="66">   66</a></b> static int
+<b><a name="67">   67</a></b> <a href="#67">decodeInt</a>(unsigned char *buf)
+<b><a name="68">   68</a></b> {
+<b><a name="69">   69</a></b>     return (buf[3]) | (buf[2] &lt;&lt; 8) | (buf[1] &lt;&lt; 16) | (buf[0] &lt;&lt; 24);
+<b><a name="70">   70</a></b> }
+<b><a name="71">   71</a></b> 
+<b><a name="72">   72</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="73">   73</a></b> <a href="#73">readItem</a>(PRFileDesc *fd, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *item)
+<b><a name="74">   74</a></b> {
+<b><a name="75">   75</a></b>     unsigned char buf[4];
+<b><a name="76">   76</a></b>     int bytesRead;
+<b><a name="77">   77</a></b> 
+<b><a name="78">   78</a></b> 
+<b><a name="79">   79</a></b>     bytesRead = PR_Read(fd, buf, 4);
+<b><a name="80">   80</a></b>     if (bytesRead != 4) {
+<b><a name="81">   81</a></b>         return SECFailure;
+<b><a name="82">   82</a></b>     }
+<b><a name="83">   83</a></b>     item-&gt;len = <a href="../freebl/shvfy.c.dep.html#decodeInt">decodeInt</a>(buf);
+<b><a name="84">   84</a></b> 
+<b><a name="85">   85</a></b>     item-&gt;data = <a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(item-&gt;len);
+<b><a name="86">   86</a></b>     if (item-&gt;data == NULL) {
+<b><a name="87">   87</a></b>         item-&gt;len = 0;
+<b><a name="88">   88</a></b>         return SECFailure;
+<b><a name="89">   89</a></b>     }
+<b><a name="90">   90</a></b>     bytesRead = PR_Read(fd, item-&gt;data, item-&gt;len);
+<b><a name="91">   91</a></b>     if (bytesRead != item-&gt;len) {
+<b><a name="92">   92</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(item-&gt;data);
+<b><a name="93">   93</a></b>         item-&gt;data = NULL;
+<b><a name="94">   94</a></b>         item-&gt;len = 0;
+<b><a name="95">   95</a></b>         return SECFailure;
+<b><a name="96">   96</a></b>     }
+<b><a name="97">   97</a></b>     return SECSuccess;
+<b><a name="98">   98</a></b> }
+<b><a name="99">   99</a></b> 
+<b><a name="100">  100</a></b> PRBool
+<b><a name="101">  101</a></b> <a href="#101">BLAPI_SHVerify</a>(const char *name, PRFuncPtr addr)
+<b><a name="102">  102</a></b> {
+<b><a name="103">  103</a></b>     /* find our shared library name */
+<b><a name="104">  104</a></b>     char *shName = PR_GetLibraryFilePathname(name, addr);
+<b><a name="105">  105</a></b>     char *checkName = NULL;
+<b><a name="106">  106</a></b>     PRFileDesc *checkFD = NULL;
+<b><a name="107">  107</a></b>     PRFileDesc *shFD = NULL;
+<b><a name="108">  108</a></b>     <a href="../freebl/blapit.h.dep.html#SHA1Context">SHA1Context</a> *hashcx = NULL;
+<b><a name="109">  109</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> signature = { 0, NULL, 0 };
+<b><a name="110">  110</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> hash;
+<b><a name="111">  111</a></b>     int bytesRead, offset;
+<b><a name="112">  112</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv;
+<b><a name="113">  113</a></b>     <a href="../freebl/blapit.h.dep.html#DSAPublicKey">DSAPublicKey</a> key;
+<b><a name="114">  114</a></b>     int count;
+<b><a name="115">  115</a></b> 
+<b><a name="116">  116</a></b>     PRBool result = PR_FALSE; /* if anything goes wrong,
+<b><a name="117">  117</a></b>                                * the signature does not verify */
+<b><a name="118">  118</a></b>     unsigned char buf[512];
+<b><a name="119">  119</a></b>     unsigned char hashBuf[<a href="../freebl/blapit.h.dep.html#SHA1_LENGTH">SHA1_LENGTH</a>];
+<b><a name="120">  120</a></b> 
+<b><a name="121">  121</a></b>     <a href="../util/secport.h.dep.html#PORT_Memset">PORT_Memset</a>(&amp;key,0,sizeof(key));
+<b><a name="122">  122</a></b>     hash.data = hashBuf;
+<b><a name="123">  123</a></b>     hash.len = sizeof(hashBuf);
+<b><a name="124">  124</a></b> 
+<b><a name="125">  125</a></b>     if (!shName) {
+<b><a name="126">  126</a></b>         goto loser;
+<b><a name="127">  127</a></b>     }
+<b><a name="128">  128</a></b> 
+<b><a name="129">  129</a></b>     /* figure out the name of our check file */
+<b><a name="130">  130</a></b>     checkName = <a href="../freebl/shvfy.c.dep.html#mkCheckFileName">mkCheckFileName</a>(shName);
+<b><a name="131">  131</a></b>     if (!checkName) {
+<b><a name="132">  132</a></b>         goto loser;
+<b><a name="133">  133</a></b>     }
+<b><a name="134">  134</a></b> 
+<b><a name="135">  135</a></b>     /* open the check File */
+<b><a name="136">  136</a></b>     checkFD = PR_Open(checkName, PR_RDONLY, 0);
+<b><a name="137">  137</a></b>     if (checkFD == NULL) {
+<b><a name="138">  138</a></b> #ifdef DEBUG_SHVERIFY
+<b><a name="139">  139</a></b>         fprintf(stderr, "Failed to open the check file %s: (%d, %d)\n",
+<b><a name="140">  140</a></b>                 checkName, (int)PR_GetError(), (int)PR_GetOSError());
+<b><a name="141">  141</a></b> #endif /* DEBUG_SHVERIFY */
+<b><a name="142">  142</a></b>         goto loser;
+<b><a name="143">  143</a></b>     }
+<b><a name="144">  144</a></b> 
+<b><a name="145">  145</a></b>     /* read and Verify the headerthe header */
+<b><a name="146">  146</a></b>     bytesRead = PR_Read(checkFD, buf, 12);
+<b><a name="147">  147</a></b>     if (bytesRead != 12) {
+<b><a name="148">  148</a></b>         goto loser;
+<b><a name="149">  149</a></b>     }
+<b><a name="150">  150</a></b>     if ((buf[0] != <a href="../freebl/shsign.h.dep.html#NSS_SIGN_CHK_MAGIC1">NSS_SIGN_CHK_MAGIC1</a>) || (buf[1] != <a href="../freebl/shsign.h.dep.html#NSS_SIGN_CHK_MAGIC2">NSS_SIGN_CHK_MAGIC2</a>)) {
+<b><a name="151">  151</a></b>         goto loser;
+<b><a name="152">  152</a></b>     }
+<b><a name="153">  153</a></b>     if ((buf[2] != <a href="../freebl/shsign.h.dep.html#NSS_SIGN_CHK_MAJOR_VERSION">NSS_SIGN_CHK_MAJOR_VERSION</a>) || 
+<b><a name="154">  154</a></b>                                 (buf[3] &lt; <a href="../freebl/shsign.h.dep.html#NSS_SIGN_CHK_MINOR_VERSION">NSS_SIGN_CHK_MINOR_VERSION</a>)) {
+<b><a name="155">  155</a></b>         goto loser;
+<b><a name="156">  156</a></b>     }
+<b><a name="157">  157</a></b> #ifdef notdef
+<b><a name="158">  158</a></b>     if (<a href="../freebl/shvfy.c.dep.html#decodeInt">decodeInt</a>(&amp;buf[8]) != <a href="../softoken/pkcs11t.h.dep.html#CKK_DSA">CKK_DSA</a>) {
+<b><a name="159">  159</a></b>         goto loser;
+<b><a name="160">  160</a></b>     }
+<b><a name="161">  161</a></b> #endif
+<b><a name="162">  162</a></b> 
+<b><a name="163">  163</a></b>     /* seek past any future header extensions */
+<b><a name="164">  164</a></b>     offset = <a href="../freebl/shvfy.c.dep.html#decodeInt">decodeInt</a>(&amp;buf[4]);
+<b><a name="165">  165</a></b>     PR_Seek(checkFD, offset, PR_SEEK_SET);
+<b><a name="166">  166</a></b> 
+<b><a name="167">  167</a></b>     /* read the key */
+<b><a name="168">  168</a></b>     rv = <a href="../freebl/shvfy.c.dep.html#readItem">readItem</a>(checkFD,&amp;key.params.prime);
+<b><a name="169">  169</a></b>     if (rv != SECSuccess) {
+<b><a name="170">  170</a></b>         goto loser;
+<b><a name="171">  171</a></b>     }
+<b><a name="172">  172</a></b>     rv = <a href="../freebl/shvfy.c.dep.html#readItem">readItem</a>(checkFD,&amp;key.params.subPrime);
+<b><a name="173">  173</a></b>     if (rv != SECSuccess) {
+<b><a name="174">  174</a></b>         goto loser;
+<b><a name="175">  175</a></b>     }
+<b><a name="176">  176</a></b>     rv = <a href="../freebl/shvfy.c.dep.html#readItem">readItem</a>(checkFD,&amp;key.params.base);
+<b><a name="177">  177</a></b>     if (rv != SECSuccess) {
+<b><a name="178">  178</a></b>         goto loser;
+<b><a name="179">  179</a></b>     }
+<b><a name="180">  180</a></b>     rv = <a href="../freebl/shvfy.c.dep.html#readItem">readItem</a>(checkFD,&amp;key.publicValue);
+<b><a name="181">  181</a></b>     if (rv != SECSuccess) {
+<b><a name="182">  182</a></b>         goto loser;
+<b><a name="183">  183</a></b>     }
+<b><a name="184">  184</a></b>     /* read the siganture */
+<b><a name="185">  185</a></b>     rv = <a href="../freebl/shvfy.c.dep.html#readItem">readItem</a>(checkFD,&amp;signature);
+<b><a name="186">  186</a></b>     if (rv != SECSuccess) {
+<b><a name="187">  187</a></b>         goto loser;
+<b><a name="188">  188</a></b>     }
+<b><a name="189">  189</a></b> 
+<b><a name="190">  190</a></b>     /* done with the check file */
+<b><a name="191">  191</a></b>     PR_Close(checkFD);
+<b><a name="192">  192</a></b>     checkFD = NULL;
+<b><a name="193">  193</a></b> 
+<b><a name="194">  194</a></b>     /* open our library file */
+<b><a name="195">  195</a></b>     shFD = PR_Open(shName, PR_RDONLY, 0);
+<b><a name="196">  196</a></b>     if (shFD == NULL) {
+<b><a name="197">  197</a></b> #ifdef DEBUG_SHVERIFY
+<b><a name="198">  198</a></b>         fprintf(stderr, "Failed to open the library file %s: (%d, %d)\n",
+<b><a name="199">  199</a></b>                 shName, (int)PR_GetError(), (int)PR_GetOSError());
+<b><a name="200">  200</a></b> #endif /* DEBUG_SHVERIFY */
+<b><a name="201">  201</a></b>         goto loser;
+<b><a name="202">  202</a></b>     }
+<b><a name="203">  203</a></b> 
+<b><a name="204">  204</a></b>     /* hash our library file with SHA1 */
+<b><a name="205">  205</a></b>     hashcx = <a href="../freebl/sha_fast.c.dep.html#SHA1_NewContext">SHA1_NewContext</a>();
+<b><a name="206">  206</a></b>     if (hashcx == NULL) {
+<b><a name="207">  207</a></b>         goto loser;
+<b><a name="208">  208</a></b>     }
+<b><a name="209">  209</a></b>     <a href="../freebl/sha_fast.c.dep.html#SHA1_Begin">SHA1_Begin</a>(hashcx);
+<b><a name="210">  210</a></b> 
+<b><a name="211">  211</a></b>     count = 0;
+<b><a name="212">  212</a></b>     while ((bytesRead = PR_Read(shFD, buf, sizeof(buf))) &gt; 0) {
+<b><a name="213">  213</a></b>         <a href="../freebl/sha_fast.c.dep.html#SHA1_Update">SHA1_Update</a>(hashcx, buf, bytesRead);
+<b><a name="214">  214</a></b>         count += bytesRead;
+<b><a name="215">  215</a></b>     }
+<b><a name="216">  216</a></b>     PR_Close(shFD);
+<b><a name="217">  217</a></b>     shFD = NULL;
+<b><a name="218">  218</a></b> 
+<b><a name="219">  219</a></b>     <a href="../freebl/sha_fast.c.dep.html#SHA1_End">SHA1_End</a>(hashcx, hash.data, &amp;hash.len, hash.len);
+<b><a name="220">  220</a></b> 
+<b><a name="221">  221</a></b> 
+<b><a name="222">  222</a></b>     /* verify the hash against the check file */
+<b><a name="223">  223</a></b>     if (<a href="../freebl/dsa.c.dep.html#DSA_VerifyDigest">DSA_VerifyDigest</a>(&amp;key, &amp;signature, &amp;hash) == SECSuccess) {
+<b><a name="224">  224</a></b>         result = PR_TRUE;
+<b><a name="225">  225</a></b>     }
+<b><a name="226">  226</a></b> #ifdef DEBUG_SHVERIFY
+<b><a name="227">  227</a></b>   {
+<b><a name="228">  228</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>,j;
+<b><a name="229">  229</a></b>         fprintf(stderr,"File %s: %d bytes\n",shName, count);
+<b><a name="230">  230</a></b>         fprintf(stderr,"  hash: %d bytes\n", hash.len);
+<b><a name="231">  231</a></b> #define <a href="#231">STEP</a> 10
+<b><a name="232">  232</a></b>         for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; hash.len; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> += <a href="../freebl/shvfy.c.dep.html#STEP">STEP</a>) {
+<b><a name="233">  233</a></b>            fprintf(stderr,"   ");
+<b><a name="234">  234</a></b>            for (j=0; j &lt; <a href="../freebl/shvfy.c.dep.html#STEP">STEP</a> &amp;&amp; (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+j) &lt; hash.len; j++) {
+<b><a name="235">  235</a></b>                 fpr<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ntf(stderr," %02x", hash.data[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+j]);
+<b><a name="236">  236</a></b>            }
+<b><a name="237">  237</a></b>            fprintf(stderr,"\n");
+<b><a name="238">  238</a></b>         }
+<b><a name="239">  239</a></b>         fprintf(stderr,"  signature: %d bytes\n", signature.len);
+<b><a name="240">  240</a></b>         for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gnature.len; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> += <a href="../freebl/shvfy.c.dep.html#STEP">STEP</a>) {
+<b><a name="241">  241</a></b>            fprintf(stderr,"   ");
+<b><a name="242">  242</a></b>            for (j=0; j &lt; <a href="../freebl/shvfy.c.dep.html#STEP">STEP</a> &amp;&amp; (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+j) &lt; s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gnature.len; j++) {
+<b><a name="243">  243</a></b>                 fpr<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ntf(stderr," %02x", s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gnature.data[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>+j]);
+<b><a name="244">  244</a></b>            }
+<b><a name="245">  245</a></b>            fprintf(stderr,"\n");
+<b><a name="246">  246</a></b>         }
+<b><a name="247">  247</a></b>         fprintf(stderr,"Verified : %s\n",result?"TRUE": "FALSE");
+<b><a name="248">  248</a></b>     }
+<b><a name="249">  249</a></b> #endif /* DEBUG_SHVERIFY */
+<b><a name="250">  250</a></b> 
+<b><a name="251">  251</a></b> 
+<b><a name="252">  252</a></b> loser:
+<b><a name="253">  253</a></b>     if (shName != NULL) {
+<b><a name="254">  254</a></b>         PR_Free(shName);
+<b><a name="255">  255</a></b>     }
+<b><a name="256">  256</a></b>     if (checkName != NULL) {
+<b><a name="257">  257</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(checkName);
+<b><a name="258">  258</a></b>     }
+<b><a name="259">  259</a></b>     if (checkFD != NULL) {
+<b><a name="260">  260</a></b>         PR_Close(checkFD);
+<b><a name="261">  261</a></b>     }
+<b><a name="262">  262</a></b>     if (shFD != NULL) {
+<b><a name="263">  263</a></b>         PR_Close(shFD);
+<b><a name="264">  264</a></b>     }
+<b><a name="265">  265</a></b>     if (hashcx != NULL) {
+<b><a name="266">  266</a></b>         <a href="../freebl/sha_fast.c.dep.html#SHA1_DestroyContext">SHA1_DestroyContext</a>(hashcx,PR_TRUE);
+<b><a name="267">  267</a></b>     }
+<b><a name="268">  268</a></b>     if (signature.data != NULL) {
+<b><a name="269">  269</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(signature.data);
+<b><a name="270">  270</a></b>     }
+<b><a name="271">  271</a></b>     if (key.params.prime.data != NULL) {
+<b><a name="272">  272</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(key.params.prime.data);
+<b><a name="273">  273</a></b>     }
+<b><a name="274">  274</a></b>     if (key.params.subPrime.data != NULL) {
+<b><a name="275">  275</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(key.params.subPrime.data);
+<b><a name="276">  276</a></b>     }
+<b><a name="277">  277</a></b>     if (key.params.base.data != NULL) {
+<b><a name="278">  278</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(key.params.base.data);
+<b><a name="279">  279</a></b>     }
+<b><a name="280">  280</a></b>     if (key.publicValue.data != NULL) {
+<b><a name="281">  281</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(key.publicValue.data);
+<b><a name="282">  282</a></b>     }
+<b><a name="283">  283</a></b> 
+<b><a name="284">  284</a></b>     return result;
+<b><a name="285">  285</a></b> }
+<b><a name="286">  286</a></b> 
+<b><a name="287">  287</a></b> PRBool
+<b><a name="288">  288</a></b> <a href="#288">BLAPI_VerifySelf</a>(const char *name)
+<b><a name="289">  289</a></b> {
+<b><a name="290">  290</a></b>     /* to separate shlib to verify if name is NULL */
+<b><a name="291">  291</a></b>     if (name == NULL) {
+<b><a name="292">  292</a></b>         return PR_TRUE;
+<b><a name="293">  293</a></b>     }
+<b><a name="294">  294</a></b>     return <a href="../freebl/shvfy.c.dep.html#BLAPI_SHVerify">BLAPI_SHVerify</a>(name, (PRFuncPtr) <a href="../freebl/shvfy.c.dep.html#decodeInt">decodeInt</a>);
+<b><a name="295">  295</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

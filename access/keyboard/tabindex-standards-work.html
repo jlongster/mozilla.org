@@ -1,0 +1,125 @@
+<?php
+
+$html_title = 'Extending tabindex for custom HTML widgets';
+$page_title = 'Enhancing&nbsp;tabindex for custom HTML widgets';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+    <H2>The problem: today's DHTML pages have bad keyboard accessibility
+    </H2>
+    <p>
+      Example:&nbsp;most DHTML menus don't act like regular menus with respect to
+      keyboard access. If you can use the keyboard to get to the menu at all, a
+      common mistake is to put each menu item in the tab order (often accomplished by
+      making each menu item an &lt;a&gt;).
+    </p>
+    <p>The correct behavior for menus is that the entire menu should be in the tab
+      order once, and arrow key navigation should be supported.&nbsp;This also true
+      for other widgets like tree views, grids and tab panels.
+    </p>
+    <P>
+      Unfortunately, it's not easy for HTML authors to do the right thing. For one
+      thing, there's no way to programmatically set focus on any element, because the
+      W3C HTML DOM 2 specifies that only certain elements have a <code>focus()</code>
+      method. There's also no official way to specify that any element can be in the
+      tab order.</P>
+    <H2>The solution: changes to standard behavior of tabindex</H2>
+    <P>Starting with Gecko 1.8 alpha 2,&nbsp;Mozilla&nbsp;follows IE's lead by
+      extending the tabindex attribute to allow any element's focusability to be
+      altered. By following the <A href="http://http://msdn.microsoft.com/workshop/author/dhtml/reference/properties/tabindex.asp">
+        IE system for tabindex</A> we're allowing DHTML widgets&nbsp;which are
+      already keyboard accessible in IE to also be keyboard accessible in Mozilla.
+      Here's an example of a <A href="../samples/span-checkbox">span based checkbox</A> that
+      is keyboard&nbsp;accessible in both Mozilla 1.8a2 and IE (although the :before
+      rule for the checkbox image doesn't work in IE).</P>
+    <P>Ideally this system would also be supported by Opera and Safari -- not only in
+      Web Forms 2, but also in HTML. A W3C errata should be published.</P>
+    <p>
+      <table id="Table1" border="1" cellpadding="3" cellspacing="1">
+        <tbody>
+          <tr>
+            <th>
+              Capability to support
+              <br>
+            </th>
+            <th>
+              Standards work</th>
+          </tr>
+          <tr>
+            <td>1. Focus any element programmatically</td>
+            <td>Errata / best practices doc, support focus() additionally on any element that has
+              a tabindex attribute. It doesn't matter what the tabindex value is -- as long as there
+              is a tabindex attribute, the item is focusable. Traditionally focusable elements
+              still support focus() whether or not they have a tabindex attribute set.
+              value.
+            </td>
+          </tr>
+          <tr>
+            <td>2. Add any element to tab order</td>
+            <td>
+              <p>Errata / best practices doc, when tabindex &gt;= 0 on any element, it's in the
+                tab cycle.
+                <br>
+                When tabindex is negative, remove it from the tab cycle.
+              </p>
+            </td>
+          </tr>
+          <TR>
+            <TD>3. Allow read/write access to tabIndex property on any element</TD>
+            <TD>Errata / best practices doc, support tabIndex property for any DOM element.</TD>
+          </TR>
+          <tr>
+            <td>4. Allow any element to be focused via click
+            </td>
+            <td>Technique? When tabindex &gt;= 0, it can be focused via a mouse click
+            </td>
+          </tr>
+          <TR>
+            <TD>5. Default tabIndex value</TD>
+            <TD>When unspecified, the tabindex property defaults&nbsp;to 0 on traditionally
+              focusable elements and -1 on traditionally unfocusable elements</TD>
+          </TR>
+          <tr>
+            <td>6. Support :focus appearance on any focused element
+            </td>
+            <td>UAAG technique</td>
+          </tr>
+          <tr>
+            <td>7. Support onfocus and onblur for any element<br>
+            </td>
+            <td>Errata / best practices doc, onfocus and onblur apply to any element that can
+              receive or lose focus.
+            </td>
+          </tr>
+          <tr>
+            <td>8. Any element with tabindex &gt;= 0 should be exposed in accessibility
+              hierarchy
+            </td>
+            <td>UAAG technique</td>
+          </tr>
+          <tr>
+            <td>9. Show default mouse cursor, not vertical text selection mouse over
+              focusable item
+            </td>
+            <td>UAAG technique<br>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </p>
+    <h3>Notes:</h3>
+    <P>In Mozilla one cannot use createEvent(), initEvent() and dispatchEvent() to
+      send focus to an element, because DOM focus events are considered informational
+      only -- generated by the system after something is focused, but not actually
+      used to set focus.</P>
+  
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

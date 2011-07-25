@@ -1,0 +1,1432 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> /*
+<b><a name="37">   37</a></b>  * This file implements PKCS 11 on top of our existing security modules
+<b><a name="38">   38</a></b>  *
+<b><a name="39">   39</a></b>  * For more information about PKCS 11 See PKCS 11 Token Inteface Standard.
+<b><a name="40">   40</a></b>  *   This implementation has two slots:
+<b><a name="41">   41</a></b>  *        slot 1 is our generic crypto support. It does not require login
+<b><a name="42">   42</a></b>  *   (unless you've enabled FIPS). It supports Public Key ops, and all they
+<b><a name="43">   43</a></b>  *   bulk ciphers and hashes. It can also support Private Key ops for imported
+<b><a name="44">   44</a></b>  *   Private keys. It does not have any token storage.
+<b><a name="45">   45</a></b>  *        slot 2 is our private key support. It requires a login before use. It
+<b><a name="46">   46</a></b>  *   can store Private Keys and Certs as token objects. Currently only private
+<b><a name="47">   47</a></b>  *   keys and their associated Certificates are saved on the token.
+<b><a name="48">   48</a></b>  *
+<b><a name="49">   49</a></b>  *   In this implementation, session objects are only visible to the session
+<b><a name="50">   50</a></b>  *   that created or generated them.
+<b><a name="51">   51</a></b>  */
+<b><a name="52">   52</a></b> #include "seccomon.h"
+<b><a name="53">   53</a></b> #include "softoken.h"
+<b><a name="54">   54</a></b> #include "lowkeyi.h"
+<b><a name="55">   55</a></b> #include "pcert.h"
+<b><a name="56">   56</a></b> #include "pkcs11.h"
+<b><a name="57">   57</a></b> #include "pkcs11i.h"
+<b><a name="58">   58</a></b> #include "prenv.h"
+<b><a name="59">   59</a></b> #include "prprf.h"
+<b><a name="60">   60</a></b> 
+<b><a name="61">   61</a></b> #include &lt;ctype.h&gt;
+<b><a name="62">   62</a></b> 
+<b><a name="63">   63</a></b> #ifdef <a href="../util/secport.h.dep.html#XP_UNIX">XP_UNIX</a>
+<b><a name="64">   64</a></b> #define <a href="#64">NSS_AUDIT_WITH_SYSLOG</a> 1
+<b><a name="65">   65</a></b> #include &lt;syslog.h&gt;
+<b><a name="66">   66</a></b> #include &lt;unistd.h&gt;
+<b><a name="67">   67</a></b> #endif
+<b><a name="68">   68</a></b> 
+<b><a name="69">   69</a></b> #ifdef SOLARIS
+<b><a name="70">   70</a></b> #include &lt;bsm/libbsm.h&gt;
+<b><a name="71">   71</a></b> #define <a href="#71">AUE_FIPS_AUDIT</a> 34444
+<b><a name="72">   72</a></b> #endif
+<b><a name="73">   73</a></b> 
+<b><a name="74">   74</a></b> #ifdef LINUX
+<b><a name="75">   75</a></b> #include &lt;pthread.h&gt;
+<b><a name="76">   76</a></b> #include &lt;dlfcn.h&gt;
+<b><a name="77">   77</a></b> #define <a href="#77">LIBAUDIT_NAME</a> "libaudit.so.0"
+<b><a name="78">   78</a></b> #ifndef <a href="../softoken/fipstokn.c.dep.html#AUDIT_USER">AUDIT_USER</a>
+<b><a name="79">   79</a></b> #define <a href="#79">AUDIT_USER</a> 1005  /* message type: message from userspace */
+<b><a name="80">   80</a></b> #endif
+<b><a name="81">   81</a></b> static void *<a href="#81">libaudit_handle</a>;
+<b><a name="82">   82</a></b> static int (*<a href="#82">audit_open_func</a>)(void);
+<b><a name="83">   83</a></b> static void (*<a href="#83">audit_close_func</a>)(int fd);
+<b><a name="84">   84</a></b> static int (*<a href="#84">audit_log_user_message_func</a>)(int audit_fd, int type,
+<b><a name="85">   85</a></b>     const char *message, const char *hostname, const char *addr,
+<b><a name="86">   86</a></b>     const char *tty, int result);
+<b><a name="87">   87</a></b> static int (*<a href="#87">audit_send_user_message_func</a>)(int fd, int type,
+<b><a name="88">   88</a></b>     const char *message);
+<b><a name="89">   89</a></b> 
+<b><a name="90">   90</a></b> static pthread_once_t <a href="#90">libaudit_once_control</a> = PTHREAD_ONCE_INIT;
+<b><a name="91">   91</a></b> 
+<b><a name="92">   92</a></b> static void
+<b><a name="93">   93</a></b> <a href="#93">libaudit_init</a>(void)
+<b><a name="94">   94</a></b> {
+<b><a name="95">   95</a></b>     <a href="../softoken/fipstokn.c.dep.html#libaudit_handle">libaudit_handle</a> = dlopen(<a href="../softoken/fipstokn.c.dep.html#LIBAUDIT_NAME">LIBAUDIT_NAME</a>, RTLD_LAZY);
+<b><a name="96">   96</a></b>     if (!<a href="../softoken/fipstokn.c.dep.html#libaudit_handle">libaudit_handle</a>) {
+<b><a name="97">   97</a></b>         return;
+<b><a name="98">   98</a></b>     }
+<b><a name="99">   99</a></b>     audit_open_func = dlsym(<a href="../softoken/fipstokn.c.dep.html#libaudit_handle">libaudit_handle</a>, "audit_open");
+<b><a name="100">  100</a></b>     audit_close_func = dlsym(<a href="../softoken/fipstokn.c.dep.html#libaudit_handle">libaudit_handle</a>, "audit_close");
+<b><a name="101">  101</a></b>     /*
+<b><a name="102">  102</a></b>      * audit_send_user_message is the older function.
+<b><a name="103">  103</a></b>      * audit_log_user_message, if available, is preferred.
+<b><a name="104">  104</a></b>      */
+<b><a name="105">  105</a></b>     audit_log_user_message_func = dlsym(<a href="../softoken/fipstokn.c.dep.html#libaudit_handle">libaudit_handle</a>,
+<b><a name="106">  106</a></b>                                         "audit_log_user_message");
+<b><a name="107">  107</a></b>     if (!audit_log_user_message_func) {
+<b><a name="108">  108</a></b>         audit_send_user_message_func = dlsym(<a href="../softoken/fipstokn.c.dep.html#libaudit_handle">libaudit_handle</a>,
+<b><a name="109">  109</a></b>                                              "audit_send_user_message");
+<b><a name="110">  110</a></b>     }
+<b><a name="111">  111</a></b>     if (!audit_open_func || !audit_close_func ||
+<b><a name="112">  112</a></b>         (!audit_log_user_message_func &amp;&amp; !audit_send_user_message_func)) {
+<b><a name="113">  113</a></b>         dlclose(<a href="../softoken/fipstokn.c.dep.html#libaudit_handle">libaudit_handle</a>);
+<b><a name="114">  114</a></b>         <a href="../softoken/fipstokn.c.dep.html#libaudit_handle">libaudit_handle</a> = NULL;
+<b><a name="115">  115</a></b>         audit_open_func = NULL;
+<b><a name="116">  116</a></b>         audit_close_func = NULL;
+<b><a name="117">  117</a></b>         audit_log_user_message_func = NULL;
+<b><a name="118">  118</a></b>         audit_send_user_message_func = NULL;
+<b><a name="119">  119</a></b>     }
+<b><a name="120">  120</a></b> }
+<b><a name="121">  121</a></b> #endif /* LINUX */
+<b><a name="122">  122</a></b> 
+<b><a name="123">  123</a></b> 
+<b><a name="124">  124</a></b> /*
+<b><a name="125">  125</a></b>  * ******************** Password Utilities *******************************
+<b><a name="126">  126</a></b>  */
+<b><a name="127">  127</a></b> static PRBool <a href="#127">isLoggedIn</a> = PR_FALSE;
+<b><a name="128">  128</a></b> PRBool <a href="#128">sftk_fatalError</a> = PR_FALSE;
+<b><a name="129">  129</a></b> 
+<b><a name="130">  130</a></b> /*
+<b><a name="131">  131</a></b>  * This function returns
+<b><a name="132">  132</a></b>  *   - CKR_PIN_INVALID if the password/PIN is not a legal UTF8 string
+<b><a name="133">  133</a></b>  *   - CKR_PIN_LEN_RANGE if the password/PIN is too short or does not
+<b><a name="134">  134</a></b>  *     consist of characters from three or more character classes.
+<b><a name="135">  135</a></b>  *   - CKR_OK otherwise
+<b><a name="136">  136</a></b>  *
+<b><a name="137">  137</a></b>  * The minimum password/PIN length is FIPS_MIN_PIN Unicode characters.
+<b><a name="138">  138</a></b>  * We define five character classes: digits (0-9), ASCII lowercase letters,
+<b><a name="139">  139</a></b>  * ASCII uppercase letters, ASCII non-alphanumeric characters (such as
+<b><a name="140">  140</a></b>  * space and punctuation marks), and non-ASCII characters.  If an ASCII
+<b><a name="141">  141</a></b>  * uppercase letter is the first character of the password/PIN, the
+<b><a name="142">  142</a></b>  * uppercase letter is not counted toward its character class.  Similarly,
+<b><a name="143">  143</a></b>  * if a digit is the last character of the password/PIN, the digit is not
+<b><a name="144">  144</a></b>  * counted toward its character class.
+<b><a name="145">  145</a></b>  *
+<b><a name="146">  146</a></b>  * Although NSC_SetPIN and NSC_InitPIN already do the maximum and minimum
+<b><a name="147">  147</a></b>  * password/PIN length checks, they check the length in bytes as opposed
+<b><a name="148">  148</a></b>  * to characters.  To meet the minimum password/PIN guessing probability
+<b><a name="149">  149</a></b>  * requirements in FIPS 140-2, we need to check the length in characters.
+<b><a name="150">  150</a></b>  */
+<b><a name="151">  151</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#151">sftk_newPinCheck</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a> pPin, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPinLen) {
+<b><a name="152">  152</a></b>     uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="153">  153</a></b>     int nchar = 0;      /* number of characters */
+<b><a name="154">  154</a></b>     int ntrail = 0;     /* number of trailing bytes to follow */
+<b><a name="155">  155</a></b>     int ndigit = 0;     /* number of decimal digits */
+<b><a name="156">  156</a></b>     int nlower = 0;     /* number of ASCII lowercase letters */
+<b><a name="157">  157</a></b>     int nupper = 0;     /* number of ASCII uppercase letters */
+<b><a name="158">  158</a></b>     int nnonalnum = 0;  /* number of ASCII non-alphanumeric characters */
+<b><a name="159">  159</a></b>     int nnonascii = 0;  /* number of non-ASCII characters */
+<b><a name="160">  160</a></b>     int nclass;         /* number of character classes */
+<b><a name="161">  161</a></b> 
+<b><a name="162">  162</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; ulP<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nLen; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="163">  163</a></b>         uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../freebl/mp<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>/ut<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ls/s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>eve.c.dep.html#byte">byte</a> = pP<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>n[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>];
+<b><a name="164">  164</a></b> 
+<b><a name="165">  165</a></b>         if (ntrail) {
+<b><a name="166">  166</a></b>             if ((<a href="../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a> &amp; 0xc0) != 0x80) {
+<b><a name="167">  167</a></b>                 /* illegal */
+<b><a name="168">  168</a></b>                 nchar = -1;
+<b><a name="169">  169</a></b>                 break;
+<b><a name="170">  170</a></b>             }
+<b><a name="171">  171</a></b>             if (--ntrail == 0) {
+<b><a name="172">  172</a></b>                 nchar++;
+<b><a name="173">  173</a></b>                 nnonascii++;
+<b><a name="174">  174</a></b>             }
+<b><a name="175">  175</a></b>             continue;
+<b><a name="176">  176</a></b>         }
+<b><a name="177">  177</a></b>         if ((<a href="../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a> &amp; 0x80) == 0x00) {
+<b><a name="178">  178</a></b>             /* single-byte (ASCII) character */
+<b><a name="179">  179</a></b>             nchar++;
+<b><a name="180">  180</a></b>             if (isdigit(<a href="../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a>)) {
+<b><a name="181">  181</a></b>                 <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; ulP<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nLen - 1) {
+<b><a name="182">  182</a></b>                     ndigit++;
+<b><a name="183">  183</a></b>                 }
+<b><a name="184">  184</a></b>             } else if (islower(<a href="../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a>)) {
+<b><a name="185">  185</a></b>                 nlower++;
+<b><a name="186">  186</a></b>             } else if (isupper(<a href="../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a>)) {
+<b><a name="187">  187</a></b>                 <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt; 0) {
+<b><a name="188">  188</a></b>                     nupper++;
+<b><a name="189">  189</a></b>                 }
+<b><a name="190">  190</a></b>             } else {
+<b><a name="191">  191</a></b>                 nnonalnum++;
+<b><a name="192">  192</a></b>             }
+<b><a name="193">  193</a></b>         } else if ((<a href="../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a> &amp; 0xe0) == 0xc0) {
+<b><a name="194">  194</a></b>             /* leading byte of two-byte character */
+<b><a name="195">  195</a></b>             ntrail = 1;
+<b><a name="196">  196</a></b>         } else if ((<a href="../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a> &amp; 0xf0) == 0xe0) {
+<b><a name="197">  197</a></b>             /* leading byte of three-byte character */
+<b><a name="198">  198</a></b>             ntrail = 2;
+<b><a name="199">  199</a></b>         } else if ((<a href="../freebl/mpi/utils/sieve.c.dep.html#byte">byte</a> &amp; 0xf8) == 0xf0) {
+<b><a name="200">  200</a></b>             /* leading byte of four-byte character */
+<b><a name="201">  201</a></b>             ntrail = 3;
+<b><a name="202">  202</a></b>         } else {
+<b><a name="203">  203</a></b>             /* illegal */
+<b><a name="204">  204</a></b>             nchar = -1;
+<b><a name="205">  205</a></b>             break;
+<b><a name="206">  206</a></b>         }
+<b><a name="207">  207</a></b>     }
+<b><a name="208">  208</a></b>     if (nchar == -1) {
+<b><a name="209">  209</a></b>         /* illegal UTF8 string */
+<b><a name="210">  210</a></b>         return <a href="../softoken/pkcs11t.h.dep.html#CKR_PIN_INVALID">CKR_PIN_INVALID</a>;
+<b><a name="211">  211</a></b>     }
+<b><a name="212">  212</a></b>     if (nchar &lt; <a href="../softoken/pkcs11i.h.dep.html#FIPS_MIN_PIN">FIPS_MIN_PIN</a>) {
+<b><a name="213">  213</a></b>         return <a href="../softoken/pkcs11t.h.dep.html#CKR_PIN_LEN_RANGE">CKR_PIN_LEN_RANGE</a>;
+<b><a name="214">  214</a></b>     }
+<b><a name="215">  215</a></b>     nclass = (ndigit != 0) + (nlower != 0) + (nupper != 0) +
+<b><a name="216">  216</a></b>              (nnonalnum != 0) + (nnonascii != 0);
+<b><a name="217">  217</a></b>     if (nclass &lt; 3) {
+<b><a name="218">  218</a></b>         return <a href="../softoken/pkcs11t.h.dep.html#CKR_PIN_LEN_RANGE">CKR_PIN_LEN_RANGE</a>;
+<b><a name="219">  219</a></b>     }
+<b><a name="220">  220</a></b>     return <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>;
+<b><a name="221">  221</a></b> }
+<b><a name="222">  222</a></b> 
+<b><a name="223">  223</a></b> 
+<b><a name="224">  224</a></b> /* FIPS required checks before any useful cryptographic services */
+<b><a name="225">  225</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#225">sftk_fipsCheck</a>(void) {
+<b><a name="226">  226</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_fatalError">sftk_fatalError</a><a href="../softoken/softoken.h.dep.html#sftk_fatalError"><sup>[1]</sup></a>) 
+<b><a name="227">  227</a></b>         return <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a>;
+<b><a name="228">  228</a></b>     if (!<a href="../softoken/fipstokn.c.dep.html#isLoggedIn">isLoggedIn</a>) 
+<b><a name="229">  229</a></b>         return <a href="../softoken/pkcs11t.h.dep.html#CKR_USER_NOT_LOGGED_IN">CKR_USER_NOT_LOGGED_IN</a>;
+<b><a name="230">  230</a></b>     return <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>;
+<b><a name="231">  231</a></b> }
+<b><a name="232">  232</a></b> 
+<b><a name="233">  233</a></b> 
+<b><a name="234">  234</a></b> #define <a href="#234">SFTK_FIPSCHECK</a>() \
+<b><a name="235">  235</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv; \
+<b><a name="236">  236</a></b>     if ((rv = <a href="../softoken/fipstokn.c.dep.html#sftk_fipsCheck">sftk_fipsCheck</a>()) != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) return rv;
+<b><a name="237">  237</a></b> 
+<b><a name="238">  238</a></b> #define <a href="#238">SFTK_FIPSFATALCHECK</a>() \
+<b><a name="239">  239</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_fatalError">sftk_fatalError</a><a href="../softoken/softoken.h.dep.html#sftk_fatalError"><sup>[1]</sup></a>) return <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a>;
+<b><a name="240">  240</a></b> 
+<b><a name="241">  241</a></b> 
+<b><a name="242">  242</a></b> /* grab an attribute out of a raw template */
+<b><a name="243">  243</a></b> void *
+<b><a name="244">  244</a></b> <a href="#244">fc_getAttribute</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> pTemplate, 
+<b><a name="245">  245</a></b>                                 <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulCount, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_TYPE">CK_ATTRIBUTE_TYPE</a> type)
+<b><a name="246">  246</a></b> {
+<b><a name="247">  247</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="248">  248</a></b> 
+<b><a name="249">  249</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt) ulCount; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="250">  250</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (pTemplate[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>].type == type) {
+<b><a name="251">  251</a></b>             return pTemplate[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>].pValue;
+<b><a name="252">  252</a></b>         }
+<b><a name="253">  253</a></b>     }
+<b><a name="254">  254</a></b>     return NULL;
+<b><a name="255">  255</a></b> }
+<b><a name="256">  256</a></b> 
+<b><a name="257">  257</a></b> 
+<b><a name="258">  258</a></b> #define <a href="#258">__PASTE</a>(x,y)        x##y
+<b><a name="259">  259</a></b> 
+<b><a name="260">  260</a></b> /* ------------- forward declare all the NSC_ functions ------------- */
+<b><a name="261">  261</a></b> #undef <a href="#261">CK_NEED_ARG_LIST</a>
+<b><a name="262">  262</a></b> #undef <a href="#262">CK_PKCS11_FUNCTION_INFO</a>
+<b><a name="263">  263</a></b> 
+<b><a name="264">  264</a></b> #define <a href="#264">CK_PKCS11_FUNCTION_INFO</a>(name) <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/fipstokn.c.dep.html#__PASTE">__PASTE</a></a><a href="../softoken/pkcs11.c.dep.html#__PASTE"><sup>[2]</sup></a></a><a href="../softoken/pkcs11.h.dep.html#__PASTE"><sup>[4]</sup></a></a><a href="../softoken/pkcs11c.c.dep.html#__PASTE"><sup>[6]</sup></a>(NS,name)
+<b><a name="265">  265</a></b> #define <a href="#265">CK_NEED_ARG_LIST</a> 1
+<b><a name="266">  266</a></b> 
+<b><a name="267">  267</a></b> #include "pkcs11f.h"
+<b><a name="268">  268</a></b> 
+<b><a name="269">  269</a></b> /* ------------- forward declare all the FIPS functions ------------- */
+<b><a name="270">  270</a></b> #undef <a href="#270">CK_NEED_ARG_LIST</a>
+<b><a name="271">  271</a></b> #undef <a href="#271">CK_PKCS11_FUNCTION_INFO</a>
+<b><a name="272">  272</a></b> 
+<b><a name="273">  273</a></b> #define CK_PKCS11_<a href="../freebl/md5.c.dep.html#F">F</a>UNCTION_IN<a href="../freebl/md5.c.dep.html#F">F</a>O(name) <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="../softoken/fipstokn.c.dep.html#__PASTE">__PASTE</a></a><a href="../softoken/pkcs11.c.dep.html#__PASTE"><sup>[2]</sup></a></a><a href="../softoken/pkcs11.h.dep.html#__PASTE"><sup>[4]</sup></a></a><a href="../softoken/pkcs11c.c.dep.html#__PASTE"><sup>[6]</sup></a>(<a href="../freebl/md5.c.dep.html#F">F</a>,name)
+<b><a name="274">  274</a></b> #define <a href="#274">CK_NEED_ARG_LIST</a> 1
+<b><a name="275">  275</a></b> 
+<b><a name="276">  276</a></b> #include "pkcs11f.h"
+<b><a name="277">  277</a></b> 
+<b><a name="278">  278</a></b> /* ------------- build the CK_CRYPTO_TABLE ------------------------- */
+<b><a name="279">  279</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_FUNCTION_LIST">CK_FUNCTION_LIST</a> <a href="#279">sftk_fipsTable</a> = {
+<b><a name="280">  280</a></b>     { 1, 10 },
+<b><a name="281">  281</a></b> 
+<b><a name="282">  282</a></b> #undef <a href="#282">CK_NEED_ARG_LIST</a>
+<b><a name="283">  283</a></b> #undef <a href="#283">CK_PKCS11_FUNCTION_INFO</a>
+<b><a name="284">  284</a></b> 
+<b><a name="285">  285</a></b> #define CK_PKCS11_<a href="../freebl/md5.c.dep.html#F">F</a>UNCTION_IN<a href="../freebl/md5.c.dep.html#F">F</a>O(name) <a href="../softoken/fipstokn.c.dep.html#__PASTE">__PASTE</a></a><a href="../softoken/pkcs11.c.dep.html#__PASTE"><sup>[2]</sup></a></a><a href="../softoken/pkcs11.h.dep.html#__PASTE"><sup>[4]</sup></a></a><a href="../softoken/pkcs11c.c.dep.html#__PASTE"><sup>[6]</sup></a>(<a href="../freebl/md5.c.dep.html#F">F</a>,name),
+<b><a name="286">  286</a></b> 
+<b><a name="287">  287</a></b> 
+<b><a name="288">  288</a></b> #include "pkcs11f.h"
+<b><a name="289">  289</a></b> 
+<b><a name="290">  290</a></b> };
+<b><a name="291">  291</a></b> 
+<b><a name="292">  292</a></b> #undef <a href="#292">CK_NEED_ARG_LIST</a>
+<b><a name="293">  293</a></b> #undef <a href="#293">CK_PKCS11_FUNCTION_INFO</a>
+<b><a name="294">  294</a></b> 
+<b><a name="295">  295</a></b> 
+<b><a name="296">  296</a></b> #undef <a href="#296">__PASTE</a>
+<b><a name="297">  297</a></b> 
+<b><a name="298">  298</a></b> /* CKO_NOT_A_KEY can be any object class that's not a key object. */
+<b><a name="299">  299</a></b> #define <a href="#299">CKO_NOT_A_KEY</a> <a href="../softoken/pkcs11t.h.dep.html#CKO_DATA">CKO_DATA</a>
+<b><a name="300">  300</a></b> 
+<b><a name="301">  301</a></b> #define <a href="#301">SFTK_IS_KEY_OBJECT</a>(objClass) \
+<b><a name="302">  302</a></b>     (((objClass) == <a href="../softoken/pkcs11t.h.dep.html#CKO_PUBLIC_KEY">CKO_PUBLIC_KEY</a>) || \
+<b><a name="303">  303</a></b>     ((objClass) == <a href="../softoken/pkcs11t.h.dep.html#CKO_PRIVATE_KEY">CKO_PRIVATE_KEY</a>) || \
+<b><a name="304">  304</a></b>     ((objClass) == <a href="../softoken/pkcs11t.h.dep.html#CKO_SECRET_KEY">CKO_SECRET_KEY</a>))
+<b><a name="305">  305</a></b> 
+<b><a name="306">  306</a></b> #define <a href="#306">SFTK_IS_NONPUBLIC_KEY_OBJECT</a>(objClass) \
+<b><a name="307">  307</a></b>     (((objClass) == <a href="../softoken/pkcs11t.h.dep.html#CKO_PRIVATE_KEY">CKO_PRIVATE_KEY</a>) || ((objClass) == <a href="../softoken/pkcs11t.h.dep.html#CKO_SECRET_KEY">CKO_SECRET_KEY</a>))
+<b><a name="308">  308</a></b> 
+<b><a name="309">  309</a></b> static <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>
+<b><a name="310">  310</a></b> <a href="#310">sftk_get_object_class_and_fipsCheck</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="311">  311</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hObject, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> *pObjClass)
+<b><a name="312">  312</a></b> {
+<b><a name="313">  313</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="314">  314</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE">CK_ATTRIBUTE</a></a> class; 
+<b><a name="315">  315</a></b>     class.type = <a href="../softoken/pkcs11t.h.dep.html#CKA_CLASS">CKA_CLASS</a>;
+<b><a name="316">  316</a></b>     class.pValue = pObjClass;
+<b><a name="317">  317</a></b>     class.ulValueLen = sizeof(*pObjClass);
+<b><a name="318">  318</a></b>     rv = <a href="../softoken/pkcs11.c.dep.html#NSC_GetAttributeValue">NSC_GetAttributeValue</a>(hSession, hObject, &amp;class, 1);
+<b><a name="319">  319</a></b>     if ((rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) &amp;&amp; <a href="../softoken/fipstokn.c.dep.html#SFTK_IS_NONPUBLIC_KEY_OBJECT">SFTK_IS_NONPUBLIC_KEY_OBJECT</a>(*pObjClass)) {
+<b><a name="320">  320</a></b>         rv = <a href="../softoken/fipstokn.c.dep.html#sftk_fipsCheck">sftk_fipsCheck</a>();
+<b><a name="321">  321</a></b>     }
+<b><a name="322">  322</a></b>     return rv;
+<b><a name="323">  323</a></b> }
+<b><a name="324">  324</a></b> 
+<b><a name="325">  325</a></b> /**********************************************************************
+<b><a name="326">  326</a></b>  *
+<b><a name="327">  327</a></b>  *     FIPS 140 auditable event logging
+<b><a name="328">  328</a></b>  *
+<b><a name="329">  329</a></b>  **********************************************************************/
+<b><a name="330">  330</a></b> 
+<b><a name="331">  331</a></b> PRBool <a href="#331">sftk_audit_enabled</a> = PR_FALSE;
+<b><a name="332">  332</a></b> 
+<b><a name="333">  333</a></b> /*
+<b><a name="334">  334</a></b>  * Each audit record must have the following information:
+<b><a name="335">  335</a></b>  * - Date and time of the event
+<b><a name="336">  336</a></b>  * - Type of event
+<b><a name="337">  337</a></b>  * - user (subject) identity
+<b><a name="338">  338</a></b>  * - outcome (success or failure) of the event
+<b><a name="339">  339</a></b>  * - process ID
+<b><a name="340">  340</a></b>  * - name (ID) of the object
+<b><a name="341">  341</a></b>  * - for changes to data (except for authentication data and CSPs), the new
+<b><a name="342">  342</a></b>  *   and old values of the data
+<b><a name="343">  343</a></b>  * - for authentication attempts, the origin of the attempt (e.g., terminal
+<b><a name="344">  344</a></b>  *   identifier)
+<b><a name="345">  345</a></b>  * - for assuming a role, the type of role, and the location of the request
+<b><a name="346">  346</a></b>  */
+<b><a name="347">  347</a></b> void
+<b><a name="348">  348</a></b> <a href="#348">sftk_LogAuditMessage</a>(<a href="../softoken/softoknt.h.dep.html#NSSAuditSeverity">NSSAuditSeverity</a> severity, const char *msg)
+<b><a name="349">  349</a></b> {
+<b><a name="350">  350</a></b> #ifdef <a href="../softoken/fipstokn.c.dep.html#NSS_AUDIT_WITH_SYSLOG">NSS_AUDIT_WITH_SYSLOG</a>
+<b><a name="351">  351</a></b>     int level;
+<b><a name="352">  352</a></b> 
+<b><a name="353">  353</a></b>     switch (severity) {
+<b><a name="354">  354</a></b>     case NSS_AUDIT_ERROR:
+<b><a name="355">  355</a></b>         level = LOG_ERR;
+<b><a name="356">  356</a></b>         break;
+<b><a name="357">  357</a></b>     case NSS_AUDIT_WARNING:
+<b><a name="358">  358</a></b>         level = LOG_WARNING;
+<b><a name="359">  359</a></b>         break;
+<b><a name="360">  360</a></b>     default:
+<b><a name="361">  361</a></b>         level = LOG_INFO;
+<b><a name="362">  362</a></b>         break;
+<b><a name="363">  363</a></b>     }
+<b><a name="364">  364</a></b>     /* timestamp is provided by syslog in the message header */
+<b><a name="365">  365</a></b>     syslog(level | LOG_USER /* facility */,
+<b><a name="366">  366</a></b>            "<a href="../softoken/pk11pars.h.dep.html#NSS">NSS</a> " SOFTOKEN_LIB_NAME "[pid=%d uid=%d]: %s",
+<b><a name="367">  367</a></b>            (int)getpid(), (int)getuid(), msg);
+<b><a name="368">  368</a></b> #ifdef LINUX
+<b><a name="369">  369</a></b>     if (pthread_once(&amp;<a href="../softoken/fipstokn.c.dep.html#libaudit_once_control">libaudit_once_control</a>, <a href="../softoken/fipstokn.c.dep.html#libaudit_init">libaudit_init</a>) != 0) {
+<b><a name="370">  370</a></b>         return;
+<b><a name="371">  371</a></b>     }
+<b><a name="372">  372</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#libaudit_handle">libaudit_handle</a>) {
+<b><a name="373">  373</a></b>         int audit_fd;
+<b><a name="374">  374</a></b>         int result = (severity != NSS_AUDIT_ERROR); /* 1=success; 0=failed */
+<b><a name="375">  375</a></b>         char *message = PR_smprintf("<a href="../softoken/pk11pars.h.dep.html#NSS">NSS</a> " SOFTOKEN_LIB_NAME ": %s", msg);
+<b><a name="376">  376</a></b>         if (!message) {
+<b><a name="377">  377</a></b>             return;
+<b><a name="378">  378</a></b>         }
+<b><a name="379">  379</a></b>         audit_fd = audit_open_func();
+<b><a name="380">  380</a></b>         if (audit_fd &lt; 0) {
+<b><a name="381">  381</a></b>             PR_smprintf_free(message);
+<b><a name="382">  382</a></b>             return;
+<b><a name="383">  383</a></b>         }
+<b><a name="384">  384</a></b>         if (audit_log_user_message_func) {
+<b><a name="385">  385</a></b>             audit_log_user_message_func(audit_fd, <a href="../softoken/fipstokn.c.dep.html#AUDIT_USER">AUDIT_USER</a>, message,
+<b><a name="386">  386</a></b>                                         NULL, NULL, NULL, result);
+<b><a name="387">  387</a></b>         } else {
+<b><a name="388">  388</a></b>             audit_send_user_message_func(audit_fd, <a href="../softoken/fipstokn.c.dep.html#AUDIT_USER">AUDIT_USER</a>, message);
+<b><a name="389">  389</a></b>         }
+<b><a name="390">  390</a></b>         audit_close_func(audit_fd);
+<b><a name="391">  391</a></b>         PR_smprintf_free(message);
+<b><a name="392">  392</a></b>     }
+<b><a name="393">  393</a></b> #endif /* LINUX */
+<b><a name="394">  394</a></b> #ifdef SOLARIS
+<b><a name="395">  395</a></b>     {
+<b><a name="396">  396</a></b>         int rd;
+<b><a name="397">  397</a></b>         char *message = PR_smprintf("<a href="../softoken/pk11pars.h.dep.html#NSS">NSS</a> " SOFTOKEN_LIB_NAME ": %s", msg);
+<b><a name="398">  398</a></b> 
+<b><a name="399">  399</a></b>         if (!message) {
+<b><a name="400">  400</a></b>             return;
+<b><a name="401">  401</a></b>         }
+<b><a name="402">  402</a></b> 
+<b><a name="403">  403</a></b>         /* open the record descriptor */
+<b><a name="404">  404</a></b>         if ((rd = au_open()) == -1) {
+<b><a name="405">  405</a></b>             PR_smprintf_free(message);
+<b><a name="406">  406</a></b>             return;
+<b><a name="407">  407</a></b>         }
+<b><a name="408">  408</a></b> 
+<b><a name="409">  409</a></b>         /* write the audit tokens to the audit record */
+<b><a name="410">  410</a></b>         if (au_write(rd, au_to_text(message))) {
+<b><a name="411">  411</a></b>             (void)au_close(rd, AU_TO_NO_WRITE, <a href="../softoken/fipstokn.c.dep.html#AUE_FIPS_AUDIT">AUE_FIPS_AUDIT</a>);
+<b><a name="412">  412</a></b>             PR_smprintf_free(message);
+<b><a name="413">  413</a></b>             return;
+<b><a name="414">  414</a></b>         }
+<b><a name="415">  415</a></b> 
+<b><a name="416">  416</a></b>         /* close the record and send it to the audit trail */
+<b><a name="417">  417</a></b>         (void)au_close(rd, AU_TO_WRITE, <a href="../softoken/fipstokn.c.dep.html#AUE_FIPS_AUDIT">AUE_FIPS_AUDIT</a>);
+<b><a name="418">  418</a></b> 
+<b><a name="419">  419</a></b>         PR_smprintf_free(message);
+<b><a name="420">  420</a></b>     }
+<b><a name="421">  421</a></b> #endif /* SOLARIS */
+<b><a name="422">  422</a></b> #else
+<b><a name="423">  423</a></b>     /* do nothing */
+<b><a name="424">  424</a></b> #endif
+<b><a name="425">  425</a></b> }
+<b><a name="426">  426</a></b> 
+<b><a name="427">  427</a></b> 
+<b><a name="428">  428</a></b> /**********************************************************************
+<b><a name="429">  429</a></b>  *
+<b><a name="430">  430</a></b>  *     Start of PKCS 11 functions 
+<b><a name="431">  431</a></b>  *
+<b><a name="432">  432</a></b>  **********************************************************************/
+<b><a name="433">  433</a></b> /* return the function list */
+<b><a name="434">  434</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#434">FC_GetFunctionList</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_FUNCTION_LIST_PTR">CK_FUNCTION_LIST_PTR</a> *pFunctionList) {
+<b><a name="435">  435</a></b>     *pFunctionList = &amp;<a href="../softoken/fipstokn.c.dep.html#sftk_fipsTable">sftk_fipsTable</a>;
+<b><a name="436">  436</a></b>     return <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>;
+<b><a name="437">  437</a></b> }
+<b><a name="438">  438</a></b> 
+<b><a name="439">  439</a></b> /* sigh global so pkcs11 can read it */
+<b><a name="440">  440</a></b> PRBool <a href="#440">nsf_init</a> = PR_FALSE;
+<b><a name="441">  441</a></b> 
+<b><a name="442">  442</a></b> /* FC_Initialize initializes the PKCS #11 library. */
+<b><a name="443">  443</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#443">FC_Initialize</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> pReserved) {
+<b><a name="444">  444</a></b>     const char *envp;
+<b><a name="445">  445</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="446">  446</a></b> 
+<b><a name="447">  447</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#nsf_init">nsf_init</a><a href="../softoken/pkcs11i.h.dep.html#nsf_init"><sup>[1]</sup></a>) {
+<b><a name="448">  448</a></b>         return <a href="../softoken/pkcs11t.h.dep.html#CKR_CRYPTOKI_ALREADY_INITIALIZED">CKR_CRYPTOKI_ALREADY_INITIALIZED</a>;
+<b><a name="449">  449</a></b>     }
+<b><a name="450">  450</a></b> 
+<b><a name="451">  451</a></b>     if ((envp = PR_GetEnv("NSS_ENABLE_AUDIT")) != NULL) {
+<b><a name="452">  452</a></b>         <a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a> = (atoi(envp) == 1);
+<b><a name="453">  453</a></b>     }
+<b><a name="454">  454</a></b> 
+<b><a name="455">  455</a></b>     crv = <a href="../softoken/pkcs11.c.dep.html#nsc_CommonInitialize">nsc_CommonInitialize</a>(pReserved, PR_TRUE);
+<b><a name="456">  456</a></b> 
+<b><a name="457">  457</a></b>     /* not an 'else' rv can be set by either SFTK_LowInit or SFTK_SlotInit*/
+<b><a name="458">  458</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="459">  459</a></b>         <a href="../softoken/fipstokn.c.dep.html#sftk_fatalError">sftk_fatalError</a><a href="../softoken/softoken.h.dep.html#sftk_fatalError"><sup>[1]</sup></a> = PR_TRUE;
+<b><a name="460">  460</a></b>         return crv;
+<b><a name="461">  461</a></b>     }
+<b><a name="462">  462</a></b> 
+<b><a name="463">  463</a></b>     <a href="../softoken/fipstokn.c.dep.html#sftk_fatalError">sftk_fatalError</a><a href="../softoken/softoken.h.dep.html#sftk_fatalError"><sup>[1]</sup></a> = PR_FALSE; /* any error has been reset */
+<b><a name="464">  464</a></b> 
+<b><a name="465">  465</a></b>     crv = <a href="../softoken/fipstest.c.dep.html#sftk_fipsPowerUpSelfTest">sftk_fipsPowerUpSelfTest</a>();
+<b><a name="466">  466</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="467">  467</a></b>         <a href="../softoken/pkcs11.c.dep.html#nsc_CommonFinalize">nsc_CommonFinalize</a>(NULL, PR_TRUE);
+<b><a name="468">  468</a></b>         <a href="../softoken/fipstokn.c.dep.html#sftk_fatalError">sftk_fatalError</a><a href="../softoken/softoken.h.dep.html#sftk_fatalError"><sup>[1]</sup></a> = PR_TRUE;
+<b><a name="469">  469</a></b>         if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="470">  470</a></b>             char msg[128];
+<b><a name="471">  471</a></b>             PR_snprintf(msg,sizeof msg,
+<b><a name="472">  472</a></b>                         "C_Initialize()=0x%08lX "
+<b><a name="473">  473</a></b>                         "power-up self-tests failed",
+<b><a name="474">  474</a></b>                         (PRUint32)crv);
+<b><a name="475">  475</a></b>             <a href="../softoken/fipstokn.c.dep.html#sftk_LogAuditMessage">sftk_LogAuditMessage</a>(NSS_AUDIT_ERROR, msg);
+<b><a name="476">  476</a></b>         }
+<b><a name="477">  477</a></b>         return crv;
+<b><a name="478">  478</a></b>     }
+<b><a name="479">  479</a></b>     <a href="../softoken/fipstokn.c.dep.html#nsf_init">nsf_init</a><a href="../softoken/pkcs11i.h.dep.html#nsf_init"><sup>[1]</sup></a> = PR_TRUE;
+<b><a name="480">  480</a></b> 
+<b><a name="481">  481</a></b>     return <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>;
+<b><a name="482">  482</a></b> }
+<b><a name="483">  483</a></b> 
+<b><a name="484">  484</a></b> /*FC_Finalize indicates that an application is done with the PKCS #11 library.*/
+<b><a name="485">  485</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#485">FC_Finalize</a> (<a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> pReserved) {
+<b><a name="486">  486</a></b>    <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="487">  487</a></b>    if (!<a href="../softoken/fipstokn.c.dep.html#nsf_init">nsf_init</a><a href="../softoken/pkcs11i.h.dep.html#nsf_init"><sup>[1]</sup></a>) {
+<b><a name="488">  488</a></b>       return <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>;
+<b><a name="489">  489</a></b>    }
+<b><a name="490">  490</a></b>    crv = <a href="../softoken/pkcs11.c.dep.html#nsc_CommonFinalize">nsc_CommonFinalize</a> (pReserved, PR_TRUE);
+<b><a name="491">  491</a></b>    <a href="../softoken/fipstokn.c.dep.html#nsf_init">nsf_init</a><a href="../softoken/pkcs11i.h.dep.html#nsf_init"><sup>[1]</sup></a> = (PRBool) !(crv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>);
+<b><a name="492">  492</a></b>    return crv;
+<b><a name="493">  493</a></b> }
+<b><a name="494">  494</a></b> 
+<b><a name="495">  495</a></b> 
+<b><a name="496">  496</a></b> /* FC_GetInfo returns general information about PKCS #11. */
+<b><a name="497">  497</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a>  <a href="#497">FC_GetInfo</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_INFO_PTR">CK_INFO_PTR</a> pInfo) {
+<b><a name="498">  498</a></b>     return <a href="../softoken/pkcs11.c.dep.html#NSC_GetInfo">NSC_GetInfo</a>(pInfo);
+<b><a name="499">  499</a></b> }
+<b><a name="500">  500</a></b> 
+<b><a name="501">  501</a></b> /* FC_GetSlotList obtains a list of slots in the system. */
+<b><a name="502">  502</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#502">FC_GetSlotList</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a> tokenPresent,
+<b><a name="503">  503</a></b>                          <a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID_PTR">CK_SLOT_ID_PTR</a> pSlotList, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pulCount) {
+<b><a name="504">  504</a></b>     return <a href="../softoken/pkcs11.c.dep.html#nsc_CommonGetSlotList">nsc_CommonGetSlotList</a>(tokenPresent,pSlotList,pulCount,
+<b><a name="505">  505</a></b>                                                          <a href="../softoken/pkcs11i.h.dep.html#NSC_FIPS_MODULE">NSC_FIPS_MODULE</a>);
+<b><a name="506">  506</a></b> }
+<b><a name="507">  507</a></b>         
+<b><a name="508">  508</a></b> /* FC_GetSlotInfo obtains information about a particular slot in the system. */
+<b><a name="509">  509</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#509">FC_GetSlotInfo</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a> slotID, <a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_INFO_PTR">CK_SLOT_INFO_PTR</a> pInfo) {
+<b><a name="510">  510</a></b>     return <a href="../softoken/pkcs11.c.dep.html#NSC_GetSlotInfo">NSC_GetSlotInfo</a>(slotID,pInfo);
+<b><a name="511">  511</a></b> }
+<b><a name="512">  512</a></b> 
+<b><a name="513">  513</a></b> 
+<b><a name="514">  514</a></b> /*FC_GetTokenInfo obtains information about a particular token in the system.*/
+<b><a name="515">  515</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#515">FC_GetTokenInfo</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a> slotID,<a href="../softoken/pkcs11t.h.dep.html#CK_TOKEN_INFO_PTR">CK_TOKEN_INFO_PTR</a> pInfo) {
+<b><a name="516">  516</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="517">  517</a></b> 
+<b><a name="518">  518</a></b>     crv = <a href="../softoken/pkcs11.c.dep.html#NSC_GetTokenInfo">NSC_GetTokenInfo</a>(slotID,pInfo);
+<b><a name="519">  519</a></b>     if (crv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) 
+<b><a name="520">  520</a></b>        pInfo-&gt;flags |= <a href="../softoken/pkcs11t.h.dep.html#CKF_LOGIN_REQUIRED">CKF_LOGIN_REQUIRED</a>;
+<b><a name="521">  521</a></b>     return crv;
+<b><a name="522">  522</a></b> 
+<b><a name="523">  523</a></b> }
+<b><a name="524">  524</a></b> 
+<b><a name="525">  525</a></b> 
+<b><a name="526">  526</a></b> 
+<b><a name="527">  527</a></b> /*FC_GetMechanismList obtains a list of mechanism types supported by a token.*/
+<b><a name="528">  528</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#528">FC_GetMechanismList</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a> slotID,
+<b><a name="529">  529</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE_PTR">CK_MECHANISM_TYPE_PTR</a> pMechanismList, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusCount) {
+<b><a name="530">  530</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="531">  531</a></b>     if (slotID == <a href="../softoken/pkcs11i.h.dep.html#FIPS_SLOT_ID">FIPS_SLOT_ID</a>) slotID = <a href="../softoken/pkcs11i.h.dep.html#NETSCAPE_SLOT_ID">NETSCAPE_SLOT_ID</a>;
+<b><a name="532">  532</a></b>     /* FIPS Slot supports all functions */
+<b><a name="533">  533</a></b>     return <a href="../softoken/pkcs11.c.dep.html#NSC_GetMechanismList">NSC_GetMechanismList</a>(slotID,pMechanismList,pusCount);
+<b><a name="534">  534</a></b> }
+<b><a name="535">  535</a></b> 
+<b><a name="536">  536</a></b> 
+<b><a name="537">  537</a></b> /* FC_GetMechanismInfo obtains information about a particular mechanism 
+<b><a name="538">  538</a></b>  * possibly supported by a token. */
+<b><a name="539">  539</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#539">FC_GetMechanismInfo</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a> slotID, <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_TYPE">CK_MECHANISM_TYPE</a> type,
+<b><a name="540">  540</a></b>                                             <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_INFO_PTR">CK_MECHANISM_INFO_PTR</a> pInfo) {
+<b><a name="541">  541</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="542">  542</a></b>     if (slotID == <a href="../softoken/pkcs11i.h.dep.html#FIPS_SLOT_ID">FIPS_SLOT_ID</a>) slotID = <a href="../softoken/pkcs11i.h.dep.html#NETSCAPE_SLOT_ID">NETSCAPE_SLOT_ID</a>;
+<b><a name="543">  543</a></b>     /* FIPS Slot supports all functions */
+<b><a name="544">  544</a></b>     return <a href="../softoken/pkcs11.c.dep.html#NSC_GetMechanismInfo">NSC_GetMechanismInfo</a>(slotID,type,pInfo);
+<b><a name="545">  545</a></b> }
+<b><a name="546">  546</a></b> 
+<b><a name="547">  547</a></b> 
+<b><a name="548">  548</a></b> /* FC_InitToken initializes a token. */
+<b><a name="549">  549</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#549">FC_InitToken</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a> slotID,<a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a> pPin,
+<b><a name="550">  550</a></b>                                  <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usPinLen,<a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a> pLabel) {
+<b><a name="551">  551</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="552">  552</a></b> 
+<b><a name="553">  553</a></b>     crv = <a href="../softoken/pkcs11.c.dep.html#NSC_InitToken">NSC_InitToken</a>(slotID,pPin,usPinLen,pLabel);
+<b><a name="554">  554</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="555">  555</a></b>         char msg[128];
+<b><a name="556">  556</a></b>         <a href="../softoken/softoknt.h.dep.html#NSSAuditSeverity">NSSAuditSeverity</a> severity = (crv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) ?
+<b><a name="557">  557</a></b>                 NSS_AUDIT_INFO : NSS_AUDIT_ERROR;
+<b><a name="558">  558</a></b>         /* pLabel points to a 32-byte label, which is not null-terminated */
+<b><a name="559">  559</a></b>         PR_snprintf(msg,sizeof msg,
+<b><a name="560">  560</a></b>                 "C_InitToken(slotID=%lu, pLabel=\"%.32s\")=0x%08lX",
+<b><a name="561">  561</a></b>                 (PRUint32)slotID,pLabel,(PRUint32)crv);
+<b><a name="562">  562</a></b>         <a href="../softoken/fipstokn.c.dep.html#sftk_LogAuditMessage">sftk_LogAuditMessage</a>(severity, msg);
+<b><a name="563">  563</a></b>     }
+<b><a name="564">  564</a></b>     return crv;
+<b><a name="565">  565</a></b> }
+<b><a name="566">  566</a></b> 
+<b><a name="567">  567</a></b> 
+<b><a name="568">  568</a></b> /* FC_InitPIN initializes the normal user's PIN. */
+<b><a name="569">  569</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#569">FC_InitPIN</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="570">  570</a></b>                                             <a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a> pPin, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulPinLen) {
+<b><a name="571">  571</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="572">  572</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_fatalError">sftk_fatalError</a><a href="../softoken/softoken.h.dep.html#sftk_fatalError"><sup>[1]</sup></a>) return <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a>;
+<b><a name="573">  573</a></b>     if ((rv = <a href="../softoken/fipstokn.c.dep.html#sftk_newPinCheck">sftk_newPinCheck</a>(pPin,ulPinLen)) == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="574">  574</a></b>         rv = <a href="../softoken/pkcs11.c.dep.html#NSC_InitPIN">NSC_InitPIN</a>(hSession,pPin,ulPinLen);
+<b><a name="575">  575</a></b>     }
+<b><a name="576">  576</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="577">  577</a></b>         char msg[128];
+<b><a name="578">  578</a></b>         <a href="../softoken/softoknt.h.dep.html#NSSAuditSeverity">NSSAuditSeverity</a> severity = (rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) ?
+<b><a name="579">  579</a></b>                 NSS_AUDIT_INFO : NSS_AUDIT_ERROR;
+<b><a name="580">  580</a></b>         PR_snprintf(msg,sizeof msg,
+<b><a name="581">  581</a></b>                 "C_InitPIN(hSession=0x%08lX)=0x%08lX",
+<b><a name="582">  582</a></b>                 (PRUint32)hSession,(PRUint32)rv);
+<b><a name="583">  583</a></b>         <a href="../softoken/fipstokn.c.dep.html#sftk_LogAuditMessage">sftk_LogAuditMessage</a>(severity, msg);
+<b><a name="584">  584</a></b>     }
+<b><a name="585">  585</a></b>     return rv;
+<b><a name="586">  586</a></b> }
+<b><a name="587">  587</a></b> 
+<b><a name="588">  588</a></b> 
+<b><a name="589">  589</a></b> /* FC_SetPIN modifies the PIN of user that is currently logged in. */
+<b><a name="590">  590</a></b> /* NOTE: This is only valid for the PRIVATE_KEY_SLOT */
+<b><a name="591">  591</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#591">FC_SetPIN</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, <a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a> pOldPin,
+<b><a name="592">  592</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usOldLen, <a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a> pNewPin, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usNewLen) {
+<b><a name="593">  593</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="594">  594</a></b>     if ((rv = <a href="../softoken/fipstokn.c.dep.html#sftk_fipsCheck">sftk_fipsCheck</a>()) == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a> &amp;&amp;
+<b><a name="595">  595</a></b>         (rv = <a href="../softoken/fipstokn.c.dep.html#sftk_newPinCheck">sftk_newPinCheck</a>(pNewPin,usNewLen)) == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="596">  596</a></b>         rv = <a href="../softoken/pkcs11.c.dep.html#NSC_SetPIN">NSC_SetPIN</a>(hSession,pOldPin,usOldLen,pNewPin,usNewLen);
+<b><a name="597">  597</a></b>     }
+<b><a name="598">  598</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="599">  599</a></b>         char msg[128];
+<b><a name="600">  600</a></b>         <a href="../softoken/softoknt.h.dep.html#NSSAuditSeverity">NSSAuditSeverity</a> severity = (rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) ?
+<b><a name="601">  601</a></b>                 NSS_AUDIT_INFO : NSS_AUDIT_ERROR;
+<b><a name="602">  602</a></b>         PR_snprintf(msg,sizeof msg,
+<b><a name="603">  603</a></b>                 "C_SetPIN(hSession=0x%08lX)=0x%08lX",
+<b><a name="604">  604</a></b>                 (PRUint32)hSession,(PRUint32)rv);
+<b><a name="605">  605</a></b>         <a href="../softoken/fipstokn.c.dep.html#sftk_LogAuditMessage">sftk_LogAuditMessage</a>(severity, msg);
+<b><a name="606">  606</a></b>     }
+<b><a name="607">  607</a></b>     return rv;
+<b><a name="608">  608</a></b> }
+<b><a name="609">  609</a></b> 
+<b><a name="610">  610</a></b> /* FC_OpenSession opens a session between an application and a token. */
+<b><a name="611">  611</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#611">FC_OpenSession</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a> slotID, <a href="../softoken/pkcs11t.h.dep.html#CK_FLAGS">CK_FLAGS</a> flags,
+<b><a name="612">  612</a></b>    <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> pApplication,CK_NOTIFY Notify,<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE_PTR">CK_SESSION_HANDLE_PTR</a> phSession) {
+<b><a name="613">  613</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="614">  614</a></b>     return <a href="../softoken/pkcs11.c.dep.html#NSC_OpenSession">NSC_OpenSession</a>(slotID,flags,pApplication,Notify,phSession);
+<b><a name="615">  615</a></b> }
+<b><a name="616">  616</a></b> 
+<b><a name="617">  617</a></b> 
+<b><a name="618">  618</a></b> /* FC_CloseSession closes a session between an application and a token. */
+<b><a name="619">  619</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#619">FC_CloseSession</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession) {
+<b><a name="620">  620</a></b>     return <a href="../softoken/pkcs11.c.dep.html#NSC_CloseSession">NSC_CloseSession</a>(hSession);
+<b><a name="621">  621</a></b> }
+<b><a name="622">  622</a></b> 
+<b><a name="623">  623</a></b> 
+<b><a name="624">  624</a></b> /* FC_CloseAllSessions closes all sessions with a token. */
+<b><a name="625">  625</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#625">FC_CloseAllSessions</a> (<a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID">CK_SLOT_ID</a> slotID) {
+<b><a name="626">  626</a></b>     return <a href="../softoken/pkcs11.c.dep.html#NSC_CloseAllSessions">NSC_CloseAllSessions</a> (slotID);
+<b><a name="627">  627</a></b> }
+<b><a name="628">  628</a></b> 
+<b><a name="629">  629</a></b> 
+<b><a name="630">  630</a></b> /* FC_GetSessionInfo obtains information about the session. */
+<b><a name="631">  631</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#631">FC_GetSessionInfo</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="632">  632</a></b>                                                 <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_INFO_PTR">CK_SESSION_INFO_PTR</a> pInfo) {
+<b><a name="633">  633</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="634">  634</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="635">  635</a></b> 
+<b><a name="636">  636</a></b>     rv = <a href="../softoken/pkcs11.c.dep.html#NSC_GetSessionInfo">NSC_GetSessionInfo</a>(hSession,pInfo);
+<b><a name="637">  637</a></b>     if (rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="638">  638</a></b>         if ((<a href="../softoken/fipstokn.c.dep.html#isLoggedIn">isLoggedIn</a>) &amp;&amp; (pInfo-&gt;state == <a href="../softoken/pkcs11t.h.dep.html#CKS_RO_PUBLIC_SESSION">CKS_RO_PUBLIC_SESSION</a>)) {
+<b><a name="639">  639</a></b>                 pInfo-&gt;state = <a href="../softoken/pkcs11t.h.dep.html#CKS_RO_USER_FUNCTIONS">CKS_RO_USER_FUNCTIONS</a>;
+<b><a name="640">  640</a></b>         }
+<b><a name="641">  641</a></b>         if ((<a href="../softoken/fipstokn.c.dep.html#isLoggedIn">isLoggedIn</a>) &amp;&amp; (pInfo-&gt;state == <a href="../softoken/pkcs11t.h.dep.html#CKS_RW_PUBLIC_SESSION">CKS_RW_PUBLIC_SESSION</a>)) {
+<b><a name="642">  642</a></b>                 pInfo-&gt;state = <a href="../softoken/pkcs11t.h.dep.html#CKS_RW_USER_FUNCTIONS">CKS_RW_USER_FUNCTIONS</a>;
+<b><a name="643">  643</a></b>         }
+<b><a name="644">  644</a></b>     }
+<b><a name="645">  645</a></b>     return rv;
+<b><a name="646">  646</a></b> }
+<b><a name="647">  647</a></b> 
+<b><a name="648">  648</a></b> /* FC_Login logs a user into a token. */
+<b><a name="649">  649</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#649">FC_Login</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, <a href="../softoken/pkcs11t.h.dep.html#CK_USER_TYPE">CK_USER_TYPE</a> userType,
+<b><a name="650">  650</a></b>                                     <a href="../softoken/pkcs11t.h.dep.html#CK_CHAR_PTR">CK_CHAR_PTR</a> pPin, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usPinLen) {
+<b><a name="651">  651</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="652">  652</a></b>     PRBool successful;
+<b><a name="653">  653</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_fatalError">sftk_fatalError</a><a href="../softoken/softoken.h.dep.html#sftk_fatalError"><sup>[1]</sup></a>) return <a href="../softoken/pkcs11t.h.dep.html#CKR_DEVICE_ERROR">CKR_DEVICE_ERROR</a>;
+<b><a name="654">  654</a></b>     rv = <a href="../softoken/pkcs11.c.dep.html#NSC_Login">NSC_Login</a>(hSession,userType,pPin,usPinLen);
+<b><a name="655">  655</a></b>     successful = (rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) || (rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_USER_ALREADY_LOGGED_IN">CKR_USER_ALREADY_LOGGED_IN</a>);
+<b><a name="656">  656</a></b>     if (successful)
+<b><a name="657">  657</a></b>         <a href="../softoken/fipstokn.c.dep.html#isLoggedIn">isLoggedIn</a> = PR_TRUE;
+<b><a name="658">  658</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="659">  659</a></b>         char msg[128];
+<b><a name="660">  660</a></b>         <a href="../softoken/softoknt.h.dep.html#NSSAuditSeverity">NSSAuditSeverity</a> severity;
+<b><a name="661">  661</a></b>         severity = successful ? NSS_AUDIT_INFO : NSS_AUDIT_ERROR;
+<b><a name="662">  662</a></b>         PR_snprintf(msg,sizeof msg,
+<b><a name="663">  663</a></b>                     "C_Login(hSession=0x%08lX, userType=%lu)=0x%08lX",
+<b><a name="664">  664</a></b>                     (PRUint32)hSession,(PRUint32)userType,(PRUint32)rv);
+<b><a name="665">  665</a></b>         <a href="../softoken/fipstokn.c.dep.html#sftk_LogAuditMessage">sftk_LogAuditMessage</a>(severity, msg);
+<b><a name="666">  666</a></b>     }
+<b><a name="667">  667</a></b>     return rv;
+<b><a name="668">  668</a></b> }
+<b><a name="669">  669</a></b> 
+<b><a name="670">  670</a></b> /* FC_Logout logs a user out from a token. */
+<b><a name="671">  671</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#671">FC_Logout</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession) {
+<b><a name="672">  672</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="673">  673</a></b>     if ((rv = <a href="../softoken/fipstokn.c.dep.html#sftk_fipsCheck">sftk_fipsCheck</a>()) == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="674">  674</a></b>         rv = <a href="../softoken/pkcs11.c.dep.html#NSC_Logout">NSC_Logout</a>(hSession);
+<b><a name="675">  675</a></b>         <a href="../softoken/fipstokn.c.dep.html#isLoggedIn">isLoggedIn</a> = PR_FALSE;
+<b><a name="676">  676</a></b>     }
+<b><a name="677">  677</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="678">  678</a></b>         char msg[128];
+<b><a name="679">  679</a></b>         <a href="../softoken/softoknt.h.dep.html#NSSAuditSeverity">NSSAuditSeverity</a> severity = (rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) ?
+<b><a name="680">  680</a></b>                 NSS_AUDIT_INFO : NSS_AUDIT_ERROR;
+<b><a name="681">  681</a></b>         PR_snprintf(msg,sizeof msg,
+<b><a name="682">  682</a></b>                     "C_Logout(hSession=0x%08lX)=0x%08lX",
+<b><a name="683">  683</a></b>                     (PRUint32)hSession,(PRUint32)rv);
+<b><a name="684">  684</a></b>         <a href="../softoken/fipstokn.c.dep.html#sftk_LogAuditMessage">sftk_LogAuditMessage</a>(severity, msg);
+<b><a name="685">  685</a></b>     }
+<b><a name="686">  686</a></b>     return rv;
+<b><a name="687">  687</a></b> }
+<b><a name="688">  688</a></b> 
+<b><a name="689">  689</a></b> 
+<b><a name="690">  690</a></b> /* FC_CreateObject creates a new object. */
+<b><a name="691">  691</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#691">FC_CreateObject</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="692">  692</a></b>                 <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> pTemplate, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulCount, 
+<b><a name="693">  693</a></b>                                         <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE_PTR">CK_OBJECT_HANDLE_PTR</a> phObject) {
+<b><a name="694">  694</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> * classptr;
+<b><a name="695">  695</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="696">  696</a></b>     classptr = (<a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> *)<a href="../softoken/fipstokn.c.dep.html#fc_getAttribute">fc_getAttribute</a>(pTemplate,ulCount,<a href="../softoken/pkcs11t.h.dep.html#CKA_CLASS">CKA_CLASS</a>);
+<b><a name="697">  697</a></b>     if (classptr == NULL) return <a href="../softoken/pkcs11t.h.dep.html#CKR_TEMPLATE_INCOMPLETE">CKR_TEMPLATE_INCOMPLETE</a>;
+<b><a name="698">  698</a></b> 
+<b><a name="699">  699</a></b>     /* FIPS can't create keys from raw key material */
+<b><a name="700">  700</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#SFTK_IS_NONPUBLIC_KEY_OBJECT">SFTK_IS_NONPUBLIC_KEY_OBJECT</a>(*classptr)) {
+<b><a name="701">  701</a></b>         rv = <a href="../softoken/pkcs11t.h.dep.html#CKR_ATTRIBUTE_VALUE_INVALID">CKR_ATTRIBUTE_VALUE_INVALID</a>;
+<b><a name="702">  702</a></b>     } else {
+<b><a name="703">  703</a></b>         rv = <a href="../softoken/pkcs11.c.dep.html#NSC_CreateObject">NSC_CreateObject</a>(hSession,pTemplate,ulCount,phObject);
+<b><a name="704">  704</a></b>     }
+<b><a name="705">  705</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a> &amp;&amp; <a href="../softoken/fipstokn.c.dep.html#SFTK_IS_KEY_OBJECT">SFTK_IS_KEY_OBJECT</a>(*classptr)) {
+<b><a name="706">  706</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditCreateObject">sftk_AuditCreateObject</a>(hSession,pTemplate,ulCount,phObject,rv);
+<b><a name="707">  707</a></b>     }
+<b><a name="708">  708</a></b>     return rv;
+<b><a name="709">  709</a></b> }
+<b><a name="710">  710</a></b> 
+<b><a name="711">  711</a></b> 
+<b><a name="712">  712</a></b> 
+<b><a name="713">  713</a></b> 
+<b><a name="714">  714</a></b> 
+<b><a name="715">  715</a></b> /* FC_CopyObject copies an object, creating a new object for the copy. */
+<b><a name="716">  716</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#716">FC_CopyObject</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="717">  717</a></b>        <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hObject, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> pTemplate, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulCount,
+<b><a name="718">  718</a></b>                                         <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE_PTR">CK_OBJECT_HANDLE_PTR</a> phNewObject) {
+<b><a name="719">  719</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="720">  720</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> objClass = <a href="../softoken/fipstokn.c.dep.html#CKO_NOT_A_KEY">CKO_NOT_A_KEY</a>;
+<b><a name="721">  721</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="722">  722</a></b>     rv = <a href="../softoken/fipstokn.c.dep.html#sftk_get_object_class_and_fipsCheck">sftk_get_object_class_and_fipsCheck</a>(hSession, hObject, &amp;objClass);
+<b><a name="723">  723</a></b>     if (rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="724">  724</a></b>         rv = <a href="../softoken/pkcs11.c.dep.html#NSC_CopyObject">NSC_CopyObject</a>(hSession,hObject,pTemplate,ulCount,phNewObject);
+<b><a name="725">  725</a></b>     }
+<b><a name="726">  726</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a> &amp;&amp; <a href="../softoken/fipstokn.c.dep.html#SFTK_IS_KEY_OBJECT">SFTK_IS_KEY_OBJECT</a>(objClass)) {
+<b><a name="727">  727</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditCopyObject">sftk_AuditCopyObject</a>(hSession,
+<b><a name="728">  728</a></b>             hObject,pTemplate,ulCount,phNewObject,rv);
+<b><a name="729">  729</a></b>     }
+<b><a name="730">  730</a></b>     return rv;
+<b><a name="731">  731</a></b> }
+<b><a name="732">  732</a></b> 
+<b><a name="733">  733</a></b> 
+<b><a name="734">  734</a></b> /* FC_DestroyObject destroys an object. */
+<b><a name="735">  735</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#735">FC_DestroyObject</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="736">  736</a></b>                                                  <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hObject) {
+<b><a name="737">  737</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="738">  738</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> objClass = <a href="../softoken/fipstokn.c.dep.html#CKO_NOT_A_KEY">CKO_NOT_A_KEY</a>;
+<b><a name="739">  739</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="740">  740</a></b>     rv = <a href="../softoken/fipstokn.c.dep.html#sftk_get_object_class_and_fipsCheck">sftk_get_object_class_and_fipsCheck</a>(hSession, hObject, &amp;objClass);
+<b><a name="741">  741</a></b>     if (rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="742">  742</a></b>         rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_DestroyObject">NSC_DestroyObject</a>(hSession,hObject);
+<b><a name="743">  743</a></b>     }
+<b><a name="744">  744</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a> &amp;&amp; <a href="../softoken/fipstokn.c.dep.html#SFTK_IS_KEY_OBJECT">SFTK_IS_KEY_OBJECT</a>(objClass)) {
+<b><a name="745">  745</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditDestroyObject">sftk_AuditDestroyObject</a>(hSession,hObject,rv);
+<b><a name="746">  746</a></b>     }
+<b><a name="747">  747</a></b>     return rv;
+<b><a name="748">  748</a></b> }
+<b><a name="749">  749</a></b> 
+<b><a name="750">  750</a></b> 
+<b><a name="751">  751</a></b> /* FC_GetObjectSize gets the size of an object in bytes. */
+<b><a name="752">  752</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#752">FC_GetObjectSize</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="753">  753</a></b>                             <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hObject, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pulSize) {
+<b><a name="754">  754</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="755">  755</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> objClass = <a href="../softoken/fipstokn.c.dep.html#CKO_NOT_A_KEY">CKO_NOT_A_KEY</a>;
+<b><a name="756">  756</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="757">  757</a></b>     rv = <a href="../softoken/fipstokn.c.dep.html#sftk_get_object_class_and_fipsCheck">sftk_get_object_class_and_fipsCheck</a>(hSession, hObject, &amp;objClass);
+<b><a name="758">  758</a></b>     if (rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="759">  759</a></b>         rv = <a href="../softoken/pkcs11.c.dep.html#NSC_GetObjectSize">NSC_GetObjectSize</a>(hSession, hObject, pulSize);
+<b><a name="760">  760</a></b>     }
+<b><a name="761">  761</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a> &amp;&amp; <a href="../softoken/fipstokn.c.dep.html#SFTK_IS_KEY_OBJECT">SFTK_IS_KEY_OBJECT</a>(objClass)) {
+<b><a name="762">  762</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditGetObjectSize">sftk_AuditGetObjectSize</a>(hSession, hObject, pulSize, rv);
+<b><a name="763">  763</a></b>     }
+<b><a name="764">  764</a></b>     return rv;
+<b><a name="765">  765</a></b> }
+<b><a name="766">  766</a></b> 
+<b><a name="767">  767</a></b> 
+<b><a name="768">  768</a></b> /* FC_GetAttributeValue obtains the value of one or more object attributes. */
+<b><a name="769">  769</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#769">FC_GetAttributeValue</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="770">  770</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hObject,<a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> pTemplate,<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulCount) {
+<b><a name="771">  771</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="772">  772</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> objClass = <a href="../softoken/fipstokn.c.dep.html#CKO_NOT_A_KEY">CKO_NOT_A_KEY</a>;
+<b><a name="773">  773</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="774">  774</a></b>     rv = <a href="../softoken/fipstokn.c.dep.html#sftk_get_object_class_and_fipsCheck">sftk_get_object_class_and_fipsCheck</a>(hSession, hObject, &amp;objClass);
+<b><a name="775">  775</a></b>     if (rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="776">  776</a></b>         rv = <a href="../softoken/pkcs11.c.dep.html#NSC_GetAttributeValue">NSC_GetAttributeValue</a>(hSession,hObject,pTemplate,ulCount);
+<b><a name="777">  777</a></b>     }
+<b><a name="778">  778</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a> &amp;&amp; <a href="../softoken/fipstokn.c.dep.html#SFTK_IS_KEY_OBJECT">SFTK_IS_KEY_OBJECT</a>(objClass)) {
+<b><a name="779">  779</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditGetAttributeValue">sftk_AuditGetAttributeValue</a>(hSession,hObject,pTemplate,ulCount,rv);
+<b><a name="780">  780</a></b>     }
+<b><a name="781">  781</a></b>     return rv;
+<b><a name="782">  782</a></b> }
+<b><a name="783">  783</a></b> 
+<b><a name="784">  784</a></b> 
+<b><a name="785">  785</a></b> /* FC_SetAttributeValue modifies the value of one or more object attributes */
+<b><a name="786">  786</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#786">FC_SetAttributeValue</a> (<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="787">  787</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hObject,<a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> pTemplate,<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulCount) {
+<b><a name="788">  788</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="789">  789</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> objClass = <a href="../softoken/fipstokn.c.dep.html#CKO_NOT_A_KEY">CKO_NOT_A_KEY</a>;
+<b><a name="790">  790</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="791">  791</a></b>     rv = <a href="../softoken/fipstokn.c.dep.html#sftk_get_object_class_and_fipsCheck">sftk_get_object_class_and_fipsCheck</a>(hSession, hObject, &amp;objClass);
+<b><a name="792">  792</a></b>     if (rv == <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="793">  793</a></b>         rv = <a href="../softoken/pkcs11.c.dep.html#NSC_SetAttributeValue">NSC_SetAttributeValue</a>(hSession,hObject,pTemplate,ulCount);
+<b><a name="794">  794</a></b>     }
+<b><a name="795">  795</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a> &amp;&amp; <a href="../softoken/fipstokn.c.dep.html#SFTK_IS_KEY_OBJECT">SFTK_IS_KEY_OBJECT</a>(objClass)) {
+<b><a name="796">  796</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditSetAttributeValue">sftk_AuditSetAttributeValue</a>(hSession,hObject,pTemplate,ulCount,rv);
+<b><a name="797">  797</a></b>     }
+<b><a name="798">  798</a></b>     return rv;
+<b><a name="799">  799</a></b> }
+<b><a name="800">  800</a></b> 
+<b><a name="801">  801</a></b> 
+<b><a name="802">  802</a></b> 
+<b><a name="803">  803</a></b> /* FC_FindObjectsInit initializes a search for token and session objects 
+<b><a name="804">  804</a></b>  * that match a template. */
+<b><a name="805">  805</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#805">FC_FindObjectsInit</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="806">  806</a></b>                             <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> pTemplate,<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usCount) {
+<b><a name="807">  807</a></b>     /* let publically readable object be found */
+<b><a name="808">  808</a></b>     uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="809">  809</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> rv;
+<b><a name="810">  810</a></b>     PRBool needLogin = PR_FALSE;
+<b><a name="811">  811</a></b> 
+<b><a name="812">  812</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="813">  813</a></b> 
+<b><a name="814">  814</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; usCount; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="815">  815</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> class;
+<b><a name="816">  816</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (pTemplate[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>].type != <a href="../softoken/pkcs11t.h.dep.html#CKA_CLASS">CKA_CLASS</a>) {
+<b><a name="817">  817</a></b>             continue;
+<b><a name="818">  818</a></b>         }
+<b><a name="819">  819</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (pTemplate[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>].ulValueLen != s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>zeof(<a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a>)) {
+<b><a name="820">  820</a></b>             continue;
+<b><a name="821">  821</a></b>         }
+<b><a name="822">  822</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (pTemplate[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>].pValue == NULL) {
+<b><a name="823">  823</a></b>             continue;
+<b><a name="824">  824</a></b>         }
+<b><a name="825">  825</a></b>         class = *(<a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_CLASS">CK_OBJECT_CLASS</a> *)pTemplate[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>].pValue;
+<b><a name="826">  826</a></b>         if ((class == <a href="../softoken/pkcs11t.h.dep.html#CKO_PRIVATE_KEY">CKO_PRIVATE_KEY</a>) || (class == <a href="../softoken/pkcs11t.h.dep.html#CKO_SECRET_KEY">CKO_SECRET_KEY</a>)) {
+<b><a name="827">  827</a></b>             needLogin = PR_TRUE;
+<b><a name="828">  828</a></b>             break;
+<b><a name="829">  829</a></b>         }
+<b><a name="830">  830</a></b>     }
+<b><a name="831">  831</a></b>     if (needLogin) {
+<b><a name="832">  832</a></b>         if ((rv = <a href="../softoken/fipstokn.c.dep.html#sftk_fipsCheck">sftk_fipsCheck</a>()) != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) return rv;
+<b><a name="833">  833</a></b>     }
+<b><a name="834">  834</a></b>     return <a href="../softoken/pkcs11.c.dep.html#NSC_FindObjectsInit">NSC_FindObjectsInit</a>(hSession,pTemplate,usCount);
+<b><a name="835">  835</a></b> }
+<b><a name="836">  836</a></b> 
+<b><a name="837">  837</a></b> 
+<b><a name="838">  838</a></b> /* FC_FindObjects continues a search for token and session objects 
+<b><a name="839">  839</a></b>  * that match a template, obtaining additional object handles. */
+<b><a name="840">  840</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#840">FC_FindObjects</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="841">  841</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE_PTR">CK_OBJECT_HANDLE_PTR</a> phObject,<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usMaxObjectCount,
+<b><a name="842">  842</a></b>                                             <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusObjectCount) {
+<b><a name="843">  843</a></b>     /* let publically readable object be found */
+<b><a name="844">  844</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="845">  845</a></b>     return <a href="../softoken/pkcs11.c.dep.html#NSC_FindObjects">NSC_FindObjects</a>(hSession,phObject,usMaxObjectCount,
+<b><a name="846">  846</a></b>                                                             pusObjectCount);
+<b><a name="847">  847</a></b> }
+<b><a name="848">  848</a></b> 
+<b><a name="849">  849</a></b> 
+<b><a name="850">  850</a></b> /*
+<b><a name="851">  851</a></b>  ************** Crypto Functions:     Encrypt ************************
+<b><a name="852">  852</a></b>  */
+<b><a name="853">  853</a></b> 
+<b><a name="854">  854</a></b> /* FC_EncryptInit initializes an encryption operation. */
+<b><a name="855">  855</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#855">FC_EncryptInit</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="856">  856</a></b>                  <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hKey) {
+<b><a name="857">  857</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="858">  858</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_EncryptInit">NSC_EncryptInit</a>(hSession,pMechanism,hKey);
+<b><a name="859">  859</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="860">  860</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditCryptInit">sftk_AuditCryptInit</a>("Encrypt",hSession,pMechanism,hKey,rv);
+<b><a name="861">  861</a></b>     }
+<b><a name="862">  862</a></b>     return rv;
+<b><a name="863">  863</a></b> }
+<b><a name="864">  864</a></b> 
+<b><a name="865">  865</a></b> /* FC_Encrypt encrypts single-part data. */
+<b><a name="866">  866</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#866">FC_Encrypt</a> (<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pData,
+<b><a name="867">  867</a></b>                     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usDataLen, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pEncryptedData,
+<b><a name="868">  868</a></b>                                          <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusEncryptedDataLen) {
+<b><a name="869">  869</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="870">  870</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_Encrypt">NSC_Encrypt</a>(hSession,pData,usDataLen,pEncryptedData,
+<b><a name="871">  871</a></b>                                                         pusEncryptedDataLen);
+<b><a name="872">  872</a></b> }
+<b><a name="873">  873</a></b> 
+<b><a name="874">  874</a></b> 
+<b><a name="875">  875</a></b> /* FC_EncryptUpdate continues a multiple-part encryption operation. */
+<b><a name="876">  876</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#876">FC_EncryptUpdate</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="877">  877</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPart, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usPartLen, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pEncryptedPart,        
+<b><a name="878">  878</a></b>                                         <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusEncryptedPartLen) {
+<b><a name="879">  879</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="880">  880</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_EncryptUpdate">NSC_EncryptUpdate</a>(hSession,pPart,usPartLen,pEncryptedPart,
+<b><a name="881">  881</a></b>                                                 pusEncryptedPartLen);
+<b><a name="882">  882</a></b> }
+<b><a name="883">  883</a></b> 
+<b><a name="884">  884</a></b> 
+<b><a name="885">  885</a></b> /* FC_EncryptFinal finishes a multiple-part encryption operation. */
+<b><a name="886">  886</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#886">FC_EncryptFinal</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="887">  887</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pLastEncryptedPart, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusLastEncryptedPartLen) {
+<b><a name="888">  888</a></b> 
+<b><a name="889">  889</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="890">  890</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_EncryptFinal">NSC_EncryptFinal</a>(hSession,pLastEncryptedPart,
+<b><a name="891">  891</a></b>                                                 pusLastEncryptedPartLen);
+<b><a name="892">  892</a></b> }
+<b><a name="893">  893</a></b> 
+<b><a name="894">  894</a></b> /*
+<b><a name="895">  895</a></b>  ************** Crypto Functions:     Decrypt ************************
+<b><a name="896">  896</a></b>  */
+<b><a name="897">  897</a></b> 
+<b><a name="898">  898</a></b> 
+<b><a name="899">  899</a></b> /* FC_DecryptInit initializes a decryption operation. */
+<b><a name="900">  900</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#900">FC_DecryptInit</a>( <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="901">  901</a></b>                          <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hKey) {
+<b><a name="902">  902</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="903">  903</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_DecryptInit">NSC_DecryptInit</a>(hSession,pMechanism,hKey);
+<b><a name="904">  904</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="905">  905</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditCryptInit">sftk_AuditCryptInit</a>("Decrypt",hSession,pMechanism,hKey,rv);
+<b><a name="906">  906</a></b>     }
+<b><a name="907">  907</a></b>     return rv;
+<b><a name="908">  908</a></b> }
+<b><a name="909">  909</a></b> 
+<b><a name="910">  910</a></b> /* FC_Decrypt decrypts encrypted data in a single part. */
+<b><a name="911">  911</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#911">FC_Decrypt</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="912">  912</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pEncryptedData,<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usEncryptedDataLen,<a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pData,
+<b><a name="913">  913</a></b>                                                     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusDataLen) {
+<b><a name="914">  914</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="915">  915</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_Decrypt">NSC_Decrypt</a>(hSession,pEncryptedData,usEncryptedDataLen,pData,
+<b><a name="916">  916</a></b>                                                                     pusDataLen);
+<b><a name="917">  917</a></b> }
+<b><a name="918">  918</a></b> 
+<b><a name="919">  919</a></b> 
+<b><a name="920">  920</a></b> /* FC_DecryptUpdate continues a multiple-part decryption operation. */
+<b><a name="921">  921</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#921">FC_DecryptUpdate</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="922">  922</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pEncryptedPart, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usEncryptedPartLen,
+<b><a name="923">  923</a></b>                                     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPart, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusPartLen) {
+<b><a name="924">  924</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="925">  925</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_DecryptUpdate">NSC_DecryptUpdate</a>(hSession,pEncryptedPart,usEncryptedPartLen,
+<b><a name="926">  926</a></b>                                                             pPart,pusPartLen);
+<b><a name="927">  927</a></b> }
+<b><a name="928">  928</a></b> 
+<b><a name="929">  929</a></b> 
+<b><a name="930">  930</a></b> /* FC_DecryptFinal finishes a multiple-part decryption operation. */
+<b><a name="931">  931</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#931">FC_DecryptFinal</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="932">  932</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pLastPart, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusLastPartLen) {
+<b><a name="933">  933</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="934">  934</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_DecryptFinal">NSC_DecryptFinal</a>(hSession,pLastPart,pusLastPartLen);
+<b><a name="935">  935</a></b> }
+<b><a name="936">  936</a></b> 
+<b><a name="937">  937</a></b> 
+<b><a name="938">  938</a></b> /*
+<b><a name="939">  939</a></b>  ************** Crypto Functions:     Digest (HASH)  ************************
+<b><a name="940">  940</a></b>  */
+<b><a name="941">  941</a></b> 
+<b><a name="942">  942</a></b> /* FC_DigestInit initializes a message-digesting operation. */
+<b><a name="943">  943</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#943">FC_DigestInit</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="944">  944</a></b>                                             <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism) {
+<b><a name="945">  945</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="946">  946</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_DigestInit">NSC_DigestInit</a>(hSession, pMechanism);
+<b><a name="947">  947</a></b> }
+<b><a name="948">  948</a></b> 
+<b><a name="949">  949</a></b> 
+<b><a name="950">  950</a></b> /* FC_Digest digests data in a single part. */
+<b><a name="951">  951</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#951">FC_Digest</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="952">  952</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pData, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usDataLen, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pDigest,
+<b><a name="953">  953</a></b>                                                     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusDigestLen) {
+<b><a name="954">  954</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="955">  955</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_Digest">NSC_Digest</a>(hSession,pData,usDataLen,pDigest,pusDigestLen);
+<b><a name="956">  956</a></b> }
+<b><a name="957">  957</a></b> 
+<b><a name="958">  958</a></b> 
+<b><a name="959">  959</a></b> /* FC_DigestUpdate continues a multiple-part message-digesting operation. */
+<b><a name="960">  960</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#960">FC_DigestUpdate</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,<a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPart,
+<b><a name="961">  961</a></b>                                             <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usPartLen) {
+<b><a name="962">  962</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="963">  963</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_DigestUpdate">NSC_DigestUpdate</a>(hSession,pPart,usPartLen);
+<b><a name="964">  964</a></b> }
+<b><a name="965">  965</a></b> 
+<b><a name="966">  966</a></b> 
+<b><a name="967">  967</a></b> /* FC_DigestFinal finishes a multiple-part message-digesting operation. */
+<b><a name="968">  968</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#968">FC_DigestFinal</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,<a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pDigest,
+<b><a name="969">  969</a></b>                                                     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusDigestLen) {
+<b><a name="970">  970</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="971">  971</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_DigestFinal">NSC_DigestFinal</a>(hSession,pDigest,pusDigestLen);
+<b><a name="972">  972</a></b> }
+<b><a name="973">  973</a></b> 
+<b><a name="974">  974</a></b> 
+<b><a name="975">  975</a></b> /*
+<b><a name="976">  976</a></b>  ************** Crypto Functions:     Sign  ************************
+<b><a name="977">  977</a></b>  */
+<b><a name="978">  978</a></b> 
+<b><a name="979">  979</a></b> /* FC_SignInit initializes a signature (private key encryption) operation,
+<b><a name="980">  980</a></b>  * where the signature is (will be) an appendix to the data, 
+<b><a name="981">  981</a></b>  * and plaintext cannot be recovered from the signature */
+<b><a name="982">  982</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#982">FC_SignInit</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="983">  983</a></b>                  <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hKey) {
+<b><a name="984">  984</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="985">  985</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_SignInit">NSC_SignInit</a>(hSession,pMechanism,hKey);
+<b><a name="986">  986</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="987">  987</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditCryptInit">sftk_AuditCryptInit</a>("Sign",hSession,pMechanism,hKey,rv);
+<b><a name="988">  988</a></b>     }
+<b><a name="989">  989</a></b>     return rv;
+<b><a name="990">  990</a></b> }
+<b><a name="991">  991</a></b> 
+<b><a name="992">  992</a></b> 
+<b><a name="993">  993</a></b> /* FC_Sign signs (encrypts with private key) data in a single part,
+<b><a name="994">  994</a></b>  * where the signature is (will be) an appendix to the data, 
+<b><a name="995">  995</a></b>  * and plaintext cannot be recovered from the signature */
+<b><a name="996">  996</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#996">FC_Sign</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="997">  997</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pData,<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usDataLen,<a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pSignature,
+<b><a name="998">  998</a></b>                                             <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusSignatureLen) {
+<b><a name="999">  999</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1000"> 1000</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_Sign">NSC_Sign</a>(hSession,pData,usDataLen,pSignature,pusSignatureLen);
+<b><a name="1001"> 1001</a></b> }
+<b><a name="1002"> 1002</a></b> 
+<b><a name="1003"> 1003</a></b> 
+<b><a name="1004"> 1004</a></b> /* FC_SignUpdate continues a multiple-part signature operation,
+<b><a name="1005"> 1005</a></b>  * where the signature is (will be) an appendix to the data, 
+<b><a name="1006"> 1006</a></b>  * and plaintext cannot be recovered from the signature */
+<b><a name="1007"> 1007</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1007">FC_SignUpdate</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,<a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPart,
+<b><a name="1008"> 1008</a></b>                                                             <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usPartLen) {
+<b><a name="1009"> 1009</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1010"> 1010</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_SignUpdate">NSC_SignUpdate</a>(hSession,pPart,usPartLen);
+<b><a name="1011"> 1011</a></b> }
+<b><a name="1012"> 1012</a></b> 
+<b><a name="1013"> 1013</a></b> 
+<b><a name="1014"> 1014</a></b> /* FC_SignFinal finishes a multiple-part signature operation, 
+<b><a name="1015"> 1015</a></b>  * returning the signature. */
+<b><a name="1016"> 1016</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1016">FC_SignFinal</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,<a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pSignature,
+<b><a name="1017"> 1017</a></b>                                             <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusSignatureLen) {
+<b><a name="1018"> 1018</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1019"> 1019</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_SignFinal">NSC_SignFinal</a>(hSession,pSignature,pusSignatureLen);
+<b><a name="1020"> 1020</a></b> }
+<b><a name="1021"> 1021</a></b> 
+<b><a name="1022"> 1022</a></b> /*
+<b><a name="1023"> 1023</a></b>  ************** Crypto Functions:     Sign Recover  ************************
+<b><a name="1024"> 1024</a></b>  */
+<b><a name="1025"> 1025</a></b> /* FC_SignRecoverInit initializes a signature operation,
+<b><a name="1026"> 1026</a></b>  * where the (digest) data can be recovered from the signature. 
+<b><a name="1027"> 1027</a></b>  * E.g. encryption with the user's private key */
+<b><a name="1028"> 1028</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1028">FC_SignRecoverInit</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1029"> 1029</a></b>                          <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism,<a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hKey) {
+<b><a name="1030"> 1030</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1031"> 1031</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_SignRecoverInit">NSC_SignRecoverInit</a>(hSession,pMechanism,hKey);
+<b><a name="1032"> 1032</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="1033"> 1033</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditCryptInit">sftk_AuditCryptInit</a>("SignRecover",hSession,pMechanism,hKey,rv);
+<b><a name="1034"> 1034</a></b>     }
+<b><a name="1035"> 1035</a></b>     return rv;
+<b><a name="1036"> 1036</a></b> }
+<b><a name="1037"> 1037</a></b> 
+<b><a name="1038"> 1038</a></b> 
+<b><a name="1039"> 1039</a></b> /* FC_SignRecover signs data in a single operation
+<b><a name="1040"> 1040</a></b>  * where the (digest) data can be recovered from the signature. 
+<b><a name="1041"> 1041</a></b>  * E.g. encryption with the user's private key */
+<b><a name="1042"> 1042</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1042">FC_SignRecover</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pData,
+<b><a name="1043"> 1043</a></b>   <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usDataLen, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pSignature, <a href="../softoken/pkcs11t.h.dep.html#<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>_PTR"><a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>_PTR</a> pusSignatureLen) {
+<b><a name="1044"> 1044</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1045"> 1045</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_SignRecover">NSC_SignRecover</a>(hSession,pData,usDataLen,pSignature,pusSignatureLen);
+<b><a name="1046"> 1046</a></b> }
+<b><a name="1047"> 1047</a></b> 
+<b><a name="1048"> 1048</a></b> /*
+<b><a name="1049"> 1049</a></b>  ************** Crypto Functions:     verify  ************************
+<b><a name="1050"> 1050</a></b>  */
+<b><a name="1051"> 1051</a></b> 
+<b><a name="1052"> 1052</a></b> /* FC_VerifyInit initializes a verification operation, 
+<b><a name="1053"> 1053</a></b>  * where the signature is an appendix to the data, 
+<b><a name="1054"> 1054</a></b>  * and plaintext cannot be recovered from the signature (e.g. DSA) */
+<b><a name="1055"> 1055</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1055">FC_VerifyInit</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1056"> 1056</a></b>                            <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism,<a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hKey) {
+<b><a name="1057"> 1057</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1058"> 1058</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_VerifyInit">NSC_VerifyInit</a>(hSession,pMechanism,hKey);
+<b><a name="1059"> 1059</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="1060"> 1060</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditCryptInit">sftk_AuditCryptInit</a>("Verify",hSession,pMechanism,hKey,rv);
+<b><a name="1061"> 1061</a></b>     }
+<b><a name="1062"> 1062</a></b>     return rv;
+<b><a name="1063"> 1063</a></b> }
+<b><a name="1064"> 1064</a></b> 
+<b><a name="1065"> 1065</a></b> 
+<b><a name="1066"> 1066</a></b> /* FC_Verify verifies a signature in a single-part operation, 
+<b><a name="1067"> 1067</a></b>  * where the signature is an appendix to the data, 
+<b><a name="1068"> 1068</a></b>  * and plaintext cannot be recovered from the signature */
+<b><a name="1069"> 1069</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1069">FC_Verify</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pData,
+<b><a name="1070"> 1070</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usDataLen, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pSignature, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usSignatureLen) {
+<b><a name="1071"> 1071</a></b>     /* make sure we're legal */
+<b><a name="1072"> 1072</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1073"> 1073</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_Verify">NSC_Verify</a>(hSession,pData,usDataLen,pSignature,usSignatureLen);
+<b><a name="1074"> 1074</a></b> }
+<b><a name="1075"> 1075</a></b> 
+<b><a name="1076"> 1076</a></b> 
+<b><a name="1077"> 1077</a></b> /* FC_VerifyUpdate continues a multiple-part verification operation, 
+<b><a name="1078"> 1078</a></b>  * where the signature is an appendix to the data, 
+<b><a name="1079"> 1079</a></b>  * and plaintext cannot be recovered from the signature */
+<b><a name="1080"> 1080</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1080">FC_VerifyUpdate</a>( <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pPart,
+<b><a name="1081"> 1081</a></b>                                                 <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usPartLen) {
+<b><a name="1082"> 1082</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1083"> 1083</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_VerifyUpdate">NSC_VerifyUpdate</a>(hSession,pPart,usPartLen);
+<b><a name="1084"> 1084</a></b> }
+<b><a name="1085"> 1085</a></b> 
+<b><a name="1086"> 1086</a></b> 
+<b><a name="1087"> 1087</a></b> /* FC_VerifyFinal finishes a multiple-part verification operation, 
+<b><a name="1088"> 1088</a></b>  * checking the signature. */
+<b><a name="1089"> 1089</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1089">FC_VerifyFinal</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1090"> 1090</a></b>                         <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pSignature,<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usSignatureLen) {
+<b><a name="1091"> 1091</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1092"> 1092</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_VerifyFinal">NSC_VerifyFinal</a>(hSession,pSignature,usSignatureLen);
+<b><a name="1093"> 1093</a></b> }
+<b><a name="1094"> 1094</a></b> 
+<b><a name="1095"> 1095</a></b> /*
+<b><a name="1096"> 1096</a></b>  ************** Crypto Functions:     Verify  Recover ************************
+<b><a name="1097"> 1097</a></b>  */
+<b><a name="1098"> 1098</a></b> 
+<b><a name="1099"> 1099</a></b> /* FC_VerifyRecoverInit initializes a signature verification operation, 
+<b><a name="1100"> 1100</a></b>  * where the data is recovered from the signature. 
+<b><a name="1101"> 1101</a></b>  * E.g. Decryption with the user's public key */
+<b><a name="1102"> 1102</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1102">FC_VerifyRecoverInit</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1103"> 1103</a></b>                         <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism,<a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hKey) {
+<b><a name="1104"> 1104</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1105"> 1105</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_VerifyRecoverInit">NSC_VerifyRecoverInit</a>(hSession,pMechanism,hKey);
+<b><a name="1106"> 1106</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="1107"> 1107</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditCryptInit">sftk_AuditCryptInit</a>("VerifyRecover",hSession,pMechanism,hKey,rv);
+<b><a name="1108"> 1108</a></b>     }
+<b><a name="1109"> 1109</a></b>     return rv;
+<b><a name="1110"> 1110</a></b> }
+<b><a name="1111"> 1111</a></b> 
+<b><a name="1112"> 1112</a></b> 
+<b><a name="1113"> 1113</a></b> /* FC_VerifyRecover verifies a signature in a single-part operation, 
+<b><a name="1114"> 1114</a></b>  * where the data is recovered from the signature. 
+<b><a name="1115"> 1115</a></b>  * E.g. Decryption with the user's public key */
+<b><a name="1116"> 1116</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1116">FC_VerifyRecover</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1117"> 1117</a></b>                  <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pSignature,<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usSignatureLen,
+<b><a name="1118"> 1118</a></b>                                     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pData,<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pusDataLen) {
+<b><a name="1119"> 1119</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1120"> 1120</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_VerifyRecover">NSC_VerifyRecover</a>(hSession,pSignature,usSignatureLen,pData,
+<b><a name="1121"> 1121</a></b>                                                                 pusDataLen);
+<b><a name="1122"> 1122</a></b> }
+<b><a name="1123"> 1123</a></b> 
+<b><a name="1124"> 1124</a></b> /*
+<b><a name="1125"> 1125</a></b>  **************************** Key Functions:  ************************
+<b><a name="1126"> 1126</a></b>  */
+<b><a name="1127"> 1127</a></b> 
+<b><a name="1128"> 1128</a></b> /* FC_GenerateKey generates a secret key, creating a new key object. */
+<b><a name="1129"> 1129</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1129">FC_GenerateKey</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1130"> 1130</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism,<a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> pTemplate,<a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulCount,
+<b><a name="1131"> 1131</a></b>                                                     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE_PTR">CK_OBJECT_HANDLE_PTR</a> phKey) {
+<b><a name="1132"> 1132</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a> *boolptr;
+<b><a name="1133"> 1133</a></b> 
+<b><a name="1134"> 1134</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1135"> 1135</a></b> 
+<b><a name="1136"> 1136</a></b>     /* all secret keys must be sensitive, if the upper level code tries to say
+<b><a name="1137"> 1137</a></b>      * otherwise, reject it. */
+<b><a name="1138"> 1138</a></b>     boolptr = (<a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a> *) <a href="../softoken/fipstokn.c.dep.html#fc_getAttribute">fc_getAttribute</a>(pTemplate, ulCount, <a href="../softoken/pkcs11t.h.dep.html#CKA_SENSITIVE">CKA_SENSITIVE</a>);
+<b><a name="1139"> 1139</a></b>     if (boolptr != NULL) {
+<b><a name="1140"> 1140</a></b>         if (!(*boolptr)) {
+<b><a name="1141"> 1141</a></b>             return <a href="../softoken/pkcs11t.h.dep.html#CKR_ATTRIBUTE_VALUE_INVALID">CKR_ATTRIBUTE_VALUE_INVALID</a>;
+<b><a name="1142"> 1142</a></b>         }
+<b><a name="1143"> 1143</a></b>     }
+<b><a name="1144"> 1144</a></b> 
+<b><a name="1145"> 1145</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_GenerateKey">NSC_GenerateKey</a>(hSession,pMechanism,pTemplate,ulCount,phKey);
+<b><a name="1146"> 1146</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="1147"> 1147</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditGenerateKey">sftk_AuditGenerateKey</a>(hSession,pMechanism,pTemplate,ulCount,phKey,rv);
+<b><a name="1148"> 1148</a></b>     }
+<b><a name="1149"> 1149</a></b>     return rv;
+<b><a name="1150"> 1150</a></b> }
+<b><a name="1151"> 1151</a></b> 
+<b><a name="1152"> 1152</a></b> 
+<b><a name="1153"> 1153</a></b> /* FC_GenerateKeyPair generates a public-key/private-key pair, 
+<b><a name="1154"> 1154</a></b>  * creating new key objects. */
+<b><a name="1155"> 1155</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1155">FC_GenerateKeyPair</a> (<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1156"> 1156</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> pPublicKeyTemplate,
+<b><a name="1157"> 1157</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usPublicKeyAttributeCount, <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> pPrivateKeyTemplate,
+<b><a name="1158"> 1158</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usPrivateKeyAttributeCount, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE_PTR">CK_OBJECT_HANDLE_PTR</a> phPublicKey,
+<b><a name="1159"> 1159</a></b>                                         <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE_PTR">CK_OBJECT_HANDLE_PTR</a> phPrivateKey) {
+<b><a name="1160"> 1160</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a> *boolptr;
+<b><a name="1161"> 1161</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="1162"> 1162</a></b> 
+<b><a name="1163"> 1163</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1164"> 1164</a></b> 
+<b><a name="1165"> 1165</a></b>     /* all private keys must be sensitive, if the upper level code tries to say
+<b><a name="1166"> 1166</a></b>      * otherwise, reject it. */
+<b><a name="1167"> 1167</a></b>     boolptr = (<a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a> *) <a href="../softoken/fipstokn.c.dep.html#fc_getAttribute">fc_getAttribute</a>(pPrivateKeyTemplate, 
+<b><a name="1168"> 1168</a></b>                                 usPrivateKeyAttributeCount, <a href="../softoken/pkcs11t.h.dep.html#CKA_SENSITIVE">CKA_SENSITIVE</a>);
+<b><a name="1169"> 1169</a></b>     if (boolptr != NULL) {
+<b><a name="1170"> 1170</a></b>         if (!(*boolptr)) {
+<b><a name="1171"> 1171</a></b>             return <a href="../softoken/pkcs11t.h.dep.html#CKR_ATTRIBUTE_VALUE_INVALID">CKR_ATTRIBUTE_VALUE_INVALID</a>;
+<b><a name="1172"> 1172</a></b>         }
+<b><a name="1173"> 1173</a></b>     }
+<b><a name="1174"> 1174</a></b>     crv = <a href="../softoken/pkcs11c.c.dep.html#NSC_GenerateKeyPair">NSC_GenerateKeyPair</a> (hSession,pMechanism,pPublicKeyTemplate,
+<b><a name="1175"> 1175</a></b>                     usPublicKeyAttributeCount,pPrivateKeyTemplate,
+<b><a name="1176"> 1176</a></b>                 usPrivateKeyAttributeCount,phPublicKey,phPrivateKey);
+<b><a name="1177"> 1177</a></b>     if (crv == <a href="../softoken/pkcs11t.h.dep.html#CKR_GENERAL_ERROR">CKR_GENERAL_ERROR</a>) {
+<b><a name="1178"> 1178</a></b>         /* pairwise consistency check failed. */
+<b><a name="1179"> 1179</a></b>         <a href="../softoken/fipstokn.c.dep.html#sftk_fatalError">sftk_fatalError</a><a href="../softoken/softoken.h.dep.html#sftk_fatalError"><sup>[1]</sup></a> = PR_TRUE;
+<b><a name="1180"> 1180</a></b>     }
+<b><a name="1181"> 1181</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="1182"> 1182</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditGenerateKeyPair">sftk_AuditGenerateKeyPair</a>(hSession,pMechanism,pPublicKeyTemplate,
+<b><a name="1183"> 1183</a></b>                     usPublicKeyAttributeCount,pPrivateKeyTemplate,
+<b><a name="1184"> 1184</a></b>                 usPrivateKeyAttributeCount,phPublicKey,phPrivateKey,crv);
+<b><a name="1185"> 1185</a></b>     }
+<b><a name="1186"> 1186</a></b>     return crv;
+<b><a name="1187"> 1187</a></b> }
+<b><a name="1188"> 1188</a></b> 
+<b><a name="1189"> 1189</a></b> 
+<b><a name="1190"> 1190</a></b> /* FC_WrapKey wraps (i.e., encrypts) a key. */
+<b><a name="1191"> 1191</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1191">FC_WrapKey</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1192"> 1192</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hWrappingKey,
+<b><a name="1193"> 1193</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hKey, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pWrappedKey,
+<b><a name="1194"> 1194</a></b>                                          <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pulWrappedKeyLen) {
+<b><a name="1195"> 1195</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1196"> 1196</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_WrapKey">NSC_WrapKey</a>(hSession,pMechanism,hWrappingKey,hKey,pWrappedKey,
+<b><a name="1197"> 1197</a></b>                                                         pulWrappedKeyLen);
+<b><a name="1198"> 1198</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="1199"> 1199</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditWrapKey">sftk_AuditWrapKey</a>(hSession,pMechanism,hWrappingKey,hKey,pWrappedKey,
+<b><a name="1200"> 1200</a></b>                                                         pulWrappedKeyLen,rv);
+<b><a name="1201"> 1201</a></b>     }
+<b><a name="1202"> 1202</a></b>     return rv;
+<b><a name="1203"> 1203</a></b> }
+<b><a name="1204"> 1204</a></b> 
+<b><a name="1205"> 1205</a></b> 
+<b><a name="1206"> 1206</a></b> /* FC_UnwrapKey unwraps (decrypts) a wrapped key, creating a new key object. */
+<b><a name="1207"> 1207</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1207">FC_UnwrapKey</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1208"> 1208</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hUnwrappingKey,
+<b><a name="1209"> 1209</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pWrappedKey, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulWrappedKeyLen,
+<b><a name="1210"> 1210</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> pTemplate, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulAttributeCount,
+<b><a name="1211"> 1211</a></b>                                                  <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE_PTR">CK_OBJECT_HANDLE_PTR</a> phKey) {
+<b><a name="1212"> 1212</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a> *boolptr;
+<b><a name="1213"> 1213</a></b> 
+<b><a name="1214"> 1214</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1215"> 1215</a></b> 
+<b><a name="1216"> 1216</a></b>     /* all secret keys must be sensitive, if the upper level code tries to say
+<b><a name="1217"> 1217</a></b>      * otherwise, reject it. */
+<b><a name="1218"> 1218</a></b>     boolptr = (<a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a> *) <a href="../softoken/fipstokn.c.dep.html#fc_getAttribute">fc_getAttribute</a>(pTemplate, 
+<b><a name="1219"> 1219</a></b>                                         ulAttributeCount, <a href="../softoken/pkcs11t.h.dep.html#CKA_SENSITIVE">CKA_SENSITIVE</a>);
+<b><a name="1220"> 1220</a></b>     if (boolptr != NULL) {
+<b><a name="1221"> 1221</a></b>         if (!(*boolptr)) {
+<b><a name="1222"> 1222</a></b>             return <a href="../softoken/pkcs11t.h.dep.html#CKR_ATTRIBUTE_VALUE_INVALID">CKR_ATTRIBUTE_VALUE_INVALID</a>;
+<b><a name="1223"> 1223</a></b>         }
+<b><a name="1224"> 1224</a></b>     }
+<b><a name="1225"> 1225</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_UnwrapKey">NSC_UnwrapKey</a>(hSession,pMechanism,hUnwrappingKey,pWrappedKey,
+<b><a name="1226"> 1226</a></b>                         ulWrappedKeyLen,pTemplate,ulAttributeCount,phKey);
+<b><a name="1227"> 1227</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="1228"> 1228</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditUnwrapKey">sftk_AuditUnwrapKey</a>(hSession,pMechanism,hUnwrappingKey,pWrappedKey,
+<b><a name="1229"> 1229</a></b>                         ulWrappedKeyLen,pTemplate,ulAttributeCount,phKey,rv);
+<b><a name="1230"> 1230</a></b>     }
+<b><a name="1231"> 1231</a></b>     return rv;
+<b><a name="1232"> 1232</a></b> }
+<b><a name="1233"> 1233</a></b> 
+<b><a name="1234"> 1234</a></b> 
+<b><a name="1235"> 1235</a></b> /* FC_DeriveKey derives a key from a base key, creating a new key object. */
+<b><a name="1236"> 1236</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1236">FC_DeriveKey</a>( <a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1237"> 1237</a></b>          <a href="../softoken/pkcs11t.h.dep.html#CK_MECHANISM_PTR">CK_MECHANISM_PTR</a> pMechanism, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hBaseKey,
+<b><a name="1238"> 1238</a></b>          <a href="../softoken/pkcs11t.h.dep.html#CK_ATTRIBUTE_PTR">CK_ATTRIBUTE_PTR</a> pTemplate, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulAttributeCount, 
+<b><a name="1239"> 1239</a></b>                                                 <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE_PTR">CK_OBJECT_HANDLE_PTR</a> phKey) {
+<b><a name="1240"> 1240</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a> *boolptr;
+<b><a name="1241"> 1241</a></b> 
+<b><a name="1242"> 1242</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1243"> 1243</a></b> 
+<b><a name="1244"> 1244</a></b>     /* all secret keys must be sensitive, if the upper level code tries to say
+<b><a name="1245"> 1245</a></b>      * otherwise, reject it. */
+<b><a name="1246"> 1246</a></b>     boolptr = (<a href="../softoken/pkcs11t.h.dep.html#CK_BBOOL">CK_BBOOL</a> *) <a href="../softoken/fipstokn.c.dep.html#fc_getAttribute">fc_getAttribute</a>(pTemplate, 
+<b><a name="1247"> 1247</a></b>                                         ulAttributeCount, <a href="../softoken/pkcs11t.h.dep.html#CKA_SENSITIVE">CKA_SENSITIVE</a>);
+<b><a name="1248"> 1248</a></b>     if (boolptr != NULL) {
+<b><a name="1249"> 1249</a></b>         if (!(*boolptr)) {
+<b><a name="1250"> 1250</a></b>             return <a href="../softoken/pkcs11t.h.dep.html#CKR_ATTRIBUTE_VALUE_INVALID">CKR_ATTRIBUTE_VALUE_INVALID</a>;
+<b><a name="1251"> 1251</a></b>         }
+<b><a name="1252"> 1252</a></b>     }
+<b><a name="1253"> 1253</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_DeriveKey">NSC_DeriveKey</a>(hSession,pMechanism,hBaseKey,pTemplate,
+<b><a name="1254"> 1254</a></b>                         ulAttributeCount, phKey);
+<b><a name="1255"> 1255</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="1256"> 1256</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditDeriveKey">sftk_AuditDeriveKey</a>(hSession,pMechanism,hBaseKey,pTemplate,
+<b><a name="1257"> 1257</a></b>                         ulAttributeCount,phKey,rv);
+<b><a name="1258"> 1258</a></b>     }
+<b><a name="1259"> 1259</a></b>     return rv;
+<b><a name="1260"> 1260</a></b> }
+<b><a name="1261"> 1261</a></b> 
+<b><a name="1262"> 1262</a></b> /*
+<b><a name="1263"> 1263</a></b>  **************************** Radom Functions:  ************************
+<b><a name="1264"> 1264</a></b>  */
+<b><a name="1265"> 1265</a></b> 
+<b><a name="1266"> 1266</a></b> /* FC_SeedRandom mixes additional seed material into the token's random number 
+<b><a name="1267"> 1267</a></b>  * generator. */
+<b><a name="1268"> 1268</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1268">FC_SeedRandom</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a> pSeed,
+<b><a name="1269"> 1269</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> usSeedLen) {
+<b><a name="1270"> 1270</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="1271"> 1271</a></b> 
+<b><a name="1272"> 1272</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="1273"> 1273</a></b>     crv = <a href="../softoken/pkcs11c.c.dep.html#NSC_SeedRandom">NSC_SeedRandom</a>(hSession,pSeed,usSeedLen);
+<b><a name="1274"> 1274</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="1275"> 1275</a></b>         <a href="../softoken/fipstokn.c.dep.html#sftk_fatalError">sftk_fatalError</a><a href="../softoken/softoken.h.dep.html#sftk_fatalError"><sup>[1]</sup></a> = PR_TRUE;
+<b><a name="1276"> 1276</a></b>     }
+<b><a name="1277"> 1277</a></b>     return crv;
+<b><a name="1278"> 1278</a></b> }
+<b><a name="1279"> 1279</a></b> 
+<b><a name="1280"> 1280</a></b> 
+<b><a name="1281"> 1281</a></b> /* FC_GenerateRandom generates random data. */
+<b><a name="1282"> 1282</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1282">FC_GenerateRandom</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1283"> 1283</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>        pRandomData, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a> ulRandomLen) {
+<b><a name="1284"> 1284</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> crv;
+<b><a name="1285"> 1285</a></b> 
+<b><a name="1286"> 1286</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="1287"> 1287</a></b>     crv = <a href="../softoken/pkcs11c.c.dep.html#NSC_GenerateRandom">NSC_GenerateRandom</a>(hSession,pRandomData,ulRandomLen);
+<b><a name="1288"> 1288</a></b>     if (crv != <a href="../softoken/pkcs11t.h.dep.html#CKR_OK">CKR_OK</a>) {
+<b><a name="1289"> 1289</a></b>         <a href="../softoken/fipstokn.c.dep.html#sftk_fatalError">sftk_fatalError</a><a href="../softoken/softoken.h.dep.html#sftk_fatalError"><sup>[1]</sup></a> = PR_TRUE;
+<b><a name="1290"> 1290</a></b>         if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="1291"> 1291</a></b>             char msg[128];
+<b><a name="1292"> 1292</a></b>             PR_snprintf(msg,sizeof msg,
+<b><a name="1293"> 1293</a></b>                         "C_GenerateRandom(hSession=0x%08lX, pRandomData=%p, "
+<b><a name="1294"> 1294</a></b>                         "ulRandomLen=%lu)=0x%08lX "
+<b><a name="1295"> 1295</a></b>                         "self-test: continuous RNG test failed",
+<b><a name="1296"> 1296</a></b>                         (PRUint32)hSession,pRandomData,
+<b><a name="1297"> 1297</a></b>                         (PRUint32)ulRandomLen,(PRUint32)crv);
+<b><a name="1298"> 1298</a></b>             <a href="../softoken/fipstokn.c.dep.html#sftk_LogAuditMessage">sftk_LogAuditMessage</a>(NSS_AUDIT_ERROR, msg);
+<b><a name="1299"> 1299</a></b>         }
+<b><a name="1300"> 1300</a></b>     }
+<b><a name="1301"> 1301</a></b>     return crv;
+<b><a name="1302"> 1302</a></b> }
+<b><a name="1303"> 1303</a></b> 
+<b><a name="1304"> 1304</a></b> 
+<b><a name="1305"> 1305</a></b> /* FC_GetFunctionStatus obtains an updated status of a function running 
+<b><a name="1306"> 1306</a></b>  * in parallel with an application. */
+<b><a name="1307"> 1307</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1307">FC_GetFunctionStatus</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession) {
+<b><a name="1308"> 1308</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1309"> 1309</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_GetFunctionStatus">NSC_GetFunctionStatus</a>(hSession);
+<b><a name="1310"> 1310</a></b> }
+<b><a name="1311"> 1311</a></b> 
+<b><a name="1312"> 1312</a></b> 
+<b><a name="1313"> 1313</a></b> /* FC_CancelFunction cancels a function running in parallel */
+<b><a name="1314"> 1314</a></b>  <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1314">FC_CancelFunction</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession) {
+<b><a name="1315"> 1315</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1316"> 1316</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_CancelFunction">NSC_CancelFunction</a>(hSession);
+<b><a name="1317"> 1317</a></b> }
+<b><a name="1318"> 1318</a></b> 
+<b><a name="1319"> 1319</a></b> /*
+<b><a name="1320"> 1320</a></b>  ****************************  Version 1.1 Functions:  ************************
+<b><a name="1321"> 1321</a></b>  */
+<b><a name="1322"> 1322</a></b> 
+<b><a name="1323"> 1323</a></b> /* FC_GetOperationState saves the state of the cryptographic 
+<b><a name="1324"> 1324</a></b>  *operation in a session. */
+<b><a name="1325"> 1325</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1325">FC_GetOperationState</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, 
+<b><a name="1326"> 1326</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pOperationState, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pulOperationStateLen) {
+<b><a name="1327"> 1327</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="1328"> 1328</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_GetOperationState">NSC_GetOperationState</a>(hSession,pOperationState,pulOperationStateLen);
+<b><a name="1329"> 1329</a></b> }
+<b><a name="1330"> 1330</a></b> 
+<b><a name="1331"> 1331</a></b> 
+<b><a name="1332"> 1332</a></b> /* FC_SetOperationState restores the state of the cryptographic operation 
+<b><a name="1333"> 1333</a></b>  * in a session. */
+<b><a name="1334"> 1334</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1334">FC_SetOperationState</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, 
+<b><a name="1335"> 1335</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pOperationState, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>  ulOperationStateLen,
+<b><a name="1336"> 1336</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hEncryptionKey, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hAuthenticationKey) {
+<b><a name="1337"> 1337</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="1338"> 1338</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_SetOperationState">NSC_SetOperationState</a>(hSession,pOperationState,ulOperationStateLen,
+<b><a name="1339"> 1339</a></b>                                         hEncryptionKey,hAuthenticationKey);
+<b><a name="1340"> 1340</a></b> }
+<b><a name="1341"> 1341</a></b> 
+<b><a name="1342"> 1342</a></b> /* FC_FindObjectsFinal finishes a search for token and session objects. */
+<b><a name="1343"> 1343</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1343">FC_FindObjectsFinal</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession) {
+<b><a name="1344"> 1344</a></b>     /* let publically readable object be found */
+<b><a name="1345"> 1345</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSFATALCHECK">SFTK_FIPSFATALCHECK</a>();
+<b><a name="1346"> 1346</a></b>     return <a href="../softoken/pkcs11.c.dep.html#NSC_FindObjectsFinal">NSC_FindObjectsFinal</a>(hSession);
+<b><a name="1347"> 1347</a></b> }
+<b><a name="1348"> 1348</a></b> 
+<b><a name="1349"> 1349</a></b> 
+<b><a name="1350"> 1350</a></b> /* Dual-function cryptographic operations */
+<b><a name="1351"> 1351</a></b> 
+<b><a name="1352"> 1352</a></b> /* FC_DigestEncryptUpdate continues a multiple-part digesting and encryption 
+<b><a name="1353"> 1353</a></b>  * operation. */
+<b><a name="1354"> 1354</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1354">FC_DigestEncryptUpdate</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pPart,
+<b><a name="1355"> 1355</a></b>     <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>  ulPartLen, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pEncryptedPart,
+<b><a name="1356"> 1356</a></b>                                          <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pulEncryptedPartLen) {
+<b><a name="1357"> 1357</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1358"> 1358</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_DigestEncryptUpdate">NSC_DigestEncryptUpdate</a>(hSession,pPart,ulPartLen,pEncryptedPart,
+<b><a name="1359"> 1359</a></b>                                          pulEncryptedPartLen);
+<b><a name="1360"> 1360</a></b> }
+<b><a name="1361"> 1361</a></b> 
+<b><a name="1362"> 1362</a></b> 
+<b><a name="1363"> 1363</a></b> /* FC_DecryptDigestUpdate continues a multiple-part decryption and digesting 
+<b><a name="1364"> 1364</a></b>  * operation. */
+<b><a name="1365"> 1365</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1365">FC_DecryptDigestUpdate</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession,
+<b><a name="1366"> 1366</a></b>      <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pEncryptedPart, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>  ulEncryptedPartLen,
+<b><a name="1367"> 1367</a></b>                                     <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pPart, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pulPartLen) {
+<b><a name="1368"> 1368</a></b> 
+<b><a name="1369"> 1369</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1370"> 1370</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_DecryptDigestUpdate">NSC_DecryptDigestUpdate</a>(hSession, pEncryptedPart,ulEncryptedPartLen,
+<b><a name="1371"> 1371</a></b>                                     pPart,pulPartLen);
+<b><a name="1372"> 1372</a></b> }
+<b><a name="1373"> 1373</a></b> 
+<b><a name="1374"> 1374</a></b> /* FC_SignEncryptUpdate continues a multiple-part signing and encryption 
+<b><a name="1375"> 1375</a></b>  * operation. */
+<b><a name="1376"> 1376</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1376">FC_SignEncryptUpdate</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pPart,
+<b><a name="1377"> 1377</a></b>          <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>  ulPartLen, <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pEncryptedPart,
+<b><a name="1378"> 1378</a></b>                                          <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pulEncryptedPartLen) {
+<b><a name="1379"> 1379</a></b> 
+<b><a name="1380"> 1380</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1381"> 1381</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_SignEncryptUpdate">NSC_SignEncryptUpdate</a>(hSession,pPart,ulPartLen,pEncryptedPart,
+<b><a name="1382"> 1382</a></b>                                          pulEncryptedPartLen);
+<b><a name="1383"> 1383</a></b> }
+<b><a name="1384"> 1384</a></b> 
+<b><a name="1385"> 1385</a></b> /* FC_DecryptVerifyUpdate continues a multiple-part decryption and verify 
+<b><a name="1386"> 1386</a></b>  * operation. */
+<b><a name="1387"> 1387</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1387">FC_DecryptVerifyUpdate</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, 
+<b><a name="1388"> 1388</a></b>         <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pEncryptedData, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG">CK_ULONG</a>  ulEncryptedDataLen, 
+<b><a name="1389"> 1389</a></b>                                 <a href="../softoken/pkcs11t.h.dep.html#CK_BYTE_PTR">CK_BYTE_PTR</a>  pData, <a href="../softoken/pkcs11t.h.dep.html#CK_ULONG_PTR">CK_ULONG_PTR</a> pulDataLen) {
+<b><a name="1390"> 1390</a></b> 
+<b><a name="1391"> 1391</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1392"> 1392</a></b>     return <a href="../softoken/pkcs11c.c.dep.html#NSC_DecryptVerifyUpdate">NSC_DecryptVerifyUpdate</a>(hSession,pEncryptedData,ulEncryptedDataLen, 
+<b><a name="1393"> 1393</a></b>                                 pData,pulDataLen);
+<b><a name="1394"> 1394</a></b> }
+<b><a name="1395"> 1395</a></b> 
+<b><a name="1396"> 1396</a></b> 
+<b><a name="1397"> 1397</a></b> /* FC_DigestKey continues a multi-part message-digesting operation,
+<b><a name="1398"> 1398</a></b>  * by digesting the value of a secret key as part of the data already digested.
+<b><a name="1399"> 1399</a></b>  */
+<b><a name="1400"> 1400</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1400">FC_DigestKey</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_SESSION_HANDLE">CK_SESSION_HANDLE</a> hSession, <a href="../softoken/pkcs11t.h.dep.html#CK_OBJECT_HANDLE">CK_OBJECT_HANDLE</a> hKey) {
+<b><a name="1401"> 1401</a></b>     <a href="../softoken/fipstokn.c.dep.html#SFTK_FIPSCHECK">SFTK_FIPSCHECK</a>();
+<b><a name="1402"> 1402</a></b>     rv = <a href="../softoken/pkcs11c.c.dep.html#NSC_DigestKey">NSC_DigestKey</a>(hSession,hKey);
+<b><a name="1403"> 1403</a></b>     if (<a href="../softoken/fipstokn.c.dep.html#sftk_audit_enabled">sftk_audit_enabled</a><a href="../softoken/softoken.h.dep.html#sftk_audit_enabled"><sup>[1]</sup></a>) {
+<b><a name="1404"> 1404</a></b>         <a href="../softoken/fipsaudt.c.dep.html#sftk_AuditDigestKey">sftk_AuditDigestKey</a>(hSession,hKey,rv);
+<b><a name="1405"> 1405</a></b>     }
+<b><a name="1406"> 1406</a></b>     return rv;
+<b><a name="1407"> 1407</a></b> }
+<b><a name="1408"> 1408</a></b> 
+<b><a name="1409"> 1409</a></b> 
+<b><a name="1410"> 1410</a></b> <a href="../softoken/pkcs11t.h.dep.html#CK_RV">CK_RV</a> <a href="#1410">FC_WaitForSlotEvent</a>(<a href="../softoken/pkcs11t.h.dep.html#CK_FLAGS">CK_FLAGS</a> flags, <a href="../softoken/pkcs11t.h.dep.html#CK_SLOT_ID_PTR">CK_SLOT_ID_PTR</a> pSlot,
+<b><a name="1411"> 1411</a></b>                                                          <a href="../softoken/pkcs11t.h.dep.html#CK_VOID_PTR">CK_VOID_PTR</a> pReserved)
+<b><a name="1412"> 1412</a></b> {
+<b><a name="1413"> 1413</a></b>     return <a href="../softoken/pkcs11.c.dep.html#NSC_WaitForSlotEvent">NSC_WaitForSlotEvent</a>(flags, pSlot, pReserved);
+<b><a name="1414"> 1414</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

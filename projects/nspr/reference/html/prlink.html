@@ -1,0 +1,957 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;22 Dynamic Library Linking';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:05:53">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="prclist.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prprocess.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="24014"> </A><A NAME=""> </A><h2>
+Chapter&#32;22 
+&nbsp;
+
+
+
+<A NAME="24015"> </A><A NAME="Dynamic Library Linking"> </A>Dynamic Library Linking
+</h2>
+</center>
+<A NAME="24016"> </A>This section describes NSPR's programming interface to load, unload and  resolve 
+symbols in dynamic libraries. It also provides a method by which to condition 
+symbols of statically linked code so that to other clients it appears  as though they 
+are dynamically loaded. 
+
+<P>
+
+<A NAME="24020"> </A><A HREF="prlink.html#24027"  >Library Linking Types</A> <br>
+<A HREF="prlink.html#24044"  >Library Linking Functions</A><br>
+<A HREF="prlink.html#24297"  >Platform Notes</A>
+
+<P>
+
+
+
+<A NAME="24027"> </A>
+<A NAME="Library Linking Types"> </A>
+<h2>
+Library Linking Types
+</h2>
+
+
+<A NAME="24028"> </A>These data types are defined for dynamic library linking:
+
+<P>
+
+<A NAME="24032"> </A><A HREF="prlink.html#24037"  ><CODE>PRLibrary</CODE></A><CODE><br>
+</CODE><A HREF="prlink.html#24041"  ><CODE>PRStaticLinkTable</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="24037"> </A><A NAME="PRLibrary"> </A><h4>
+PRLibrary
+</h4>
+
+<A NAME="24038"> </A>A <CODE>PRLibrary</CODE> is an opaque structure. A reference to such a structure can be 
+returned by some of the functions in the runtime and serve to identify a particular 
+instance of a library. 
+
+<P>
+
+<PRE>
+<A NAME="24039"></A>typedef struct PRLibrary PRLibrary;
+</PRE>
+<P>
+<A NAME="24041"> </A><A NAME="PRStaticLinkTable"> </A><h4>
+PRStaticLinkTable
+</h4>
+
+<A NAME="24042"> </A>A static link table entry can be created by a client of the runtime so that other 
+clients can access static or dynamic libraries transparently. The basic function on a 
+dynamic library is to acquire a pointer to a function that the library exports. If, 
+during initialization, such entries are manually created, then future attempts to 
+link to the symbols can be treated in a consistent fashion. 
+
+<P>
+
+<PRE>
+<A NAME="24043"></A>typedef struct PRStaticLinkTable {<br>&nbsp;&nbsp;&nbsp;&nbsp;const char *name;<br>&nbsp;&nbsp;&nbsp;&nbsp;void (*fp)();<br>} PRStaticLinkTable;
+</PRE>
+<P>
+
+
+<A NAME="24044"> </A>
+<A NAME="Library Linking Functions"> </A>
+<h2>
+Library Linking Functions
+</h2>
+
+
+<A NAME="24045"> </A>The library linking functions are:
+
+<P>
+
+<A NAME="24049"> </A><A HREF="prlink.html#24072"  ><CODE>PR_SetLibraryPath</CODE></A><CODE><br>
+</CODE><A HREF="prlink.html#24091"  ><CODE>PR_GetLibraryPath</CODE></A><CODE><br>
+</CODE><A HREF="prlink.html#24105"  ><CODE>PR_GetLibraryName</CODE></A><CODE><br>
+</CODE><A HREF="prlink.html#24137"  ><CODE>PR_FreeLibraryName</CODE></A><CODE><br>
+</CODE><A HREF="prlink.html#24154"  ><CODE>PR_LoadLibrary</CODE></A><CODE><br>
+</CODE><A HREF="prlink.html#24185"  ><CODE>PR_UnloadLibrary</CODE></A><CODE><br>
+</CODE><A HREF="prlink.html#24219"  ><CODE>PR_FindSymbol</CODE></A><CODE><br>
+</CODE><A HREF="prlink.html#24247"  ><CODE>PR_FindSymbolAndLibrary</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="24072"> </A><A NAME="PR_SetLibraryPath"> </A><h4>
+PR_SetLibraryPath
+</h4>
+
+<A NAME="24073"> </A>Registers a default library pathname with a runtime.
+
+<P>
+
+<BR>
+<A NAME="24074"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24075"></A>PRStatus<CODE> PR_SetLibraryPath(const char *path);</CODE>
+</PRE>
+<P>
+<BR>
+<A NAME="24076"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24077"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="24083"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24080"> </A>path
+
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24082"> </A>A pointer to a character array that contains the directory path that the 
+application should use as a default. The syntax of the pathname is not 
+defined, nor whether that pathname should be absolute or relative.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24084"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24085"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="24086"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="24087"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>. This may indicate that the function cannot 
+allocate sufficient storage to make a copy of the <CODE>path</CODE> string
+
+<P></ul>
+
+<BR>
+<A NAME="24088"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24089"> </A>This function registers a default library pathname with the runtime. This allows an 
+environment to express policy decisions globally and lazily, rather than 
+hardcoding and distributing the decisions throughout the code. 
+
+<P>
+
+<A NAME="24091"> </A><A NAME="PR_GetLibraryPath"> </A><h4>
+PR_GetLibraryPath
+</h4>
+
+<A NAME="24092"> </A>Retrieves the current default library path. 
+
+<P>
+
+<BR>
+<A NAME="24093"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24094"></A><CODE>char* PR_GetLibraryPath(void);</CODE>
+</PRE>
+<P>
+<BR>
+<A NAME="24095"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24096"> </A>The function has no parameters.
+
+<P>
+
+<BR>
+<A NAME="24097"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24098"> </A>A copy of the default library pathname string. In case of error, returns <CODE>NULL</CODE>.
+
+<P>
+
+<BR>
+<A NAME="24099"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24100"> </A>This function retrieves the current default library pathname, copies it, and returns 
+the copy. If sufficient storage cannot be allocated to contain the copy, the function 
+returns <CODE>NULL</CODE>. Storage for the result is allocated by the runtime and becomes the 
+responsibility of the caller. When it is no longer used, free it using 
+<A HREF="prlink.html#24137"  ><CODE>PR_FreeLibraryName</CODE></A>. 
+
+<P>
+
+<A NAME="24105"> </A><A NAME="PR_GetLibraryName"> </A><h4>
+PR_GetLibraryName
+</h4>
+
+<A NAME="24106"> </A>Constructs a full library path name.
+
+<P>
+
+<BR>
+<A NAME="24107"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24108"></A><CODE>char* PR_GetLibraryName (<br>&nbsp;&nbsp;&nbsp;const char *dir, <br>&nbsp;&nbsp;&nbsp;const char *lib);</CODE>
+</PRE>
+<P>
+<BR>
+<A NAME="24109"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24110"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="24123"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24113"> </A><CODE>dir
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24115"> </A>A <CODE>NULL</CODE>-terminated string representing the path name of the library, as 
+returned by <A HREF="prlink.html#24091"  ><CODE>PR_GetLibraryPath</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24120"> </A><CODE>lib
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24122"> </A>The leaf name of the library of interest.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24124"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24125"> </A>If successful, returns a new character string containing a constructed path name. In 
+case of error, returns <CODE>NULL</CODE>.
+
+<P>
+
+<BR>
+<A NAME="24126"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24127"> </A>This function constructs a full path name from the specified directory name and 
+library name. The constructed path name refers to the actual dynamically loaded 
+library. It is suitable for use in the <A HREF="prlink.html#24154"  ><CODE>PR_LoadLibrary</CODE></A> call. 
+
+<P>
+
+<A NAME="24131"> </A>This function does not test for existence of the specified file, it just constructs the 
+full filename. The way the name is constructed is system dependent.
+
+<P>
+
+<A NAME="24132"> </A>If sufficient storage cannot be allocated to contain the constructed path name, the 
+function returns <CODE>NULL</CODE>. Storage for the result is allocated by the runtime and 
+becomes the responsibility of the caller. When it is no longer used, free it using 
+<A HREF="prlink.html#24137"  ><CODE>PR_FreeLibraryName</CODE></A>. 
+
+<P>
+
+<A NAME="24137"> </A><A NAME="PR_FreeLibraryName"> </A><h4>
+PR_FreeLibraryName
+</h4>
+
+<A NAME="24138"> </A>Frees memory allocated by NSPR for library names and path names.
+
+<P>
+
+<BR>
+<A NAME="24139"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24140"></A><CODE>void PR_FreeLibraryName(char *mem);</CODE>
+</PRE>
+<P>
+<BR>
+<A NAME="24141"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="24142"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="24148"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24145"> </A><CODE>mem
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24147"> </A>A reference to a character array that was previously allocated by the 
+dynamic library runtime.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24149"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24150"> </A>Nothing. 
+
+<P>
+
+<BR>
+<A NAME="24151"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24152"> </A>This function deletes the storage allocated by the runtime in the functions 
+described previously. It is important to use this function to rather than calling 
+directly into <CODE>malloc</CODE> in order to isolate the runtime's semantics regarding storage 
+management.
+
+<P>
+
+<A NAME="24154"> </A><A NAME="PR_LoadLibrary"> </A><h4>
+PR_LoadLibrary
+</h4>
+
+<A NAME="24155"> </A>Loads a referenced library. 
+
+<P>
+
+<BR>
+<A NAME="24156"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24157"></A>PRLibrary<CODE>* PR_LoadLibrary(const char *name);</CODE>
+</PRE>
+<P>
+<BR>
+<A NAME="24158"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24159"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="24168"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24162"> </A><CODE>name
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24164"> </A>A platform-dependent character array that names the library to be 
+loaded, as returned by <A HREF="prlink.html#24105"  ><CODE>PR_GetLibraryName</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24169"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24170"> </A>If successful, returns a reference to an opaque <CODE>PRLibrary</CODE> object. 
+
+<P>
+
+<A NAME="24174"> </A>If the operation fails, returns <CODE>NULL</CODE>. Use <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A> to find the reason for the 
+failure. 
+
+<P>
+
+<BR>
+<A NAME="24175"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24176"> </A>This function loads and returns a reference to the specified library. The returned 
+reference becomes the library's identity. The function suppresses duplicate loading 
+if the library is already known by the runtime. 
+
+<P>
+
+<A NAME="24180"> </A>Each call to <A HREF="prlink.html#24154"  ><CODE>PR_LoadLibrary</CODE></A> must be paired with a corresponding call to 
+<A HREF="prlink.html#24185"  ><CODE>PR_UnloadLibrary</CODE></A> in order to return the runtime to its original state. 
+
+<P>
+
+<A NAME="24185"> </A><A NAME="PR_UnloadLibrary"> </A><h4>
+PR_UnloadLibrary
+</h4>
+
+<A NAME="24189"> </A>Unloads a library loaded with <A HREF="prlink.html#24154"  ><CODE>PR_LoadLibrary</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="24190"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24191"></A>PRStatus PR_UnloadLibrary(PRLibrary *lib);
+</PRE>
+<P>
+<BR>
+<A NAME="24192"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="24193"> </A>The function has this parameter:
+
+<P>
+
+<P>
+<A NAME="24202"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24196"> </A><CODE>lib
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24201"> </A>A reference previously returned from <A HREF="prlink.html#24154"  ><CODE>PR_LoadLibrary</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24203"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24204"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="24205"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="24209"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>. Use <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A> to find the reason for the 
+failure. 
+
+<P></ul>
+
+<BR>
+<A NAME="24210"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24214"> </A>This function undoes the effect of a <A HREF="prlink.html#24154"  ><CODE>PR_LoadLibrary</CODE></A>. After calling this function, 
+future references to the library using its identity as returned by <A HREF="prlink.html#24154"  ><CODE>PR_LoadLibrary</CODE></A> 
+will be invalid.
+
+<P>
+
+<A NAME="24219"> </A><A NAME="PR_FindSymbol"> </A><h4>
+PR_FindSymbol
+</h4>
+
+<A NAME="24220"> </A><CODE>PR_FindSymbol()</CODE> will return an untyped reference to a symbol in a particular 
+library given the identity of the library and a textual representation of the symbol 
+in question. 
+
+<P>
+
+<BR>
+<A NAME="24221"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24222"></A><CODE>void* PR_FindSymbol (<br></CODE>&nbsp;&nbsp;&nbsp;PRLibrary<CODE> *lib,<br>&nbsp;&nbsp;&nbsp;const char *name);</CODE>
+</PRE>
+<P>
+<BR>
+<A NAME="24223"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24224"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="24237"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24227"> </A><CODE>lib
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24229"> </A>A valid reference to a loaded library, as returned by 
+<A HREF="prlink.html#24154"  ><CODE>PR_LoadLibrary</CODE></A>, or <CODE>NULL</CODE>. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24234"> </A><CODE>name
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24236"> </A>A textual representation of the symbol to resolve.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24238"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24239"> </A>An untyped pointer. 
+
+<P>
+
+<BR>
+<A NAME="24240"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24241"> </A>This function finds and returns an untyped reference to the specified symbol in the 
+specified library. If the <CODE>lib</CODE> parameter is <CODE>NULL</CODE>, all libraries known to the runtime 
+and the main program are searched in an unspecified order.
+
+<P>
+
+<A NAME="24242"> </A>Use this function to look up functions or data symbols in a shared library. Getting a 
+pointer to a symbol in a library does indicate that the library is available when the 
+search was made. The runtime does nothing to ensure the continued validity of the 
+symbol. If the library is unloaded, for instance, the results of any <A HREF="prlink.html#24219"  ><CODE>PR_FindSymbol</CODE></A> 
+calls become invalid as well. 
+
+<P>
+
+<A NAME="24247"> </A><A NAME="PR_FindSymbolAndLibrary"> </A><h4>
+PR_FindSymbolAndLibrary
+</h4>
+
+<A NAME="24248"> </A>Finds a symbol in one of the currently loaded libraries, and returns both the 
+symbol and the library in which it was found. 
+
+<P>
+
+<BR>
+<A NAME="24249"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="24250"></A><CODE>void* PR_FindSymbolAndLibrary (<br>&nbsp;&nbsp;&nbsp;const char *name,<br>&nbsp;&nbsp;&nbsp;</CODE>PRLibrary<CODE> **lib);</CODE>
+</PRE>
+<P>
+<BR>
+<A NAME="24251"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="24252"> </A>The function has these parameters:
+
+<P>
+
+<P>
+<A NAME="24262"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24255"> </A><CODE>name
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24257"> </A>The textual representation of the symbol to locate.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="24259"> </A><CODE>lib
+</CODE>
+<P>
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="24261"> </A>A reference to a location at which the runtime will store the library in 
+which the symbol was discovered. This location must be pre-allocated by 
+the caller.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="24263"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="24264"> </A>If successful, returns a non-<CODE>NULL</CODE> pointer to the found symbol, and stores a pointer 
+to the library in which it was found at the location pointed to by <CODE>lib</CODE>.
+
+<P>
+
+<A NAME="24265"> </A>If the symbol could not be found, returns <CODE>NULL</CODE>. 
+
+<P>
+
+<BR>
+<A NAME="24266"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="24267"> </A>This function finds the specified symbol in one of the currently loaded libraries. It 
+returns the address of the symbol. Upon return, the location pointed to by the 
+parameter <CODE>lib</CODE> contains a pointer to the library that contains that symbol. The 
+location must be pre-allocated by the caller. 
+
+<P>
+
+<A NAME="24268"> </A>The function returns <CODE>NULL</CODE> if no such function can be found. The order in which the 
+known libraries are searched in not specified.This function is equivalent to calling 
+first <A HREF="prlink.html#24154"  ><CODE>PR_LoadLibrary</CODE></A>, then <A HREF="prlink.html#24219"  ><CODE>PR_FindSymbol</CODE></A>. 
+
+<P>
+
+<A NAME="24275"> </A>The identity returned from this function must be the target of a <A HREF="prlink.html#24185"  ><CODE>PR_UnloadLibrary</CODE></A> 
+in order to return the runtime to its original state. 
+
+<P>
+
+<BR>
+<A NAME="24279"> </A><A NAME="Finding Symbols Defined in the Main Executable Program"> </A><h5>
+Finding Symbols Defined in the Main Executable Program
+</h5>
+
+
+<A NAME="24283"> </A><A HREF="prlink.html#24154"  ><CODE>PR_LoadLibrary</CODE></A> cannot open a handle that references the main executable 
+program. (This is admittedly an omission that should be fixed.) However, it is 
+possible to look up symbols defined in the main executable program as follows. 
+
+<P>
+
+<PRE>
+<A NAME="24284"></A>PRLibrary *lib; <br>void *funcPtr; 
+</PRE>
+<P>
+<PRE>
+<A NAME="24285"></A>funcPtr = PR_FindSymbolAndLibrary("FunctionName", &amp;lib); 
+</PRE>
+<P>
+<A NAME="24289"> </A>When <A HREF="prlink.html#24247"  ><CODE>PR_FindSymbolAndLibrary</CODE></A> returns, <CODE>funcPtr</CODE> is the value of the function 
+pointer you want to look up, and the variable <CODE>lib</CODE> references the main executable 
+program. You can then call <A HREF="prlink.html#24219"  ><CODE>PR_FindSymbol</CODE></A> on <CODE>lib</CODE> to look up other symbols 
+defined in the main program. Remember to call <A HREF="prlink.html#24185"  ><CODE>PR_UnloadLibrary</CODE></A><CODE>(lib)</CODE> to close 
+the library handle when you are done. 
+
+<P>
+
+
+
+<A NAME="24297"> </A>
+<A NAME="Platform Notes"> </A>
+<h2>
+Platform Notes
+</h2>
+
+
+<A NAME="24298"> </A>To use the dynamic library loading functions on some platforms, certain 
+environment variables must be set at run time, and you may need to link your 
+executable programs using special linker options. 
+
+<P>
+
+<A NAME="24299"> </A>This section summarizes these platform idiosyncrasies. For more information, 
+consult the man pages for <CODE>ld</CODE> and <CODE>dlopen</CODE> (or <CODE>shl_load</CODE> on HP-UX) for Unix, and 
+the <CODE>LoadLibrary</CODE> documentation for Win32. 
+
+<P>
+
+<A NAME="24303"> </A><A HREF="prlink.html#24308"  >Dynamic Library Search Path</A><br>
+<A HREF="prlink.html#24316"  >Exporting Symbols from the Main Executable Program</A>
+
+<P>
+
+
+<A NAME="24308"> </A>
+<A NAME="Dynamic Library Search Path"> </A>
+<h3>
+Dynamic Library Search Path
+</h3>
+
+
+
+
+<A NAME="24309"> </A>The dynamic library search path is the list of directories in which to look for a 
+dynamic library. Each platform has its own standard directories in which to look 
+for dynamic libraries, plus a customizable list of directories specified by an 
+environment variable. 
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="24310"> </A>On most Unix systems, this environment variable is <CODE>LD_LIBRARY_PATH</CODE>. These 
+systems typically use <CODE>dlopen</CODE> to load a dynamic library. 
+
+<P><B>  <li></B>
+<A NAME="24311"> </A>HP-UX uses <CODE>shl_load</CODE> to load dynamic libraries, and the environment variable 
+specifying the dynamic library search path is <CODE>SHLIB_PATH</CODE>. Moreover, the 
+executable program must be linked with the <CODE>+s</CODE> option so that it will search for 
+shared libraries in the directories specified by <CODE>SHLIB_PATH</CODE> at run time. 
+Alternatively, you can enable the <CODE>+s</CODE> option as a postprocessing step using the 
+<CODE>chatr</CODE> tool. For example, link your executable program <CODE>a.out</CODE> without the <CODE>+s</CODE> 
+option, then execute the following:
+
+<P>
+<PRE>
+<A NAME="24312"></A>chatr +s enable a.out 
+</PRE>
+<P><B>  <li></B>
+<A NAME="24313"> </A>On Rhapsody, the environment variable is<CODE> DYLD_LIBRARY_PATH</CODE>. 
+
+<P><B>  <li></B>
+<A NAME="24314"> </A>On Win32, the environment variable is <CODE>PATH</CODE>. The same search path is used to 
+search for executable programs and DLLs. 
+
+<P></ul>
+
+
+<A NAME="24316"> </A>
+<A NAME="Exporting Symbols from the Main Executable Program"> </A>
+<h3>
+Exporting Symbols from the Main Executable Program
+</h3>
+
+
+
+
+<A NAME="24450"> </A>On some systems, symbols defined in the main executable program are not 
+exported by default. On HP-UX, you must link the executable program with the <CODE>-E</CODE> 
+linker option in order to export all symbols in the main program to shared libraries. 
+If you use the GNU compiler<CODE>s</CODE> (on any platform), you must also link the executable 
+program with the <CODE>-E</CODE> option. 
+
+<P>
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="prclist.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prprocess.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

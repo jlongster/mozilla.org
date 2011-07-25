@@ -1,0 +1,188 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* 
+<b><a name="2">    2</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="3">    3</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="4">    4</a></b>  *
+<b><a name="5">    5</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="6">    6</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="7">    7</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="8">    8</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="9">    9</a></b>  *
+<b><a name="10">   10</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="11">   11</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="12">   12</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="13">   13</a></b>  * License.
+<b><a name="14">   14</a></b>  *
+<b><a name="15">   15</a></b>  * The Original Code is the elliptic curve math library for prime field curves.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Initial Developer of the Original Code is
+<b><a name="18">   18</a></b>  * Sun Microsystems, Inc.
+<b><a name="19">   19</a></b>  * Portions created by the Initial Developer are Copyright (C) 2003
+<b><a name="20">   20</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="21">   21</a></b>  *
+<b><a name="22">   22</a></b>  * Contributor(s):
+<b><a name="23">   23</a></b>  *   Douglas Stebila &lt;douglas@stebila.ca&gt;
+<b><a name="24">   24</a></b>  *
+<b><a name="25">   25</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="26">   26</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="27">   27</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="28">   28</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="29">   29</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="30">   30</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="31">   31</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="32">   32</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="33">   33</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="34">   34</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="35">   35</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="36">   36</a></b>  *
+<b><a name="37">   37</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> #include "ecp.h"
+<b><a name="40">   40</a></b> #include "mpi.h"
+<b><a name="41">   41</a></b> #include "mplogic.h"
+<b><a name="42">   42</a></b> #include "mpi-priv.h"
+<b><a name="43">   43</a></b> #include &lt;stdlib.h&gt;
+<b><a name="44">   44</a></b> 
+<b><a name="45">   45</a></b> #define <a href="#45">ECP521_DIGITS</a> <a href="../../freebl/ecl/ecl-priv.h.dep.html#ECL_CURVE_DIGITS">ECL_CURVE_DIGITS</a>(521)
+<b><a name="46">   46</a></b> 
+<b><a name="47">   47</a></b> /* Fast modular reduction for p521 = 2^521 - 1.  a can be r. Uses
+<b><a name="48">   48</a></b>  * algorithm 2.31 from Hankerson, Menezes, Vanstone. Guide to 
+<b><a name="49">   49</a></b>  * Elliptic Curve Cryptography. */
+<b><a name="50">   50</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="51">   51</a></b> <a href="#51">ec_GFp_nistp521_mod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r, const <a href="../../freebl/ecl/ecl-priv.h.dep.html#GFMethod">GFMethod</a> *meth)
+<b><a name="52">   52</a></b> {
+<b><a name="53">   53</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="54">   54</a></b>         int a_bits = <a href="../../freebl/mpi/mplogic.c.dep.html#mpl_significant_bits">mpl_significant_bits</a>(a);
+<b><a name="55">   55</a></b>         <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="56">   56</a></b> 
+<b><a name="57">   57</a></b>         /* m1, m2 are statically-allocated mp_int of exactly the size we need */
+<b><a name="58">   58</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> m1;
+<b><a name="59">   59</a></b> 
+<b><a name="60">   60</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> <a href="../../freebl/sha512.c.dep.html#s1">s1</a></a></a>[<a href="../../freebl/ecl/ecp_521.c.dep.html#ECP521_DIGITS">ECP521_DIGITS</a>] = { 0 };
+<b><a name="61">   61</a></b> 
+<b><a name="62">   62</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_SIGN">MP_SIGN</a>(&amp;m1) = <a href="../../freebl/mpi/mpi.h.dep.html#MP_ZPOS">MP_ZPOS</a>;
+<b><a name="63">   63</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_ALLOC">MP_ALLOC</a>(&amp;m1) = <a href="../../freebl/ecl/ecp_521.c.dep.html#ECP521_DIGITS">ECP521_DIGITS</a>;
+<b><a name="64">   64</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(&amp;m1) = <a href="../../freebl/ecl/ecp_521.c.dep.html#ECP521_DIGITS">ECP521_DIGITS</a>;
+<b><a name="65">   65</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;m1) = <a href="../../freebl/sha512.c.dep.html#s1">s1</a></a></a>;
+<b><a name="66">   66</a></b> 
+<b><a name="67">   67</a></b>         if (a_bits &lt; 521) {
+<b><a name="68">   68</a></b>                 if (a==r) return <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="69">   69</a></b>                 return <a href="../../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(a, r);
+<b><a name="70">   70</a></b>         }
+<b><a name="71">   71</a></b>         /* for polynomials larger than twice the field size or polynomials 
+<b><a name="72">   72</a></b>          * not using all words, use regular reduction */
+<b><a name="73">   73</a></b>         if (a_bits &gt; (521*2)) {
+<b><a name="74">   74</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_mod">mp_mod</a>(a, &amp;meth-&gt;irr, r));
+<b><a name="75">   75</a></b>         } else {
+<b><a name="76">   76</a></b> #define <a href="#76">FIRST_DIGIT</a> (<a href="../../freebl/ecl/ecp_521.c.dep.html#ECP521_DIGITS">ECP521_DIGITS</a>-1)
+<b><a name="77">   77</a></b>                 for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = <a href="../../freebl/ecl/ecp_521.c.dep.html#FIRST_DIGIT">FIRST_DIGIT</a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a)-1; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="78">   78</a></b>                         <a href="../../freebl/sha512.c.dep.html#s1">s1</a></a></a>[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>-<a href="../../freebl/ecl/ecp_521.c.dep.html#FIRST_DIGIT">FIRST_DIGIT</a>] = (<a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>) &gt;&gt; 9) 
+<b><a name="79">   79</a></b>                                 | (<a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, 1+<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>) &lt;&lt; (<a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>.h.dep.html#MP_DIGIT">MP_DIGIT</a>_BIT-9));
+<b><a name="80">   80</a></b>                 }
+<b><a name="81">   81</a></b>                 <a href="../../freebl/sha512.c.dep.html#s1">s1</a></a></a>[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>-<a href="../../freebl/ecl/ecp_521.c.dep.html#FIRST_DIGIT">FIRST_DIGIT</a>] = <a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>) &gt;&gt; 9;
+<b><a name="82">   82</a></b> 
+<b><a name="83">   83</a></b>                 if ( a != r ) {
+<b><a name="84">   84</a></b>                         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#s_mp_pad">s_mp_pad</a>(r,<a href="../../freebl/ecl/ecp_521.c.dep.html#ECP521_DIGITS">ECP521_DIGITS</a>));
+<b><a name="85">   85</a></b>                         for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; <a href="../../freebl/ecl/ecp_521.c.dep.html#ECP521_DIGITS">ECP521_DIGITS</a>; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="86">   86</a></b>                                 <a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r,<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>) = <a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a, <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>);
+<b><a name="87">   87</a></b>                         }
+<b><a name="88">   88</a></b>                 }
+<b><a name="89">   89</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(r) = <a href="../../freebl/ecl/ecp_521.c.dep.html#ECP521_DIGITS">ECP521_DIGITS</a>;
+<b><a name="90">   90</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r,<a href="../../freebl/ecl/ecp_521.c.dep.html#FIRST_DIGIT">FIRST_DIGIT</a>) &amp;=  0x1FF;
+<b><a name="91">   91</a></b> 
+<b><a name="92">   92</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#s_mp_add">s_mp_add</a>(r, &amp;m1));
+<b><a name="93">   93</a></b>                 if (<a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, <a href="../../freebl/ecl/ecp_521.c.dep.html#FIRST_DIGIT">FIRST_DIGIT</a>) &amp; 0x200) {
+<b><a name="94">   94</a></b>                         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#s_mp_add_d">s_mp_add_d</a>(r,1));
+<b><a name="95">   95</a></b>                         <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r,<a href="../../freebl/ecl/ecp_521.c.dep.html#FIRST_DIGIT">FIRST_DIGIT</a>) &amp;=  0x1FF;
+<b><a name="96">   96</a></b>                 }
+<b><a name="97">   97</a></b>                 <a href="../../freebl/mpi/mpi.c.dep.html#s_mp_clamp">s_mp_clamp</a><a href="../../freebl/mpi/mpi-priv.h.dep.html#s_mp_clamp"><sup>[1]</sup></a>(r);
+<b><a name="98">   98</a></b>         }
+<b><a name="99">   99</a></b> 
+<b><a name="100">  100</a></b>   CLEANUP:
+<b><a name="101">  101</a></b>         return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="102">  102</a></b> }
+<b><a name="103">  103</a></b> 
+<b><a name="104">  104</a></b> /* Compute the square of polynomial a, reduce modulo p521. Store the
+<b><a name="105">  105</a></b>  * result in r.  r could be a.  Uses optimized modular reduction for p521. 
+<b><a name="106">  106</a></b>  */
+<b><a name="107">  107</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="108">  108</a></b> <a href="#108">ec_GFp_nistp521_sqr</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r, const <a href="../../freebl/ecl/ecl-priv.h.dep.html#GFMethod">GFMethod</a> *meth)
+<b><a name="109">  109</a></b> {
+<b><a name="110">  110</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="111">  111</a></b> 
+<b><a name="112">  112</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_sqr">mp_sqr</a><a href="../../freebl/mpi/mpi.h.dep.html#mp_sqr"><sup>[1]</sup></a>(a, r));
+<b><a name="113">  113</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/ecl/ecp_521.c.dep.html#ec_GFp_nistp521_mod">ec_GFp_nistp521_mod</a>(r, r, meth));
+<b><a name="114">  114</a></b>   CLEANUP:
+<b><a name="115">  115</a></b>         return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="116">  116</a></b> }
+<b><a name="117">  117</a></b> 
+<b><a name="118">  118</a></b> /* Compute the product of two polynomials a and b, reduce modulo p521.
+<b><a name="119">  119</a></b>  * Store the result in r.  r could be a or b; a could be b.  Uses
+<b><a name="120">  120</a></b>  * optimized modular reduction for p521. */
+<b><a name="121">  121</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="122">  122</a></b> <a href="#122">ec_GFp_nistp521_mul</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r,
+<b><a name="123">  123</a></b>                                         const <a href="../../freebl/ecl/ecl-priv.h.dep.html#GFMethod">GFMethod</a> *meth)
+<b><a name="124">  124</a></b> {
+<b><a name="125">  125</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="126">  126</a></b> 
+<b><a name="127">  127</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_mul">mp_mul</a>(a, b, r));
+<b><a name="128">  128</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/ecl/ecp_521.c.dep.html#ec_GFp_nistp521_mod">ec_GFp_nistp521_mod</a>(r, r, meth));
+<b><a name="129">  129</a></b>   CLEANUP:
+<b><a name="130">  130</a></b>         return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="131">  131</a></b> }
+<b><a name="132">  132</a></b> 
+<b><a name="133">  133</a></b> /* Divides two field elements. If a is NULL, then returns the inverse of
+<b><a name="134">  134</a></b>  * b. */
+<b><a name="135">  135</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="136">  136</a></b> <a href="#136">ec_GFp_nistp521_div</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r,
+<b><a name="137">  137</a></b>                    const <a href="../../freebl/ecl/ecl-priv.h.dep.html#GFMethod">GFMethod</a> *meth)
+<b><a name="138">  138</a></b> {
+<b><a name="139">  139</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="140">  140</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> t;
+<b><a name="141">  141</a></b> 
+<b><a name="142">  142</a></b>         /* If a is NULL, then return the inverse of b, otherwise return a/b. */
+<b><a name="143">  143</a></b>         if (a == NULL) {
+<b><a name="144">  144</a></b>                 return <a href="../../freebl/mpi/mpi.c.dep.html#mp_invmod">mp_invmod</a>(b, &amp;meth-&gt;irr, r);
+<b><a name="145">  145</a></b>         } else {
+<b><a name="146">  146</a></b>                 /* MPI doesn't support divmod, so we implement it using invmod and 
+<b><a name="147">  147</a></b>                  * mulmod. */
+<b><a name="148">  148</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_init">mp_init</a>(&amp;t));
+<b><a name="149">  149</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_invmod">mp_invmod</a>(b, &amp;meth-&gt;irr, &amp;t));
+<b><a name="150">  150</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/mpi/mpi.c.dep.html#mp_mul">mp_mul</a>(a, &amp;t, r));
+<b><a name="151">  151</a></b>                 <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>(<a href="../../freebl/ecl/ecp_521.c.dep.html#ec_GFp_nistp521_mod">ec_GFp_nistp521_mod</a>(r, r, meth));
+<b><a name="152">  152</a></b>           CLEANUP:
+<b><a name="153">  153</a></b>                 <a href="../../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;t);
+<b><a name="154">  154</a></b>                 return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="155">  155</a></b>         }
+<b><a name="156">  156</a></b> }
+<b><a name="157">  157</a></b> 
+<b><a name="158">  158</a></b> /* Wire in fast field arithmetic and precomputation of base point for
+<b><a name="159">  159</a></b>  * named curves. */
+<b><a name="160">  160</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="161">  161</a></b> <a href="#161">ec_group_set_gfp521</a>(<a href="../../freebl/ecl/ecl.h.dep.html#ECGroup">ECGroup</a> *group, <a href="../../freebl/ecl/ecl-exp.h.dep.html#ECCurveName">ECCurveName</a> name)
+<b><a name="162">  162</a></b> {
+<b><a name="163">  163</a></b>         if (name == ECCurve_NIST_P521) {
+<b><a name="164">  164</a></b>                 group-&gt;meth-&gt;field_mod = &amp;<a href="../../freebl/ecl/ecp_521.c.dep.html#ec_GFp_nistp521_mod">ec_GFp_nistp521_mod</a>;
+<b><a name="165">  165</a></b>                 group-&gt;meth-&gt;field_mul = &amp;<a href="../../freebl/ecl/ecp_521.c.dep.html#ec_GFp_nistp521_mul">ec_GFp_nistp521_mul</a>;
+<b><a name="166">  166</a></b>                 group-&gt;meth-&gt;field_sqr = &amp;<a href="../../freebl/ecl/ecp_521.c.dep.html#ec_GFp_nistp521_sqr">ec_GFp_nistp521_sqr</a>;
+<b><a name="167">  167</a></b>                 group-&gt;meth-&gt;field_div = &amp;<a href="../../freebl/ecl/ecp_521.c.dep.html#ec_GFp_nistp521_div">ec_GFp_nistp521_div</a>;
+<b><a name="168">  168</a></b>         }
+<b><a name="169">  169</a></b>         return <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="170">  170</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

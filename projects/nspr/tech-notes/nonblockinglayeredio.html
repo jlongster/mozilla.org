@@ -1,0 +1,116 @@
+<?php
+
+$html_title = 'NSPR 2.0: Non-blocking layered I/O';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="Author" CONTENT="Alan O. Freier">
+<META NAME="GENERATOR" CONTENT="Mozilla/4.04 [en] (WinNT; I) [Netscape]">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<H2>
+NSPR 2.0: Non-blocking layered I/O</H2>
+<I><FONT SIZE=-2>[last edited by AOF 24 March 1998 14:15]</FONT></I>
+
+<P>I've recently been working on a long standing issue regarding NSPR's
+I/O model. For a long time I've believed that the non-blocking I/O prevalent
+in classic operating systems (e.g., UNIX) was the major determent for having
+an reasonable layered protocols. Now that I have some first hand experience,
+albeit just a silly little test program, I am more convinced that ever
+of this truth.
+
+<P>This memo is some of what I think must be done in NSPR's I/O subsystem
+to make layered, non-blocking protocols workable. It is just a proposal.
+There is an API change.
+<H3>
+Layered I/O</H3>
+NSPR 2.0 defines a structure by which one may define I/O layers. Each layer
+looks basically like any other in that it still uses a <B><TT>PRFileDesc</TT></B>
+as a object identifier, complete with the <B><TT>IOMethods</TT></B> table
+of functions. However, each layer may override default behavior of a particular
+operation to implement other services. For instance, the experiment at
+hand is one that implements a little reliable echo protocol; the client
+sends <I>n</I> bytes, and the same bytes get echoed back by the server.
+In the non-layered design of this it is straight forward.
+
+<P>The goal of the experiment&nbsp; was to put a layer between the client
+and the network, and not have the client know about it. This additional
+layer is one that, before sending the client's data, must ask permission
+from the peer layer to send that many bytes. It imposes an additional send
+and response inside of each client visible send operation. The receive
+operations parallel the sends. Before actually receiving real client data,
+the layer receives a notification that the other would like to send some
+bytes. The layer is responsible for granting permission for that data to
+be sent, then actually receiving the data itself, which is delivered to
+the client.
+
+<P>The synchronous form of the layer's operation is straight forward. A
+call to receive (<B><TT>PR_Recv()</TT></B>) first receives the request
+to send, sends (<B><TT>PR_Send()</TT></B>) the grant, then receives the
+actual data (<B><TT>PR_Recv()</TT></B>). All the client of the layer sees
+is the data coming in. Similar behavior is observed on the sending side.
+<H3>
+Non-blocking layered I/O</H3>
+The non-blocking method is not so simple. Any of the I/O operations potentially
+result in an indication that no progress can be made. The intermediate
+layers cannot act directly on this information, but must store the state
+of the I/O operation until it can be resumed. The method for determining
+that a I/O operation can make progress is to call <B><TT>PR_Poll()</TT></B>
+and indicating what type of progress is desired, either input or output
+(or some others). Therein lies the problem.
+
+<P>The intermediate layer is performing operations that the client is unaware.
+So when the client calls send (<B><TT>PR_Send()</TT></B>) and is told that
+the operation would block, it is possible that the layer below is actually
+doing a receive (<B><TT>PR_Recv()</TT></B>). The problem is that the flag
+bits passed to <B><TT>PR_Poll() </TT></B>are only reflective of the client's
+knowledge and desires. This is further complicated by the fact that <B><TT>PR_Poll()</TT></B>
+is not layered. That is each layer does not have the opportunity to override
+the behavior. It operates, not on a single file descriptor (<B><TT>PRFileDesc</TT></B>),
+but on an arbitrary collection of file descriptors.
+
+<P>Into the picture comes another I/O method, <B><TT>poll()</TT></B>. Keep
+in mind that all I/O methods are those that are part of the I/O methods
+table structure (<B><TT>PRIOMethods</TT></B>). These functions are layered,
+and layers may and sometimes must override their behavior by offering unique
+implementations. The <B><TT>poll()</TT></B> method is used to provide two
+modifying aspects to the semantics of <B><TT>PR_Poll()</TT></B>: redefining
+the polling bits (i.e., what to poll for) and to indicate that a layer
+is already able to make progress in the&nbsp; manner suggested by the polling
+bits.
+
+<P>The signature of the <B><TT>poll()</TT></B> method is
+<UL>
+<PRE>PRInt16 poll(PRFileDesc *fd, PRInt16 in_flags, PRInt16 *out_flags);</PRE>
+</UL>
+The <B><TT>poll()</TT></B> method is called by <B><TT>PR_Poll()</TT></B>
+as the latter is building the structure to provide the operating system
+call. The stack's top layer will be called first. Each layer's implementation
+is responsible for performing appropriate operations and possibly calling
+the next lower layer's <B><TT>poll()</TT></B> method.
+
+<P>What the poll method is returning are the appropriate flags to assign
+to the operating system's call. A layer would compute these based on the
+values of the argument <B><TT>in_flags</TT></B> and possibly some state
+maintained by the layer for the particular file descriptor.
+
+<P>Additionally, if the layer has buffered data that will allow the operation
+defined by <B><TT>in_flags</TT></B> to make progress, it will set corresponding
+bits in <B><TT>out_flags</TT></B>. For instance, if <B><TT>in_flags</TT></B>
+indicates that the client (or higher layer) wishes to test for read ready
+and the layer has input data buffered, it would set the read bits in the
+<B><TT>out_flags</TT></B>. If that is the case, then it should also suppress
+the calling of the next lower layer's <B><TT>poll()</TT></B> method and
+return a value equal to that of <B><TT>in_flags</TT></B>.
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

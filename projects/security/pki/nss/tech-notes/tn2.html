@@ -1,0 +1,514 @@
+<?php
+
+$html_title = 'Using the PKCS #11 Module Logger';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="author" content="Ian McGreer">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<h1 align="center">Using the PKCS #11 Module Logger </h1>
+<h2>NSS Technical Note: 2 </h2>
+<ul>
+<li><A href="#Modes"><b>Modes of Operation</b></A></li>
+<li><A href="#Extracting"><b>Extracting Output from Log files</b></A></li>
+</ul>
+The logger displays all activity between NSS and a specified PKCS #11 module.  
+It works by inserting a special set of entry points between NSS and the module.
+<P>
+To enable the module logger, you must set the environment variable 
+NSS_DEBUG_PKCS11_MODULE to the name of the target module.  For example, 
+to log the softoken, use:
+
+<pre>
+NSS_DEBUG_PKCS11_MODULE="NSS Internal PKCS #11 Module"
+</pre>
+
+Note: In the Command Prompt on Windows, do not quote the name of the target
+      module, otherwise the quotes are considered part of the name.  For
+      example, to log the softoken on Windows, use:
+
+<pre>
+      set NSS_DEBUG_PKCS11_MODULE=NSS Internal PKCS #11 Module
+</pre>
+
+The logger is available by default in debug builds.  For optimized builds, 
+NSS must be built with the variable DEBUG_PKCS11 set.
+
+<h3><A name="Modes"></A>Modes of Operation</h3>
+The logger has several modes of operation:
+<P><B>1. Only display the sequence of PKCS #11 calls.</b>  
+To enable this mode, set:
+
+<pre>
+NSPR_LOG_MODULES=nss_mod_log:1
+NSPR_LOG_FILE=&lt;logfile&gt;
+</pre>
+
+The output format is:
+
+<pre>
+OSThreadID[NSPRThreadID]: C_XXX
+OSThreadID[NSPRThreadID]:   rv = 0xYYYYYYYY
+</pre>
+
+For example,
+
+<pre>
+1024[805ef10]: C_Initialize
+1024[805ef10]:   rv = 0x0
+1024[805ef10]: C_GetInfo
+1024[805ef10]:   rv = 0x0
+1024[805ef10]: C_GetSlotList
+1024[805ef10]:   rv = 0x0
+</pre>
+
+<b>2.  Display the sequence of PKCS #11 calls, and the parameters given to them.</b>  
+To enable this mode, set:
+
+<pre>
+NSPR_LOG_MODULES=nss_mod_log:3
+NSPR_LOG_FILE=&lt;logfile&gt;
+</pre>
+
+The output format is:
+
+<pre>
+OSThreadID[NSPRThreadID]: C_XXX
+OSThreadID[NSPRThreadID]:   arg1 = 0xAAAAAAAA
+...
+OSThreadID[NSPRThreadID]:   argN = 0xAAAAAAAA
+OSThreadID[NSPRThreadID]:   rv = 0xYYYYYYYY
+</pre>
+
+For example,
+
+<pre>
+1024[805ef10]: C_Initialize
+1024[805ef10]:   pInitArgs = 0x4010c938
+1024[805ef10]:   rv = 0x0
+1024[805ef10]: C_GetInfo
+1024[805ef10]:   pInfo = 0xbffff340
+1024[805ef10]:   rv = 0x0
+1024[805ef10]: C_GetSlotList
+1024[805ef10]:   tokenPresent = 0x0
+1024[805ef10]:   pSlotList = 0x0
+1024[805ef10]:   pulCount = 0xbffff33c
+1024[805ef10]:   *pulCount = 0x2
+1024[805ef10]:   rv = 0x0
+</pre>
+
+Note that when a PKCS #11 function takes a pointer argument for which it will 
+set a value (C_GetSlotList above), this mode will display the value upon return.
+<P>
+<B>3.  Display verbose information, including template values, array values, etc.</b>
+To enable this mode, set:
+
+<pre>
+NSPR_LOG_MODULES=nss_mod_log:4
+NSPR_LOG_FILE=&lt;logfile&gt;
+</pre>
+
+The output format is the same as above, but with more information.  For example,
+
+<pre>
+1024[805ef10]: C_FindObjectsInit
+1024[805ef10]:   hSession = 0x1000001
+1024[805ef10]:   pTemplate = 0xbffff410
+1024[805ef10]:   ulCount = 3
+1024[805ef10]:     CKA_LABEL = localhost.nyc.rr.com [20]
+1024[805ef10]:     CKA_TOKEN = CK_TRUE [1]
+1024[805ef10]:     CKA_CLASS = CKO_CERTIFICATE [4]
+1024[805ef10]:   rv = 0x0
+1024[805ef10]: C_FindObjects
+1024[805ef10]:   hSession = 0x1000001
+1024[805ef10]:   phObject = 0x806d810
+1024[805ef10]:   ulMaxObjectCount = 16
+1024[805ef10]:   pulObjectCount = 0xbffff38c
+1024[805ef10]:   *pulObjectCount = 0x1
+1024[805ef10]:   phObject[0] = 0xf6457d04
+1024[805ef10]:   rv = 0x0
+1024[805ef10]: C_FindObjectsFinal
+1024[805ef10]:   hSession = 0x1000001
+1024[805ef10]:   rv = 0x0
+1024[805ef10]: C_GetAttributeValue
+1024[805ef10]:   hSession = 0x1000001
+1024[805ef10]:   hObject = 0xf6457d04
+1024[805ef10]:   pTemplate = 0xbffff2d0
+1024[805ef10]:   ulCount = 2
+1024[805ef10]:     CKA_TOKEN = 0 [1]
+1024[805ef10]:     CKA_LABEL = 0 [20]
+1024[805ef10]:   rv = 0x0
+1024[805ef10]: C_GetAttributeValue
+1024[805ef10]:   hSession = 0x1000001
+1024[805ef10]:   hObject = 0xf6457d04
+1024[805ef10]:   pTemplate = 0xbffff2d0
+1024[805ef10]:   ulCount = 2
+1024[805ef10]:     CKA_TOKEN = CK_TRUE [1]
+1024[805ef10]:     CKA_LABEL = localhost.nyc.rr.com [20]
+1024[805ef10]:   rv = 0x0
+</pre>
+
+<b>4.  Collect performance data.</b>  This mode is most useful in optimized builds.
+The number of calls to each PKCS #11 function will be counted, and the time 
+spent in each function as well.  A summary of performance data is dumped 
+during NSS shutdown.
+<P>
+No additional environment variables are required for this mode.  
+If the environment variable NSS_OUTPUT_FILE is set, its value will be used 
+as the path name of the file to which the final output will be written.
+Otherwise, the output will be written to stdout.
+<h3><A name="Extracting"></A>Extracting Output from Log files</h3>
+<P>
+The perl program modlogger.pl can be used to grep the output.
+This program can divide the logs into 1. threads, 2. sessions, and 3. objects.
+<P>
+Here is an example showing the activity in a single thread:
+
+<pre>
+$ ./modlogger.pl -t 4101  module.log
+
+[0x1      ] C_GenerateRandom returned 0x0
+                hSession = 0x1
+                RandomData = 0x8089815
+                ulRandomLen = 16
+[0x1b     ] C_OpenSession returned 0x0
+                slotID = 0x1
+                flags = 0x4
+                pApplication = 0x8068328
+                Notify = 0x400a9dd4
+                phSession = 0x40ab2afc
+                *phSession = 0x1b
+[0x1b     ] C_DigestInit returned 0x0
+                hSession = 0x1b
+                pMechanism = 0x40ab2b3c
+[0x1c     ] C_OpenSession returned 0x0
+                slotID = 0x1
+                flags = 0x4
+                pApplication = 0x8068328
+                Notify = 0x400a9dd4
+                phSession = 0x40ab2afc
+                *phSession = 0x1c
+[0x1c     ] C_DigestInit returned 0x0
+                hSession = 0x1c
+                pMechanism = 0x40ab2b3c
+[0x1b     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab2b58
+                ulPartLen = 4
+[0x1c     ] C_DigestUpdate returned 0x0
+                hSession = 0x1c
+                pPart = 0x40ab2b58
+                ulPartLen = 4
+...
+</pre>
+
+The value in the brackets is the sessionID.
+<P>
+
+Here is an example showing the lifetime of session 0x1b created above:
+
+<pre>
+$ ./modlogger.pl -s 0x1b  module.log
+
+[4101     ] C_OpenSession returned 0x0
+                slotID = 0x1
+                flags = 0x4
+                pApplication = 0x8068328
+                Notify = 0x400a9dd4
+                phSession = 0x40ab2afc
+                *phSession = 0x1b
+[4101     ] C_DigestInit returned 0x0
+                hSession = 0x1b
+                pMechanism = 0x40ab2b3c
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab2b58
+                ulPartLen = 4
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x809e59c
+                ulPartLen = 89
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab29e8
+                ulPartLen = 1
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab29e8
+                ulPartLen = 3
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab2a08
+                ulPartLen = 2
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x8084610
+                ulPartLen = 32
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab29e8
+                ulPartLen = 1
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x80753a5
+                ulPartLen = 32
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab2a08
+                ulPartLen = 2
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab2a08
+                ulPartLen = 1
+[4101     ] C_GetOperationState returned 0x0
+                hSession = 0x1b
+                pOperationState = 0x40ab27fc
+                pulOperationStateLen = 0x40ab25c8
+                *pulOperationStateLen = 0x60
+[4101     ] C_DigestFinal returned 0x0
+                hSession = 0x1b
+                pDigest = 0x40ab29ec
+                pulDigestLen = 0x40ab25cc
+                *pulDigestLen = 0x10
+[4101     ] C_DigestFinal returned 0x91
+                hSession = 0x1b
+                pDigest = 0x0
+                pulDigestLen = 0x40ab25ac
+                *pulDigestLen = 0x0
+[4101     ] C_SetOperationState returned 0x0
+                hSession = 0x1b
+                pOperationState = 0x40ab27fc
+                ulOperationStateLen = 96
+                hEncryptionKey = 0x0
+                hAuthenticationKey = 0x0
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab2988
+                ulPartLen = 1
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab2988
+                ulPartLen = 3
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab29dc
+                ulPartLen = 12
+[4101     ] C_GetOperationState returned 0x0
+                hSession = 0x1b
+                pOperationState = 0x40ab296c
+                pulOperationStateLen = 0x40ab2738
+                *pulOperationStateLen = 0x60
+[4101     ] C_DigestFinal returned 0x0
+                hSession = 0x1b
+                pDigest = 0x40ab2b5c
+                pulDigestLen = 0x40ab273c
+                *pulDigestLen = 0x10
+[4101     ] C_DigestFinal returned 0x91
+                hSession = 0x1b
+                pDigest = 0x0
+                pulDigestLen = 0x40ab271c
+                *pulDigestLen = 0x0
+[4101     ] C_SetOperationState returned 0x0
+                hSession = 0x1b
+                pOperationState = 0x40ab296c
+                ulOperationStateLen = 96
+                hEncryptionKey = 0x0
+                hAuthenticationKey = 0x0
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x40ab2b58
+                ulPartLen = 4
+[4101     ] C_DigestUpdate returned 0x0
+                hSession = 0x1b
+                pPart = 0x809e59c
+                ulPartLen = 12
+[4101     ] C_CloseSession returned 0x0
+                hSession = 0x1b
+</pre>
+
+This time, the number in brackets is the threadID.  It is possible for 
+sessions to be used by multiple threads, for example:
+
+<pre>
+$ ./modlogger.pl -s 0x1  module.log
+...
+[2051     ] C_GenerateRandom returned 0x0
+                hSession = 0x1
+                RandomData = 0x80990ad
+                ulRandomLen = 16
+[3076     ] C_GenerateRandom returned 0x0
+                hSession = 0x1
+                RandomData = 0x808b425
+                ulRandomLen = 16
+[1026     ] C_GenerateRandom returned 0x0
+                hSession = 0x1
+                RandomData = 0x809d2f5
+                ulRandomLen = 16
+[4101     ] C_GenerateRandom returned 0x0
+                hSession = 0x1
+                RandomData = 0x8084614
+                ulRandomLen = 28
+...
+</pre>
+
+Lastly, the lifetime of a given object can be parsed out from the log.
+
+<pre>
+$ ./modlogger.pl -o 0xf6457d04  module.log
+
+[1024     ] C_FindObjectsInit returned 0x0
+                hSession = 0x1000001
+                pTemplate = 0xbffff410
+                ulCount = 3
+                CKA_LABEL = localhost.nyc.rr.com [20]
+                CKA_TOKEN = CK_TRUE [1]
+                CKA_CLASS = CKO_CERTIFICATE [4]
+[1024     ] C_FindObjects returned 0x0
+                hSession = 0x1000001
+                phObject = 0x806d810
+                ulMaxObjectCount = 16
+                pulObjectCount = 0xbffff38c
+                *pulObjectCount = 0x1
+                phObject[0] = 0xf6457d04
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff2d0
+                ulCount = 2
+                CKA_TOKEN = 0 [1]
+                CKA_LABEL = 0 [20]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff2d0
+                ulCount = 2
+                CKA_TOKEN = CK_TRUE [1]
+                CKA_LABEL = localhost.nyc.rr.com [20]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff330
+                ulCount = 1
+                CKA_VALUE = 0 [645]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff330
+                ulCount = 1
+                CKA_VALUE = 806e1a0 [645]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff300
+                ulCount = 7
+                CKA_CERTIFICATE_TYPE = 0 [4]
+                CKA_ID = 0 [20]
+                CKA_VALUE = 0 [645]
+                CKA_ISSUER = 0 [114]
+                CKA_SERIAL_NUMBER = 0 [3]
+                CKA_SUBJECT = 0 [159]
+                CKA_NETSCAPE_EMAIL = 0 [0]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff300
+                ulCount = 7
+                CKA_CERTIFICATE_TYPE = 8071d60 [4]
+                CKA_ID = 8071d70 [20]
+                CKA_VALUE = 8071d90 [645]
+                CKA_ISSUER = 8072020 [114]
+                CKA_SERIAL_NUMBER = 80720a0 [3]
+                CKA_SUBJECT = 80720b0 [159]
+                CKA_NETSCAPE_EMAIL = 0 [0]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff250
+                ulCount = 2
+                CKA_ID = 0 [20]
+                CKA_CLASS = 0 [4]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff250
+                ulCount = 2
+                CKA_ID = 80724c8 [20]
+                CKA_CLASS = CKO_CERTIFICATE [4]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff470
+                ulCount = 2
+                CKA_ID = 0 [20]
+                CKA_CLASS = 0 [4]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff470
+                ulCount = 2
+                CKA_ID = 8073f10 [20]
+                CKA_CLASS = CKO_CERTIFICATE [4]
+[1024     ] C_FindObjectsInit returned 0x0
+                hSession = 0x1000001
+                pTemplate = 0xbffff350
+                ulCount = 2
+                CKA_TOKEN = CK_TRUE [1]
+                CKA_CLASS = CKO_CERTIFICATE [4]
+[1024     ] C_FindObjects returned 0x0
+                hSession = 0x1000001
+                phObject = 0x80849b8
+                ulMaxObjectCount = 16
+                pulObjectCount = 0xbffff378
+                *pulObjectCount = 0x8
+                phObject[0] = 0xfd58946a
+                phObject[1] = 0xf207457d
+                phObject[2] = 0xf1457d04
+                phObject[3] = 0xf6457d04
+                phObject[4] = 0xffc2dbe9
+                phObject[5] = 0xfca1bf01
+                phObject[6] = 0xffc64d3d
+                phObject[7] = 0xf3457d04
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff290
+                ulCount = 2
+                CKA_TOKEN = 0 [1]
+                CKA_LABEL = 0 [20]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff290
+                ulCount = 2
+                CKA_TOKEN = CK_TRUE [1]
+                CKA_LABEL = localhost.nyc.rr.com [20]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff140
+                ulCount = 2
+                CKA_ID = 0 [20]
+                CKA_CLASS = 0 [4]
+[1024     ] C_GetAttributeValue returned 0x0
+                hSession = 0x1000001
+                hObject = 0xf6457d04
+                pTemplate = 0xbffff140
+                ulCount = 2
+                CKA_ID = 8088ab8 [20]
+                CKA_CLASS = CKO_CERTIFICATE [4]
+</pre>
+
+For objects, the bracketed number is the threadID.
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

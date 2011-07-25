@@ -1,0 +1,256 @@
+<?php
+
+$html_title = 'Content Version Numbers in cert7.db';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="generator" content=
+"HTML Tidy for Windows (vers 14 February 2006), see www.w3.org">
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<link rel="contents" type="text/html" href="." title="NSS project page">
+<link rel="up" type="text/html" href="." title="NSS project page">
+<link rel="subsection" href="#" title="">
+<link rel="glossary" href="http://developer.mozilla.org/en/Glossary"
+title="Glossary">
+';
+
+$extra_style = '
+<style type="text/css">
+h1, h1+p {text-align: center;}
+</style>
+
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+  <p class="crumbs"><em>You are here:</em> <a href=".">NSS project page</a>
+  &gt; <strong>Content Version Numbers in cert7.db</strong></p>
+
+  <h1>Content Version Numbers in the Certificate Database</h1>
+
+  <p>Newsgroup: <a href=
+  "news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a><br>
+
+  Technical contact: <a href=
+  "mailto:roeber@netscape.com?subject=cert%20db%20version%20numbers%20feedback">
+  Frederick Roeber</a><br>
+  Yell at the manager: <a href=
+  "mailto:lord@netscape.com?subject=cert%20db%20version%20numbers%20feedback">Bob
+  Lord</a></p>
+
+  <p>NSS has traditionally contained a set of pre-trusted root certificates
+  provided by a few root certificate authorities. These authorities and the
+  basic trust information can be seen in the Communicator Security Advisor
+  (click on the lock), under "Certificates / Signers."</p>
+
+  <p>Some companies consider their certificates "proprietary software," so we
+  had to sanitize out their roots and replace them with a couple sample
+  certificates to illustrate how the code works. See the file <code class=
+  "filename">lib/cert/certinit.c</code>.</p>
+
+  <p>In the original codebase, all certificate and trust information is kept in
+  the certificate database (e.g., "cert7.db"; <a href="db_formats.html">the
+  physical format of the certificate database is described and available</a>).
+  Upon NSS initialization, this database would be created or updated with the
+  built-in information. (This information proved much more dynamic than
+  originally expected; in the future, we wish to move this basic trust info to
+  one or more specific "data-only" PKCS#11 modules: see the code in
+  <code class="filename">lib/ckfw/builtins/</code>).</p>
+
+  <p>The code that creates or updates the database is in <code class=
+  "filename">lib/cert/certinit.c.</code> Specifically, "CERT_InitCertDB"
+  creates a new database, and "CERT_AddNewCerts" updates the database when a
+  new version of the client is run with an old database.</p>
+
+  <p>The certificates are stored in base64 form in static char arrays. The
+  array "initialcerts" provides instructions on updating a database. This is an
+  array of structures with the following format:</p>
+
+  <pre class="code">
+typedef struct {
+    char *cert;
+    char *nickname;
+    CERTCertTrust trust;
+    int updateVersion;
+    certUpdateOp op;
+    CERTCertTrust trustDelta;
+} certInitEntry;
+</pre>
+
+  <p>The cert field points to the base64-encoded cert. The nickname contains
+  the text name that appears in the security advisor. The trust field contains
+  the basic trust bits for the three subjects of SSL, S/MIME, and object
+  signing. Usually three flags have to be set: CERTDB_VALID_CA,
+  CERTDB_TRUSTED_CA, and CERTDB_NS_TRUSTED_CA. (These flags are defined in
+  <code class="filename">lib/cert/certdb.h</code>). The update version is the
+  content version number at which this entry appeared. The code's version is
+  CERT_DB_CONTENT_VERSION in certdb.h. The op is the update operation to
+  perform, usually certUpdateAdd or certUpdateAddTrust. Finally, the trustDelta
+  field is used for some update operations.</p>
+
+  <p>When the database is being updated, <code>CERT_AddNewCerts</code> loops
+  through the initialcerts array. Any entry with an updateVersion greater than
+  the ContentVersion field in the database is acted upon. The
+  <code>certUpdateOp</code> operations are:</p>
+
+  <ul>
+    <li><code class="command">certUpdateNone</code><br>
+    This is a no-op.</li>
+
+    <li><code class="command">certUpdateAdd</code><br>
+    The cert is added to the database, with the trust information as specified
+    in "trust."</li>
+
+    <li><code class="command">certUpdateDelete</code><br>
+    The cert is deleted from the database. I don't think we've ever used
+    this.</li>
+
+    <li><code class="command">certUpdateAddTrust</code><br>
+    If the cert exists, the trust bits in "trustDelta" are OR'ed into the trust
+    info stored in the database. In addition to allowing the root CA vendors to
+    change their mind, this allowed us to add the "step-up" bit to roots when
+    the vendors received export clearance to issue "step-up" certs. ("Step-up"
+    certs are ones which let export-grade clients use strong crypto.)</li>
+
+    <li><code class="command">certUpdateRemoveTrust</code><br>
+    If the cert exists, the trust bits in "trustDelta" are removed from the
+    trust info stored in the database. This allows root CA vendors to change
+    their mind.</li>
+
+    <li><code class="command">certUpdateSetTrust</code><br>
+    If the cert exists, the trust info stored in the database is set to be the
+    value in "trustDelta." This also allows root CA vendors to change their
+    mind.</li>
+  </ul>
+
+  <h2>Example</h2>
+
+  <p>As an example, let us suppose that the first version of the NSS code
+  contained two root CA certificates from Example.com: one for server certs,
+  and one for individual certs. Originally, they wanted the first to be trusted
+  for SSL server authentication, and the second for s/mime and object signing.
+  The first version of the code would look like this:</p>
+
+  <p>In certdb.h: <code>#define CERT_DB_CONTENT_VERSION 1</code></p>
+
+  <p>In certinit.c:</p>
+
+  <pre class="code">
+static char example_com_server_ca[] = "....";
+static char example_com_individual_ca[] = "....";
+static certInitEntry initialcerts[] = {
+    {
+        example_com_server_ca,
+        "Example.com Server CA",
+        { DEFAULT_TRUST_FLAGS, 0, 0 },
+        1,
+        certUpdateAdd,
+        { 0, 0, 0 }
+    },
+    {
+        example_com_individual_ca,
+        "Example.com Individual CA",
+        { 0, DEFAULT_TRUST_FLAGS, DEFAULT_TRUST_FLAGS },
+        1,
+        certUpdateAdd,
+        { 0, 0, 0 }
+    }
+};
+</pre>
+
+  <p>Then let us suppose that Example.com received export approval to issue
+  step-up server certs, and they also decided that they'd prefer to have a
+  third root specifically for object signing. The next version of the code
+  might look like this:</p>
+
+  <p>In certdb.h: <code>#define CERT_DB_CONTENT_VERSION 2</code></p>
+
+  <p>In certinit.c:</p>
+
+  <pre class="code">
+static char example_com_server_ca[] = "....";
+static char example_com_individual_ca[] = "....";
+static char example_com_objsign_ca[] = "....";
+static certInitEntry initialcerts[] = {
+    {
+        example_com_server_ca,
+        "Example.com Server CA",
+        { DEFAULT_TRUST_FLAGS | CERTDB_GOVT_APPROVED_CA, 0, 0 },
+        1,
+        certUpdateAdd,
+        { 0, 0, 0 }
+    },
+    {
+        example_com_server_ca,
+        "Example.com Server CA",
+        { DEFAULT_TRUST_FLAGS | CERTDB_GOVT_APPROVED_CA, 0, 0 },
+        2,
+        certUpdateAddTrust, 
+        { CERTDB_GOVT_APPROVED_CA, 0, 0 }
+    },
+    {
+        example_com_individual_ca,
+        "Example.com Individual CA",
+        { 0, DEFAULT_TRUST_FLAGS, 0 },
+        1,
+        certUpdateAdd,
+        { 0, 0, 0 }
+    },
+    {
+        example_com_individual_ca,
+        "Example.com Individual CA",
+        { 0, DEFAULT_TRUST_FLAGS, 0 },
+        2,
+        certUpdateRemoveTrust,
+        { 0, 0, DEFAULT_TRUST_FLAGS }
+    },
+    {
+        example_com_objsign_ca,
+        "Example.com Code Signing CA",
+        { 0, 0, DEFAULT_TRUST_FLAGS },
+        2,
+        certUpdateAdd,
+        { 0, 0, 0 }
+    }
+};
+</pre>
+
+  <h2>One dimensional</h2>
+
+  <p>This scheme -- which admittedly grew over time -- worked when there was a
+  one-dimensional sequence of the Netscape client products. Unfortunately, this
+  scheme is not going to work if NSS is used in multiple divergent clients. In
+  particular, we're afraid someone will write a program based on NSS, add their
+  own root cert to their code (incrementing the database content version
+  number) and release that program. Anyone else who makes a program with a
+  similarly-numbered change (including future versions of Netscape, iPlanet, or
+  mozilla.org programs) would find that their root trust information would not
+  update properly. The only way this would work is if we all coordinated
+  database content version numbers, which I don't think will be workable,
+  especially in the long run.</p>
+
+  <h2>Going forward</h2>
+
+  <p>Luckily, we had already been planning on moving to a better system. We
+  would like to move all sources of data -- the local database, ldap servers,
+  these builtins, etc. -- to "data-only" PKCS#11 modules. This is in fact why
+  we wrote the "Cryptoki Framework" in lib/ckfw. Different products could
+  release small modules with their own trusted roots, and users could install
+  any number of these from various sources.</p>
+
+  <p>We have defined a PKCS#11 "trust object" definition. The current code does
+  not yet make use of "trust objects," but adding that soon will allow the code
+  to use these external data modules even before the databases are
+  replaced.</p>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

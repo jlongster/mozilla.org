@@ -1,0 +1,618 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /*
+<b><a name="2">    2</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="3">    3</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="4">    4</a></b>  *
+<b><a name="5">    5</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="6">    6</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="7">    7</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="8">    8</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="9">    9</a></b>  *
+<b><a name="10">   10</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="11">   11</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="12">   12</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="13">   13</a></b>  * License.
+<b><a name="14">   14</a></b>  *
+<b><a name="15">   15</a></b>  * The Original Code is the Multi-precision Binary Polynomial Arithmetic Library.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Initial Developer of the Original Code is
+<b><a name="18">   18</a></b>  * Sun Microsystems, Inc.
+<b><a name="19">   19</a></b>  * Portions created by the Initial Developer are Copyright (C) 2003
+<b><a name="20">   20</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="21">   21</a></b>  *
+<b><a name="22">   22</a></b>  * Contributor(s):
+<b><a name="23">   23</a></b>  *   Sheueling Chang Shantz &lt;sheueling.chang@sun.com&gt; and
+<b><a name="24">   24</a></b>  *   Douglas Stebila &lt;douglas@stebila.ca&gt; of Sun Laboratories.
+<b><a name="25">   25</a></b>  *
+<b><a name="26">   26</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="27">   27</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="28">   28</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="29">   29</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="30">   30</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="31">   31</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="32">   32</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="33">   33</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="34">   34</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="35">   35</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="36">   36</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="37">   37</a></b>  *
+<b><a name="38">   38</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="39">   39</a></b> 
+<b><a name="40">   40</a></b> #include "mp_gf2m.h"
+<b><a name="41">   41</a></b> #include "mp_gf2m-priv.h"
+<b><a name="42">   42</a></b> #include "mplogic.h"
+<b><a name="43">   43</a></b> #include "mpi-priv.h"
+<b><a name="44">   44</a></b> 
+<b><a name="45">   45</a></b> const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> <a href="#45">mp_gf2m_sqr_tb</a>[16] =
+<b><a name="46">   46</a></b> {
+<b><a name="47">   47</a></b>       0,     1,     4,     5,    16,    17,    20,    21,
+<b><a name="48">   48</a></b>      64,    65,    68,    69,    80,    81,    84,    85
+<b><a name="49">   49</a></b> };
+<b><a name="50">   50</a></b> 
+<b><a name="51">   51</a></b> /* Multiply two binary polynomials mp_digits a, b.
+<b><a name="52">   52</a></b>  * Result is a polynomial with degree &lt; 2 * MP_DIGIT_BITS - 1.
+<b><a name="53">   53</a></b>  * Output in two mp_digits rh, rl.
+<b><a name="54">   54</a></b>  */
+<b><a name="55">   55</a></b> #if <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a> == 32
+<b><a name="56">   56</a></b> void 
+<b><a name="57">   57</a></b> <a href="#57">s_bmul_1x1</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *rh, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *rl, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b)
+<b><a name="58">   58</a></b> {
+<b><a name="59">   59</a></b>     register <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> h, l, s;
+<b><a name="60">   60</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> tab[8], top2b = a &gt;&gt; 30; 
+<b><a name="61">   61</a></b>     register <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a1, a2, a4;
+<b><a name="62">   62</a></b> 
+<b><a name="63">   63</a></b>     a1 = a &amp; (0x3FFFFFFF); a2 = a1 &lt;&lt; 1; a4 = a2 &lt;&lt; 1;
+<b><a name="64">   64</a></b> 
+<b><a name="65">   65</a></b>     tab[0] =  0; tab[1] = a1;    tab[2] = a2;    tab[3] = a1^a2;
+<b><a name="66">   66</a></b>     tab[4] = a4; tab[5] = a1^a4; tab[6] = a2^a4; tab[7] = a1^a2^a4;
+<b><a name="67">   67</a></b> 
+<b><a name="68">   68</a></b>     s = tab[b       &amp; 0x7]; l  = s;
+<b><a name="69">   69</a></b>     s = tab[b &gt;&gt;  3 &amp; 0x7]; l ^= s &lt;&lt;  3; h  = s &gt;&gt; 29;
+<b><a name="70">   70</a></b>     s = tab[b &gt;&gt;  6 &amp; 0x7]; l ^= s &lt;&lt;  6; h ^= s &gt;&gt; 26;
+<b><a name="71">   71</a></b>     s = tab[b &gt;&gt;  9 &amp; 0x7]; l ^= s &lt;&lt;  9; h ^= s &gt;&gt; 23;
+<b><a name="72">   72</a></b>     s = tab[b &gt;&gt; 12 &amp; 0x7]; l ^= s &lt;&lt; 12; h ^= s &gt;&gt; 20;
+<b><a name="73">   73</a></b>     s = tab[b &gt;&gt; 15 &amp; 0x7]; l ^= s &lt;&lt; 15; h ^= s &gt;&gt; 17;
+<b><a name="74">   74</a></b>     s = tab[b &gt;&gt; 18 &amp; 0x7]; l ^= s &lt;&lt; 18; h ^= s &gt;&gt; 14;
+<b><a name="75">   75</a></b>     s = tab[b &gt;&gt; 21 &amp; 0x7]; l ^= s &lt;&lt; 21; h ^= s &gt;&gt; 11;
+<b><a name="76">   76</a></b>     s = tab[b &gt;&gt; 24 &amp; 0x7]; l ^= s &lt;&lt; 24; h ^= s &gt;&gt;  8;
+<b><a name="77">   77</a></b>     s = tab[b &gt;&gt; 27 &amp; 0x7]; l ^= s &lt;&lt; 27; h ^= s &gt;&gt;  5;
+<b><a name="78">   78</a></b>     s = tab[b &gt;&gt; 30      ]; l ^= s &lt;&lt; 30; h ^= s &gt;&gt;  2;
+<b><a name="79">   79</a></b> 
+<b><a name="80">   80</a></b>     /* compensate for the top two bits of a */
+<b><a name="81">   81</a></b> 
+<b><a name="82">   82</a></b>     if (top2b &amp; 01) { l ^= b &lt;&lt; 30; h ^= b &gt;&gt; 2; } 
+<b><a name="83">   83</a></b>     if (top2b &amp; 02) { l ^= b &lt;&lt; 31; h ^= b &gt;&gt; 1; } 
+<b><a name="84">   84</a></b> 
+<b><a name="85">   85</a></b>     *rh = h; *rl = l;
+<b><a name="86">   86</a></b> } 
+<b><a name="87">   87</a></b> #else
+<b><a name="88">   88</a></b> void 
+<b><a name="89">   89</a></b> <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_1x1">s_bmul_1x1</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *rh, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *rl, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b)
+<b><a name="90">   90</a></b> {
+<b><a name="91">   91</a></b>     register <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> h, l, s;
+<b><a name="92">   92</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> tab[16], top3b = a &gt;&gt; 61;
+<b><a name="93">   93</a></b>     register <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a1, a2, a4, a8;
+<b><a name="94">   94</a></b> 
+<b><a name="95">   95</a></b>     a1 = a &amp; (0x1FFFFFFFFFFFFFFFULL); a2 = a1 &lt;&lt; 1; 
+<b><a name="96">   96</a></b>     a4 = a2 &lt;&lt; 1; a8 = a4 &lt;&lt; 1;
+<b><a name="97">   97</a></b>     tab[ 0] = 0;     tab[ 1] = a1;       tab[ 2] = a2;       tab[ 3] = a1^a2;
+<b><a name="98">   98</a></b>     tab[ 4] = a4;    tab[ 5] = a1^a4;    tab[ 6] = a2^a4;    tab[ 7] = a1^a2^a4;
+<b><a name="99">   99</a></b>     tab[ 8] = a8;    tab[ 9] = a1^a8;    tab[10] = a2^a8;    tab[11] = a1^a2^a8;
+<b><a name="100">  100</a></b>     tab[12] = a4^a8; tab[13] = a1^a4^a8; tab[14] = a2^a4^a8; tab[15] = a1^a2^a4^a8;
+<b><a name="101">  101</a></b> 
+<b><a name="102">  102</a></b>     s = tab[b       &amp; 0xF]; l  = s;
+<b><a name="103">  103</a></b>     s = tab[b &gt;&gt;  4 &amp; 0xF]; l ^= s &lt;&lt;  4; h  = s &gt;&gt; 60;
+<b><a name="104">  104</a></b>     s = tab[b &gt;&gt;  8 &amp; 0xF]; l ^= s &lt;&lt;  8; h ^= s &gt;&gt; 56;
+<b><a name="105">  105</a></b>     s = tab[b &gt;&gt; 12 &amp; 0xF]; l ^= s &lt;&lt; 12; h ^= s &gt;&gt; 52;
+<b><a name="106">  106</a></b>     s = tab[b &gt;&gt; 16 &amp; 0xF]; l ^= s &lt;&lt; 16; h ^= s &gt;&gt; 48;
+<b><a name="107">  107</a></b>     s = tab[b &gt;&gt; 20 &amp; 0xF]; l ^= s &lt;&lt; 20; h ^= s &gt;&gt; 44;
+<b><a name="108">  108</a></b>     s = tab[b &gt;&gt; 24 &amp; 0xF]; l ^= s &lt;&lt; 24; h ^= s &gt;&gt; 40;
+<b><a name="109">  109</a></b>     s = tab[b &gt;&gt; 28 &amp; 0xF]; l ^= s &lt;&lt; 28; h ^= s &gt;&gt; 36;
+<b><a name="110">  110</a></b>     s = tab[b &gt;&gt; 32 &amp; 0xF]; l ^= s &lt;&lt; 32; h ^= s &gt;&gt; 32;
+<b><a name="111">  111</a></b>     s = tab[b &gt;&gt; 36 &amp; 0xF]; l ^= s &lt;&lt; 36; h ^= s &gt;&gt; 28;
+<b><a name="112">  112</a></b>     s = tab[b &gt;&gt; 40 &amp; 0xF]; l ^= s &lt;&lt; 40; h ^= s &gt;&gt; 24;
+<b><a name="113">  113</a></b>     s = tab[b &gt;&gt; 44 &amp; 0xF]; l ^= s &lt;&lt; 44; h ^= s &gt;&gt; 20;
+<b><a name="114">  114</a></b>     s = tab[b &gt;&gt; 48 &amp; 0xF]; l ^= s &lt;&lt; 48; h ^= s &gt;&gt; 16;
+<b><a name="115">  115</a></b>     s = tab[b &gt;&gt; 52 &amp; 0xF]; l ^= s &lt;&lt; 52; h ^= s &gt;&gt; 12;
+<b><a name="116">  116</a></b>     s = tab[b &gt;&gt; 56 &amp; 0xF]; l ^= s &lt;&lt; 56; h ^= s &gt;&gt;  8;
+<b><a name="117">  117</a></b>     s = tab[b &gt;&gt; 60      ]; l ^= s &lt;&lt; 60; h ^= s &gt;&gt;  4;
+<b><a name="118">  118</a></b> 
+<b><a name="119">  119</a></b>     /* compensate for the top three bits of a */
+<b><a name="120">  120</a></b> 
+<b><a name="121">  121</a></b>     if (top3b &amp; 01) { l ^= b &lt;&lt; 61; h ^= b &gt;&gt; 3; } 
+<b><a name="122">  122</a></b>     if (top3b &amp; 02) { l ^= b &lt;&lt; 62; h ^= b &gt;&gt; 2; } 
+<b><a name="123">  123</a></b>     if (top3b &amp; 04) { l ^= b &lt;&lt; 63; h ^= b &gt;&gt; 1; } 
+<b><a name="124">  124</a></b> 
+<b><a name="125">  125</a></b>     *rh = h; *rl = l;
+<b><a name="126">  126</a></b> } 
+<b><a name="127">  127</a></b> #endif
+<b><a name="128">  128</a></b> 
+<b><a name="129">  129</a></b> /* Compute xor-multiply of two binary polynomials  (a1, a0) x (b1, b0)  
+<b><a name="130">  130</a></b>  * result is a binary polynomial in 4 mp_digits r[4].
+<b><a name="131">  131</a></b>  * The caller MUST ensure that r has the right amount of space allocated.
+<b><a name="132">  132</a></b>  */
+<b><a name="133">  133</a></b> void 
+<b><a name="134">  134</a></b> <a href="#134">s_bmul_2x2</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *r, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a1, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a0, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b1,
+<b><a name="135">  135</a></b>            const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b0)
+<b><a name="136">  136</a></b> {
+<b><a name="137">  137</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> m1, m0;
+<b><a name="138">  138</a></b>     /* r[3] = h1, r[2] = h0; r[1] = l1; r[0] = l0 */
+<b><a name="139">  139</a></b>     <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_1x1">s_bmul_1x1</a>(r+3, r+2, a1, b1);
+<b><a name="140">  140</a></b>     <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_1x1">s_bmul_1x1</a>(r+1, r, a0, b0);
+<b><a name="141">  141</a></b>     <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_1x1">s_bmul_1x1</a>(&amp;m1, &amp;m0, a0 ^ a1, b0 ^ b1);
+<b><a name="142">  142</a></b>     /* Correction on m1 ^= l1 ^ h1; m0 ^= l0 ^ h0; */
+<b><a name="143">  143</a></b>     r[2] ^= m1 ^ r[1] ^ r[3];  /* h0 ^= m1 ^ l1 ^ h1; */
+<b><a name="144">  144</a></b>     r[1]  = r[3] ^ r[2] ^ r[0] ^ m1 ^ m0;  /* l1 ^= l0 ^ h0 ^ m0; */
+<b><a name="145">  145</a></b> }
+<b><a name="146">  146</a></b> 
+<b><a name="147">  147</a></b> /* Compute xor-multiply of two binary polynomials  (a2, a1, a0) x (b2, b1, b0)  
+<b><a name="148">  148</a></b>  * result is a binary polynomial in 6 mp_digits r[6].
+<b><a name="149">  149</a></b>  * The caller MUST ensure that r has the right amount of space allocated.
+<b><a name="150">  150</a></b>  */
+<b><a name="151">  151</a></b> void 
+<b><a name="152">  152</a></b> <a href="#152">s_bmul_3x3</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *r, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a2, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a1, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a0, 
+<b><a name="153">  153</a></b>         const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b2, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b1, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b0)
+<b><a name="154">  154</a></b> {
+<b><a name="155">  155</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> zm[4];
+<b><a name="156">  156</a></b> 
+<b><a name="157">  157</a></b>         <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_1x1">s_bmul_1x1</a>(r+5, r+4, a2, b2);         /* fill top 2 words */
+<b><a name="158">  158</a></b>         <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_2x2">s_bmul_2x2</a>(zm, a1, a2^a0, b1, b2^b0); /* fill middle 4 words */
+<b><a name="159">  159</a></b>         <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_2x2">s_bmul_2x2</a>(r, a1, a0, b1, b0);        /* fill bottom 4 words */
+<b><a name="160">  160</a></b> 
+<b><a name="161">  161</a></b>         zm[3] ^= r[3];
+<b><a name="162">  162</a></b>         zm[2] ^= r[2]; 
+<b><a name="163">  163</a></b>         zm[1] ^= r[1] ^ r[5];
+<b><a name="164">  164</a></b>         zm[0] ^= r[0] ^ r[4];
+<b><a name="165">  165</a></b> 
+<b><a name="166">  166</a></b>         r[5]  ^= zm[3];
+<b><a name="167">  167</a></b>         r[4]  ^= zm[2];
+<b><a name="168">  168</a></b>         r[3]  ^= zm[1];
+<b><a name="169">  169</a></b>         r[2]  ^= zm[0];
+<b><a name="170">  170</a></b> }
+<b><a name="171">  171</a></b> 
+<b><a name="172">  172</a></b> /* Compute xor-multiply of two binary polynomials  (a3, a2, a1, a0) x (b3, b2, b1, b0)  
+<b><a name="173">  173</a></b>  * result is a binary polynomial in 8 mp_digits r[8].
+<b><a name="174">  174</a></b>  * The caller MUST ensure that r has the right amount of space allocated.
+<b><a name="175">  175</a></b>  */
+<b><a name="176">  176</a></b> void <a href="#176">s_bmul_4x4</a>(<a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *r, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a3, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a2, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a1, 
+<b><a name="177">  177</a></b>         const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a0, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b3, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b2, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b1, 
+<b><a name="178">  178</a></b>         const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b0)
+<b><a name="179">  179</a></b> {
+<b><a name="180">  180</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> zm[4];
+<b><a name="181">  181</a></b> 
+<b><a name="182">  182</a></b>         <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_2x2">s_bmul_2x2</a>(r+4, a3, a2, b3, b2);            /* fill top 4 words */
+<b><a name="183">  183</a></b>         <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_2x2">s_bmul_2x2</a>(zm, a3^a1, a2^a0, b3^b1, b2^b0); /* fill middle 4 words */
+<b><a name="184">  184</a></b>         <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_2x2">s_bmul_2x2</a>(r, a1, a0, b1, b0);              /* fill bottom 4 words */
+<b><a name="185">  185</a></b> 
+<b><a name="186">  186</a></b>         zm[3] ^= r[3] ^ r[7]; 
+<b><a name="187">  187</a></b>         zm[2] ^= r[2] ^ r[6]; 
+<b><a name="188">  188</a></b>         zm[1] ^= r[1] ^ r[5]; 
+<b><a name="189">  189</a></b>         zm[0] ^= r[0] ^ r[4]; 
+<b><a name="190">  190</a></b> 
+<b><a name="191">  191</a></b>         r[5]  ^= zm[3];    
+<b><a name="192">  192</a></b>         r[4]  ^= zm[2];
+<b><a name="193">  193</a></b>         r[3]  ^= zm[1];    
+<b><a name="194">  194</a></b>         r[2]  ^= zm[0];
+<b><a name="195">  195</a></b> }
+<b><a name="196">  196</a></b> 
+<b><a name="197">  197</a></b> /* Compute addition of two binary polynomials a and b,
+<b><a name="198">  198</a></b>  * store result in c; c could be a or b, a and b could be equal; 
+<b><a name="199">  199</a></b>  * c is the bitwise XOR of a and b.
+<b><a name="200">  200</a></b>  */
+<b><a name="201">  201</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="202">  202</a></b> <a href="#202">mp_badd</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c)
+<b><a name="203">  203</a></b> {
+<b><a name="204">  204</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *pa, *pb, *pc;
+<b><a name="205">  205</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> ix;
+<b><a name="206">  206</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> used_pa, used_pb;
+<b><a name="207">  207</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="208">  208</a></b> 
+<b><a name="209">  209</a></b>     /* Add all digits up to the precision of b.  If b had more
+<b><a name="210">  210</a></b>      * precision than a initially, swap a, b first
+<b><a name="211">  211</a></b>      */
+<b><a name="212">  212</a></b>     if (<a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a) &gt;= <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(b)) {
+<b><a name="213">  213</a></b>         pa = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(a);
+<b><a name="214">  214</a></b>         pb = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(b);
+<b><a name="215">  215</a></b>         used_pa = <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a);
+<b><a name="216">  216</a></b>         used_pb = <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(b);
+<b><a name="217">  217</a></b>     } else {
+<b><a name="218">  218</a></b>         pa = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(b);
+<b><a name="219">  219</a></b>         pb = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(a);
+<b><a name="220">  220</a></b>         used_pa = <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(b);
+<b><a name="221">  221</a></b>         used_pb = <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a);
+<b><a name="222">  222</a></b>     }
+<b><a name="223">  223</a></b> 
+<b><a name="224">  224</a></b>     /* Make sure c has enough precision for the output value */
+<b><a name="225">  225</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#s_mp_pad">s_mp_pad</a>(c, used_pa) );
+<b><a name="226">  226</a></b> 
+<b><a name="227">  227</a></b>     /* Do word-by-word xor */
+<b><a name="228">  228</a></b>     pc = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(c);
+<b><a name="229">  229</a></b>     for (ix = 0; ix &lt; used_pb; ix++) {
+<b><a name="230">  230</a></b>         (*pc++) = (*pa++) ^ (*pb++);
+<b><a name="231">  231</a></b>     }
+<b><a name="232">  232</a></b> 
+<b><a name="233">  233</a></b>     /* Finish the rest of digits until we're actually done */
+<b><a name="234">  234</a></b>     for (; ix &lt; used_pa; ++ix) {
+<b><a name="235">  235</a></b>         *pc++ = *pa++;
+<b><a name="236">  236</a></b>     }
+<b><a name="237">  237</a></b> 
+<b><a name="238">  238</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(c) = used_pa;
+<b><a name="239">  239</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_SIGN">MP_SIGN</a>(c) = <a href="../../freebl/mpi/mpi.h.dep.html#ZPOS">ZPOS</a>;
+<b><a name="240">  240</a></b>     <a href="../../freebl/mpi/mpi.c.dep.html#s_mp_clamp">s_mp_clamp</a><a href="../../freebl/mpi/mpi-priv.h.dep.html#s_mp_clamp"><sup>[1]</sup></a>(c);
+<b><a name="241">  241</a></b> 
+<b><a name="242">  242</a></b> CLEANUP:
+<b><a name="243">  243</a></b>     return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="244">  244</a></b> } 
+<b><a name="245">  245</a></b> 
+<b><a name="246">  246</a></b> #define <a href="#246">s_mp_div2</a>(a) <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mplogic.c.dep.html#mpl_rsh">mpl_rsh</a>((a), (a), 1) );
+<b><a name="247">  247</a></b> 
+<b><a name="248">  248</a></b> /* Compute binary polynomial multiply d = a * b */
+<b><a name="249">  249</a></b> static void 
+<b><a name="250">  250</a></b> <a href="#250">s_bmul_d</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> a_len, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *d)
+<b><a name="251">  251</a></b> {
+<b><a name="252">  252</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a_i, a0b0, a1b1, carry = 0;
+<b><a name="253">  253</a></b>     while (a_len--) {
+<b><a name="254">  254</a></b>         a_i = *a++;
+<b><a name="255">  255</a></b>         <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_1x1">s_bmul_1x1</a>(&amp;a1b1, &amp;a0b0, a_i, b);
+<b><a name="256">  256</a></b>         *d++ = a0b0 ^ carry;
+<b><a name="257">  257</a></b>         carry = a1b1;
+<b><a name="258">  258</a></b>     }
+<b><a name="259">  259</a></b>     *d = carry;
+<b><a name="260">  260</a></b> }
+<b><a name="261">  261</a></b> 
+<b><a name="262">  262</a></b> /* Compute binary polynomial xor multiply accumulate d ^= a * b */
+<b><a name="263">  263</a></b> static void 
+<b><a name="264">  264</a></b> <a href="#264">s_bmul_d_add</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *a, <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> a_len, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *d)
+<b><a name="265">  265</a></b> {
+<b><a name="266">  266</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> a_i, a0b0, a1b1, carry = 0;
+<b><a name="267">  267</a></b>     while (a_len--) {
+<b><a name="268">  268</a></b>         a_i = *a++;
+<b><a name="269">  269</a></b>         <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_1x1">s_bmul_1x1</a>(&amp;a1b1, &amp;a0b0, a_i, b);
+<b><a name="270">  270</a></b>         *d++ ^= a0b0 ^ carry;
+<b><a name="271">  271</a></b>         carry = a1b1;
+<b><a name="272">  272</a></b>     }
+<b><a name="273">  273</a></b>     *d ^= carry;
+<b><a name="274">  274</a></b> }
+<b><a name="275">  275</a></b> 
+<b><a name="276">  276</a></b> /* Compute binary polynomial xor multiply c = a * b.  
+<b><a name="277">  277</a></b>  * All parameters may be identical.
+<b><a name="278">  278</a></b>  */
+<b><a name="279">  279</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> 
+<b><a name="280">  280</a></b> <a href="#280">mp_bmul</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *c)
+<b><a name="281">  281</a></b> {
+<b><a name="282">  282</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *pb, b_i;
+<b><a name="283">  283</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="284">  284</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> ib, a_used, b_used;
+<b><a name="285">  285</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="286">  286</a></b> 
+<b><a name="287">  287</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>) = 0;
+<b><a name="288">  288</a></b> 
+<b><a name="289">  289</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#ARGCHK">ARGCHK</a></a></a>(a != NULL &amp;&amp; b != NULL &amp;&amp; c != NULL, <a href="../../freebl/mpi/mpi.h.dep.html#MP_BADARG">MP_BADARG</a>);
+<b><a name="290">  290</a></b> 
+<b><a name="291">  291</a></b>     if (a == c) {
+<b><a name="292">  292</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#mp_init_copy">mp_init_copy</a>(&amp;<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, a) );
+<b><a name="293">  293</a></b>         if (a == b)
+<b><a name="294">  294</a></b>             b = &amp;<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="295">  295</a></b>         a = &amp;<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="296">  296</a></b>     } else if (b == c) {
+<b><a name="297">  297</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#mp_init_copy">mp_init_copy</a>(&amp;<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, b) );
+<b><a name="298">  298</a></b>         b = &amp;<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="299">  299</a></b>     }
+<b><a name="300">  300</a></b> 
+<b><a name="301">  301</a></b>     if (<a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a) &lt; <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(b)) {
+<b><a name="302">  302</a></b>         const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *xch = b;      /* switch a and b if b longer */
+<b><a name="303">  303</a></b>         b = a;
+<b><a name="304">  304</a></b>         a = xch;
+<b><a name="305">  305</a></b>     }
+<b><a name="306">  306</a></b> 
+<b><a name="307">  307</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(c) = 1; <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(c, 0) = 0;
+<b><a name="308">  308</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#s_mp_pad">s_mp_pad</a>(c, <a href="../../freebl/mpi/mpi.h.dep.html#USED">USED</a>(a) + <a href="../../freebl/mpi/mpi.h.dep.html#USED">USED</a>(b)) );
+<b><a name="309">  309</a></b> 
+<b><a name="310">  310</a></b>     pb = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(b);
+<b><a name="311">  311</a></b>     <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_d">s_bmul_d</a>(<a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(a), <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a), *pb++, <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(c));
+<b><a name="312">  312</a></b> 
+<b><a name="313">  313</a></b>     /* Outer loop:  Digits of b */
+<b><a name="314">  314</a></b>     a_used = <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a);
+<b><a name="315">  315</a></b>     b_used = <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(b);
+<b><a name="316">  316</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(c) = a_used + b_used;
+<b><a name="317">  317</a></b>     for (ib = 1; ib &lt; b_used; ib++) {
+<b><a name="318">  318</a></b>         b_i = *pb++;
+<b><a name="319">  319</a></b> 
+<b><a name="320">  320</a></b>         /* Inner product:  Digits of a */
+<b><a name="321">  321</a></b>         if (b_i)
+<b><a name="322">  322</a></b>             <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_bmul_d_add">s_bmul_d_add</a>(<a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(a), a_used, b_i, <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(c) + ib);
+<b><a name="323">  323</a></b>         else
+<b><a name="324">  324</a></b>             <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(c, ib + a_used) = b_i;
+<b><a name="325">  325</a></b>     }
+<b><a name="326">  326</a></b> 
+<b><a name="327">  327</a></b>     <a href="../../freebl/mpi/mpi.c.dep.html#s_mp_clamp">s_mp_clamp</a><a href="../../freebl/mpi/mpi-priv.h.dep.html#s_mp_clamp"><sup>[1]</sup></a>(c);
+<b><a name="328">  328</a></b> 
+<b><a name="329">  329</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#SIGN">SIGN</a>(c) = <a href="../../freebl/mpi/mpi.h.dep.html#ZPOS">ZPOS</a>;
+<b><a name="330">  330</a></b> 
+<b><a name="331">  331</a></b> CLEANUP:
+<b><a name="332">  332</a></b>     <a href="../../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>);
+<b><a name="333">  333</a></b>     return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="334">  334</a></b> }
+<b><a name="335">  335</a></b> 
+<b><a name="336">  336</a></b> 
+<b><a name="337">  337</a></b> /* Compute modular reduction of a and store result in r.  
+<b><a name="338">  338</a></b>  * r could be a. 
+<b><a name="339">  339</a></b>  * For modular arithmetic, the irreducible polynomial f(t) is represented 
+<b><a name="340">  340</a></b>  * as an array of int[], where f(t) is of the form: 
+<b><a name="341">  341</a></b>  *     f(t) = t^p[0] + t^p[1] + ... + t^p[k]
+<b><a name="342">  342</a></b>  * where m = p[0] &gt; p[1] &gt; ... &gt; p[k] = 0.
+<b><a name="343">  343</a></b>  */
+<b><a name="344">  344</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="345">  345</a></b> <a href="#345">mp_bmod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const unsigned int p[], <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r)
+<b><a name="346">  346</a></b> {
+<b><a name="347">  347</a></b>     int j, k;
+<b><a name="348">  348</a></b>     int n, dN, d0, d1;
+<b><a name="349">  349</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> zz, *z, <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="350">  350</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> used;
+<b><a name="351">  351</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="352">  352</a></b> 
+<b><a name="353">  353</a></b>     /* The algorithm does the reduction in place in r, 
+<b><a name="354">  354</a></b>      * if a != r, copy a into r first so reduction can be done in r
+<b><a name="355">  355</a></b>      */
+<b><a name="356">  356</a></b>     if (a != r) {
+<b><a name="357">  357</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(a, r) );
+<b><a name="358">  358</a></b>     }
+<b><a name="359">  359</a></b>     z = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(r);
+<b><a name="360">  360</a></b> 
+<b><a name="361">  361</a></b>     /* start reduction */
+<b><a name="362">  362</a></b>     dN = p[0] / <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a>;
+<b><a name="363">  363</a></b>     used = <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(r);
+<b><a name="364">  364</a></b> 
+<b><a name="365">  365</a></b>     for (j = used - 1; j &gt; dN;) {
+<b><a name="366">  366</a></b> 
+<b><a name="367">  367</a></b>         zz = z[j];
+<b><a name="368">  368</a></b>         if (zz == 0) {
+<b><a name="369">  369</a></b>             j--; continue;
+<b><a name="370">  370</a></b>         }
+<b><a name="371">  371</a></b>         z[j] = 0;
+<b><a name="372">  372</a></b> 
+<b><a name="373">  373</a></b>         for (k = 1; p[k] &gt; 0; k++) {
+<b><a name="374">  374</a></b>             /* reducing component t^p[k] */
+<b><a name="375">  375</a></b>             n = p[0] - p[k];
+<b><a name="376">  376</a></b>             d0 = n % <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a>;  
+<b><a name="377">  377</a></b>             d1 = <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a> - d0;
+<b><a name="378">  378</a></b>             n /= <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a>;
+<b><a name="379">  379</a></b>             z[j-n] ^= (zz&gt;&gt;d0);
+<b><a name="380">  380</a></b>             if (d0) 
+<b><a name="381">  381</a></b>                 z[j-n-1] ^= (zz&lt;&lt;d1);
+<b><a name="382">  382</a></b>         }
+<b><a name="383">  383</a></b> 
+<b><a name="384">  384</a></b>         /* reducing component t^0 */
+<b><a name="385">  385</a></b>         n = dN;  
+<b><a name="386">  386</a></b>         d0 = p[0] % <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a>;
+<b><a name="387">  387</a></b>         d1 = <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a> - d0;
+<b><a name="388">  388</a></b>         z[j-n] ^= (zz &gt;&gt; d0);
+<b><a name="389">  389</a></b>         if (d0) 
+<b><a name="390">  390</a></b>             z[j-n-1] ^= (zz &lt;&lt; d1);
+<b><a name="391">  391</a></b> 
+<b><a name="392">  392</a></b>     }
+<b><a name="393">  393</a></b> 
+<b><a name="394">  394</a></b>     /* final round of reduction */
+<b><a name="395">  395</a></b>     while (j == dN) {
+<b><a name="396">  396</a></b> 
+<b><a name="397">  397</a></b>         d0 = p[0] % <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a>;
+<b><a name="398">  398</a></b>         zz = z[dN] &gt;&gt; d0;  
+<b><a name="399">  399</a></b>         if (zz == 0) break;
+<b><a name="400">  400</a></b>         d1 = <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a> - d0;
+<b><a name="401">  401</a></b> 
+<b><a name="402">  402</a></b>         /* clear up the top d1 bits */
+<b><a name="403">  403</a></b>         if (d0) z[dN] = (z[dN] &lt;&lt; d1) &gt;&gt; d1; 
+<b><a name="404">  404</a></b>         *z ^= zz; /* reduction t^0 component */
+<b><a name="405">  405</a></b> 
+<b><a name="406">  406</a></b>         for (k = 1; p[k] &gt; 0; k++) {
+<b><a name="407">  407</a></b>             /* reducing component t^p[k]*/
+<b><a name="408">  408</a></b>             n = p[k] / <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a>;
+<b><a name="409">  409</a></b>             d0 = p[k] % <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a>;
+<b><a name="410">  410</a></b>             d1 = <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#MP_DIGIT_BITS">MP_DIGIT_BITS</a></a> - d0;
+<b><a name="411">  411</a></b>             z[n] ^= (zz &lt;&lt; d0);
+<b><a name="412">  412</a></b>             <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = zz &gt;&gt; d1;
+<b><a name="413">  413</a></b>             if (d0 &amp;&amp; <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>)
+<b><a name="414">  414</a></b>                 z[n+1] ^= <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="415">  415</a></b>         }
+<b><a name="416">  416</a></b>     }
+<b><a name="417">  417</a></b> 
+<b><a name="418">  418</a></b>     <a href="../../freebl/mpi/mpi.c.dep.html#s_mp_clamp">s_mp_clamp</a><a href="../../freebl/mpi/mpi-priv.h.dep.html#s_mp_clamp"><sup>[1]</sup></a>(r);
+<b><a name="419">  419</a></b> CLEANUP:
+<b><a name="420">  420</a></b>     return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="421">  421</a></b> }
+<b><a name="422">  422</a></b> 
+<b><a name="423">  423</a></b> /* Compute the product of two polynomials a and b, reduce modulo p, 
+<b><a name="424">  424</a></b>  * Store the result in r.  r could be a or b; a could be b.
+<b><a name="425">  425</a></b>  */
+<b><a name="426">  426</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> 
+<b><a name="427">  427</a></b> <a href="#427">mp_bmulmod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *b, const unsigned int p[], <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r)
+<b><a name="428">  428</a></b> {
+<b><a name="429">  429</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="430">  430</a></b>     
+<b><a name="431">  431</a></b>     if (a == b) return <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_bsqrmod">mp_bsqrmod</a>(a, p, r);
+<b><a name="432">  432</a></b>     if ((<a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_bmul">mp_bmul</a>(a, b, r) ) != <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>)
+<b><a name="433">  433</a></b>         return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="434">  434</a></b>     return <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_bmod">mp_bmod</a>(r, p, r);
+<b><a name="435">  435</a></b> }
+<b><a name="436">  436</a></b> 
+<b><a name="437">  437</a></b> /* Compute binary polynomial squaring c = a*a mod p .  
+<b><a name="438">  438</a></b>  * Parameter r and a can be identical.
+<b><a name="439">  439</a></b>  */
+<b><a name="440">  440</a></b> 
+<b><a name="441">  441</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> 
+<b><a name="442">  442</a></b> <a href="#442">mp_bsqrmod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, const unsigned int p[], <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r)
+<b><a name="443">  443</a></b> {
+<b><a name="444">  444</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> *pa, *pr, a_i;
+<b><a name="445">  445</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> <a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="446">  446</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_size">mp_size</a> ia, a_used;
+<b><a name="447">  447</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="448">  448</a></b> 
+<b><a name="449">  449</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#ARGCHK">ARGCHK</a></a></a>(a != NULL &amp;&amp; r != NULL, <a href="../../freebl/mpi/mpi.h.dep.html#MP_BADARG">MP_BADARG</a>);
+<b><a name="450">  450</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>) = 0;
+<b><a name="451">  451</a></b> 
+<b><a name="452">  452</a></b>     if (a == r) {
+<b><a name="453">  453</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#mp_init_copy">mp_init_copy</a>(&amp;<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>, a) );
+<b><a name="454">  454</a></b>         a = &amp;<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="455">  455</a></b>     }
+<b><a name="456">  456</a></b> 
+<b><a name="457">  457</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(r) = 1; <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 0) = 0;
+<b><a name="458">  458</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#s_mp_pad">s_mp_pad</a>(r, 2*<a href="../../freebl/mpi/mpi.h.dep.html#USED">USED</a>(a)) );
+<b><a name="459">  459</a></b> 
+<b><a name="460">  460</a></b>     pa = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(a);
+<b><a name="461">  461</a></b>     pr = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(r);
+<b><a name="462">  462</a></b>     a_used = <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a);
+<b><a name="463">  463</a></b>         <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(r) = 2 * a_used;
+<b><a name="464">  464</a></b> 
+<b><a name="465">  465</a></b>     for (ia = 0; ia &lt; a_used; ia++) {
+<b><a name="466">  466</a></b>         a_i = *pa++;
+<b><a name="467">  467</a></b>         *pr++ = <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#gf2m_SQR0">gf2m_SQR0</a></a>(a_i);
+<b><a name="468">  468</a></b>         *pr++ = <a href="../../freebl/mpi/mp_gf2m-priv.h.dep.html#gf2m_SQR1">gf2m_SQR1</a></a>(a_i);
+<b><a name="469">  469</a></b>     }
+<b><a name="470">  470</a></b> 
+<b><a name="471">  471</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_bmod">mp_bmod</a>(r, p, r) );
+<b><a name="472">  472</a></b>     <a href="../../freebl/mpi/mpi.c.dep.html#s_mp_clamp">s_mp_clamp</a><a href="../../freebl/mpi/mpi-priv.h.dep.html#s_mp_clamp"><sup>[1]</sup></a>(r);
+<b><a name="473">  473</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#SIGN">SIGN</a>(r) = <a href="../../freebl/mpi/mpi.h.dep.html#ZPOS">ZPOS</a>;
+<b><a name="474">  474</a></b> 
+<b><a name="475">  475</a></b> CLEANUP:
+<b><a name="476">  476</a></b>     <a href="../../freebl/mpi/mpi.c.dep.html#mp_clear">mp_clear</a>(&amp;<a href="../../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>);
+<b><a name="477">  477</a></b>     return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="478">  478</a></b> }
+<b><a name="479">  479</a></b> 
+<b><a name="480">  480</a></b> /* Compute binary polynomial y/x mod p, y divided by x, reduce modulo p.
+<b><a name="481">  481</a></b>  * Store the result in r. r could be x or y, and x could equal y.
+<b><a name="482">  482</a></b>  * Uses algorithm Modular_Division_GF(2^m) from 
+<b><a name="483">  483</a></b>  *     Chang-Shantz, S.  "From Euclid's GCD to Montgomery Multiplication to 
+<b><a name="484">  484</a></b>  *     the Great Divide".
+<b><a name="485">  485</a></b>  */
+<b><a name="486">  486</a></b> int 
+<b><a name="487">  487</a></b> <a href="#487">mp_bdivmod</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *y, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *x, const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *pp, 
+<b><a name="488">  488</a></b>     const unsigned int p[], <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *r)
+<b><a name="489">  489</a></b> {
+<b><a name="490">  490</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> aa, bb, uu;
+<b><a name="491">  491</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, *b, *u, *v;
+<b><a name="492">  492</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="493">  493</a></b> 
+<b><a name="494">  494</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;aa) = 0;
+<b><a name="495">  495</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;bb) = 0;
+<b><a name="496">  496</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGITS">MP_DIGITS</a>(&amp;uu) = 0;
+<b><a name="497">  497</a></b> 
+<b><a name="498">  498</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#mp_init_copy">mp_init_copy</a>(&amp;aa, x) );
+<b><a name="499">  499</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#mp_init_copy">mp_init_copy</a>(&amp;uu, y) );
+<b><a name="500">  500</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#mp_init_copy">mp_init_copy</a>(&amp;bb, pp) );
+<b><a name="501">  501</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#s_mp_pad">s_mp_pad</a>(r, <a href="../../freebl/mpi/mpi.h.dep.html#USED">USED</a>(pp)) );
+<b><a name="502">  502</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(r) = 1; <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(r, 0) = 0;
+<b><a name="503">  503</a></b> 
+<b><a name="504">  504</a></b>     a = &amp;aa; b= &amp;bb; u=&amp;uu; v=r;
+<b><a name="505">  505</a></b>     /* reduce x and y mod p */
+<b><a name="506">  506</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_bmod">mp_bmod</a>(a, p, a) );
+<b><a name="507">  507</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_bmod">mp_bmod</a>(u, p, u) );
+<b><a name="508">  508</a></b> 
+<b><a name="509">  509</a></b>     while (!<a href="../../freebl/mpi/mpi.c.dep.html#mp_isodd">mp_isodd</a>(a)) {
+<b><a name="510">  510</a></b>         <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_mp_div2">s_mp_div2</a>(a);
+<b><a name="511">  511</a></b>         if (<a href="../../freebl/mpi/mpi.c.dep.html#mp_isodd">mp_isodd</a>(u)) {
+<b><a name="512">  512</a></b>             <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_badd">mp_badd</a>(u, pp, u) );
+<b><a name="513">  513</a></b>         }
+<b><a name="514">  514</a></b>         <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_mp_div2">s_mp_div2</a>(u);
+<b><a name="515">  515</a></b>     }
+<b><a name="516">  516</a></b> 
+<b><a name="517">  517</a></b>     do {
+<b><a name="518">  518</a></b>         if (<a href="../../freebl/mpi/mpi.c.dep.html#mp_cmp_mag">mp_cmp_mag</a>(b, a) &gt; 0) {
+<b><a name="519">  519</a></b>             <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_badd">mp_badd</a>(b, a, b) );
+<b><a name="520">  520</a></b>             <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_badd">mp_badd</a>(v, u, v) );
+<b><a name="521">  521</a></b>             do {
+<b><a name="522">  522</a></b>                 <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_mp_div2">s_mp_div2</a>(b);
+<b><a name="523">  523</a></b>                 if (<a href="../../freebl/mpi/mpi.c.dep.html#mp_isodd">mp_isodd</a>(v)) {
+<b><a name="524">  524</a></b>                     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_badd">mp_badd</a>(v, pp, v) );
+<b><a name="525">  525</a></b>                 }
+<b><a name="526">  526</a></b>                 <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_mp_div2">s_mp_div2</a>(v);
+<b><a name="527">  527</a></b>             } while (!<a href="../../freebl/mpi/mpi.c.dep.html#mp_isodd">mp_isodd</a>(b));
+<b><a name="528">  528</a></b>         }
+<b><a name="529">  529</a></b>         else if ((<a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT">MP_DIGIT</a>(a,0) == 1) &amp;&amp; (<a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a) == 1))
+<b><a name="530">  530</a></b>             break;
+<b><a name="531">  531</a></b>         else {
+<b><a name="532">  532</a></b>             <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_badd">mp_badd</a>(a, b, a) );
+<b><a name="533">  533</a></b>             <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_badd">mp_badd</a>(u, v, u) );
+<b><a name="534">  534</a></b>             do {
+<b><a name="535">  535</a></b>                 <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_mp_div2">s_mp_div2</a>(a);
+<b><a name="536">  536</a></b>                 if (<a href="../../freebl/mpi/mpi.c.dep.html#mp_isodd">mp_isodd</a>(u)) {
+<b><a name="537">  537</a></b>                     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mp_gf2m.c.dep.html#mp_badd">mp_badd</a>(u, pp, u) );
+<b><a name="538">  538</a></b>                 }
+<b><a name="539">  539</a></b>                 <a href="../../freebl/mpi/mp_gf2m.c.dep.html#s_mp_div2">s_mp_div2</a>(u);
+<b><a name="540">  540</a></b>             } while (!<a href="../../freebl/mpi/mpi.c.dep.html#mp_isodd">mp_isodd</a>(a));
+<b><a name="541">  541</a></b>         }
+<b><a name="542">  542</a></b>     } while (1);
+<b><a name="543">  543</a></b> 
+<b><a name="544">  544</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mpi.c.dep.html#mp_copy">mp_copy</a>(u, r) );
+<b><a name="545">  545</a></b> 
+<b><a name="546">  546</a></b> CLEANUP:
+<b><a name="547">  547</a></b>     return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="548">  548</a></b> 
+<b><a name="549">  549</a></b> }
+<b><a name="550">  550</a></b> 
+<b><a name="551">  551</a></b> /* Convert the bit-string representation of a polynomial a into an array
+<b><a name="552">  552</a></b>  * of integers corresponding to the bits with non-zero coefficient.
+<b><a name="553">  553</a></b>  * Up to max elements of the array will be filled.  Return value is total
+<b><a name="554">  554</a></b>  * number of coefficients that would be extracted if array was large enough.
+<b><a name="555">  555</a></b>  */
+<b><a name="556">  556</a></b> int
+<b><a name="557">  557</a></b> <a href="#557">mp_bpoly2arr</a>(const <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a, unsigned int p[], int max)
+<b><a name="558">  558</a></b> {
+<b><a name="559">  559</a></b>     <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>, j, k;
+<b><a name="560">  560</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_digit">mp_digit</a></a></a> top_bit, mask;
+<b><a name="561">  561</a></b> 
+<b><a name="562">  562</a></b>     top_bit = 1;
+<b><a name="563">  563</a></b>     top_bit &lt;&lt;= <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_BIT">MP_DIGIT_BIT</a> - 1;
+<b><a name="564">  564</a></b> 
+<b><a name="565">  565</a></b>     for (k = 0; k &lt; max; k++) p[k] = 0;
+<b><a name="566">  566</a></b>     k = 0;
+<b><a name="567">  567</a></b> 
+<b><a name="568">  568</a></b>     for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_USED">MP_USED</a>(a) - 1; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> &gt;= 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>--) {
+<b><a name="569">  569</a></b>         mask = top_bit;
+<b><a name="570">  570</a></b>         for (j = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_BIT">MP_DIGIT_BIT</a> - 1; j &gt;= 0; j--) {
+<b><a name="571">  571</a></b>             <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>.h.dep.html#MP_DIGITS">MP_DIGITS</a>(a)[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>] &amp; mask) {
+<b><a name="572">  572</a></b>                 <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (k &lt; max) p[k] = <a href="../../freebl/mpi/mpi.h.dep.html#MP_DIGIT_BIT">MP_DIGIT_BIT</a> * <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> + j;
+<b><a name="573">  573</a></b>                 k++;
+<b><a name="574">  574</a></b>             }
+<b><a name="575">  575</a></b>             mask &gt;&gt;= 1;
+<b><a name="576">  576</a></b>         }
+<b><a name="577">  577</a></b>     }
+<b><a name="578">  578</a></b> 
+<b><a name="579">  579</a></b>     return k;
+<b><a name="580">  580</a></b> }
+<b><a name="581">  581</a></b> 
+<b><a name="582">  582</a></b> /* Convert the coefficient array representation of a polynomial to a 
+<b><a name="583">  583</a></b>  * bit-string.  The array must be terminated by 0.
+<b><a name="584">  584</a></b>  */
+<b><a name="585">  585</a></b> <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a>
+<b><a name="586">  586</a></b> <a href="#586">mp_barr2poly</a>(const unsigned int p[], <a href="../../freebl/mpi/mpi.h.dep.html#mp_int">mp_int</a> *a)
+<b><a name="587">  587</a></b> {
+<b><a name="588">  588</a></b> 
+<b><a name="589">  589</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#mp_err">mp_err</a> <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a> = <a href="../../freebl/mpi/mpi.h.dep.html#MP_OKAY">MP_OKAY</a>;
+<b><a name="590">  590</a></b>     <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="591">  591</a></b> 
+<b><a name="592">  592</a></b>     <a href="../../freebl/mpi/mpi.c.dep.html#mp_zero">mp_zero</a>(a);
+<b><a name="593">  593</a></b>     for (<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a> = 0; p[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>] &gt; 0; <a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="594">  594</a></b>         <a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mp<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>/mplog<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>c.c.dep.html#mpl_set_b<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>t">mpl_set_b<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>t</a>(a, p[<a href="../../softoken/pk11pars.h.dep.html#i">i</a></a></a>], 1) );
+<b><a name="595">  595</a></b>     }
+<b><a name="596">  596</a></b>     <a href="../../freebl/mpi/mpi.h.dep.html#MP_CHECKOK">MP_CHECKOK</a>( <a href="../../freebl/mpi/mplogic.c.dep.html#mpl_set_bit">mpl_set_bit</a>(a, 0, 1) );
+<b><a name="597">  597</a></b>         
+<b><a name="598">  598</a></b> CLEANUP:
+<b><a name="599">  599</a></b>     return <a href="../../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="600">  600</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

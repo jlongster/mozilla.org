@@ -1,0 +1,400 @@
+<?php
+
+$html_title = 'Crypto Interface';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<h2 align="center">Crypto Interface</h2>
+<br>
+All crypto methods are implemented by NSSCryptoContext.  Contexts are
+capable of continuing (multi-part) operations.  The state of contexts
+can be saved and restored.<br>
+<br>
+Additionally, PKI objects are capable of performing some single-part
+crypto operations.  Symmetric keys can encrypt, decrypt, sign (HMAC),
+and verify data.  Public keys can encrypt and verify data.  Private
+keys can decrypt and sign data.  Certs can perform all public
+key operations, and user certificates can also perform private key
+operations.<br>
+<br>
+Crypto contexts work with a distinguished object.  The context is capable
+performing all of the operations that the distinguished object can perform.
+For example, if the context contains a symmetric key, the context may
+encrypt and decrypt data with that key.  Additionally, the context may
+sign and verify data with the key, where the operation will be a symmetric
+sign, or HMAC.<br>
+<br>
+<a name="digest"></a><b>Digest Interface</b><br>
+<br>
+<tt><b>BeginDigest</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+PRStatus
+BeginDigest (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<tt><b>ContinueDigest</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+PRStatus
+NSSCryptoContext_ContinueDigest (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *item
+);
+</pre>
+<br>
+<tt><b>DigestKey</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+PRStatus
+DigestKey (
+  &lt;_implementor_&gt; *imp,
+  NSSSymKey *mkOpt
+);
+</pre>
+<br>
+<tt><b>FinishDigest</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+NSSItem *
+FinishDigest (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>Digest</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+NSS_EXTERN NSSItem *
+NSSCryptoContext_Digest (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSItem *data,
+  NSSCallback *uhhOpt,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<br>
+<a name="encryption"></a><b>Encryption Interface</b><br>
+<br>
+<tt><b>BeginEncrypt</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+PRStatus
+BeginEncrypt (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<tt><b>ContinueEncrypt</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+NSSItem *
+ContinueEncrypt (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *data,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>FinishEncrypt</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+NSSItem *
+FinishEncrypt (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<a name="Encrypt"></a>
+<tt><b>Encrypt</b></tt><br>
+<i>implemented by: NSSSymKey, NSSPublicKey*, NSSCryptoContext</i><br>
+<pre>
+NSSItem *
+Encrypt (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *ap,
+  NSSItem *data,
+  NSSCallback *uhh,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<br>
+<a name="decryption"></a><b>Decryption Interface</b><br>
+<br>
+<tt><b>BeginDecrypt</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+PRStatus
+BeginDecrypt (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<tt><b>ContinueDecrypt</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+NSSItem *
+ContinueDecrypt (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *data,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<tt><b>FinishDecrypt</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+NSSItem *
+FinishDecrypt (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<a name="Decrypt"></a>
+<tt><b>Decrypt</b></tt><br>
+<i>implemented by: NSSSymKey, NSSPrivateKey*, NSSCryptoContext</i><br>
+<pre>
+NSSItem *
+Decrypt (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSItem *encryptedData,
+  NSSCallback *uhhOpt,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<br>
+<a name="signing"></a><b>Signature Interface</b><br>
+<br>
+The signature interface is implemented by both private keys and symmetric
+keys.  For the latter, the operation is a keyed digest, or HMAC.  When
+signing is done by a crypto context, the type of operation is determined
+by the distinguished object (which must be a private key, user certificate,
+or symmetric key).<br>
+<br>
+<tt><b>BeginSign</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+PRStatus
+BeginSign (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSCallback *uhhOpt
+);
+</pre>
+<tt><b>ContinueSign</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+NSS_EXTERN PRStatus
+NSSCryptoContext_ContinueSign (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *data
+);
+</pre>
+<tt><b>FinishSign</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+NSSItem *
+FinishSign (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<a name="Sign"></a>
+<tt><b>Sign</b></tt><br>
+<i>implemented by: NSSSymKey, NSSPrivateKey*, NSSCryptoContext</i><br>
+<pre>
+NSSItem *
+Sign (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSItem *data,
+  NSSCallback *uhhOpt,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<a name="SignRecover"></a>
+<tt><b>SignRecover</b></tt><br>
+<i>implemented by: NSSPrivateKey*, NSSCryptoContext</i><br>
+<pre>
+NSS_EXTERN NSSItem *
+NSSPrivateKey_SignRecover (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSItem *data,
+  NSSCallback *uhh,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<br>
+<a name="verification"></a><b>Signature Verification Interface</b><br>
+<br>
+<tt><b>BeginVerify</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+PRStatus
+BeginVerify (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSCallback *uhhOpt
+);
+</pre>
+<tt><b>ContinueVerify</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+PRStatus
+ContinueVerify (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *data
+);
+</pre>
+<tt><b>FinishVerify</b></tt><br>
+<i>implemented by: NSSCryptoContext</i><br>
+<pre>
+PRStatus
+FinishVerify (
+  &lt;_implementor_&gt; *imp,
+  NSSItem *signature
+);
+</pre>
+<a name="Verify"></a>
+<tt><b>Verify</b></tt><br>
+<i>implemented by: NSSSymKey, NSSPublicKey*, NSSCryptoContext</i><br>
+<pre>
+PRStatus
+Verify (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSItem *data,
+  NSSItem *signature,
+  NSSCallback *uhhOpt
+);
+</pre>
+<a name="VerifyRecover"></a>
+<tt><b>VerifyRecover</b></tt><br>
+<i>implemented by: NSSPublicKey*, NSSCryptoContext</i><br>
+<pre>
+NSSItem *
+VerifyRecover (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSItem *signature,
+  NSSCallback *uhhOpt,
+  NSSItem *rvOpt,
+  NSSArena *arenaOpt
+);
+</pre>
+<br>
+<br>
+<a name="context"></a><b>Crypto Context Management Interface</b><br>
+<br>
+<a name="CreateCryptoContext"></a>
+<tt><b>CreateCryptoContext </b></tt><br>
+<i>implemented by: NSSSymKey, NSSPublicKey, NSSPrivateKey*,
+                   NSSTrustDomain, NSSVolatileDomain</i><br>
+Constructor for a crypto context.  When a domain creates a context, the
+context is limited to tokens/objects available within the domain.  When
+and object creates a context, that object is the distinguished object
+of the context, and will be used for all operations.
+<br>
+<pre>
+NSSCryptoContext *
+CreateCryptoContext (
+  &lt;_implementor_&gt; *imp,
+  const NSSAlgNParam *apOpt,
+  NSSCallback *uhhOpt
+);
+</pre>
+<br>
+<tt><b>NSSCryptoContext_Clone</b></tt><br>
+Clone a context, creating a new context with the same distinguished object
+(if any) and state as the original context.
+<br>
+<pre>
+NSSCryptoContext *
+NSSCryptoContext_Clone (
+  NSSCryptoContext *cc
+);
+</pre>
+<br>
+<tt><b>NSSCryptoContext_Mark</b></tt><br>
+Mark the context, saving its state in the mark.
+<br>
+<pre>
+NSSCryptoContextMark *
+NSSCryptoContext_Mark (
+  NSSCryptoContext *cc
+);
+</pre>
+<br>
+<tt><b>NSSCryptoContext_Unmark</b></tt><br>
+Unmark the context.  This frees the mark and keeps all state changes
+incurred since the mark was created.
+<br>
+<pre>
+PRStatus
+NSSCryptoContext_Unmark (
+  NSSCryptoContext *cc,
+  NSSCryptoContextMark *mark
+);
+</pre>
+<br>
+<tt><b>NSSCryptoContext_Release</b></tt><br>
+Release a mark for the context.  This frees the mark and discards all state
+changes incurred since the mark was created.
+<br>
+<pre>
+PRStatus
+NSSCryptoContext_Release (
+  NSSCryptoContext *cc,
+  NSSCryptoContextMark *mark
+);
+</pre>
+<br>
+<i>Additional methods:</i>
+<ul>
+<tt>
+<li><a href="domain_api.html#SetDefaultCallback">SetDefaultCallback</a></li>
+<li><a href="domain_api.html#GetDefaultCallback">GetDefaultCallback</a></li>
+<li><a href="domain_api.html#Login">Login</a></li>
+<li><a href="domain_api.html#Logout">Logout</a></li>
+</tt>
+</ul>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

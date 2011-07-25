@@ -1,0 +1,390 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /*
+<b><a name="2">    2</a></b>  * blapit.h - public data structures for the crypto library
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * ***** BEGIN LICENSE BLOCK *****
+<b><a name="5">    5</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="6">    6</a></b>  *
+<b><a name="7">    7</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="8">    8</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="9">    9</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="10">   10</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="11">   11</a></b>  *
+<b><a name="12">   12</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="13">   13</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="14">   14</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="15">   15</a></b>  * License.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="18">   18</a></b>  *
+<b><a name="19">   19</a></b>  * The Initial Developer of the Original Code is
+<b><a name="20">   20</a></b>  * Netscape Communications Corporation.
+<b><a name="21">   21</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="22">   22</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="23">   23</a></b>  *
+<b><a name="24">   24</a></b>  * Contributor(s):
+<b><a name="25">   25</a></b>  *   Dr Vipul Gupta &lt;vipul.gupta@sun.com&gt; and
+<b><a name="26">   26</a></b>  *   Douglas Stebila &lt;douglas@stebila.ca&gt;, Sun Microsystems Laboratories
+<b><a name="27">   27</a></b>  *
+<b><a name="28">   28</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="29">   29</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="30">   30</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="31">   31</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="32">   32</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="33">   33</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="34">   34</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="35">   35</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="36">   36</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="37">   37</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="38">   38</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="39">   39</a></b>  *
+<b><a name="40">   40</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="41">   41</a></b> /* $Id$ */
+<b><a name="42">   42</a></b> 
+<b><a name="43">   43</a></b> #ifndef <a href="../freebl/blapit.h.dep.html#_BLAPIT_H_">_BLAPIT_H_</a>
+<b><a name="44">   44</a></b> #define <a href="#44">_BLAPIT_H_</a>
+<b><a name="45">   45</a></b> 
+<b><a name="46">   46</a></b> #include "seccomon.h"
+<b><a name="47">   47</a></b> #include "prlink.h"
+<b><a name="48">   48</a></b> #include "plarena.h"
+<b><a name="49">   49</a></b> #include "ecl-exp.h"
+<b><a name="50">   50</a></b> 
+<b><a name="51">   51</a></b> 
+<b><a name="52">   52</a></b> /* RC2 operation modes */
+<b><a name="53">   53</a></b> #define <a href="#53">NSS_RC2</a>                        0
+<b><a name="54">   54</a></b> #define <a href="#54">NSS_RC2_CBC</a>                1
+<b><a name="55">   55</a></b> 
+<b><a name="56">   56</a></b> /* RC5 operation modes */
+<b><a name="57">   57</a></b> #define <a href="#57">NSS_RC5</a>                 0
+<b><a name="58">   58</a></b> #define <a href="#58">NSS_RC5_CBC</a>             1
+<b><a name="59">   59</a></b> 
+<b><a name="60">   60</a></b> /* DES operation modes */
+<b><a name="61">   61</a></b> #define <a href="#61">NSS_DES</a>                        0
+<b><a name="62">   62</a></b> #define <a href="#62">NSS_DES_CBC</a>                1
+<b><a name="63">   63</a></b> #define <a href="#63">NSS_DES_EDE3</a>                2
+<b><a name="64">   64</a></b> #define <a href="#64">NSS_DES_EDE3_CBC</a>        3
+<b><a name="65">   65</a></b> 
+<b><a name="66">   66</a></b> #define <a href="#66">DES_KEY_LENGTH</a>                8        /* Bytes */
+<b><a name="67">   67</a></b> 
+<b><a name="68">   68</a></b> /* AES operation modes */
+<b><a name="69">   69</a></b> #define <a href="#69">NSS_AES</a>                 0
+<b><a name="70">   70</a></b> #define <a href="#70">NSS_AES_CBC</a>             1
+<b><a name="71">   71</a></b> 
+<b><a name="72">   72</a></b> #define <a href="#72">DSA_SIGNATURE_LEN</a>         40        /* Bytes */
+<b><a name="73">   73</a></b> #define <a href="#73">DSA_SUBPRIME_LEN</a>        20        /* Bytes */
+<b><a name="74">   74</a></b> 
+<b><a name="75">   75</a></b> /* XXX We shouldn't have to hard code this limit. For
+<b><a name="76">   76</a></b>  * now, this is the quickest way to support ECDSA signature
+<b><a name="77">   77</a></b>  * processing (ECDSA signature lengths depend on curve
+<b><a name="78">   78</a></b>  * size). This limit is sufficient for curves upto
+<b><a name="79">   79</a></b>  * 576 bits.
+<b><a name="80">   80</a></b>  */
+<b><a name="81">   81</a></b> #define <a href="#81">MAX_ECKEY_LEN</a>                 72        /* Bytes */
+<b><a name="82">   82</a></b> 
+<b><a name="83">   83</a></b> /*
+<b><a name="84">   84</a></b>  * Number of bytes each hash algorithm produces
+<b><a name="85">   85</a></b>  */
+<b><a name="86">   86</a></b> #define <a href="#86">MD2_LENGTH</a>                16        /* Bytes */
+<b><a name="87">   87</a></b> #define <a href="#87">MD5_LENGTH</a>                16        /* Bytes */
+<b><a name="88">   88</a></b> #define <a href="#88">SHA1_LENGTH</a>                20        /* Bytes */
+<b><a name="89">   89</a></b> #define <a href="#89">SHA256_LENGTH</a>                 32         /* bytes */
+<b><a name="90">   90</a></b> #define <a href="#90">SHA384_LENGTH</a>                 48         /* bytes */
+<b><a name="91">   91</a></b> #define <a href="#91">SHA512_LENGTH</a>                 64         /* bytes */
+<b><a name="92">   92</a></b> #define <a href="#92">HASH_LENGTH_MAX</a>         <a href="../freebl/blapit.h.dep.html#SHA512_LENGTH">SHA512_LENGTH</a>
+<b><a name="93">   93</a></b> 
+<b><a name="94">   94</a></b> /*
+<b><a name="95">   95</a></b>  * Input block size for each hash algorithm.
+<b><a name="96">   96</a></b>  */
+<b><a name="97">   97</a></b> 
+<b><a name="98">   98</a></b> #define <a href="#98">MD2_BLOCK_LENGTH</a>          64         /* bytes */
+<b><a name="99">   99</a></b> #define <a href="#99">MD5_BLOCK_LENGTH</a>          64         /* bytes */
+<b><a name="100">  100</a></b> #define <a href="#100">SHA1_BLOCK_LENGTH</a>          64         /* bytes */
+<b><a name="101">  101</a></b> #define <a href="#101">SHA256_BLOCK_LENGTH</a>          64         /* bytes */
+<b><a name="102">  102</a></b> #define <a href="#102">SHA384_BLOCK_LENGTH</a>         128         /* bytes */
+<b><a name="103">  103</a></b> #define <a href="#103">SHA512_BLOCK_LENGTH</a>         128         /* bytes */
+<b><a name="104">  104</a></b> #define <a href="#104">HASH_BLOCK_LENGTH_MAX</a>         <a href="../freebl/blapit.h.dep.html#SHA512_BLOCK_LENGTH">SHA512_BLOCK_LENGTH</a>
+<b><a name="105">  105</a></b> 
+<b><a name="106">  106</a></b> #define <a href="#106">AES_KEY_WRAP_IV_BYTES</a>    8
+<b><a name="107">  107</a></b> #define <a href="#107">AES_KEY_WRAP_BLOCK_SIZE</a>  8  /* bytes */
+<b><a name="108">  108</a></b> #define <a href="#108">AES_BLOCK_SIZE</a>          16  /* bytes */
+<b><a name="109">  109</a></b> 
+<b><a name="110">  110</a></b> #define <a href="#110">NSS_FREEBL_DEFAULT_CHUNKSIZE</a> 2048
+<b><a name="111">  111</a></b> 
+<b><a name="112">  112</a></b> /*
+<b><a name="113">  113</a></b>  * these values come from the intial key size limits from the PKCS #11
+<b><a name="114">  114</a></b>  * module. They may be aribitarily adjusted to any value freebl supports
+<b><a name="115">  115</a></b>  * RSA_MAX_MODULUS_BITS is not defined since there is only memory constraints
+<b><a name="116">  116</a></b>  * on the largest RSA Modulus that PKCS #11 or freebl may support.
+<b><a name="117">  117</a></b>  */
+<b><a name="118">  118</a></b> #define <a href="#118">RSA_MIN_MODULUS_BITS</a>   128
+<b><a name="119">  119</a></b> #define <a href="#119">DH_MIN_P_BITS</a>               128
+<b><a name="120">  120</a></b> #define <a href="#120">DH_MAX_P_BITS</a>         2236
+<b><a name="121">  121</a></b> 
+<b><a name="122">  122</a></b> /*
+<b><a name="123">  123</a></b>  * The FIPS 186 algorithm for generating primes P and Q allows only 9
+<b><a name="124">  124</a></b>  * distinct values for the length of P, and only one value for the
+<b><a name="125">  125</a></b>  * length of Q.
+<b><a name="126">  126</a></b>  * The algorithm uses a variable j to indicate which of the 9 lengths
+<b><a name="127">  127</a></b>  * of P is to be used.
+<b><a name="128">  128</a></b>  * The following table relates j to the lengths of P and Q in bits.
+<b><a name="129">  129</a></b>  *
+<b><a name="130">  130</a></b>  *        j        bits in P        bits in Q
+<b><a name="131">  131</a></b>  *        _        _________        _________
+<b><a name="132">  132</a></b>  *        0         512                160
+<b><a name="133">  133</a></b>  *        1         576                160
+<b><a name="134">  134</a></b>  *        2         640                160
+<b><a name="135">  135</a></b>  *        3         704                160
+<b><a name="136">  136</a></b>  *        4         768                160
+<b><a name="137">  137</a></b>  *        5         832                160
+<b><a name="138">  138</a></b>  *        6         896                160
+<b><a name="139">  139</a></b>  *        7         960                160
+<b><a name="140">  140</a></b>  *        8        1024                160
+<b><a name="141">  141</a></b>  *
+<b><a name="142">  142</a></b>  * The FIPS-186 compliant PQG generator takes j as an input parameter.
+<b><a name="143">  143</a></b>  */
+<b><a name="144">  144</a></b> 
+<b><a name="145">  145</a></b> #define <a href="#145">DSA_Q_BITS</a>       160
+<b><a name="146">  146</a></b> #define <a href="#146">DSA_MAX_P_BITS</a>        1024
+<b><a name="147">  147</a></b> #define <a href="#147">DSA_MIN_P_BITS</a>         512
+<b><a name="148">  148</a></b> 
+<b><a name="149">  149</a></b> /*
+<b><a name="150">  150</a></b>  * function takes desired number of bits in P,
+<b><a name="151">  151</a></b>  * returns index (0..8) or -1 if number of bits is invalid.
+<b><a name="152">  152</a></b>  */
+<b><a name="153">  153</a></b> #define <a href="#153">PQG_PBITS_TO_INDEX</a>(bits) \
+<b><a name="154">  154</a></b>     (((bits) &lt; 512 || (bits) &gt; 1024 || (bits) % 64) ? \
+<b><a name="155">  155</a></b>     -1 : (int)((bits)-512)/64)
+<b><a name="156">  156</a></b> 
+<b><a name="157">  157</a></b> /*
+<b><a name="158">  158</a></b>  * function takes index (0-8)
+<b><a name="159">  159</a></b>  * returns number of bits in P for that index, or -1 if index is invalid.
+<b><a name="160">  160</a></b>  */
+<b><a name="161">  161</a></b> #define <a href="#161">PQG_INDEX_TO_PBITS</a>(j) (((unsigned)(j) &gt; 8) ? -1 : (512 + 64 * (j)))
+<b><a name="162">  162</a></b> 
+<b><a name="163">  163</a></b> 
+<b><a name="164">  164</a></b> /***************************************************************************
+<b><a name="165">  165</a></b> ** Opaque objects 
+<b><a name="166">  166</a></b> */
+<b><a name="167">  167</a></b> 
+<b><a name="168">  168</a></b> struct <a href="#168">DESContextStr</a>        ;
+<b><a name="169">  169</a></b> struct <a href="#169">RC2ContextStr</a>        ;
+<b><a name="170">  170</a></b> struct <a href="#170">RC4ContextStr</a>        ;
+<b><a name="171">  171</a></b> struct <a href="#171">RC5ContextStr</a>        ;
+<b><a name="172">  172</a></b> struct <a href="#172">AESContextStr</a>        ;
+<b><a name="173">  173</a></b> struct <a href="#173">MD2ContextStr</a>        ;
+<b><a name="174">  174</a></b> struct <a href="#174">MD5ContextStr</a>        ;
+<b><a name="175">  175</a></b> struct <a href="#175">SHA1ContextStr</a>       ;
+<b><a name="176">  176</a></b> struct <a href="#176">SHA256ContextStr</a>     ;
+<b><a name="177">  177</a></b> struct <a href="#177">SHA512ContextStr</a>     ;
+<b><a name="178">  178</a></b> struct <a href="#178">AESKeyWrapContextStr</a> ;
+<b><a name="179">  179</a></b> 
+<b><a name="180">  180</a></b> typedef struct <a href="../freebl/blapit.h.dep.html#<a href="#180">DESContext</a>Str">DESContextStr</a><a href="../freebl/des.h.dep.html#DESContextStr"><sup>[1]</sup></a>        DESContext;
+<b><a name="181">  181</a></b> typedef struct <a href="#181">RC2Context</a>Str        RC2Context;
+<b><a name="182">  182</a></b> typedef struct <a href="#182">RC4Context</a>Str        RC4Context;
+<b><a name="183">  183</a></b> typedef struct <a href="../freebl/blapit.h.dep.html#<a href="#183">RC5Context</a>Str">RC5ContextStr</a>        RC5Context;
+<b><a name="184">  184</a></b> typedef struct <a href="#184">AESContext</a>Str        AESContext;
+<b><a name="185">  185</a></b> typedef struct <a href="#185">MD2Context</a>Str        MD2Context;
+<b><a name="186">  186</a></b> typedef struct <a href="../freebl/blapit.h.dep.html#<a href="#186">MD5Context</a>Str">MD5ContextStr</a><a href="../freebl/md5.c.dep.html#MD5ContextStr"><sup>[1]</sup></a>        MD5Context;
+<b><a name="187">  187</a></b> typedef struct <a href="#187">SHA1Context</a>Str       SHA1Context;
+<b><a name="188">  188</a></b> typedef struct <a href="../freebl/blapit.h.dep.html#<a href="#188">SHA256Context</a>Str">SHA256ContextStr</a><a href="../freebl/sha256.h.dep.html#SHA256ContextStr"><sup>[1]</sup></a>     SHA256Context;
+<b><a name="189">  189</a></b> typedef struct <a href="#189">SHA512Context</a>Str     SHA512Context;
+<b><a name="190">  190</a></b> /* SHA384Context is really a SHA512ContextStr.  This is not a mistake. */
+<b><a name="191">  191</a></b> typedef struct <a href="../freebl/blapit.h.dep.html#SHA512ContextStr">SHA512ContextStr</a><a href="../freebl/sha512.c.dep.html#SHA512ContextStr"><sup>[1]</sup></a>     <a href="#191">SHA384Context</a>;
+<b><a name="192">  192</a></b> typedef struct <a href="#192">AESKeyWrapContext</a>Str AESKeyWrapContext;
+<b><a name="193">  193</a></b> 
+<b><a name="194">  194</a></b> /***************************************************************************
+<b><a name="195">  195</a></b> ** RSA Public and Private Key structures
+<b><a name="196">  196</a></b> */
+<b><a name="197">  197</a></b> 
+<b><a name="198">  198</a></b> /* member names from PKCS#1, section 7.1 */
+<b><a name="199">  199</a></b> struct <a href="#199">RSAPublicKeyStr</a> {
+<b><a name="200">  200</a></b>     PRArenaPool * arena;
+<b><a name="201">  201</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> modulus;
+<b><a name="202">  202</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> publicExponent;
+<b><a name="203">  203</a></b> };
+<b><a name="204">  204</a></b> typedef struct <a href="#204">RSAPublicKey</a>Str RSAPublicKey;
+<b><a name="205">  205</a></b> 
+<b><a name="206">  206</a></b> /* member names from PKCS#1, section 7.2 */
+<b><a name="207">  207</a></b> struct <a href="#207">RSAPrivateKeyStr</a> {
+<b><a name="208">  208</a></b>     PRArenaPool * arena;
+<b><a name="209">  209</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> version;
+<b><a name="210">  210</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> modulus;
+<b><a name="211">  211</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> publicExponent;
+<b><a name="212">  212</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> privateExponent;
+<b><a name="213">  213</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> prime1;
+<b><a name="214">  214</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> prime2;
+<b><a name="215">  215</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> exponent1;
+<b><a name="216">  216</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> exponent2;
+<b><a name="217">  217</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> coefficient;
+<b><a name="218">  218</a></b> };
+<b><a name="219">  219</a></b> typedef struct <a href="../freebl/blapit.h.dep.html#<a href="#219">RSAPrivateKey</a>Str">RSAPrivateKeyStr</a> RSAPrivateKey;
+<b><a name="220">  220</a></b> 
+<b><a name="221">  221</a></b> 
+<b><a name="222">  222</a></b> /***************************************************************************
+<b><a name="223">  223</a></b> ** DSA Public and Private Key and related structures
+<b><a name="224">  224</a></b> */
+<b><a name="225">  225</a></b> 
+<b><a name="226">  226</a></b> struct <a href="#226">PQGParamsStr</a> {
+<b><a name="227">  227</a></b>     PRArenaPool *arena;
+<b><a name="228">  228</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> prime;    /* p */
+<b><a name="229">  229</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> subPrime; /* q */
+<b><a name="230">  230</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> base;     /* g */
+<b><a name="231">  231</a></b>     /* XXX chrisk: this needs to be expanded to hold j and validationParms (RFC2459 7.3.2) */
+<b><a name="232">  232</a></b> };
+<b><a name="233">  233</a></b> typedef struct <a href="#233">PQGParams</a>Str PQGParams;
+<b><a name="234">  234</a></b> 
+<b><a name="235">  235</a></b> struct <a href="#235">PQGVerifyStr</a> {
+<b><a name="236">  236</a></b>     PRArenaPool * arena;        /* includes this struct, seed, &amp; h. */
+<b><a name="237">  237</a></b>     unsigned int  counter;
+<b><a name="238">  238</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>       seed;
+<b><a name="239">  239</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>       h;
+<b><a name="240">  240</a></b> };
+<b><a name="241">  241</a></b> typedef struct <a href="#241">PQGVerify</a>Str PQGVerify;
+<b><a name="242">  242</a></b> 
+<b><a name="243">  243</a></b> struct <a href="#243">DSAPublicKeyStr</a> {
+<b><a name="244">  244</a></b>     <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> params;
+<b><a name="245">  245</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> publicValue;
+<b><a name="246">  246</a></b> };
+<b><a name="247">  247</a></b> typedef struct <a href="#247">DSAPublicKey</a>Str DSAPublicKey;
+<b><a name="248">  248</a></b> 
+<b><a name="249">  249</a></b> struct <a href="#249">DSAPrivateKeyStr</a> {
+<b><a name="250">  250</a></b>     <a href="../freebl/blapit.h.dep.html#PQGParams">PQGParams</a> params;
+<b><a name="251">  251</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> publicValue;
+<b><a name="252">  252</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> privateValue;
+<b><a name="253">  253</a></b> };
+<b><a name="254">  254</a></b> typedef struct <a href="#254">DSAPrivateKey</a>Str DSAPrivateKey;
+<b><a name="255">  255</a></b> 
+<b><a name="256">  256</a></b> /***************************************************************************
+<b><a name="257">  257</a></b> ** Diffie-Hellman Public and Private Key and related structures
+<b><a name="258">  258</a></b> ** Structure member names suggested by PKCS#3.
+<b><a name="259">  259</a></b> */
+<b><a name="260">  260</a></b> 
+<b><a name="261">  261</a></b> struct <a href="#261">DHParamsStr</a> {
+<b><a name="262">  262</a></b>     PRArenaPool * arena;
+<b><a name="263">  263</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> prime; /* p */
+<b><a name="264">  264</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> base; /* g */
+<b><a name="265">  265</a></b> };
+<b><a name="266">  266</a></b> typedef struct <a href="#266">DHParams</a>Str DHParams;
+<b><a name="267">  267</a></b> 
+<b><a name="268">  268</a></b> struct <a href="#268">DHPublicKeyStr</a> {
+<b><a name="269">  269</a></b>     PRArenaPool * arena;
+<b><a name="270">  270</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> prime;
+<b><a name="271">  271</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> base;
+<b><a name="272">  272</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> publicValue;
+<b><a name="273">  273</a></b> };
+<b><a name="274">  274</a></b> typedef struct <a href="../freebl/blapit.h.dep.html#<a href="#274">DHPublicKey</a>Str">DHPublicKeyStr</a> DHPublicKey;
+<b><a name="275">  275</a></b> 
+<b><a name="276">  276</a></b> struct <a href="#276">DHPrivateKeyStr</a> {
+<b><a name="277">  277</a></b>     PRArenaPool * arena;
+<b><a name="278">  278</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> prime;
+<b><a name="279">  279</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> base;
+<b><a name="280">  280</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> publicValue;
+<b><a name="281">  281</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> privateValue;
+<b><a name="282">  282</a></b> };
+<b><a name="283">  283</a></b> typedef struct <a href="../freebl/blapit.h.dep.html#<a href="#283">DHPrivateKey</a>Str">DHPrivateKeyStr</a> DHPrivateKey;
+<b><a name="284">  284</a></b> 
+<b><a name="285">  285</a></b> /***************************************************************************
+<b><a name="286">  286</a></b> ** Data structures used for elliptic curve parameters and
+<b><a name="287">  287</a></b> ** public and private keys.
+<b><a name="288">  288</a></b> */
+<b><a name="289">  289</a></b> 
+<b><a name="290">  290</a></b> /*
+<b><a name="291">  291</a></b> ** The ECParams data structures can encode elliptic curve 
+<b><a name="292">  292</a></b> ** parameters for both GFp and GF2m curves.
+<b><a name="293">  293</a></b> */
+<b><a name="294">  294</a></b> 
+<b><a name="295">  295</a></b> typedef enum { ec_params_explicit,
+<b><a name="296">  296</a></b>                ec_params_named
+<b><a name="297">  297</a></b> } <a href="#297">ECParamsType</a>;
+<b><a name="298">  298</a></b> 
+<b><a name="299">  299</a></b> typedef enum { ec_field_GFp = 1,
+<b><a name="300">  300</a></b>                ec_field_GF2m
+<b><a name="301">  301</a></b> } <a href="#301">ECFieldType</a>;
+<b><a name="302">  302</a></b> 
+<b><a name="303">  303</a></b> struct <a href="#303">ECFieldIDStr</a> {
+<b><a name="304">  304</a></b>     int         size;   /* field size in bits */
+<b><a name="305">  305</a></b>     <a href="../freebl/blapit.h.dep.html#ECFieldType">ECFieldType</a> type;
+<b><a name="306">  306</a></b>     union {
+<b><a name="307">  307</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>  prime; /* prime p for (GFp) */
+<b><a name="308">  308</a></b>         <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>  poly;  /* irreducible binary polynomial for (GF2m) */
+<b><a name="309">  309</a></b>     } u;
+<b><a name="310">  310</a></b>     int         k1;     /* first coefficient of pentanomial or
+<b><a name="311">  311</a></b>                          * the only coefficient of trinomial 
+<b><a name="312">  312</a></b>                          */
+<b><a name="313">  313</a></b>     int         k2;     /* two remaining coefficients of pentanomial */
+<b><a name="314">  314</a></b>     int         k3;
+<b><a name="315">  315</a></b> };
+<b><a name="316">  316</a></b> typedef struct <a href="../freebl/blapit.h.dep.html#<a href="#316">ECFieldID</a>Str">ECFieldIDStr</a> ECFieldID;
+<b><a name="317">  317</a></b> 
+<b><a name="318">  318</a></b> struct <a href="#318">ECCurveStr</a> {
+<b><a name="319">  319</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> a;          /* contains octet stream encoding of
+<b><a name="320">  320</a></b>                          * field element (X9.62 section 4.3.3) 
+<b><a name="321">  321</a></b>                          */
+<b><a name="322">  322</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> b;
+<b><a name="323">  323</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> seed;
+<b><a name="324">  324</a></b> };
+<b><a name="325">  325</a></b> typedef struct <a href="../freebl/blapit.h.dep.html#<a href="#325">ECCurve</a>Str">ECCurveStr</a> ECCurve;
+<b><a name="326">  326</a></b> 
+<b><a name="327">  327</a></b> struct <a href="#327">ECParamsStr</a> {
+<b><a name="328">  328</a></b>     PRArenaPool * arena;
+<b><a name="329">  329</a></b>     <a href="../freebl/blapit.h.dep.html#ECParamsType">ECParamsType</a>  type;
+<b><a name="330">  330</a></b>     <a href="../freebl/blapit.h.dep.html#ECFieldID">ECFieldID</a>     fieldID;
+<b><a name="331">  331</a></b>     <a href="../freebl/blapit.h.dep.html#ECCurve">ECCurve</a>       curve; 
+<b><a name="332">  332</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>       base;
+<b><a name="333">  333</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>       order; 
+<b><a name="334">  334</a></b>     int           cofactor;
+<b><a name="335">  335</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>       DEREncoding;
+<b><a name="336">  336</a></b>     <a href="../freebl/ecl/ecl-exp.h.dep.html#ECCurveName">ECCurveName</a>   name;
+<b><a name="337">  337</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>       curveOID;
+<b><a name="338">  338</a></b> };
+<b><a name="339">  339</a></b> typedef struct <a href="#339">ECParams</a>Str ECParams;
+<b><a name="340">  340</a></b> 
+<b><a name="341">  341</a></b> struct <a href="#341">ECPublicKeyStr</a> {
+<b><a name="342">  342</a></b>     <a href="../freebl/blapit.h.dep.html#ECParams">ECParams</a> ecParams;   
+<b><a name="343">  343</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> publicValue;   /* elliptic curve point encoded as 
+<b><a name="344">  344</a></b>                             * octet stream.
+<b><a name="345">  345</a></b>                             */
+<b><a name="346">  346</a></b> };
+<b><a name="347">  347</a></b> typedef struct <a href="#347">ECPublicKey</a>Str ECPublicKey;
+<b><a name="348">  348</a></b> 
+<b><a name="349">  349</a></b> struct <a href="#349">ECPrivateKeyStr</a> {
+<b><a name="350">  350</a></b>     <a href="../freebl/blapit.h.dep.html#ECParams">ECParams</a> ecParams;   
+<b><a name="351">  351</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> publicValue;   /* encoded ec point */
+<b><a name="352">  352</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> privateValue;  /* private big integer */
+<b><a name="353">  353</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> version;       /* As per SEC 1, Appendix C, Section C.4 */
+<b><a name="354">  354</a></b> };
+<b><a name="355">  355</a></b> typedef struct <a href="../freebl/blapit.h.dep.html#<a href="#355">ECPrivateKey</a>Str">ECPrivateKeyStr</a> ECPrivateKey;
+<b><a name="356">  356</a></b> 
+<b><a name="357">  357</a></b> typedef void * (*<a href="#357">BLapiAllocateFunc</a>)(void);
+<b><a name="358">  358</a></b> typedef void (*<a href="#358">BLapiDestroyContextFunc</a>)(void *cx, PRBool freeit);
+<b><a name="359">  359</a></b> typedef <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> (*<a href="#359">BLapiInitContextFunc</a>)(void *cx, 
+<b><a name="360">  360</a></b>                                    const unsigned char *key, 
+<b><a name="361">  361</a></b>                                    unsigned int keylen,
+<b><a name="362">  362</a></b>                                    const unsigned char *, 
+<b><a name="363">  363</a></b>                                    int, 
+<b><a name="364">  364</a></b>                                    unsigned int ,
+<b><a name="365">  365</a></b>                                    unsigned int );
+<b><a name="366">  366</a></b> typedef <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> (*<a href="#366">BLapiEncrypt</a>)(void *cx, unsigned char *output,
+<b><a name="367">  367</a></b>                                 unsigned int *outputLen, 
+<b><a name="368">  368</a></b>                                 unsigned int maxOutputLen,
+<b><a name="369">  369</a></b>                                 const unsigned char *input, 
+<b><a name="370">  370</a></b>                                 unsigned int inputLen);
+<b><a name="371">  371</a></b> 
+<b><a name="372">  372</a></b> #endif /* _BLAPIT_H_ */
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

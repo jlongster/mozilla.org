@@ -1,0 +1,596 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;6 Condition Variables';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:04:46">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="prlock.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prmon.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="16098"> </A><A NAME=""> </A><h2>
+Chapter&#32;6 
+&nbsp;
+
+
+
+<A NAME="16099"> </A><A NAME="Condition Variables"> </A>Condition Variables
+</h2>
+</center>
+<A NAME="16100"> </A>This chapter describes the API for creating and destroying condition variables, 
+notifying condition variables of changes in monitored data, and making a thread 
+wait on such notification.
+
+<P>
+
+<A NAME="16104"> </A><A HREF="prcvar.html#16135"  >Condition Variable Type</A><br>
+<A HREF="prcvar.html#16145"  >Condition Variable Functions</A>
+
+<P>
+
+<A NAME="16108"> </A>Conditions are closely associated with a single monitor, which typically consists of 
+a mutex, one or more condition variables, and the monitored data. The association 
+between a condition and a monitor is established when a condition variable is 
+created, and the association persists for its life. In addition, a static association 
+exists between the condition and some data within the monitor. This data is what 
+will be manipulated by the program under the protection of the monitor. 
+
+<P>
+
+<A NAME="16112"> </A>A call to <A HREF="prcvar.html#16197"  ><CODE>PR_WaitCondVar</CODE></A> causes a thread to block until a specified condition 
+variable receives notification of a change of state in its associated monitored data. 
+Other threads may notify the condition variable when changes occur.
+
+<P>
+
+<A NAME="16113"> </A>For an introduction to NSPR thread synchronization, including locks and 
+condition variables, see <A HREF="printro.html#13314"  >Chapter&#32;1 "Introduction to NSPR</A>"
+
+<P>
+
+<A NAME="16120"> </A>For reference information on NSPR locks, see <A HREF="prlock.html#15962"  >Chapter&#32;5 "Locks</A>"
+
+<P>
+
+<A NAME="16124"> </A>NSPR provides a special type, <A HREF="prmon.html#16325"  ><CODE>PRMonitor</CODE></A>, for use with Java. Unlike a mutex of 
+type <A HREF="prlock.html#15996"  ><CODE>PRLock</CODE></A>, which can have multiple associated condition variables of type 
+<A HREF="prcvar.html#16137"  ><CODE>PRCondVar</CODE></A>, a mutex of type <CODE>PRMonitor</CODE> has a single, implicitly associated condition 
+variable. For information about <CODE>PRMonitor</CODE>, see <A HREF="prmon.html#16286"  >Chapter&#32;7 "Monitors</A>"
+
+<P>
+
+
+
+<A NAME="16135"> </A>
+<A NAME="Condition Variable Type"> </A>
+<h2>
+Condition Variable Type
+</h2>
+
+
+<A NAME="16137"> </A><A NAME="PRCondVar"> </A><h4>
+PRCondVar
+</h4>
+
+<A NAME="16138"> </A>Structure for a condition variable.
+
+<P>
+
+<BR>
+<A NAME="16139"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16140"></A>#include &lt;prcvar.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="16141"></A>typedef struct PRCondVar PRCondVar;
+</PRE>
+<P>
+<BR>
+<A NAME="16142"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16143"> </A>An NSPR condition variable is an opaque object identified by a pointer.
+
+<P>
+
+
+
+<A NAME="16145"> </A>
+<A NAME="Condition Variable Functions"> </A>
+<h2>
+Condition Variable Functions
+</h2>
+
+
+<A NAME="16149"> </A><A HREF="prcvar.html#16163"  ><CODE>PR_NewCondVar</CODE></A><CODE><br>
+</CODE><A HREF="prcvar.html#16181"  ><CODE>PR_DestroyCondVar</CODE></A><CODE><br>
+</CODE><A HREF="prcvar.html#16197"  ><CODE>PR_WaitCondVar</CODE></A><CODE><br>
+</CODE><A HREF="prcvar.html#16229"  ><CODE>PR_NotifyCondVar</CODE></A><CODE><br>
+</CODE><A HREF="prcvar.html#16250"  ><CODE>PR_NotifyAllCondVar</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="16163"> </A><A NAME="PR_NewCondVar"> </A><h4>
+PR_NewCondVar
+</h4>
+
+<A NAME="16164"> </A>Creates a new condition variable.
+
+<P>
+
+<BR>
+<A NAME="16165"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16166"></A>#include &lt;prcvar.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="16167"></A>PRCondVar* PR_NewCondVar(PRLock *lock);
+</PRE>
+<P>
+<BR>
+<A NAME="16168"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="16169"> </A><CODE>PR_NewCondVar</CODE> has one parameter:
+
+<P>
+
+<P>
+<A NAME="16175"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16172"></A>lock
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16174"> </A>The identity of the mutex that protects the monitored data, including this 
+condition variable.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16176"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16177"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16178"> </A>If successful, a pointer to the new condition variable object.
+
+<P><B>  <li></B>
+<A NAME="16179"> </A>If unsuccessful (for example, if system resources are unavailable), <CODE>NULL</CODE>.
+
+<P></ul>
+
+<A NAME="16181"> </A><A NAME="PR_DestroyCondVar"> </A><h4>
+PR_DestroyCondVar
+</h4>
+
+<A NAME="16182"> </A>Destroys a condition variable.
+
+<P>
+
+<BR>
+<A NAME="16183"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16184"></A>#include &lt;prcvar.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="16185"></A>void PR_DestroyCondVar(PRCondVar *cvar);
+</PRE>
+<P>
+<BR>
+<A NAME="16186"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="16187"> </A><CODE>PR_DestroyCondVar</CODE> has one parameter:
+
+<P>
+
+<P>
+<A NAME="16193"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16190"></A>cvar
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16192"> </A>A pointer to the condition variable object to be destroyed.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16194"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16195"> </A>Before calling <CODE>PR_DestroyCondVar</CODE>, the caller is responsible for ensuring that the 
+condition variable is no longer in use. 
+
+<P>
+
+<A NAME="16197"> </A><A NAME="PR_WaitCondVar"> </A><h4>
+PR_WaitCondVar
+</h4>
+
+<A NAME="16198"> </A>Waits on a condition.
+
+<P>
+
+<BR>
+<A NAME="16199"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16200"></A>#include &lt;prcvar.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="16201"></A>PRStatus PR_WaitCondVar(<br>&nbsp;&nbsp;&nbsp;PRCondVar *cvar,<br>&nbsp;&nbsp;&nbsp;PRIntervalTime timeout);
+</PRE>
+<P>
+<BR>
+<A NAME="16202"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="16203"> </A><CODE>PR_WaitCondVar</CODE> has the following parameters:
+
+<P>
+
+<P>
+<A NAME="16213"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16206"></A>cvar
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16208"> </A>The condition variable on which to wait.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16210"></A>timeout
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16212"> </A>The value <CODE>PR_INTERVAL_NO_TIMEOUT</CODE> requires that a condition be 
+notified (or the thread interrupted) before it will resume from the wait. 
+The value <CODE>PR_INTERVAL_NO_WAIT</CODE> causes the thread to release the lock, 
+possibly causing a rescheduling within the runtime, then immediately 
+attempt to reacquire the lock and resume.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16214"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16215"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16216"> </A>If successful, <CODE>PR_SUCCESS</CODE>. 
+
+<P><B>  <li></B>
+<A NAME="16217"> </A>If unsuccessful (for example, if the caller has not locked the lock associated 
+with the condition variable or the thread was interrupted with <A HREF="prthrd.html#15471"  ><CODE>PR_Interrupt</CODE></A>), 
+<CODE>PR_FAILURE.</CODE> The details can be determined with <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P></ul>
+
+<BR>
+<A NAME="16224"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16225"> </A>Before the call to <CODE>PR_WaitCondVar</CODE>, the lock associated with the condition variable 
+must be held by the calling thread. After a call to <CODE>PR_WaitCondVar</CODE>, the lock is 
+released and the thread is blocked in a "waiting on condition" state until another 
+thread notifies the condition or a caller-specified amount of time expires.
+
+<P>
+
+<A NAME="16226"> </A>When the condition variable is notified, a thread waiting on that condition moves 
+from the "waiting on condition" state to the "ready" state. When scheduled, the 
+thread attemps to reacquire the lock that it held when <CODE>PR_WaitCondVar</CODE> was called. 
+
+<P>
+
+<A NAME="16227"> </A>Any value other than <CODE>PR_INTERVAL_NO_TIMEOUT</CODE> or <CODE>PR_INTERVAL_NO_WAIT</CODE> for the 
+timeout parameter will cause the thread to be rescheduled due to either explicit 
+notification or the expiration of the specified interval. The latter must be 
+determined by treating time as one part of the monitored data being protected by 
+the lock and tested explicitly for an expired interval.
+
+<P>
+
+<A NAME="16229"> </A><A NAME="PR_NotifyCondVar"> </A><h4>
+PR_NotifyCondVar
+</h4>
+
+<A NAME="16230"> </A>Notifies a condition variable of a change in its associated monitored data.
+
+<P>
+
+<BR>
+<A NAME="16231"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16232"></A>#include &lt;prcvar.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="16233"></A>PRStatus PR_NotifyCondVar(PRCondVar *cvar);
+</PRE>
+<P>
+<BR>
+<A NAME="16234"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="16235"> </A><CODE>PR_NotifyCondVar</CODE> has one parameter: 
+
+<P>
+
+<P>
+<A NAME="16241"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="16238"></A>cvar
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="16240"> </A>The condition variable to notify.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="16242"> </A><A NAME="Returns "> </A><h5>
+Returns 
+</h5>
+
+
+<A NAME="16243"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16244"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="16245"> </A>If unsuccessful (for example, if the caller has not locked the lock associated 
+with the condition variable), <CODE>PR_FAILURE</CODE>.
+
+<P></ul>
+
+<BR>
+<A NAME="16246"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16247"> </A>The calling thread must hold the lock that protects the condition, as well as the 
+invariants that are tightly bound to the condition.
+
+<P>
+
+<A NAME="16248"> </A>Notification of a condition variable signals a change of state in some monitored 
+data. When the notification occurs, the runtime promotes a thread that is waiting 
+on the condition variable to a ready state. If more than one thread is waiting, the 
+selection of which thread gets promoted cannot be predicted. This implies that all 
+threads waiting on a single condition variable must have the same semantics. If no 
+thread is waiting on the condition variable, the notify operation is a no-op.
+
+<P>
+
+<A NAME="16250"> </A><A NAME="PR_NotifyAllCondVar"> </A><h4>
+PR_NotifyAllCondVar
+</h4>
+
+<A NAME="16251"> </A>Notifies all of the threads waiting on a specified condition variable. 
+
+<P>
+
+<BR>
+<A NAME="16252"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="16253"></A>#include &lt;prcvar.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="16254"></A>PRStatus PR_NotifyAllCondVar(PRCondVar *cvar);
+</PRE>
+<P>
+<BR>
+<A NAME="16255"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="16256"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="16257"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="16258"> </A>If unsuccessful (for example, if the caller has not locked the lock associated 
+with the condition variable), <CODE>PR_FAILURE</CODE> 
+
+<P></ul>
+
+<BR>
+<A NAME="16259"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="16260"> </A>The calling thread must hold the lock that protects the condition, as well as the 
+invariants that are tightly bound to the condition.
+
+<P>
+
+<A NAME="16261"> </A>A call to <CODE>PR_NotifyAllCondVar</CODE> causes all of the threads waiting on the specified 
+condition variable to be promoted to a ready state. If no threads are waiting, the 
+operation is no-op.
+
+<P>
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="prlock.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prmon.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,103 @@
+<?php
+
+$html_title = 'usage &amp; trust email';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+                        <br>
+ I'm trying to implement cert verification in Stan, and I would like to have
+some more discussion about how we define usage. &nbsp;Here's the current
+picture,  as I see it:<br>
+     
+<ol>
+  <li>The certificate itself has a set of usages, derived from extension
+values and defined in RFC 3280.</li>
+  <li>NSS defines a set of usages in SECCertUsage. &nbsp;These usages
+essentially  coalesce the intersecting usages from above.<br>
+     </li>
+  <li>NSS defines additional usages through the trust object, these are once
+ again a subset of the above.<br>
+    </li>
+</ol>
+   <br>
+   The current working model in Stan is similar to what Julien implemented
+ in CERT_VerifyCert. &nbsp;The type NSSUsage is a bitmask of possible
+usages.<br>
+   <br>
+   The problem is that the three definitions of usage listed above do not
+all  agree. The trust object has the fields serverAuth and clientAuth, with
+possible  values being { not trusted, trusted, trusted delegator }. &nbsp;SECCertUsage
+ has only the field certificateUsageSSLCA. &nbsp;If a cert is a trusted delegator
+ for clientAuth, but not server auth, would its usage include certificateUsageSSLCA?
+ &nbsp;Currently, it does: I called CERT_VerifyCert with a subordinate
+CA,  where the root was only trusted for client auth. &nbsp;The usage certificateUsageSSLCA
+ is returned as having been validated. &nbsp;While there is nothing functionally
+ wrong with this (leaf certificates are verified correctly), I think it is
+ a bit confusing.<br>
+   <br>
+   We want to use trust as a way to allow users to restrict the use of a cert,
+ beyond what is specified in its extensions. &nbsp;For example, a cert with
+the  usual CA extensions may be only trusted for issuing SSL certs.<br>
+   <br>
+   I think we would achieve maximum flexibility by defining usage as such:<br>
+   <br>
+   struct NSSUsages {<br>
+   &nbsp; &nbsp; NSSUsage ca;<br>
+   &nbsp; &nbsp; NSSUsage leaf;<br>
+   };<br>
+  <br>
+  NSSUsage is a set of bits defined as usual, without the "CA" entries. &nbsp;The
+ bitmask in usages-&gt;ca is the set of usages for which the cert may be an
+ issuing cert, and the bitmask in usages-&gt;leaf is the set of usages for
+ which the cert can actually be used. &nbsp;In general, only one field will
+be used for a particular cert, but there is nothing preventing a cert from
+being valid as both a CA and a peer (if there were, we could just use a single
+bit to represent CA usages).<br>
+  <br>
+  In addition, I propose that trust is just an NSSUsages. &nbsp;We store
+the struct  shown above with the cert, and treat the value as the "set of
+trusted usages".  &nbsp;I believe this is a useful merge, after all, our
+current trust object has  fields which look like our usage values. &nbsp;If
+a new usage is added for which  we want to specify trust, now we have do
+it in two places. &nbsp;With this proposal,  the trust object wouldn't have
+to change.<br>
+ <br>
+ As an example, an untrusted cert that has the basicConstraints extension,
+with cA = true, and the keyUsage extension, with the bit keyCertSign, would
+have an NSSUsages like so:<br>
+ <br>
+ usages = { ~0, 0 }; /* in other words, valid for all CA usages, and no leaf
+usages */<br>
+  <br>
+ When doing verification, the set of _trusted_ usages will be checked, in
+this example they are:<br>
+ <br>
+ trustedUsages = { 0, 0 }; &nbsp;/* it's not trusted for any use */<br>
+ <br>
+ If this cert chains to a root where trustedRootUsages = { ~0, 0 }, then the
+cert will be a valid intermediate CA cert for any type of leaf. &nbsp;If
+trustedRootUsages  = { NSSUsage_SSLClient, 0 }, then the cert will be a valid
+intermediate CA  cert for SSL client certs only. &nbsp;If trustedRootUsages
+= { NSSUsage_SSLClient  | NSSUsage_SSLServer, 0 }, then the cert will be
+a valid intermediate CA cert for SSL client certs and servers.<br>
+ <br>
+ Applications that do not require this level of granularity could define the
+old usages, <br>
+ <br>
+ NSSUsages sslCA = { NSSUsage_SSLClient | NSSUsage_SSLServer, 0 };<br>
+ <br>
+ Thoughts?<br>
+ <br>
+  -Ian<br>
+     <br>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

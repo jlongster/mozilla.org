@@ -1,0 +1,148 @@
+<?php
+
+$html_title = 'JavaScript Compiler';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<!-- ***** BEGIN LICENSE BLOCK *****
+- Version: MPL 1.1/GPL 2.0
+-
+- The contents of this file are subject to the Mozilla Public License Version
+- 1.1 (the "License"); you may not use this file except in compliance with
+- the License. You may obtain a copy of the License at
+- http://www.mozilla.org/MPL/
+-
+- Software distributed under the License is distributed on an "AS IS" basis,
+- WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+- for the specific language governing rights and limitations under the
+- License.
+-
+- The Original Code is Rhino code, released May 6, 1999.
+-
+- The Initial Developer of the Original Code is
+- Netscape Communications Corporation.
+- Portions created by the Initial Developer are Copyright (C) 1997-1999
+- the Initial Developer. All Rights Reserved.
+-
+- Contributor(s):
+-
+- Alternatively, the contents of this file may be used under the terms of
+- the GNU General Public License Version 2 or later (the "GPL"), in which
+- case the provisions of the GPL are applicable instead of those above. If
+- you wish to allow use of your version of this file only under the terms of
+- the GPL and not to allow others to use your version of this file under the
+- MPL, indicate your decision by deleting the provisions above and replacing
+- them with the notice and other provisions required by the GPL. If you do
+- not delete the provisions above, a recipient may use your version of this
+- file under either the MPL or the GPL.
+-
+- ***** END LICENSE BLOCK ***** -->
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="Author" content="Norris Boyd">
+<link rel="up" href="./" title="Rhino project page">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<big><big><strong>
+This page is obsolete; see
+<a href="http://developer.mozilla.org/en/Rhino_JavaScript_Compiler">
+Rhino JavaScript Compiler
+</a> in the Mozilla Developer Center.
+</strong></big></big><hr>
+
+<p class="crumbs"><em>You are here:</em> <a href="./">Rhino project page</a> &gt; <strong>JavaScript Compiler</strong></p>
+
+<h1 style="text-align: center;">JavaScript Compiler</h1>
+
+<p>The JavaScript compiler translates JavaScript source into Java class files.
+The resulting Java class files can then be loaded and executed at another
+time, providing a convenient method for transfering JavaScript, and for
+avoiding translation cost.</p>
+
+<p>Note that the top-level functions available to the shell (such as 
+<code>print</code>) are <strong>not</strong> available to compiled scripts 
+when they are run outside the shell.</p>
+
+<h2>Invoking the Compiler</h2>
+
+<pre class="code">
+java org.mozilla.javascript.tools.jsc.Main [<var>options</var>] <var>file1</var><var>.js</var> <var>file2</var><var>.js</var>...]
+</pre>
+
+<p>where <i>options</i> are:</p>
+
+<dl>
+
+<dt>-extends <i>java-class-name</i></dt>
+<dd>Specifies that a java class extending the Java class <i>java-class-name</i>
+should be generated from the incoming JavaScript source file. Each global
+function in the source file is made a method of the generated class, overriding
+any methods in the base class by the same name.</dd>
+
+<dt>-implements <i>java-intf-name</i></dt>
+<dd>Specifies that a java class implementing the Java interface
+<code>java-intf-name</code> should be generated from the incoming JavaScript 
+source file. Each global function in the source file is made a method of the 
+generated class, implementing any methods in the interface by the same name.</dd>
+
+<dt>-debug</dt>
+<dt>-g</dt>
+<dd>Specifies that debug information should be generated. May not be combined
+with optimization at an <code>optLevel</code> greater than zero.</dd>
+
+<dt>-nosource</dt>
+<dd>Does not save the source in the class file. Functions and scripts compiled
+this way cannot be decompiled. This option can be used to avoid distributing
+source or simply to save space in the resulting class file.</dd>
+
+<dt>-o <i>outputFile</i></dt>
+<dd>Writes the class file to the given file (which should end in <code>.class</code>).
+The string <i>outputFile</i> must be a writable filename.</dd>
+
+<dt>-opt <i>optLevel</i></dt>
+<dt>-O <i>optLevel</i></dt>
+<dd>Optimizes at level <i>optLevel</i>, which must be an integer between
+-1 and 9. See <a href="opt.html">Optimization</a> for more details. If
+<i>optLevel</i> is greater than zero, <code>-debug</code> may not be 
+specified.</dd>
+
+<dt>-package <i>packageName</i></dt>
+<dd>Specifies the package to generate the class into. The string <i>packageName</i>
+must be composed of valid identifier characters optionally separated by
+periods.</dd>
+
+<dt>-version <i>versionNumber</i></dt>
+<dd>Specifies the language version to compile with. The string 
+<code>versionNumber</code> must be one of <var>100</var>, <var>110</var>, 
+<var>120</var>, <var>130</var>, <var>140</var>, <var>150</var>, or <var>160</var>. 
+See <a href="overview.html#versions">JavaScript Language Versions</a> for more 
+information on language versions.</dd>
+
+</dl>
+
+<h2>Examples</h2>
+
+<pre class="code">
+$ cat test.js
+java.lang.System.out.println("hi, mom!");
+$ java org.mozilla.javascript.tools.jsc.Main test.js
+$ ls *.class
+test.class
+$ java test
+hi, mom!
+$ java org.mozilla.javascript.tools.jsc.Main -extends java.applet.Applet
+    -implements java.lang.Runnable NervousText.js
+</pre>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,508 @@
+<?php
+
+$html_title = 'NSS 4.0 Overview';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<h2 align="center">NSS 4.0 Overview</h2>
+<br>
+
+<!-- TOC -->
+<ul>
+  <li><a href="#Architecture">Architecture</a></li>
+  <li><a href="#Overview">Overview</a><br></li>
+  <li><a href="#Trust_Domains">Trust Domains</a></li>
+  <li><a href="#Volatile_Domains">Volatile Domains</a></li>
+  <li><a href="#Crypto_Contexts">Crypto Contexts</a></li>
+  <li><a href="#Interfaces">Interfaces</a><br></li>
+  <li><a href="#Certificates">Certificates</a><br></li>
+</ul>
+<br>
+
+<!-- Architecture -->
+<hr width="100%" size="2"><br>
+<h3><a name="Architecture"></a>Architecture</h3>
+<br>
+<!-- using a table makes the text wrap correctly -->
+<table cellpadding=0 cellspacing=0 border=0 width=100%><tr><td>
+<img src="libraries.gif" alt="NSS 4.0 libraries" width="339"
+ height="306" align="right">
+<br>
+The NSS 4.0 distribution consists of five shared libraries.  Three of those
+libraries implement the API available to all NSS applications:
+<br>
+<ol>
+  <li>SSL - implementation of the SSLv2, SSLv3, and TLS protocols.</li>
+  <li>S/MIME - CMSv3 and PKCS#12</li>
+  <li>NSS core - cryptographic routines, PKCS#11 module management, core PKI
+      functions, ASN.1</li>
+</ol>
+In order to provide some flexibility in certificate definitions and crypto
+implementations, NSS defines two pluggable interfaces.  The first is the
+certificate framework.  This framework allows NSS to implement basic
+certificate functions, such as path construction and validation, without
+being dependent on a given certificate definition.  In addition, the 
+certificate framework includes a revocation API, so that applications may 
+implement a specific revocation model.<br>
+<br>
+The second framework used by NSS is PKCS #11.  This standard API allows 
+NSS to store and retrieve objects, generate keys, and perform cryptographic 
+operations on devices such as smart cards and hardware accelerators.<br>
+<br>
+The NSS distribution includes implementations of the two frameworks 
+described above.  The first is the PKIX library, which implements the
+certificate framework for X.509 certificates (though applications may choose
+to define specific revocation functionality).  The second is the software 
+PKCS #11 module, which provides a software implementation of the PKCS #11 
+API.<br>
+</td></tr></table>
+<br>
+<br>
+
+<!-- Overview -->
+<hr width="100%" size="2">
+<h3><a name="Overview"></a>Overview</h3>
+
+What follows is an overview of what a running process may look like at the
+NSS level. NSS relies heavily on the PKCS #11 standard as a means of
+providing flexibility at the lowest level of cryptographic functionality.
+If you are not familiar with PKCS #11, you should read this document
+(XXX).
+<br>
+<br>
+NSS maintains a set of PKCS #11 modules that are globally visible (that is,
+available to all trust domains). Events that change the state of these
+modules may affect ongoing operations. For example, authenticating to
+a token shared between two trust domains will cause its objects to be visible
+to both trust domains. (XXX sanity check - is that correct? don't see
+how it couldn't be...)
+<br>
+<br>
+<img src="global.gif" alt="pkcs11 modules" width="630" height="351">
+<br>
+<br>
+Here are some of the key aspects:
+<br>
+<ol>
+  <li><i>global module list</i> - PKCS#11 modules are loaded and unloaded
+      through and API that affects all trust domains. A module's tokens may
+      be shared between trust domains, as shown above.
+  </li>
+  <li><i>trust domain</i> - a trust domain is a collection of tokens selected
+      from the global module list. It can use the tokens for crypto operations
+      and for storing objects. The trust domain contains a unique trust value
+      for each certificate in it; that is, the actual trust is specific to the 
+      trust domain.
+  </li>
+  <li><i>volatile domain</i> - a temporary facility for storing ephemeral
+      objects. Volatile domains are created from trust domains. Objects 
+      within them have a limited lifetime; they go away when the volatile
+      domain goes away (unlike trust domain objects, which are persistent).
+  </li>
+  <li><i>crypto context</i> - a temporary facility for performing single- 
+      and multi-part cryptographic operations.
+  </li>
+</ol>
+In the diagram shown above, two trust domains share a set of three modules.
+The first trust domain includes a particular slot from the softoken,
+the second includes a different slot. Thus, while they are sharing
+the same module, they are using different tokens, and the certificates and
+private keys of one trust domain will not be visible to the other. Both
+trust domains share a module containing trusted root certificates, though
+they may choose to override that trust independently. Finally, both
+trust domains share a hardware accelerator module.
+<br>
+<br>
+There are a number of configuration options that determine how a module's
+tokens will behave in a trust domain. These include:
+<br>
+<ul>
+  <li>ordering - applications can set relative preference for which modules
+      should perform certain operations
+    <ul>
+      <li>crypto - a token may be preferred over other tokens for performing
+          crypto operations.
+      </li>
+      <li>cert - a token may be preferred for storing certificates.
+      </li>
+      <li>others?
+      </li>
+    </ul>
+  <li>others?
+  </li>
+</ul>
+The initialization process for NSS consists of loading and configuring a set
+of modules. XXX need to describe in detail, along with how to init a
+trust domain
+<br>
+<br>
+
+<!-- Trust Domains -->
+
+<hr width="100%" size="2"><br>
+<h3><a name="Trust_Domains"></a>Trust Domains</h3>
+
+Trust Domains are the field in which certificates are validated. In
+PKI, certificates bind public keys to a name (identity? XXX). The validity of this
+binding depends on trust: does the user trust the certificate for the chosen
+operation? The answer to that question depends on the environment,
+one user may trust the certificate directly, another may trust one of the
+certificates in its chain, and another may not trust the certificate at
+all.
+<br>
+<br>
+<!-- using a table makes the text wrap correctly -->
+<table cellpadding=0 cellspacing=0 border=0 width=100%><tr><td>
+<img src="trust.gif" alt="trust" width="351" height="237" align="left">In
+the diagram to the left, two trust domains are active in a single NSS process.
+Each trust domain represents an SSL server running in the process. 
+The trust domains share a common token. However, the trust domains 
+independently assign trust to certificates, so even though both domains 
+contain certificate X, www.bar.com chooses to trust it while www.foo.com 
+does not.<br>
+</td></tr></table>
+<br>
+From an application's perspective, trust domains are a collection of PKI
+objects: certificates, CRLs, public keys, private keys, symmetric keys, 
+and S/MIME profiles. In addition, trust domains include trust information
+for certificates.<br>
+<br>
+These objects are kept in persistent storage. When this storage is a PKCS #11
+device, the object is stored by whatever mechanism is available on the
+device. A smart card may keep them in a removable medium. A hardware 
+accelerator may have physical storage. For some objects (non-user peer certs, 
+CRLs, etc.) this storage is in a database local to the trust domain and 
+managed by NSS.  From an application's perspective, these differences may 
+be ignored, as the application simply interacts with the trust domain 
+(though often the application has some control over what tokens perform
+certain operations).<br>
+<br>
+Trust domains are initialized with a set of tokens. Tokens may be added
+or removed from the trust domain at any time. All objects from a trust
+domain's tokens are automatically visible to it, unless they are private
+objects, in which case authentication may be required first.<br>
+<br>
+<img src="trustdomain.gif" alt="trust domain" width="601" height="476">
+<br>
+<br>
+<br>
+Features of a trust domain
+<br>
+<ol>
+  <li><i>slot list</i> - a trust domain consists of a set of tokens. This
+      set is kept in a slot list. The reason for storing slots is that a
+      token may be made temporarily unavailable (e.g., by being removed), but 
+      a slot persists until the module is unloaded. When a search for objects
+      is performed in a trust domain, it iterates over the slots, obtains the 
+      active tokens, and then (effectively) searches those tokens.
+  </li>
+  <li><i>token interface</i> - tokens may be shared between trust domains;
+      the interface is the trust domains entry point to the actual token.
+  </li>
+  <li><i>trust database</i> - the primary function of a trust domain is to
+      manage certificate trust. Certs may appear on multiple tokens
+      in the trust domain, in this case their trust values are merged. A 
+      certificate may be trusted in one trust domain, but not another. To the 
+      user, the effect is that a trust domain appears to have a database of 
+      trust for each certificate in it, and that database can be modified 
+      without affecting other trust domains, and without concern for where the 
+      trust is actually stored.
+  </li>
+  <li><i>certificate cache</i> - certificate searches in the trust domain
+      are cached, both to improve search times and to avoid redundant 
+      decodings.
+  </li>
+</ol>
+<br>
+The diagram is simplified; it only shows a trust domain responding to a 
+certificate query (including looking up the trust of the certificate), and 
+peforming RSA operations. Trust domains are actually capable of handling any 
+type of PKI object and any crypto operation supported by NSS.
+<br>
+<br>
+The diagram also shows some features that are outside of trust domains, but
+that interact with them. First, the <i>token cache</i> is used for tokens
+whose response time to queries is long. For such tokens, all public
+objects are loaded when the token is activated, and the attributes of the
+objects are stored in the cache. Further queries to the token are handled
+by the cache. This cache is outside of trust domains, and thus shared
+between them.
+<br>
+<br>
+<i>Crypto contexts</i> (not shown) can be created from trust domains, and used
+ for various cryptographic operations. In this example, a crypto context 
+has been created to perform RSA operations, using a hardware accelerator token.
+<br>
+<br>
+<i>Volatile domains</i> (not shown) can be created from trust domains, 
+and used to manage temporary objects.  Volatile domains behave in much 
+the same way as trust domains, except that they manage temporary objects.
+<br>
+<br>
+
+<!-- Volatile Domains -->
+
+<hr width="100%" size="2">
+<h3><a name="Volatile_Domains"></a>Volatile Domains</h3>
+
+Volatile domains are like a "snapshot" of the trust domain.  As noted in the
+<a href="#Interfaces">interfaces</a> section, volatile domains and trust 
+domains inherit the same interface.   However, objects generated within 
+volatile domains are temporary, and will have the same lifetime as the domain. 
+This makes volatile domains a convenient place to store objects for short-term 
+operations, such as building a signed message.
+<br>
+<br>
+<img src="volatiledomain.gif" alt="crypto context" align="bottom">
+<br>
+Features of a volatile domain:
+<br>
+<ul>
+  <li><i>temporary store</i> - each volatile domain contains a private
+      store of temporary objects used by the domain.  Certs are
+      stored within the domain itself.  Keys are stored as handles to
+      the corresponding PKCS#11 session objects.  From a user perspective,
+      there is no difference between the two storage methods.
+      <br>
+      However, there is some special behavior related to trusted certs.
+      When a temporary cert (one residing in a volatile domain) is marked
+      as trusted, it is moved into the parent trust domain.  Thus all
+      trusted temporary certs are visible to all volatile domains.  This
+      follows from the notion of a trust domain as a place to manage trust.
+  </li>
+  <li><i>session</i> - a volatile domain may need to create temporary objects
+      on a PKCS#11 token, for example, an RSA key pair for ephemeral RSA.
+      Such objects are created as session objects on the token, and managed
+      by the volatile domain.  The volatile domain will maintain a session
+      on each token for which it has session objects, and when it is destroyed
+      it will destroy the session objects as well.
+  </li>
+</ul>
+<br>
+
+<!-- Crypto Contexts -->
+<hr width="100%" size="2">
+<h3><a name="Crypto_Contexts"></a>Crypto Contexts</h3>
+
+Crypto contexts are designed for a single cryptographic operation. One
+context may perform MD5 hashing, while another contains a private key that
+can generate signatures. Internally, the context maintains a PKCS #11
+session for a particular token, and a number of objects that are accessible
+by the session. Once a context is established, it must be used only
+for the intended operation; it cannot be switched to a new operation. However,
+there is some performance gain in reusing sessions, so there are some instances
+where context reuse is allowed:
+<br>
+<ul>
+  <li>The context has just completed a single-part or multi-part operation.
+      It may be reused for the same operation. If a key is involved
+      (e.g., multi-part encryption), the same key will be used, and a new 
+      IV may be supplied through the parameters.
+  </li>
+
+  <li>If the context contains a certificate, it may be used for public key
+      operations. If the certificate is a user certificate, it may also be
+      used for private key operations.
+  </li>
+</ul>
+Contexts also maintain state in multi-part operations. This state can be saved 
+and restored. Contexts can be cloned as well. In general, contexts are much 
+more flexible and efficient than their object-based counterparts 
+(<tt>NSSCryptoContext_Encrypt</tt> vs. <tt>NSSSymKey_Encrypt</tt>).
+<br>
+<br>
+<br>
+<!-- using a table makes the text wrap correctly -->
+<table cellpadding=0 cellspacing=0 border=0 width=100%><tr><td>
+<img src="cryptocontext.gif" alt="crypto context" align="left">
+Features of a crypto context:
+<br>
+<ol>
+  <li><i>distinguished object</i> - a crypto context may work with a single
+      object at a time, for example a symmetric key used for encryption.
+  </li>
+  <li><i>session</i> - the operations performed by the context occur within
+      a single PKCS#11 session for a specific token.
+  </li>
+  <li><i>operation state</i> - The context has a state which can be saved,
+      restored, and cloned.
+  </li>
+</ol>
+Related volatile domain features:
+<br>
+<ol>
+  <li><i>temporary store</i> - A context may be created from a volatile
+      domain, giving it access to the domain's temporary objects.  
+      This may include certs stored in the volatile domain, or temporary 
+      keys created on a PKCS#11 token (as session objects) and managed by 
+      the volatile domain.
+  </li>
+</ol>
+Related trust domain features:
+<br>
+<ol>
+  <li><i>token interface</i> - Contexts have access to the tokens of the
+      trust domain from which they were created, and hence may use token 
+      objects (such as a token private key).
+  </li>
+</ol>
+</td></tr></table>
+<br>
+
+
+<!-- Interfaces -->
+
+<hr width="100%" size="2">
+
+<h3><a name="Interfaces"></a>Interfaces</h3>
+<br>
+The following outline lists the APIs provided by the NSS 4.0 core library.
+Some conventions are followed:
+<ol>
+  <li>When a function argument name ends in "Opt", the argument is optional.
+      A default behavior will be followed if the argument is not provided.
+  </li>
+  <li>Functions that return arrays always return NULL-terminated arrays.</li>
+  <li>All NSS types, except for NSSItem, are opaque and thus allocated
+      on the heap.  Most constructors (<tt>Create()</tt> methods) allow for 
+      this allocation to occur within an arena.  All types have a 
+      destructor of the form <tt>NSSType_Destroy(NSSType *t)</tt> that
+      <b>must</b> be used to free the memory used by the struct.  It is safe
+      to call the destructor even when the type was allocated within an
+      arena.
+  </li>
+  <li>Combining (1) and (3), any function that takes an arenaOpt argument
+      will allocate memory for return values from arenaOpt if it is not
+      NULL and from the heap if it is NULL.
+  </li>
+  <li>In the interface documents linked below, some interfaces may be
+      implemented by more than one type.  When this occurs, the interface
+      will be shown without the type preceding the function name, and a
+      generic "<_implementor_>" will be shown as the first argument.  For
+      example, this text:<br>
+      <br>
+      <tt><b>EnableToken</b></tt><br>
+      <i>implemented by: NSSTrustDomain, NSSVolatileDomain</i><br>
+      Enable the specified token for use within the domain.
+      <br>
+      <pre>
+  PRStatus
+  EnableToken (
+    &lt;_implementor_&gt; *imp,
+    NSSToken *token
+  );
+      </pre>
+      means that the API includes two functions:
+      <pre>
+  PRStatus
+  NSSTrustDomain_EnableToken (
+    NSSTrustDomain *td,
+    NSSToken *token
+  );
+      </pre>
+      and
+      <pre>
+  PRStatus
+  NSSVolatileDomain_EnableToken (
+    NSSVolatileDomain *vd,
+    NSSToken *token
+  );
+      </pre>
+  </li>
+</ol>
+<br>
+<br>
+<a href="utility_api.html">Utility Interface</a>
+<ul>
+  <li><a href="utility_api.html#arena">Arenas (memory management)</a></li>
+  <li><a href="utility_api.html#error">Error Handling</a></li>
+  <li><a href="utility_api.html#item">Data Items</a></li>
+</ul>
+<a href="utility_api.html#encoding">Encoding Interface</a>
+<ul>
+  <li><a href="utility_api.html#string">String (UTF8)</a></li>
+  <li><a href="utility_api.html#base64">Base 64</a></li>
+  <li><a href="utility_api.html#asn1">ASN.1 BER/DER</a></li>
+</ul>
+<a href="pkcs11_api.html">PKCS#11 Device Interface</a>
+<ul>
+  <li><a href="pkcs11_api.html#module">Modules</a></li>
+  <li><a href="pkcs11_api.html#slot">Slots</a></li>
+  <li><a href="pkcs11_api.html#token">Tokens</a></li>
+</ul>
+<a href="utility_api.html#algorithm">Algorithm Interface</a>
+<ul>
+  <li><a href="utility_api.html#oid">OIDs</a></li>
+  <li><a href="utility_api.html#algparam">Algorithm/Parameters</a></li>
+</ul>
+<a href="crypto_api.html">Crypto</a>
+<ul>
+  <li><a href="crypto_api.html#digest">Digest (Hash)</a></li>
+  <li><a href="crypto_api.html#encryption">Encryption</a></li>
+  <li><a href="crypto_api.html#decryption">Decryption</a></li>
+  <li><a href="crypto_api.html#signing">Signing</a></li>
+  <li><a href="crypto_api.html#verification">Verification</a></li>
+  <li><a href="crypto_api.html#context">Multi-part crypto (contexts)</a></li>
+</ul>
+<a href="pkiobject_api.html">PKI Objects</a>
+<ul>
+  <li><a href="pkiobject_api.html#cert">Certificates</a></li>
+  <li><a href="pkiobject_api.html#pubkey">Public Keys</a></li>
+  <li><a href="pkiobject_api.html#privkey">Private Keys</a></li>
+  <li><a href="pkiobject_api.html#symkey">Symmetric Keys</a></li>
+</ul>
+<a href="domain_api.html">PKI Domains</a>
+<ul>
+  <li><a href="domain_api.html#token">Token Management</a></li>
+  <li><a href="domain_api.html#auth">Authentication</a></li>
+  <li><a href="domain_api.html#keygen">Key Generation</a></li>
+  <li><a href="domain_api.html#import">Object Import</a></li>
+  <li><a href="domain_api.html#search">Object Searches</a></li>
+  <li><a href="domain_api.html#trustdomain">Trust Domains</a></li>
+  <li><a href="domain_api.html#voldomain">Volatile Domains</a></li>
+  <ul><li><a href="domain_api.html#chains">Certificate Chains</a></li></ul>
+</ul>
+
+
+<!-- Certificates -->
+
+<hr width="100%" size="2">
+<h3><a name="Certificates"></a>Certificates</h3>
+
+Referring back to the architecture <a href="#Architecture">diagram</a>, 
+certificates in the core PKI library are generic. They are not tied to any 
+particular specification. The core PKI library does not rely on properties of
+a particular certificate definition (though it does generally reflect the
+structure of X.509 certificates).<br>
+<br>
+This flexibility allows NSS to incorporate a new certificate definition without
+changes to the PKI component. The implementation of a given certificate
+definition is kept within a separate shared library, and is "pluggable".
+The plugin is registered at initialization time by declaring what certificate
+type it implements.  The plugin must implement a set of methods required by NSS 
+to obtain information it needs to carry out PKI operations. An example of 
+such a method is one that provides the bytes of the public key from a 
+certificate.<br>
+<br>
+Applications will have both the core PKI API (NSSCert) and the component
+certificate API (NSSPKIXCertificate, for one) available to them. At
+this time, the only supported certificate type is PKIX (RFC 3280), however,
+applications that may wish to support other types in the future should avoid
+being tied down to only one type. In most cases, working with the generic
+type (NSSCert) is all that is necessary. For UI purposes, applications
+may want to display lower-level parts of a certificate, in which case 
+they may obtain the component type from the generic types (essentially a 
+downcast).<br>
+<br>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

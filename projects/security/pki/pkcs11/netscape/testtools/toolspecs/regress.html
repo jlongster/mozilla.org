@@ -1,0 +1,1101 @@
+<?php
+
+$html_title = 'Regress Specification';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>Regress Tool Specification</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Technical contact: 
+<A HREF="mailto:relyea@netscape.com?subject=Regress Spec Feedback">Bob Relyea</A><BR>
+
+Yell at the manager: 
+<A HREF="mailto:lord@netscape.com?subject=Regress Spec Feedback">Bob Lord</A></FONT></i>
+</center>
+
+<H1>
+
+<HR WIDTH="100%"></H1>
+
+<H6>
+Last updated: 6/30/1998</H6>
+
+<h3>
+Contents</h3>
+
+<UL>
+<LI>
+<A HREF="#Overview">Overview</A></LI>
+
+<LI>
+<A HREF="#Command line Interface">Command Line Interface</A></LI>
+
+<LI>
+<A HREF="#Regress Return Codes">Regress Return Codes</A></LI>
+
+<LI>
+<A HREF="#Regress Specfile">Regress Specification File</A></LI>
+
+<LI>
+<A HREF="#Regress in Java Mode">Java Mode</A></LI>
+
+<LI>
+<A HREF="#platform strings">Platform Strings</A></LI>
+
+<LI>
+<A HREF="#Individual Test Output">Individual Test Return Codes</A></LI>
+
+<LI>
+<A HREF="#Regress Test Results Report">Regress Test Report format</A></LI>
+
+<UL>
+<LI>
+<A HREF="#Regress Test Results Report">Table Style</A></LI>
+
+<LI>
+<A HREF="#Javascript Style">JavaScript Style</A></LI>
+</UL>
+
+<LI>
+<A HREF="#Reporter Specfile Output">Reporter Specfile output format</A></LI>
+
+<LI>
+<A HREF="#FAIL code descriptions">Fail Code Descriptions</A></LI>
+
+<LI>
+<A HREF="#miscellaneous">Miscellaneous Notes</A></LI>
+</UL>
+
+<h3>
+
+<HR WIDTH="100%"><A NAME="Overview"></A></h3>
+
+<h3>
+Overview</h3>
+Regress is a test case execution and reporting tool that operates as follows.
+It accepts a specification file [that is intended to be platform and location
+independent] that defines a number of test cases (programs) and a description
+for each case.&nbsp; Regress runs the series of programs, in the order
+of the specfile, and captures into an html output file a table of results:&nbsp;
+the date/time of run, program run, and results (PASS or FAIL).&nbsp;&nbsp;
+Regress also generates a summary output file suitable for collecting overall
+results from a number of test suites.&nbsp; Regress generates results that
+are utilized by <A HREF="reporter.html">reporter</A>.&nbsp; Additionally,
+tools like <A HREF="replacer.html">replacer</A> generate test suites that
+integrate well with regress.
+<P>NOTE: When specifying directories in this document, it is not necessary
+to worry about the "/" vs. the "\" conventions. The regression tool will
+figure out which slash to use.
+<h3>
+
+<HR WIDTH="100%"><A NAME="Command line Interface"></A></h3>
+
+<h3>
+Command line interface</h3>
+
+<h3>
+<TT><FONT SIZE=+0>regress specfile=filename [htmldir=dir] [progdir=dir]
+<FONT COLOR="#000000">[lang=java|c]
+[style=table|javascript] [jvm=&lt;java interpreter>]</FONT> [classpath=&lt;java
+CLASSPATH setting>] [args=&lt;global arguments>] [debug]</FONT></TT></h3>
+[commands in brackets are optional]
+<BR>&nbsp;
+<BR>&nbsp;
+<TABLE BORDER COLS=2 WIDTH="100%" >
+<TR BGCOLOR="#FFCC00">
+<TD><B>Command line option</B></TD>
+
+<TD><B>Explanation</B></TD>
+</TR>
+
+<TR>
+<TD><B>specfile</B></TD>
+
+<TD>specifies the input specfile (defined below) that regress uses to find
+out what to execute. The path to the file can be relative or absolute.</TD>
+</TR>
+
+<TR>
+<TD><B>debug</B></TD>
+
+<TD>If <B>debug</B> is in the command line, information will be output
+to STDOUT so developers of regress can see what is going on.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>progdir</B></TD>
+
+<TD>specifies the base directory where all the executables are. It could
+be a relative or absolute path.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>htmldir</B></TD>
+
+<TD>specifies the base directory where all the html results and reporter
+specs are output to. It could be a relative or absolute path.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>lang=[java|c]</B></TD>
+
+<TD>specifies whether regress is to expect a java class or c executable.
+By specifying the option "lang=java" at the command line will put regress
+in JAVA_MODE, similarly "lang=c" places regress in C_MODE.&nbsp;
+<BR>Again, command line options override specfile setting.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>style=[table|javascript]</B></TD>
+
+<TD>specifies the display style of the output HTML, whether it be the table
+format or Java Script format.&nbsp;&nbsp; If not specified, the default
+is the javascript format (unless, otherwise specified in the regress specfile)</TD>
+</TR>
+
+<TR>
+<TD><B>jvm=&lt;java interpreter path>&nbsp;</B></TD>
+
+<TD>specifies the path of the java virtual machines used to interpret java
+.class files.&nbsp;&nbsp; (This option overrides the jvm specified in the
+specfile).&nbsp;&nbsp; If lang=c then the jvm field is ignored.</TD>
+</TR>
+
+<TR>
+<TD><B>classpath=&lt;java CLASSPATH setting></B></TD>
+
+<TD>This option allows the added flexibility of letting the user specify
+the java environment variable CLASSPATH for running their testsuites.&nbsp;&nbsp;
+This option will overide a classpath setting in the [General] section of
+the regress specfile.&nbsp; If classpath is not set both at the command
+line or in the specfile, then the CLASSPATH of the user's environment will
+be used.&nbsp; (If environment CLASSPATH is not set, then, the default
+"." (current directory) is used.)</TD>
+</TR>
+
+<TR>
+<TD><B>args=&lt;global arguments></B></TD>
+
+<TD>This option allows on the fly specification of globalArgs.&nbsp; This
+field overrides the globalArgs field in the specfile. (This feature may
+be currently only available on Solaris 5.5.1 versions)</TD>
+</TR>
+</TABLE>
+
+<P>
+<HR WIDTH="100%">
+<BR><A NAME="Regress Return Codes"></A>
+<BR><B><FONT SIZE=+2>Regress Return Codes</FONT></B>
+<BR>&nbsp;
+<BR>&nbsp;
+<TABLE BORDER WIDTH="38%" >
+<TR BGCOLOR="#FFCC00">
+<TD><B>Error Codes</B></TD>
+
+<TD><B>Description</B></TD>
+</TR>
+
+<TR>
+<TD><B>0</B></TD>
+
+<TD>All Tests are PASS or Known failures</TD>
+</TR>
+
+<TR>
+<TD><B>1</B></TD>
+
+<TD><FONT COLOR="#000000">One or more tests FAIL or are MALFORMED</FONT></TD>
+</TR>
+
+<TR>
+<TD><B>2</B></TD>
+
+<TD>One or more tests returned the predefined abortCode (see abortCode
+definition below)</TD>
+</TR>
+
+<TR>
+<TD><B>3</B></TD>
+
+<TD>Did not include specfile= directive on command line</TD>
+</TR>
+
+<TR>
+<TD><B>4</B></TD>
+
+<TD>Specfile is malformed or does not exist</TD>
+</TR>
+
+<TR>
+<TD><B>5</B></TD>
+
+<TD>No [General] section in specfile&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>6</B></TD>
+
+<TD>No mut= line in [General] section</TD>
+</TR>
+
+<TR>
+<TD><B>7</B></TD>
+
+<TD>No mutversion= line in [General] section</TD>
+</TR>
+
+<TR>
+<TD><B>8</B></TD>
+
+<TD>No htmlout= line in [General] section</TD>
+</TR>
+
+<TR>
+<TD><B>9</B></TD>
+
+<TD>No reporterSpec= line in [General] section</TD>
+</TR>
+
+<TR>
+<TD><B>10</B></TD>
+
+<TD>No mainClassName= line in [General] while in Java mode</TD>
+</TR>
+
+<TR>
+<TD><B>11</B></TD>
+
+<TD>Usage message displayed; Undefined command line options used.</TD>
+</TR>
+</TABLE>
+<B>Tests should use exit codes from the range of 1 to 255 due to Unix limitation
+on transferred exit codes. 256 exit code is reserved for test crash.</B>
+<H3>
+
+<HR WIDTH="100%"><A NAME="Regress Specfile"></A></H3>
+
+<H3>
+<FONT SIZE=+2>Regress Specfile</FONT></H3>
+<B>It is a convention to use a .reg extension for any regress specfiles.
+This is not checked, but is for purely readability purposes.</B> Please
+check the <A HREF="convention.html">convention document</A> if you don't
+know what extension to put on your files for other people's sake.
+<P><B>The following is a specification of the regress tools Test Case Specification
+file:</B>
+<BR>&nbsp;
+<BR>&nbsp;
+<BR>&nbsp;
+<TABLE BORDER >
+<TR BGCOLOR="#FFCC00">
+<TD><B>Specification File Element</B></TD>
+
+<TD><B>Description of Element</B></TD>
+</TR>
+
+<TR>
+<TD>[<B>General]</B></TD>
+
+<TD>Starts the General information block that describes the collection
+of unit tests in this directory.</TD>
+</TR>
+
+<TR>
+<TD><B>mut=description</B></TD>
+
+<TD>Defines a description for the <B>module under test</B> (e.g., ns/security/lib/crypto
+module could be described as "Security Library: Cryptographic Module (lib/crypto)".</TD>
+</TR>
+
+<TR>
+<TD><B>mutversion=versionstring</B></TD>
+
+<TD>Defines a <B>version string</B> for the collection of tests. It is
+assumed that each test will execute against this higher level versionstring
+version, and that the results will be reported against this version string.</TD>
+</TR>
+
+<TR>
+<TD><B>htmlout=&lt;filename></B></TD>
+
+<TD>Defines the <B>location and filename relative to htmldir of the html
+test output that is generated by the regress tool</B>. If the &lt;filename>
+is NOW, then a yyyymmdd.htm string will be substituted for the filename
+(eg. 19970801). This has to be a relative path to the <B>htmldir </B>specified
+above. If <B>htmldir</B> is not set, it is automatically default to "."</TD>
+</TR>
+
+<TR>
+<TD><B>reporterSpec=&lt;filename></B></TD>
+
+<TD>Defines the <B>location and filename of the specfile that is generated
+by the regress tool and read in by the <A HREF="reporter.html">reporter
+tool</A>).</B> See <A HREF="reporter.html">specification</A> of reporter
+specfile. If the &lt;filename> is NOW, then a yyyymmdd.rpt string will
+be substituted for the filename (eg. 19970801). This has to be a relative
+path to the <B>htmldir </B>specified above. If <B>htmldir</B> is not set,
+it is automatically default to "."&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>program=&lt;filename></B></TD>
+
+<TD>Program name placed in general section is used with single source testing
+method only, which also requires to have test IDs in the individual test
+sections. For additional information see <A HREF="replacer.html">replacer</A>.</TD>
+</TR>
+
+<TR>
+<TD><B>globalArgs=&lt;arg list string></B></TD>
+
+<TD>Defines a list of arguments tacked on to all of the programs when the
+regression suite is run (this will simply concatenate the &lt;program>&lt;space>&lt;globalArgs>
+together). <B>This header is optional.</B></TD>
+</TR>
+
+<TR>
+<TD><B>bugQueryUrl=&lt;URL with metavariable></B></TD>
+
+<TD>Defines a URL that has a metavariable $[BUG-NUMBER] that is replaced
+by the bug number when a test is a known failure. <B>This header is optional.</B></TD>
+</TR>
+
+<TR>
+<TD><B>firstKnownFailure=&lt;number between 0 and 256></B></TD>
+
+<TD>Specifies the first return code which regress should consider as a
+known failure.&nbsp;&nbsp; When specified with first Error code, defines
+a range of executable return codes that are considered known failures.
+When not specified or incorrectly specified (i.e. bigger than firstErrorCode)
+the default value is 0.</TD>
+</TR>
+
+<TR>
+<TD><B>firstErrorCode</B>=<B>&lt;number between 0 and 256></B></TD>
+
+<TD>Defines the upper bound of known failure codes. [Hence known failure
+codes are from&nbsp;
+<BR>firstKnownFailure to firstErrorCode - 1].&nbsp;&nbsp;&nbsp; If firstErrorCode
+is smaller than firstKnownFailure or otherwise undefined, then default
+value of 0 is used.</TD>
+</TR>
+
+<TR>
+<TD><B>timeout=&lt;an positive integer| FOREVER></B></TD>
+
+<TD>Specifies the global timeout for the program.&nbsp; The timeout value
+can be a number from 1 to 2^32 -1, which will be in the units of seconds.&nbsp;
+By setting timeout to <B>FOREVER</B> means that there won't be a timeout.&nbsp;&nbsp;
+(regress will let the process run literally forever).&nbsp;&nbsp; The global
+timeout can be overridden by the timeout attribute for each test.&nbsp;
+If neither the global timeout or testspecific timeout is given, the default
+value of 1000 seconds is used.&nbsp; [A Note of warning: a timeout of 0
+is interpreted the same way as not setting this field, so the default 1000
+seconds would be used in that case.]</TD>
+</TR>
+
+<TR>
+<TD><B>localExecutable=[TRUE|FALSE]</B></TD>
+
+<TD>Normally, if progdir is not specified at the command line, regress
+assumes that the executable is in the currently working directory; Regress
+will pre-append to the executable: <TT>"./&lt;executable>"</TT>.&nbsp;&nbsp;
+If localExecutable = FALSE, this default behavior is turned off, in which
+case, regress will prepend nothing in front of the executable (unless progdir
+is specified).&nbsp;&nbsp; This option is useful since it allows one to
+manipulate the environment PATH variable to select the executable to test.&nbsp;
+<BR>By default localExecutable is TRUE.</TD>
+</TR>
+
+<TR>
+<TD><B>autoAppendExtension=[TRUE|FALSE]</B></TD>
+
+<TD>By default, regress will append the extension <TT>.exe</TT> to all
+executables in the Windows/PC versions.&nbsp; By specfying this field as
+FALSE will turn off this behavior.&nbsp; By default autoAppendExtension
+is set to TRUE.</TD>
+</TR>
+
+<TR>
+<TD><B>abortCode=&lt;number between 0 and 256></B></TD>
+
+<TD>If a test returns a code identical to the <B>abortCode</B> as defined
+here.&nbsp; That particular test will be marked as "FAIL: ABORT".&nbsp;
+And regress will return 2 as its return code (after finish running all
+the remaining tests).&nbsp;&nbsp;&nbsp; If abortCode is not defined, the
+default value of 255 will be used.</TD>
+</TR>
+
+<TR>
+<TD><B>style=[table|javascript]</B></TD>
+
+<TD>Specifies whether the output report HTML will be in table format or
+JavaScript format.</TD>
+</TR>
+
+<TR>
+<TD><B>language=[java|c]</B></TD>
+
+<TD>If language=java, puts Regress in JAVA_MODE, and hence regress expects
+a java class file.&nbsp;
+<BR>By default language=c if language is not specified.</TD>
+</TR>
+
+<TR>
+<TD><B>mainClassName = &lt;name of your class containing main() ></B></TD>
+
+<TD>Required if in JAVA_MODE.&nbsp;&nbsp; mainClassName is used to qualify
+the names of injected arrays in single file mode, and during given as argument
+to the java interpreter as in:&nbsp;
+<BR><TT>&lt;jvm>&nbsp; &lt;packageName>.<B>&lt;mainClassName></B></TT></TD>
+</TR>
+
+<TR>
+<TD><B>jvm = &lt;path to your Java Interpreter>&nbsp;</B></TD>
+
+<TD>Used to specify which java interpreter to use.&nbsp; It's best that
+full path is specified.&nbsp;&nbsp; If not specified, regress will use
+"<B>java</B>".</TD>
+</TR>
+
+<TR>
+<TD><B>packageName=&lt;package name from package declaration></B></TD>
+
+<TD>Required if a package declaration appears in the source file.&nbsp;&nbsp;
+Required by Regress to construct the test program command:&nbsp;
+<BR><TT>&lt;jvm> <B>&lt;packageName></B>.&lt;mainClassName></TT></TD>
+</TR>
+
+<TR>
+<TD><B>classpath=&lt;java CLASSPATH setting></B></TD>
+
+<TD>Required if the test suite uses a CLASSPATH different from that specified
+in the user environment.&nbsp; If specified, regress will create a CLASSPATH
+environment variable in its test environment and clobber any previous settings.&nbsp;&nbsp;
+If this field is not specified, then the classpath from the environment
+will be used.&nbsp; If no environment CLASSPATH is set, then the&nbsp;
+default working directory (progdir) will be used.</TD>
+</TR>
+
+<TR>
+<TD>In JAVA_MODE,&nbsp;
+<BR>If Single Source Mode is specified&nbsp;
+<BR>&nbsp;"program="&nbsp; field in [General] is not necessary.</TD>
+
+<TD>When Single Source Mode is TRUE (on).&nbsp; The user no longer need
+to specify&nbsp;
+<BR>the program field if JAVA_MODE is on.&nbsp;&nbsp;&nbsp; Regress will
+simple construct the program to run from the jvm, packageName, and mainClassName
+provided.&nbsp;&nbsp; As a result, Regress will run:&nbsp;
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<TT> &lt;jvm> &lt;packageName>.&lt;mainClassName>
+&lt;Args></TT></TD>
+</TR>
+
+<TR BGCOLOR="#FFCC00">
+<TD COLSPAN="2"><FONT COLOR="#000000"><FONT SIZE=+1>Test Header</FONT></FONT></TD>
+</TR>
+
+<TR>
+<TD><B>[Test-X]</B></TD>
+
+<TD>Begins an information block for a specific test. The X value must be
+replaced with an integer >= 1. The following name value pairs are related
+to each [Test-X] block.</TD>
+</TR>
+
+<TR>
+<TD><B>program=&lt;filename></B></TD>
+
+<TD>This is the relative path (relative to the <B>progdir</B>) to the executable.
+This is the program to execute that calls <B>PR_ProcessExit</B> or <B>return</B>
+and returns a 0 for success, or 1 for failure. If <B>progdir</B> is not
+set, <B>progdir</B> is defaulted to "."&nbsp;
+<BR>It is not necessary to add a ".exe" extension at the end of the program
+name when specifying a Windows / DOS executable.&nbsp;
+<BR>Program won’t be specified in this section when using single source
+testing method.</TD>
+</TR>
+
+<TR>
+<TD>In JAVA_MODE&nbsp; If Single Source Mode is NOT specified&nbsp; (Multiple
+source mode)&nbsp;
+<BR><B>program =&lt;test directory></B></TD>
+
+<TD>For each test specified, the user must set the program metavariable
+to the name of the directory in which the Java source code or (source Tree)
+resides.&nbsp; (for a better explanation see <A HREF="#Regress in Java Mode">Regress
+in Java Mode</A> below)</TD>
+</TR>
+
+<TR>
+<TD><B>testId=&lt;test ID></B></TD>
+
+<TD><B>testId</B>&nbsp; is used with single source testing method only.
+It is transferred to the test as a first argument.</TD>
+</TR>
+
+<TR>
+<TD><B>testname=&lt;description></B></TD>
+
+<TD>This is the description of what the test program is testing.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>timeout=&lt;positive integer|FOREVER></B></TD>
+
+<TD>This is the timeout in seconds to run a test. If a test runs longer
+than the timeout, it is killed and returns fail. This field is optional.&nbsp;
+If this field is not set, the global timeout specified in the timeout=
+field of the [General] section will be used.&nbsp; The key word <B>FOREVER</B>
+will cause the test to be run without any timeout.&nbsp; By default, if
+neither the local timeout nor global timeout is set, 1000 seconds will
+be used as the timeout limit.</TD>
+</TR>
+
+<TR>
+<TD><B>bug=&lt;positive integer></B></TD>
+
+<TD><B>This is an optional field.</B> This is set whenever there is a known
+test failure. The test
+will NOT be run when this field is set.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>include=&lt;platforms></B></TD>
+
+<TD><B>This is an optional field.</B> This is set whenever a test is specific
+to a certain platform or group of platforms. The test will be run only
+on the platforms (separated by commas or whitespace) in the include list.Check
+the <A HREF="#platform strings">list</A> for what string to use for your
+platform. If your platform is not on the list, check the output platform
+header in the output HTML to see the string you need to use.&nbsp;
+<P>This field is case insensitive (eg. you can use solaris2.5 if you want).&nbsp;
+<P>The test will result in a PASS if the platform is not in the include
+list (The test didn't really fail, it just wasn't run).&nbsp;
+<P><B>Note</B>: having both an include and exclude tag is invalid and will
+result in an error.
+<BR>&nbsp;
+<BR>&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>exclude=&lt;platforms></B></TD>
+
+<TD><B>This is an optional field.</B> This is set whenever a test is not
+supposed to be run on a certain platform or group of platforms. The test
+will not be run on the platforms (separated by commas or whitespace) in
+the exclude list. Check the <A HREF="#platform strings">list</A> for what
+string to use for your platform. If your platform is not on the list, check
+the output platform header in the output HTML to see the string you need
+to use.&nbsp;
+<P>This field is case insensitive (eg. you can use solaris2.5 if you want).&nbsp;
+<P>The test will result in a PASS if the platform is in the exclude list
+(The test didn't really fail, it just wasn't run).&nbsp;
+<P><B>Note</B>: having both an include and exclude tag is invalid and will
+result in an error.
+<BR>&nbsp;
+<BR>&nbsp;</TD>
+</TR>
+</TABLE>
+
+<HR WIDTH="100%"><A NAME="Regress in Java Mode"></A>
+<P><B><FONT SIZE=+2>Regress in Java Mode</FONT></B>
+<P>When Regress is in Java Mode (by setting lang=java at the command line
+or language=java in the specfile).&nbsp;&nbsp; Regress expects the following
+<BR>fields to appear in the specfile under the [General Header]:
+<BR><B>mainClassName</B>, <B>jvm</B>, <B>classpath</B>, and <B>packageName.</B>
+<BR>jvm, classpath, and packageName are optional.&nbsp;&nbsp; jvm is set
+to a default of "java" if not specified any where.&nbsp;&nbsp; And classpath
+inherits the environment CLASSPATH, if not specified anywhere.
+<P>The user is responsible for making sure that the directory tree in which
+the .class files are stored exist and the .class files themselves also
+exist.&nbsp;&nbsp; Because regress do not read environmental variables,
+the value of classpath set in the specfile must be a real path not a variable.&nbsp;&nbsp;&nbsp;
+However, if classpath is set at the command line, the argument can be a
+variable.
+<BR>e.g.
+<BR>A correct usage:
+<P>regress specfile=mytest.reg classpath=$CLASSPATH:/usr/bin
+<P>But
+<BR>[General]
+<BR>...
+<BR>classpath=$CLASSPATH&nbsp;&nbsp; #WRONG!
+<BR>..
+<P>The classpath can be further appended for each test run.&nbsp; This
+is accomplished by adding the attribute
+<BR>program=&lt;testdir> in each test heading.
+<P>[test-1]
+<BR>program=t0
+<BR>....
+<P>Regress will append the value set in the program field to the CLASSPATH
+it already has.
+<P>When regress runs, it will do the following:
+<P><TT>setenv CLASSPATH &lt;value set in classpath=>:&lt;testdir></TT>
+<BR><TT>&lt;jvm> &lt;fully qualified class name>&nbsp;&nbsp; # i.e. combination
+of package name and mainClassName.</TT>
+<P>Following is an example that illustrates what processes must occur for
+regress to work in Java mode (multiple source mode).
+<P><B>Example:</B>
+<P>A user has 5 tests (.java files).&nbsp;&nbsp; These 5 tests sources
+are place in the following directories:
+<P>t1/foo/bar/t1.java
+<BR>t2/foo/bar/t2.java
+<BR>t3/foo/bar/t3.java
+<BR>t4/foo/bar/t4.java
+<BR>t5/foo/bar/t5.java
+<P>Each .java file has the same package declaration:
+<BR>package foo.bar;
+<BR>and has a mainClassName of "test"
+<P>After compilation the following 5 .class files were created:
+<P>t1/foo/bar/test.class
+<BR>t2/foo/bar/test.class
+<BR>t3/foo/bar/test.class
+<BR>t4/foo/bar/test.class
+<BR>t5/foo/bar/test.class
+<P>In order to run regress for the above example, the user must write a
+specfile that is something like the following:
+<P>[General]
+<BR>...
+<BR>language=java
+<BR>mainClassName=test
+<BR>packageName=foo.bar
+<BR>jvm=/tools/ns/bin/java
+<BR># no classpath, inherit from environment
+<BR>....
+<P>[Test-1]
+<BR>program=t1
+<BR>.... other fields
+<P>[Test-2]
+<BR>program=t2
+<BR>.... other fields
+<P>[Test-n]
+<BR>program=&lt;test directory n>
+<BR>.... other fields
+<P>Regress takes the above specfile and runs each test in a manner equivalent
+to the following:
+<P><TT>setenv CLASSPATH &lt;$CLASSPATH>:t0&nbsp;&nbsp;&nbsp;&nbsp; // or
+which ever test that is running</TT>
+<BR><TT>/tools/ns/bin/java foo.bar.test</TT>
+<P>
+<HR WIDTH="100%">
+<H3>
+<A NAME="platform strings"></A></H3>
+
+<H3>
+Platform strings</H3>
+The following is a specification of sample platform strings you can use
+for the <B>include </B>and <B>exclude </B>headers:
+<P>SOLARIS2.5
+<BR>SOLARIS2.4
+<BR>SOLARIS2.3
+<BR>WINNT
+<BR>HPUXB.10.10
+<BR>OSFV4.0
+<BR>AIX1
+<BR>IRIX5.3
+<BR>IRIX6.2
+<P>
+<HR WIDTH="100%">
+<BR><A NAME="Individual Test Output"></A>
+<BR><B><FONT SIZE=+1>Individual Test Output</FONT></B>
+<P>The following is a specification of what the return value should be
+for each <B>Individual Test case executable</B>.
+<P>Each of these test cases makes up one singular test within the overall
+regression test suite. The regression test suite is defined by the Test
+Specification File.
+<BR>&nbsp;
+<BR>&nbsp;
+<TABLE BORDER WIDTH="87%" >
+<TR BGCOLOR="#FFCC00">
+<TD><B>Output Description</B></TD>
+
+<TD><B>Format of Output</B></TD>
+</TR>
+
+<TR>
+<TD>Test pass fail status indicator. The program must call PR_ProcessExit(0)
+if the test passes. If any other value is returned, that means that the
+test fails.</TD>
+
+<TD>0&nbsp;&nbsp; -- PASS&nbsp;
+<BR>non-zero value -- FAIL&nbsp;
+<BR>marked non-zero value(set using firstKnownFailure) -- FAIL -- KNOWN
+FAIL&nbsp;</TD>
+</TR>
+</TABLE>
+<I>It is a convention during failures to use the current line number of
+the program or replacer template as the return value for easier debugging.</I>
+<P><B>Note:</B> If the Individual Test case requires known answers to benchmark
+the results of the execution against, then it is the responsibility of
+the individual test case to manage the creation / deletion of startup /
+shutdown known answers.
+<H3>
+
+<HR WIDTH="100%"></H3>
+
+<H3>
+<A NAME="Regress Test Results Report"></A></H3>
+
+<H3>
+<FONT SIZE=+2>Regress Test Results Report</FONT></H3>
+<B><FONT SIZE=+1>Table style</FONT></B>
+<BR>The following is a specification of the<B> html output format </B>for
+the <B>regress </B>tool in TABLE mode:
+<TABLE BORDER >
+<TR BGCOLOR="#FFCC00">
+<TD><B>Section Description</B></TD>
+
+<TD><B>HTML format</B></TD>
+</TR>
+
+<TR>
+<TD><B>Document Title</B>
+<P>The <B>title </B>is generated from the <B>mut= </B>specifier. The <B>version
+</B>is
+generated from <B>mutversion=</B>. The<B> date and time </B>is relative
+to the beginning point of the execution of the regression test suite.
+<BR>&nbsp;
+<BR>&nbsp;</TD>
+
+<TD><TT>&lt;HTML>&lt;HEAD>&lt;TITLE></TT><I>mut description</I>: <TT>Version:
+</TT><I>mutversion</I>
+Platform: <I>platform</I> <TT>Run date mm/dd/yy&lt;/TITLE>&lt;/HEAD>&lt;BODY>\n</TT></TD>
+</TR>
+
+<TR>
+<TD><B>H1 Header for the report.</B></TD>
+
+<TD><TT>&lt;H1></TT><I>mut description</I>: <TT>Version: </TT><I>mutversion</I>
+Platform: <I>platform </I><TT>Run date mm/dd/yy&lt;/H1>&lt;HR>\n</TT></TD>
+</TR>
+
+<TR>
+<TD><B>Table header</B></TD>
+
+<TD><TT>&lt;TABLE BORDER=1>&lt;TR>\n</TT>
+<BR><TT>&lt;TD>&lt;B>Test Case Number&lt;/B>&lt;/TD>\n</TT>
+<BR><TT>&lt;TD>&lt;B>Program&lt;/B>&lt;/TD>\n</TT>
+<BR><TT>&lt;TD>&lt;B>Description of Test Case&lt;/B>&lt;/TD>\n</TT>
+<BR><TT>&lt;TD>&lt;B>Start date/time&lt;B>&lt;/TD>\n</TT>
+<BR><TT>&lt;TD>&lt;B>End date/time&lt;B>&lt;/TD>\n</TT>
+<BR><TT>&lt;TD>&lt;B>PASS/FAIL&lt;/B>&lt;/TD>\n</TT>
+<BR><TT>&lt;/TR>\n</TT></TD>
+</TR>
+
+<TR>
+<TD><B>Table Detail</B>
+<P>Open the output file defined by htmlout= specifier in the [General]
+section of the specification file.&nbsp;
+<P>For each test case header [Test-X] (X >= 1) in the Test Specification
+file,&nbsp;
+<BR>&nbsp;
+<BR>&nbsp;
+<UL>(1) Capture the date/time prior to execution (this is <B>start date/time</B>)&nbsp;
+<BR>(2) Execute the program (program=filename) capturing the <B>return
+code</B>. If program runs past timeout, kill the program.&nbsp;
+<BR>(3) Capture the date/time after execution (<B>this is the end date/time)</B>.&nbsp;
+<BR>(4) Generate the HTML ouptut -- if the specfile is missing some headers,
+then the result is "MALFORMED". Otherwise, the result string is either
+PASS or FAIL. If the test returns a pass, the test row is greyed out. If
+the test fails, the result will be in <FONT COLOR="#FF0000">red</FONT>.</UL>
+<B>Notes: </B>The &lt;description> is associated with [Test-X] and is the
+description given after testname= in the specification block.&nbsp;</TD>
+
+<TD><TT>&lt;TR [if pass then BG COLOR="#C0C0C0">]\n</TT>
+<BR><TT>&lt;TD>&lt;B><B>X</B>&lt;/B>&lt;/TD>\n</TT>
+<BR><TT>&lt;TD><I>filename</I>&lt;/TD>\n</TT>
+<BR><TT>&lt;TD><I>description</I>&lt;/TD>\n</TT>
+<BR><TT>&lt;TD>mm/dd/yy hh:mm:ss&lt;/TD>\n</TT>
+<BR><TT>&lt;TD>mm/dd/yy hh:mm:ss&lt;/TD>\n</TT>
+<BR><TT>&lt;TD>&lt;B>&nbsp;</TT>
+<BR><TT>PASS |</TT>
+<BR><TT>PASS : This test was excluded or not included for this platform
+|</TT>
+<BR><TT><FONT COLOR="#000000">&lt;FONT COLOR="#FF0000"> FAIL: return code
+= <I>errnum</I>. &lt;/FONT> |&nbsp;</FONT></TT>
+<BR><TT><FONT COLOR="#000000">&lt;FONT COLOR="#FF0000"> FAIL: CreateProcess
+&lt;/FONT> |&nbsp;</FONT></TT>
+<BR><TT><FONT COLOR="#000000">&lt;FONT COLOR="#FF0000"> FAIL: WaitProcess
+&lt;/FONT> |&nbsp;</FONT></TT>
+<BR><TT><FONT COLOR="#000000">&lt;FONT COLOR="#FF0000"> FAIL: Known bug.
+Bug number = 51325
+&lt;/FONT> |&nbsp;</FONT></TT>
+<BR><TT><FONT COLOR="#000000">&lt;FONT COLOR="#FF0000"> FAIL: Timeout after
+10 seconds &lt;/FONT> |&nbsp;</FONT></TT>
+<BR><TT>MALFORMED : include= and exclude= tags BOTH defined |</TT>
+<BR><TT>MALFORMED : program= not defined in [header] |</TT>
+<BR><TT>MALFORMED : testname= not defined in [header] |</TT>
+<BR><TT>MALFORMED : test number=header-part not valid positive integer
+|</TT>
+<BR><TT>MALFORMED : test number header invalid</TT>
+<BR><TT>&lt;/B>&lt;/TD>\n</TT>
+<BR><TT>&lt;/TR>\n</TT></TD>
+</TR>
+
+<TR>
+<TD><B>Table trailer</B></TD>
+
+<TD>&lt;/TABLE>\n</TD>
+</TR>
+
+<TR>
+<TD><B>Summary Line</B></TD>
+
+<TD>&lt;TABLE>&nbsp;
+<BR>&lt;TR>&lt;TD>&lt;B>Summary Results&lt;/B>&lt;/TD>&lt;TD>Count&lt;/TD>&lt;/TR>&nbsp;
+<BR>&lt;TR>&lt;TD>Tests Failed&lt;/TD>&lt;TD>&lt;number failed>&lt;/TD>&lt;/TR>&nbsp;
+<BR>&lt;TR>&lt;TD>Test Passed&lt;/TD>&lt;TD>&lt;number passed>&lt;/TD>&lt;/TR>&nbsp;
+<BR>&lt;TR>&lt;TD>Known Failures&lt;/TD>&lt;TD>&lt;known failures>&lt;/TD>&lt;TR>&nbsp;
+<BR>&lt;TR>&lt;TD>Malformed Specification&lt;/TD>&lt;TD>&lt;number malformed>&lt;/TD>&lt;/TR>&nbsp;
+<BR>&lt;/TABLE>&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>End of HTML</B></TD>
+
+<TD><TT>&lt;/BODY>&lt;/HTML>\n</TT></TD>
+</TR>
+</TABLE>
+
+<HR WIDTH="100%">
+<P><A NAME="Javascript Style"></A>
+<BR><B><FONT SIZE=+1>Javascript Style</FONT></B>
+<P><I>Overview</I>
+<BR>The strictly tabular format produced by Regress has the following disadvantages:
+<BR>&nbsp;
+<BR>&nbsp;
+<UL>
+<LI>
+When entries get above 8000, the Browser will often crash due to difficulties
+in drawing the table for such a large number of entries.</LI>
+
+<LI>
+When there are too many entries, it is difficult to go to a specific test
+and look at the results.</LI>
+
+<LI>
+There is no mechanism in which to look at only fail entries or only pass
+entries given a page containing a mix of both types</LI>
+</UL>
+The solution is to create an additional interface to the Regress output
+display -- Implement&nbsp; an easy to use interface that uses JavaScript
+to dynamically page
+<BR>through the data.
+<P>The new javascript format has a self contained paging mechanism and
+allows display of FAILS only or PASS only.&nbsp;&nbsp; Buttons on the bottom
+of the page adds page up, page down, table top, table bottom, goto page
+functionalities.
+<P>Here is an example of the <A HREF="sample/java/single/javatest.html">JavaScript
+output</A>
+<P>The output is separated into 3 frames.&nbsp;&nbsp; The top frame contains
+static information such as summary statistics, platform name, test name,
+and test description.
+<BR>The center frame contains the paged result table.&nbsp; Currently,
+the number of entries per page is set to 12.&nbsp;&nbsp; But this can be
+changed by changing the javascript variable entriesPerPage in the source
+file genjs_template.html.&nbsp; (see <A HREF="#miscellaneous">extra building
+instructions</A>).&nbsp; The bottom frame is basically a control panel
+that has the paging buttons.
+<P><I>Behavior</I>
+<BR>When viewing a page in FAIL only or PASS only mode.&nbsp; The javascript
+is designed to find as many entries as possible that fit the PASS or FAIL
+category starting from the current entry number.&nbsp; For example, in
+the case where we are viewing FAIL entries only, if the current entry is
+entry 47, and there are only 3 fail entries after 47, the javascript program
+will search forward until either it hits the beginning or 12 entries are
+found;&nbsp; Then displaying all 12 or less entries found.
+<P>
+<HR WIDTH="100%">
+<P><A NAME="Reporter Specfile Output"></A>
+<BR><B><FONT SIZE=+2>Reporter Specfile Output Format:</FONT></B>
+<BR>&nbsp;
+<BR>&nbsp;
+<BR>&nbsp;
+<TABLE BORDER >
+<TR BGCOLOR="#FFCC00">
+<TD><B>Specification File Element</B></TD>
+
+<TD><B>Description of Element</B></TD>
+</TR>
+
+<TR>
+<TD><B>[Status]</B></TD>
+
+<TD>Is the only block in this specification file</TD>
+</TR>
+
+<TR>
+<TD><B>mut=description</B></TD>
+
+<TD>Defines a description for the <B>module under test</B> (e.g., ns/security/lib/crypto
+module could be described as "Security Library: Cryptographic Module (lib/crypto)".</TD>
+</TR>
+
+<TR>
+<TD><B>mutversion=versionstring</B></TD>
+
+<TD>Defines a <B>version string</B> for the collection of tests. It is
+assumed that each test will execute against this higher level versionstring
+version, and that the results will be reported against this versionstring.</TD>
+</TR>
+
+<TR>
+<TD><B>platform=&lt;string></B></TD>
+
+<TD>Defines the platform the tests were run under</TD>
+</TR>
+
+<TR>
+<TD><B>pass=&lt;number></B></TD>
+
+<TD>Number of tests that passed.</TD>
+</TR>
+
+<TR>
+<TD><B>fail=&lt;number></B></TD>
+
+<TD>Number of tests that failed due to non-zero return codes, timeouts,
+OR any other abnormality when running the test.</TD>
+</TR>
+
+<TR>
+<TD><B>knownFail=&lt;number></B></TD>
+
+<TD>Number of tests that were known to fail because a bug number was specified
+in its regress specfile.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>malformed=&lt;number></B></TD>
+
+<TD>Number of tests with bad headers (see <A HREF="#Regress Specfile">regress
+specfile specifications</A>).</TD>
+</TR>
+</TABLE>
+
+<P>Note: check the <A HREF="reporter.html">Reporter Spec</A> for the latest
+reporter specification. 
+<h3>
+<A NAME="Implementation Notes for Regress"></A></h3>
+
+<h3>
+Implementation Notes for regress</h3>
+
+<LI>
+The regress tool shall parse and generate the outputs described by the
+3 input/output specifications listed above.</LI>
+
+<LI>
+The regress tool can re-use HSA's varfile.h/varfile.c Variable File interface,
+but should first port this interface to use cross-platform (XP) calls instead
+of native OS calls.</LI>
+
+<LI>
+The rest of the implementation should also utilize existing XP interfaces,
+so that this tool can be used, as defined, across the entire Netscape platform,
+whereever XP is supported.</LI>
+
+<LI>
+The source code, and binary, shall be integrated into the Makefile, and
+build infrastructure so that all tests can name the binary via ..(dot-dot)
+relative path names. A location for the regress tool needs to be found
+under /m/src. One possible location is under ns/hardcore. The build engineers
+(Tarah, etc.) should be consulted prior to fixing a location for the regress
+tool.</LI>
+
+<h3>
+<A NAME="FAIL code descriptions"></A></h3>
+
+<h3>
+FAIL code descriptions</h3>
+
+<TABLE BORDER COLS=2 WIDTH="100%" >
+<TR BGCOLOR="#FFCC00">
+<TD><B>Output</B></TD>
+
+<TD><B>Description</B></TD>
+</TR>
+
+<TR>
+<TD>FAIL: return code = 3</TD>
+
+<TD>When the test program exits with non zero return code.</TD>
+</TR>
+
+<TR>
+<TD>FAIL: Create Process</TD>
+
+<TD>Regress could not run the program or create the process. This usually
+means a misspelling of the program name, or that you are running on a machine
+that does not support processes (possibly MAC)</TD>
+</TR>
+
+<TR>
+<TD>FAIL: Wait Process</TD>
+
+<TD>Regress could not get the return code of the process for some reason.</TD>
+</TR>
+
+<TR>
+<TD>FAIL: Timeout after X seconds</TD>
+
+<TD>The program ran longer than the alloted X seconds and was killed.</TD>
+</TR>
+
+<TR>
+<TD>FAIL: Known bug. Bug number = 53416
+
+<TD>The bug = tag in the specfile is set, so the test is a known bug. </TD>
+</TR>
+
+<TR>
+<TD>FAIL: Known hang</TD>
+
+<TD>A kludge in an older version of regress that recognizes special program
+names that block forever and outputs this error instead of running them.</TD>
+</TR>
+</TABLE>
+
+<HR WIDTH="100%">
+<h3>
+<A NAME="miscellaneous"></A></h3>
+
+<h3>
+Test Specification File for Regress Tool Testing</h3>
+<A HREF="testspec.html">Test Specification for regress</A>
+<BR><A HREF="regressout.html">HTML Output of Regression test on
+regress</A>
+<h3>
+Specification of Directory Structure / Naming Conventions</h3>
+
+<LI>
+Regression test suites for each module shall be located in ns/ttools/tests/&lt;component>/&lt;module>/</LI>
+
+<LI>
+The <B>Makefile </B>in each <B>tests </B>directory should have a <B>tests
+tag </B>such that one can '<B>gmake tests</B>' to invoke the testing and
+generation of the HTML output.</LI>
+
+<BR>&nbsp;
+<P>&nbsp;
+<P><B><FONT SIZE=+2>Regress Special Building Instructions:</FONT></B>
+<P>Any Javascript related changes can be made to genjs_template.html.&nbsp;&nbsp;
+(see also <A HREF="regress_javascript.html">javascript changes documentation</A>).
+Once changes are made, run the perl script: makeGenJS.pl which rebuilds
+the two files: genjs.c and genjs.h.&nbsp;&nbsp;&nbsp; After which follow
+normal sectools build instructions.
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,628 @@
+<?php
+
+$html_title = 'NSPR: I/O layering sample';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<H2><CENTER>
+I/O Layering Sample</CENTER></H2>
+
+
+The following example demonstrates the use of layered I/O protocols. It
+also depicts appropriate use of command line processing and thread managment.
+
+<P>The source in this chapter is heavily annotated and for purposes of
+presentation, the source may be presented out of sequence. The sequence
+number are accurate and may be correlated to the actual code.
+<H3>Preliminary requirements</H3>
+
+
+<PRE><A NAME="Layer001"></A><B>  1</B> /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+<A NAME="Layer002"></A><B>  2</B> /*
+<A NAME="Layer003"></A><B>  3</B>  * The contents of this file are subject to the Netscape Public License
+<A NAME="Layer004"></A><B>  4</B>  * Version 1.0 (the "NPL"); you may not use this file except in
+<A NAME="Layer005"></A><B>  5</B>  * compliance with the NPL.  You may obtain a copy of the NPL at
+<A NAME="Layer006"></A><B>  6</B>  * http://www.mozilla.org/NPL/
+<A NAME="Layer007"></A><B>  7</B>  * 
+<A NAME="Layer008"></A><B>  8</B>  * Software distributed under the NPL is distributed on an "AS IS" basis,
+<A NAME="Layer009"></A><B>  9</B>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the NPL
+<A NAME="Layer010"></A><B> 10</B>  * for the specific language governing rights and limitations under the
+<A NAME="Layer011"></A><B> 11</B>  * NPL.
+<A NAME="Layer012"></A><B> 12</B>  * 
+<A NAME="Layer013"></A><B> 13</B>  * The Initial Developer of this code under the NPL is Netscape
+<A NAME="Layer014"></A><B> 14</B>  * Communications Corporation.  Portions created by Netscape are
+<A NAME="Layer015"></A><B> 15</B>  * Copyright (C) 1998 Netscape Communications Corporation.  All Rights
+<A NAME="Layer016"></A><B> 16</B>  * Reserved.
+<A NAME="Layer017"></A><B> 17</B>  */
+<A NAME="Layer018"></A><B> 18</B> 
+<A NAME="Layer019"></A><B> 19</B> #include &lt;prio.h>
+<A NAME="Layer020"></A><B> 20</B> #include &lt;prprf.h>
+<A NAME="Layer021"></A><B> 21</B> #include &lt;prlog.h>
+<A NAME="Layer022"></A><B> 22</B> #include &lt;prnetdb.h>
+<A NAME="Layer023"></A><B> 23</B> #include &lt;prthread.h>
+<A NAME="Layer024"></A><B> 24</B> 
+<A NAME="Layer025"></A><B> 25</B> #include &lt;plerror.h>
+<A NAME="Layer026"></A><B> 26</B> #include &lt;plgetopt.h>
+<A NAME="Layer027"></A><B> 27</B> #include &lt;prwin16.h>
+<A NAME="Layer028"></A><B> 28</B> 
+<A NAME="Layer029"></A><B> 29</B> #include &lt;stdlib.h>
+<A NAME="Layer030"></A><B> 30</B> 
+<A NAME="Layer031"></A><B> 31</B> /*
+<A NAME="Layer032"></A><B> 32</B> ** Testing layering of I/O
+<A NAME="Layer033"></A><B> 33</B> **
+<A NAME="Layer034"></A><B> 34</B> **      The layered server
+<A NAME="Layer035"></A><B> 35</B> ** A thread that acts as a server. It creates a TCP listener with a dummy
+<A NAME="Layer036"></A><B> 36</B> ** layer pushed on top. Then listens for incoming connections. Each connection
+<A NAME="Layer037"></A><B> 37</B> ** request for connection will be layered as well, accept one request, echo
+<A NAME="Layer038"></A><B> 38</B> ** it back and close.
+<A NAME="Layer039"></A><B> 39</B> **
+<A NAME="Layer040"></A><B> 40</B> **      The layered client
+<A NAME="Layer041"></A><B> 41</B> ** Pretty much what you'd expect.
+<A NAME="Layer042"></A><B> 42</B> */
+<A NAME="Layer043"></A><B> 43</B> 
+<A NAME="Layer044"></A><B> 44</B> static PRFileDesc *logFile;
+<A NAME="Layer045"></A><B> 45</B> static PRDescIdentity identity;
+<A NAME="Layer046"></A><B> 46</B> static PRNetAddr server_address;
+<A NAME="Layer047"></A><B> 47</B> 
+<A NAME="Layer048"></A><B> 48</B> static PRIOMethods myMethods;
+<A NAME="Layer049"></A><B> 49</B> 
+<A NAME="Layer050"></A><B> 50</B> typedef enum Verbosity {silent, quiet, chatty, noisy} Verbosity;
+<A NAME="Layer051"></A><B> 51</B> 
+<A NAME="Layer052"></A><B> 52</B> static PRIntn minor_iterations = 5;
+<A NAME="Layer053"></A><B> 53</B> static PRIntn major_iterations = 1;
+<A NAME="Layer054"></A><B> 54</B> static Verbosity verbosity = quiet;
+<A NAME="Layer055"></A><B> 55</B> static PRUint16 default_port = 12273;
+</PRE>
+
+<H3>Utility function</H3>
+
+
+The following function is a workaround for a <I>feature</I> of C++' treatment of
+enumerateds. It is not something one would normally hold up for review in front
+of a collection of language lawyers. But it is used by <TT>main()</TT> and therefore
+included here.
+
+<PRE>
+<A NAME="Layer223"></A><B>223</B> static Verbosity ChangeVerbosity(Verbosity verbosity, PRIntn delta)
+<A NAME="Layer224"></A><B>224</B> {
+<A NAME="Layer225"></A><B>225</B>     PRIntn verbage = (PRIntn)verbosity + delta;
+<A NAME="Layer226"></A><B>226</B>     if (verbage &lt; (PRIntn)silent) verbage = (PRIntn)silent;
+<A NAME="Layer227"></A><B>227</B>     else if (verbage > (PRIntn)noisy) verbage = (PRIntn)noisy;
+<A NAME="Layer228"></A><B>228</B>     return (Verbosity)verbage;
+<A NAME="Layer229"></A><B>229</B> }  /* ChangeVerbosity */
+<A NAME="Layer230"></A><B>230</B> 
+</PRE>
+
+<H3>Application's main</H3>
+
+
+The main function's duties are to process the command line options create
+the layered protocol stacks and the threads that are to operate on those stacks.
+The goal of the test is to verify that the clients of the layered protocol
+stacks can remain unaware of the workings of the layers making up the stack.
+
+<PRE>
+<A NAME="Layer231"></A><B>231</B> PRIntn main(PRIntn argc, char **argv)
+<A NAME="Layer232"></A><B>232</B> {
+<A NAME="Layer233"></A><B>233</B>     PRStatus rv;
+<A NAME="Layer234"></A><B>234</B>     PRIntn mits;
+<A NAME="Layer235"></A><B>235</B>     PLOptStatus os;
+<A NAME="Layer236"></A><B>236</B>     PRFileDesc *client, *service;
+<A NAME="Layer237"></A><B>237</B>     const char *server_name = NULL;
+<A NAME="Layer238"></A><B>238</B>     const PRIOMethods *stubMethods;
+<A NAME="Layer239"></A><B>239</B>     PRThread *client_thread, *server_thread;
+<A NAME="Layer240"></A><B>240</B>     PRThreadScope thread_scope = PR_LOCAL_THREAD;
+<A NAME="Layer241"></A><B>241</B>     PLOptState *opt = PL_CreateOptState(argc, argv, "dqGC:c:p:");
+<A NAME="Layer242"></A><B>242</B>     while (PL_OPT_EOL != (os = PL_GetNextOpt(opt)))
+<A NAME="Layer243"></A><B>243</B>     {
+<A NAME="Layer244"></A><B>244</B>         if (PL_OPT_BAD == os) continue;
+<A NAME="Layer245"></A><B>245</B>         switch (opt->option)
+<A NAME="Layer246"></A><B>246</B>         {
+<A NAME="Layer247"></A><B>247</B>         case 0:
+<A NAME="Layer248"></A><B>248</B>             server_name = opt->value;
+<A NAME="Layer249"></A><B>249</B>             break;
+<A NAME="Layer250"></A><B>250</B>         case 'd':  /* debug mode */
+<A NAME="Layer251"></A><B>251</B>             if (verbosity &lt; noisy)
+<A NAME="Layer252"></A><B>252</B>                 verbosity = ChangeVerbosity(verbosity, 1);
+<A NAME="Layer253"></A><B>253</B>             break;
+<A NAME="Layer254"></A><B>254</B>         case 'q':  /* debug mode */
+<A NAME="Layer255"></A><B>255</B>             if (verbosity > silent)
+<A NAME="Layer256"></A><B>256</B>                 verbosity = ChangeVerbosity(verbosity, -1);
+<A NAME="Layer257"></A><B>257</B>             break;
+<A NAME="Layer258"></A><B>258</B>         case 'G':  /* use global threads */
+<A NAME="Layer259"></A><B>259</B>             thread_scope = PR_GLOBAL_THREAD;
+<A NAME="Layer260"></A><B>260</B>             break;
+<A NAME="Layer261"></A><B>261</B>         case 'C':  /* number of threads waiting */
+<A NAME="Layer262"></A><B>262</B>             major_iterations = atoi(opt->value);
+<A NAME="Layer263"></A><B>263</B>             break;
+<A NAME="Layer264"></A><B>264</B>         case 'c':  /* number of client threads */
+<A NAME="Layer265"></A><B>265</B>             minor_iterations = atoi(opt->value);
+<A NAME="Layer266"></A><B>266</B>             break;
+<A NAME="Layer267"></A><B>267</B>         case 'p':  /* default port */
+<A NAME="Layer268"></A><B>268</B>             default_port = atoi(opt->value);
+<A NAME="Layer269"></A><B>269</B>             break;
+<A NAME="Layer270"></A><B>270</B>         default:
+<A NAME="Layer271"></A><B>271</B>             break;
+<A NAME="Layer272"></A><B>272</B>         }
+<A NAME="Layer273"></A><B>273</B>     }
+<A NAME="Layer274"></A><B>274</B>     PL_DestroyOptState(opt);
+<A NAME="Layer275"></A><B>275</B>     PR_STDIO_INIT();
+<A NAME="Layer276"></A><B>276</B> 
+<A NAME="Layer277"></A><B>277</B>     logFile = PR_GetSpecialFD(PR_StandardError);
+<A NAME="Layer278"></A><B>278</B> 
+<A NAME="Layer279"></A><B>279</B>     identity = PR_GetUniqueIdentity("Dummy");
+<A NAME="Layer280"></A><B>280</B>     stubMethods = PR_GetDefaultIOMethods();
+<A NAME="Layer281"></A><B>281</B> 
+<A NAME="Layer282"></A><B>282</B>     /*
+<A NAME="Layer283"></A><B>283</B>     ** The protocol we're going to implement is one where in order to initiate
+<A NAME="Layer284"></A><B>284</B>     ** a send, the sender must first solicit permission. Therefore, every
+<A NAME="Layer285"></A><B>285</B>     ** send is really a send - receive - send sequence.
+<A NAME="Layer286"></A><B>286</B>     */
+<A NAME="Layer287"></A><B>287</B>     myMethods = *stubMethods;  /* first get the entire batch */
+<A NAME="Layer288"></A><B>288</B>     myMethods.recv = MyRecv;  /* then override the ones we care about */
+<A NAME="Layer289"></A><B>289</B>     myMethods.send = MySend;  /* then override the ones we care about */
+<A NAME="Layer290"></A><B>290</B> 
+<A NAME="Layer291"></A><B>291</B>     if (NULL == server_name)
+<A NAME="Layer292"></A><B>292</B>         rv = PR_InitializeNetAddr(
+<A NAME="Layer293"></A><B>293</B>             PR_IpAddrLoopback, default_port, &amp;server_address);
+<A NAME="Layer294"></A><B>294</B>     else
+<A NAME="Layer295"></A><B>295</B>     {
+<A NAME="Layer296"></A><B>296</B>         rv = PR_StringToNetAddr(server_name, &amp;server_address);
+<A NAME="Layer297"></A><B>297</B>         PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer298"></A><B>298</B>         rv = PR_InitializeNetAddr(
+<A NAME="Layer299"></A><B>299</B>             PR_IpAddrNull, default_port, &amp;server_address);
+<A NAME="Layer300"></A><B>300</B>     }
+<A NAME="Layer301"></A><B>301</B>     PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer302"></A><B>302</B> 
+<A NAME="Layer303"></A><B>303</B>     /* one type w/o layering */
+<A NAME="Layer304"></A><B>304</B> 
+<A NAME="Layer305"></A><B>305</B>     mits = minor_iterations;
+<A NAME="Layer306"></A><B>306</B>     while (major_iterations-- > 0)
+<A NAME="Layer307"></A><B>307</B>     {
+<A NAME="Layer308"></A><B>308</B>         if (verbosity > silent)
+<A NAME="Layer309"></A><B>309</B>             PR_fprintf(logFile, "Beginning non-layered test\n");
+<A NAME="Layer310"></A><B>310</B>         client = PR_NewTCPSocket(); PR_ASSERT(NULL != client);
+<A NAME="Layer311"></A><B>311</B>         service = PR_NewTCPSocket(); PR_ASSERT(NULL != service);
+<A NAME="Layer312"></A><B>312</B> 
+<A NAME="Layer313"></A><B>313</B>         minor_iterations = mits;
+<A NAME="Layer314"></A><B>314</B>         server_thread = PR_CreateThread(
+<A NAME="Layer315"></A><B>315</B>             PR_USER_THREAD, Server, service,
+<A NAME="Layer316"></A><B>316</B>             PR_PRIORITY_HIGH, thread_scope,
+<A NAME="Layer317"></A><B>317</B>             PR_JOINABLE_THREAD, 16 * 1024);
+<A NAME="Layer318"></A><B>318</B>         PR_ASSERT(NULL != server_thread);
+<A NAME="Layer319"></A><B>319</B> 
+<A NAME="Layer320"></A><B>320</B>         client_thread = PR_CreateThread(
+<A NAME="Layer321"></A><B>321</B>             PR_USER_THREAD, Client, client,
+<A NAME="Layer322"></A><B>322</B>             PR_PRIORITY_NORMAL, thread_scope,
+<A NAME="Layer323"></A><B>323</B>             PR_JOINABLE_THREAD, 16 * 1024);
+<A NAME="Layer324"></A><B>324</B>         PR_ASSERT(NULL != client_thread);
+<A NAME="Layer325"></A><B>325</B> 
+<A NAME="Layer326"></A><B>326</B>         rv = PR_JoinThread(client_thread);
+<A NAME="Layer327"></A><B>327</B>         PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer328"></A><B>328</B>         rv = PR_JoinThread(server_thread);
+<A NAME="Layer329"></A><B>329</B>         PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer330"></A><B>330</B> 
+<A NAME="Layer331"></A><B>331</B>         rv = PR_Close(client); PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer332"></A><B>332</B>         rv = PR_Close(service); PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer333"></A><B>333</B>         if (verbosity > silent)
+<A NAME="Layer334"></A><B>334</B>             PR_fprintf(logFile, "Ending non-layered test\n");
+<A NAME="Layer335"></A><B>335</B> 
+<A NAME="Layer336"></A><B>336</B>         /* with layering */
+<A NAME="Layer337"></A><B>337</B>         if (verbosity > silent)
+<A NAME="Layer338"></A><B>338</B>             PR_fprintf(logFile, "Beginning layered test\n");
+<A NAME="Layer339"></A><B>339</B>         client = PR_NewTCPSocket(); PR_ASSERT(NULL != client);
+<A NAME="Layer340"></A><B>340</B>         service = PR_NewTCPSocket(); PR_ASSERT(NULL != service);
+<A NAME="Layer341"></A><B>341</B> 
+<A NAME="Layer342"></A><B>342</B>         minor_iterations = mits;
+<A NAME="Layer343"></A><B>343</B>         server_thread = PR_CreateThread(
+<A NAME="Layer344"></A><B>344</B>             PR_USER_THREAD, Server, PushLayer(service),
+<A NAME="Layer345"></A><B>345</B>             PR_PRIORITY_HIGH, thread_scope,
+<A NAME="Layer346"></A><B>346</B>             PR_JOINABLE_THREAD, 16 * 1024);
+<A NAME="Layer347"></A><B>347</B>         PR_ASSERT(NULL != server_thread);
+<A NAME="Layer348"></A><B>348</B> 
+<A NAME="Layer349"></A><B>349</B>         client_thread = PR_CreateThread(
+<A NAME="Layer350"></A><B>350</B>             PR_USER_THREAD, Client, PushLayer(client),
+<A NAME="Layer351"></A><B>351</B>             PR_PRIORITY_NORMAL, thread_scope,
+<A NAME="Layer352"></A><B>352</B>             PR_JOINABLE_THREAD, 16 * 1024);
+<A NAME="Layer353"></A><B>353</B>         PR_ASSERT(NULL != client_thread);
+<A NAME="Layer354"></A><B>354</B> 
+<A NAME="Layer355"></A><B>355</B>         rv = PR_JoinThread(client_thread);
+<A NAME="Layer356"></A><B>356</B>         PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer357"></A><B>357</B>         rv = PR_JoinThread(server_thread);
+<A NAME="Layer358"></A><B>358</B>         PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer359"></A><B>359</B> 
+<A NAME="Layer360"></A><B>360</B>         rv = PR_Close(client); PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer361"></A><B>361</B>         rv = PR_Close(service); PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer362"></A><B>362</B>         if (verbosity > silent)
+<A NAME="Layer363"></A><B>363</B>             PR_fprintf(logFile, "Ending layered test\n");
+<A NAME="Layer364"></A><B>364</B>     }
+<A NAME="Layer365"></A><B>365</B>     return 0;
+<A NAME="Layer366"></A><B>366</B> }  /* main */
+</PRE>
+
+<P>Lines <A HREF="prlayer.html#Layer241">241</A> through
+<A HREF="prlayer.html#Layer274">274</A> deal with the processing of the
+command line arguments. The facility used is one available
+<A HREF="plgetopt.html">(plgetopt.h)</A> from one of the NSPR libraries.
+
+<P><A NAME="1037996"></A>The <TT>PR_STDIO_INIT</TT> macro in line <A HREF="prlayer.html#Layer275">275</A> handles some of the differences
+between systems that define a convenient console I/O facility and systems
+that don't. (<TT>PR_STDIO_Init</TT> and other WIN-16-specific macros are
+defined in <TT>prwin16.h</TT>.) The macro must be invoked before any attempt
+to use the special I/O functions, including getting the file descriptor
+to access the console I/O. <I>Special</I> I/O functions are those that
+locate "special" file descriptors. At the present time, those are the Unix
+equivalents of <TT>stdin</TT>, <TT>stdout</TT>, and <TT>stderr</TT>. They
+are all console I/O devices, unique to Unix and therefore special.
+
+<P><A NAME="1036620"></A>It is strongly recommended that clients do not
+assume the makeup of network addresses. Even though Internet Protocol version
+4 (IPv4) is the most popular protocol at this time, IPv6 is looming on
+the horizon. Using the API provided by NSPR rather than accessing the address
+fields directly isolates your code from the transition. Lines <A HREF="prlayer.html#Layer291">291</A>
+through <A HREF="prlayer.html#Layer300">300</A> illustrate the use of this API. For more information, see <A HREF="priotyp.html#497214">Network
+Address Types</A> and <A HREF="prntdb.html#1032482">Initializing a Network
+Address</A>.
+
+<P> <A NAME="1036413"></A>Lines <A HREF="prlayer.html#Layer310">310</A>
+and <A HREF="prlayer.html#Layer311">311</A> illustrate the use of <TT><A HREF="priofnc.html#436251">PR_NewTCPSocket</A></TT>
+to create new network file descriptors. These sockets are bound to the
+IP/TCP protocol family, but not to a specific address. To create a UDP
+file descriptor, use <TT><A HREF="priofnc.html#436153">PR_NewUDPSocket</A></TT>.
+
+<P><A NAME="1036459"></A>Lines <A HREF="prlayer.html#Layer314">314</A> through
+<A HREF="prlayer.html#Layer324">324</A> illustrate the use of <TT><A HREF="prthrd.html#1015609">PR_CreateThread</A></TT>
+to create a new thread that runs parallel to its parent. NSPR threads have
+no hierarchy. Once created, they have no defined relationship to their
+creator. Any thread can create another thread, and the life expectancy
+of the two threads is afterwards unrelated. This is true of all threads
+except the primordial thread (the thread that calls <TT>main</TT>). Should
+the primordial thread exit its root function--that is, <TT>main</TT>--all
+threads in the process will be abruptly terminated. Facilities are available
+to synchronize the termination of the other threads in a process (see <A HREF="printro.html#1035064">Thread
+Synchronization Sample</A>).
+
+<P> <A NAME="1036797"></A>The newly created thread begins execution
+at the entry to the function noted in the <TT>start</TT> parameter of <TT><A HREF="prthrd.html#1015609">PR_CreateThread</A></TT>--in
+this example, <TT>Server</TT> and <TT>Client</TT>. NSPR does not define
+when that root function is actually entered relative to <TT><A HREF="prthrd.html#1015609">PR_CreateThread</A></TT>
+returning.
+
+<P><A NAME="1038633"></A>Lines <A HREF="prlayer.html#Layer326">326</A> through
+<A HREF="prlayer.html#Layer329">329</A> illustrate the use of <TT><A HREF="prthrd.html#1017185">PR_JoinThread</A></TT>
+to synchronize the termination of the calling thread with the termination
+of some other thread. The caller of <TT>PR_JoinThread</TT> is blocked until
+the target of the join operation terminates (actually, until it returns
+from the root function). Once <TT>PR_JoinThread</TT> returns, all references
+to the joined thread (the argument of <TT>PR_JoinThread</TT>) are no longer
+valid.
+
+<P> <A NAME="1036980"></A>Lines <A HREF="prlayer.html#Layer331">331</A>
+and <A HREF="prlayer.html#Layer332">332</A> call <TT><A HREF="priofnc.html#622644">PR_Close</A></TT>
+to close the sockets opened earlier with <TT><A HREF="priofnc.html#436251">PR_NewTCPSocket</A></TT>.
+This operation ensures that all resources associated with the file descriptor
+are released. Once the call to <TT>PR_Close</TT> returns, the file descriptor
+is no longer valid.
+
+<P>Lines <A HREF="prlayer.html#Layer308">308 though <A HREF="prlayer.html#Layer334">
+334</A> run the newly created TCP connections in an unlayered mode. Lines
+<A HREF="prlayer.html#Layer343">343 through <A HREF="prlayer.html#Layer361">361</A>
+simple repeat the same test, but with layered protocol stacks.
+
+<H3><TT>PushLayer</TT> function</H3>
+
+
+<P>The PushLayer function simply takes the exiting protocol stack, creates a
+new layer, modifies the new layer appropriately, and pushes it on top of
+the existing stack. The result that is returned is the top of the stack,
+which coincides to the value of <TT>stack</TT> passed in.
+
+<PRE>
+<A NAME="Layer057"></A><B> 57</B> static PRFileDesc *PushLayer(PRFileDesc *stack)
+<A NAME="Layer058"></A><B> 58</B> {
+<A NAME="Layer059"></A><B> 59</B>     PRFileDesc *layer = PR_CreateIOLayerStub(identity, &amp;myMethods);
+<A NAME="Layer060"></A><B> 60</B>     PRStatus rv = PR_PushIOLayer(stack, PR_GetLayersIdentity(stack), layer);
+<A NAME="Layer061"></A><B> 61</B>     if (verbosity > quiet)
+<A NAME="Layer062"></A><B> 62</B>         PR_fprintf(logFile, "Pushed layer(0x%x) onto stack(0x%x)\n", layer, stack);
+<A NAME="Layer063"></A><B> 63</B>     PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer064"></A><B> 64</B>     return stack;
+<A NAME="Layer065"></A><B> 65</B> }  /* PushLayer */
+</PRE>
+
+<P>The modifications to the default layer object returned by
+<TT>PR_CreateIOLayerStub</TT> are to replace the methods table with one
+appropriate for this test. In this particular instance, the only methods
+replaced are the <TT>send()</TT> and <TT>recv()</TT> methods, all others
+having appropriate default behavior.
+
+<H3><TT>PopLayer</TT> function</H3>
+
+
+<P>The <TT>PopLayer</TT> function isn't actually used by this test program.
+It would be approprate if an application wished to modify the behvior of
+an existing protocol stack, then reinstate it to it's original condition.
+In the case of this program, the desire was to test <TT>PR_Close</TT>'s
+ability to transparently deal with arbitrary layers.
+
+<PRE>
+<A NAME="Layer068"></A><B> 68</B> static PRFileDesc *PopLayer(PRFileDesc *stack)
+<A NAME="Layer069"></A><B> 69</B> {
+<A NAME="Layer070"></A><B> 70</B>     PRFileDesc *popped = PR_PopIOLayer(stack, identity);
+<A NAME="Layer071"></A><B> 71</B>     if (verbosity > quiet)
+<A NAME="Layer072"></A><B> 72</B>         PR_fprintf(logFile, "Popped layer(0x%x) from stack(0x%x)\n", popped, stack);
+<A NAME="Layer073"></A><B> 73</B>     popped->dtor(popped);
+<A NAME="Layer074"></A><B> 74</B>     
+<A NAME="Layer075"></A><B> 75</B>     return stack;
+<A NAME="Layer076"></A><B> 76</B> }  /* PopLayer */
+</PRE>
+
+<P>The argument passed to <TT>PopLayer</TT> is the address of the layer to
+be removed from the existing protocol stack. Once it is removed, the layer's
+destructor is called at line (A HREF="prlayer.html#Layer073">73</A>. The
+value returned (unnecessarily from the function is the same that was passed in.
+<A HREF="priofnc.html#539584">PR_PopIOLayer()</A> always preserves the stack's
+<I>top</I> address even if it is the layer popped.
+
+<H3><TT>Client</TT> callback function</H3>
+
+
+<P>The callback function <TT>Client</TT> is referenced from line
+<A HREF="prlayer.html#Layer350">350</A> of <TT>main()</TT>. <TT>Client</TT>
+is the <I>root function</I> of the <I>client</I> thread. The argument passed
+the the thread is the address of the top layer of the protocol stack. <TT>Client</TT> is not aware of whether the stack is layered. 
+
+<PRE>
+<A NAME="Layer079"></A><B> 79</B> static void PR_CALLBACK Client(void *arg)
+<A NAME="Layer080"></A><B> 80</B> {
+<A NAME="Layer081"></A><B> 81</B>     PRStatus rv;
+<A NAME="Layer082"></A><B> 82</B>     PRUint8 buffer[100];
+<A NAME="Layer083"></A><B> 83</B>     PRIntn empty_flags = 0;
+<A NAME="Layer084"></A><B> 84</B>     PRIntn bytes_read, bytes_sent;
+<A NAME="Layer085"></A><B> 85</B>     PRFileDesc *stack = (PRFileDesc*)arg;
+<A NAME="Layer086"></A><B> 86</B> 
+<A NAME="Layer087"></A><B> 87</B>     rv = PR_Connect(stack, &amp;server_address, PR_INTERVAL_NO_TIMEOUT);
+<A NAME="Layer088"></A><B> 88</B>     PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer089"></A><B> 89</B>     while (minor_iterations-- > 0)
+<A NAME="Layer090"></A><B> 90</B>     {
+<A NAME="Layer091"></A><B> 91</B>         bytes_sent = PR_Send(
+<A NAME="Layer092"></A><B> 92</B>             stack, buffer, sizeof(buffer), empty_flags, PR_INTERVAL_NO_TIMEOUT);
+<A NAME="Layer093"></A><B> 93</B>         PR_ASSERT(sizeof(buffer) == bytes_sent);
+<A NAME="Layer094"></A><B> 94</B>         if (verbosity > chatty)
+<A NAME="Layer095"></A><B> 95</B>             PR_fprintf(logFile, "Client sending %d bytes\n", bytes_sent);
+<A NAME="Layer096"></A><B> 96</B>         bytes_read = PR_Recv(
+<A NAME="Layer097"></A><B> 97</B>             stack, buffer, bytes_sent, empty_flags, PR_INTERVAL_NO_TIMEOUT);
+<A NAME="Layer098"></A><B> 98</B>         if (verbosity > chatty)
+<A NAME="Layer099"></A><B> 99</B>             PR_fprintf(logFile, "Client receiving %d bytes\n", bytes_read);
+<A NAME="Layer100"></A><B>100</B>         PR_ASSERT(bytes_read == bytes_sent);
+<A NAME="Layer101"></A><B>101</B>     }
+<A NAME="Layer102"></A><B>102</B> 
+<A NAME="Layer103"></A><B>103</B>     if (verbosity > quiet)
+<A NAME="Layer104"></A><B>104</B>         PR_fprintf(logFile, "Client shutting down stack\n");
+<A NAME="Layer105"></A><B>105</B>     
+<A NAME="Layer106"></A><B>106</B>     rv = PR_Shutdown(stack, PR_SHUTDOWN_BOTH); PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer107"></A><B>107</B> }  /* Client */
+</PRE>
+
+<A NAME="1037680"></A>The call to <TT><A HREF="priofnc.html#436330">PR_Connect</A></TT>
+in line <A HREF="prlayer.html#Layer087">87</A> binds the address the connection and establishes the virtual circuit
+to the peer. This function uses the lesser of the provided timeout time or the OS'es connect timeout time. 
+Meaning if you specify <TT>PR_INTERVAL_NO_TIMEOUT</TT> as the timeout, the OS's connection
+time limit will be used.
+
+<P> <A NAME="1037233"></A>Send operations like that shown at line
+<A HREF="prlayer.html#Layer091">91</A> either completes (transmit all the data) or fails before returning. The use
+of <TT>PR_INTERVAL_NO_TIMEOUT</TT> here is also risky, though not as risky
+as in the call to <TT>PR_Connect</TT>. A transport may fail for a number
+of reasons. The timeout interval (had it been used) would apply to the
+interval allowed to send the entire buffer (<TT>sizeof(buffer)</TT> in
+this case).
+
+<P> <A NAME="1037298"></A>A read operation like that shown at line
+<A HREF="prlayer.html#Layer096">96</A> may actually return with fewer bytes than were asked for, thus requiring
+resubmission of the request. This is a reflection of the TCP and BSD approach
+to sockets. The call to <TT><A HREF="priofnc.html#437899">PR_Recv</A></TT>
+is also using an infinite timeout. Since the <TT>PR_Recv</TT> function
+will return with one or more bytes, the timeout would be applied to the
+reception of the first byte of an arbitrary number of bytes.
+
+<P> <A NAME="1037498"></A>Once the exchange has been accomplished,
+the transport is shut down with a call to <TT><A HREF="priofnc.html#436793">PR_Shutdown</A></TT>,
+as shown in line <A HREF="prlayer.html#Layer106">106</A>. This operation
+effectively disables any further use of the file descriptor for anything
+other than closing it. The call to <TT>PR_Shutdown</TT> does not, however,
+eliminate the need to close the descriptor. The call to <TT><A HREF="priofnc.html#622644">PR_Close</A></TT>
+is in <TT>main()</TT> (the creator the the TCP stream) and is required to 
+reclaim the resources used by the runtime to support the connection.
+
+<H3><TT>Server</TT> callback function</H3>
+
+
+<P>The callback function <TT>Server</TT> is referenced from line <A HREF="prlayer.html#Layer344">344</A> of <TT>main()</TT>. Like <TT>Client</TT>
+it is the <I>root function</I> of the server thread. Like the <TT>Client</TT>
+function, the argument passed to <TT>Server</TT> is the top layer of an
+arbitrary protocol stack. The server thread uses this stack to <I>listen</I>
+for incoming connections as a well known port number.
+
+<PRE>
+<A NAME="Layer109"></A><B>109</B> static void PR_CALLBACK Server(void *arg)
+<A NAME="Layer110"></A><B>110</B> {
+<A NAME="Layer111"></A><B>111</B>     PRStatus rv;
+<A NAME="Layer112"></A><B>112</B>     PRUint8 buffer[100];
+<A NAME="Layer113"></A><B>113</B>     PRFileDesc *service;
+<A NAME="Layer114"></A><B>114</B>     PRUintn empty_flags = 0;
+<A NAME="Layer115"></A><B>115</B>     PRIntn bytes_read, bytes_sent;
+<A NAME="Layer116"></A><B>116</B>     PRFileDesc *stack = (PRFileDesc*)arg;
+<A NAME="Layer117"></A><B>117</B>     PRNetAddr any_address, client_address;
+<A NAME="Layer118"></A><B>118</B> 
+<A NAME="Layer119"></A><B>119</B>     rv = PR_InitializeNetAddr(PR_IpAddrAny, default_port, &amp;any_address);
+<A NAME="Layer120"></A><B>120</B>     PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer121"></A><B>121</B> 
+<A NAME="Layer122"></A><B>122</B>     rv = PR_Bind(stack, &amp;any_address); PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer123"></A><B>123</B>     rv = PR_Listen(stack, 10); PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer124"></A><B>124</B> 
+<A NAME="Layer125"></A><B>125</B>     service = PR_Accept(stack, &amp;client_address, PR_INTERVAL_NO_TIMEOUT);
+<A NAME="Layer126"></A><B>126</B>     if (verbosity > quiet)
+<A NAME="Layer127"></A><B>127</B>         PR_fprintf(logFile, "Server accepting connection\n");
+<A NAME="Layer128"></A><B>128</B> 
+<A NAME="Layer129"></A><B>129</B>     do
+<A NAME="Layer130"></A><B>130</B>     {
+<A NAME="Layer131"></A><B>131</B>         bytes_read = PR_Recv(
+<A NAME="Layer132"></A><B>132</B>             service, buffer, sizeof(buffer), empty_flags, PR_INTERVAL_NO_TIMEOUT);
+<A NAME="Layer133"></A><B>133</B>         if (0 != bytes_read)
+<A NAME="Layer134"></A><B>134</B>         {
+<A NAME="Layer135"></A><B>135</B>             if (verbosity > chatty)
+<A NAME="Layer136"></A><B>136</B>                 PR_fprintf(logFile, "Server receiving %d bytes\n", bytes_read);
+<A NAME="Layer137"></A><B>137</B>             PR_ASSERT(bytes_read > 0);
+<A NAME="Layer138"></A><B>138</B>             bytes_sent = PR_Send(
+<A NAME="Layer139"></A><B>139</B>                 service, buffer, bytes_read, empty_flags, PR_INTERVAL_NO_TIMEOUT);
+<A NAME="Layer140"></A><B>140</B>             if (verbosity > chatty)
+<A NAME="Layer141"></A><B>141</B>                 PR_fprintf(logFile, "Server sending %d bytes\n", bytes_sent);
+<A NAME="Layer142"></A><B>142</B>             PR_ASSERT(bytes_read == bytes_sent);
+<A NAME="Layer143"></A><B>143</B>         }
+<A NAME="Layer144"></A><B>144</B> 
+<A NAME="Layer145"></A><B>145</B>     } while (0 != bytes_read);
+<A NAME="Layer146"></A><B>146</B> 
+<A NAME="Layer147"></A><B>147</B>     if (verbosity > quiet)
+<A NAME="Layer148"></A><B>148</B>         PR_fprintf(logFile, "Server shutting down and closing stack\n");
+<A NAME="Layer149"></A><B>149</B>     rv = PR_Shutdown(service, PR_SHUTDOWN_BOTH); PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer150"></A><B>150</B>     rv = PR_Close(service); PR_ASSERT(PR_SUCCESS == rv);
+<A NAME="Layer151"></A><B>151</B> 
+<A NAME="Layer152"></A><B>152</B> }  /* Server */
+</PRE>
+
+<P>At line <A HREF="prlayer.html#Layer112">112</A> is the allocation of a 100 byte
+buffer, an <I>automatic</I> variable. According the <A HREF="AutoAddresses.html">memo describing the use of such variables</A>, this will fail miserably. It is insanely
+stupid. Don't ever do this if you want if you want your code to be portable to
+WIN-16.
+
+<P>Line <A HREF="prlayer.html#Layer119">119</A> correctly uses
+<A HREF="prntdb.html#1032983"><TT>PR_InitializeNetAddr()</TT></A> to
+initialize a network address suitable for listening for incoming connection
+requests and a specified port number. That address is then <I>bound</I> to
+the transport using <A HREF="priofnc.html#???"><TT>PR_Bind()</TT></A> and then
+conditioned for listening using <A HREF="priofnc.html#???"><TT>PR_Listen()</TT></A>.
+At that point the server is ready to accept the connection.
+
+<P>A new connection results from the successful completion of <A HREF="priofnc.html#???"><TT>PR_Accept()</TT></A>. This connection is then used
+as the target of a <A HREF="priofnc.html#???"><TT>PR_Recv()</TT></A>, followed
+by a <A HREF="priofnc.html#???"><TT>PR_Send()</TT></A>. This pair of operations
+will continue until zero bytes are received, indicating an <I>end of file</I>.
+At that time the stream is shutown, and then since the server thread actually
+did create this file descriptor, the descriptor is closed as well.
+
+<H3><TT>MyRecv</TT> callback function</H3>
+
+
+<P>The <TT>MyRecv</TT> function is a replacement for the default I/O stub's
+<TT>recv()</TT> I/O method. Any time a receive operation is performed by a higher layer or the ultimate client of the protocol stack, this function will get
+invoked. When this function finishes with the duties defined by the layer,
+it must then call the next lower layer in the protocol stack.
+
+<PRE>
+<A NAME="Layer154"></A><B>154</B> static PRInt32 PR_CALLBACK MyRecv(
+<A NAME="Layer155"></A><B>155</B>     PRFileDesc *fd, void *buf, PRInt32 amount,
+<A NAME="Layer156"></A><B>156</B>     PRIntn flags, PRIntervalTime timeout)
+<A NAME="Layer157"></A><B>157</B> {
+<A NAME="Layer158"></A><B>158</B>     char *b = (char*)buf;
+<A NAME="Layer159"></A><B>159</B>     PRFileDesc *lo = fd->lower;
+<A NAME="Layer160"></A><B>160</B>     PRInt32 rv, readin = 0, request;
+<A NAME="Layer161"></A><B>161</B>     rv = lo->methods->recv(lo, &amp;request, sizeof(request), flags, timeout);
+<A NAME="Layer162"></A><B>162</B>     if (verbosity > chatty) PR_fprintf(
+<A NAME="Layer163"></A><B>163</B>         logFile, "MyRecv sending permission for %d bytes\n", request);
+<A NAME="Layer164"></A><B>164</B>     if (0 &lt; rv)
+<A NAME="Layer165"></A><B>165</B>     {
+<A NAME="Layer166"></A><B>166</B>         if (verbosity > chatty) PR_fprintf(
+<A NAME="Layer167"></A><B>167</B>             logFile, "MyRecv received permission request for %d bytes\n", request);
+<A NAME="Layer168"></A><B>168</B>         rv = lo->methods->send(
+<A NAME="Layer169"></A><B>169</B>             lo, &amp;request, sizeof(request), flags, timeout);
+<A NAME="Layer170"></A><B>170</B>         if (0 &lt; rv)
+<A NAME="Layer171"></A><B>171</B>         {
+<A NAME="Layer172"></A><B>172</B>             if (verbosity > chatty) PR_fprintf(
+<A NAME="Layer173"></A><B>173</B>                 logFile, "MyRecv sending permission for %d bytes\n", request);
+<A NAME="Layer174"></A><B>174</B>             while (readin &lt; request)
+<A NAME="Layer175"></A><B>175</B>             {
+<A NAME="Layer176"></A><B>176</B>                 rv = lo->methods->recv(
+<A NAME="Layer177"></A><B>177</B>                     lo, b + readin, amount - readin, flags, timeout);
+<A NAME="Layer178"></A><B>178</B>                 if (rv &lt;= 0) break;
+<A NAME="Layer179"></A><B>179</B>                 if (verbosity > chatty) PR_fprintf(
+<A NAME="Layer180"></A><B>180</B>                     logFile, "MyRecv received %d bytes\n", rv);
+<A NAME="Layer181"></A><B>181</B>                 readin += rv;
+<A NAME="Layer182"></A><B>182</B>             }
+<A NAME="Layer183"></A><B>183</B>             rv = readin;
+<A NAME="Layer184"></A><B>184</B>         }
+<A NAME="Layer185"></A><B>185</B>     }
+<A NAME="Layer186"></A><B>186</B>     return rv;
+<A NAME="Layer187"></A><B>187</B> }  /* MyRecv */</PRE>
+
+<P>In this sample, the intent of the layer is to implement a protocol that
+requires the sender and receiver to share the knowledge about how many bytes
+are going to be transferred. The implication is that in order to do a receive,
+the layer must first do a receive of <A HREF="prlayer.html#Layer161">four bytes</A>,
+those bytes being the number of bytes that the sender wishes to send.
+Furthermore, the reciever must <A HREF="prlayer.html#Layer161">transmit</A>
+to the peer authorization. Then the method expects to
+<A HREF="prlayer.html#Layer176">receive the agreed amount of data</A>.
+Thus, ever <I>apparent</I> read is really two reads, with an intervening write. 
+
+<H3><TT>MySend</TT> callback function</H3>
+
+
+<P>The <TT>MySend</TT> function is the parallel of <TT>MyRecv</TT>. Before
+actually send the requested data, it must ask permission of the receiver.
+
+<PRE>
+<A NAME="Layer189"></A><B>189</B> static PRInt32 PR_CALLBACK MySend(
+<A NAME="Layer190"></A><B>190</B>     PRFileDesc *fd, const void *buf, PRInt32 amount,
+<A NAME="Layer191"></A><B>191</B>     PRIntn flags, PRIntervalTime timeout)
+<A NAME="Layer192"></A><B>192</B> {
+<A NAME="Layer193"></A><B>193</B>     PRFileDesc *lo = fd->lower;
+<A NAME="Layer194"></A><B>194</B>     const char *b = (const char*)buf;
+<A NAME="Layer195"></A><B>195</B>     PRInt32 rv, wroteout = 0, request;
+<A NAME="Layer196"></A><B>196</B>     if (verbosity > chatty) PR_fprintf(
+<A NAME="Layer197"></A><B>197</B>         logFile, "MySend asking permission to send %d bytes\n", amount);
+<A NAME="Layer198"></A><B>198</B>     rv = lo->methods->send(lo, &amp;amount, sizeof(amount), flags, timeout);
+<A NAME="Layer199"></A><B>199</B>     if (0 &lt; rv)
+<A NAME="Layer200"></A><B>200</B>     {
+<A NAME="Layer201"></A><B>201</B>         rv = lo->methods->recv(
+<A NAME="Layer202"></A><B>202</B>             lo, &amp;request, sizeof(request), flags, timeout);
+<A NAME="Layer203"></A><B>203</B>         if (0 &lt; rv)
+<A NAME="Layer204"></A><B>204</B>         {
+<A NAME="Layer205"></A><B>205</B>             PR_ASSERT(request == amount);
+<A NAME="Layer206"></A><B>206</B>             if (verbosity > chatty) PR_fprintf(
+<A NAME="Layer207"></A><B>207</B>                 logFile, "MySend got permission to send %d bytes\n", request);
+<A NAME="Layer208"></A><B>208</B>             while (wroteout &lt; request)
+<A NAME="Layer209"></A><B>209</B>             {
+<A NAME="Layer210"></A><B>210</B>                 rv = lo->methods->send(
+<A NAME="Layer211"></A><B>211</B>                     lo, b + wroteout, request - wroteout, flags, timeout);
+<A NAME="Layer212"></A><B>212</B>                 if (rv &lt;= 0) break;
+<A NAME="Layer213"></A><B>213</B>                 if (verbosity > chatty) PR_fprintf(
+<A NAME="Layer214"></A><B>214</B>                     logFile, "MySend wrote %d bytes\n", rv);
+<A NAME="Layer215"></A><B>215</B>                 wroteout += rv;
+<A NAME="Layer216"></A><B>216</B>             }
+<A NAME="Layer217"></A><B>217</B>             rv = amount;
+<A NAME="Layer218"></A><B>218</B>         }
+<A NAME="Layer219"></A><B>219</B>     }
+<A NAME="Layer220"></A><B>220</B>     return rv;
+<A NAME="Layer221"></A><B>221</B> }  /* MySend */</PRE>
+
+<P>The protocol first asks permission by <A HREF="prlayer.html#Layer198">sending a message</A> of well known size, four bytes (the size of a PRInt32). Once that is sent, it anticipates <A HREF="prlayer.html#Layer201">receiving a four byte message</A> in response providing the permission. Once that exchange is complete,
+the actual data is <A HREF="prlayer.html#Layer210">sent as a single operation</A>.
+
+<HR SIZE=4>
+<DIV ALIGN=right><I><FONT SIZE=-2>Last Updated: Wed Jul 15 18:16:30 PDT 1998</FONT></I> 
+<HR SIZE=4></DIV>
+
+<CENTER>Copyright � 1998 <A HREF="http://home.netscape.com/misc/contact_info.html" TARGET="_top">Netscape
+Communications Corporation</A></CENTER>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

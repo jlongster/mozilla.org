@@ -1,0 +1,479 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> /*
+<b><a name="38">   38</a></b>  * CMS attributes.
+<b><a name="39">   39</a></b>  *
+<b><a name="40">   40</a></b>  * $Id$
+<b><a name="41">   41</a></b>  */
+<b><a name="42">   42</a></b> 
+<b><a name="43">   43</a></b> #include "cmslocal.h"
+<b><a name="44">   44</a></b> 
+<b><a name="45">   45</a></b> #include "secasn1.h"
+<b><a name="46">   46</a></b> #include "secitem.h"
+<b><a name="47">   47</a></b> #include "secoid.h"
+<b><a name="48">   48</a></b> #include "pk11func.h"
+<b><a name="49">   49</a></b> #include "prtime.h"
+<b><a name="50">   50</a></b> #include "secerr.h"
+<b><a name="51">   51</a></b> 
+<b><a name="52">   52</a></b> /*
+<b><a name="53">   53</a></b>  * -------------------------------------------------------------------
+<b><a name="54">   54</a></b>  * XXX The following Attribute stuff really belongs elsewhere.
+<b><a name="55">   55</a></b>  * The Attribute type is *not* part of CMS but rather X.501.
+<b><a name="56">   56</a></b>  * But for now, since CMS is the only customer of attributes,
+<b><a name="57">   57</a></b>  * we define them here.  Once there is a use outside of CMS,
+<b><a name="58">   58</a></b>  * then change the attribute types and functions from internal
+<b><a name="59">   59</a></b>  * to external naming convention, and move them elsewhere!
+<b><a name="60">   60</a></b>  */
+<b><a name="61">   61</a></b> 
+<b><a name="62">   62</a></b> 
+<b><a name="63">   63</a></b> /*
+<b><a name="64">   64</a></b>  * NSS_CMSAttribute_Create - create an attribute
+<b><a name="65">   65</a></b>  *
+<b><a name="66">   66</a></b>  * if value is NULL, the attribute won't have a value. It can be added later
+<b><a name="67">   67</a></b>  * with NSS_CMSAttribute_AddValue.
+<b><a name="68">   68</a></b>  */
+<b><a name="69">   69</a></b> <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *
+<b><a name="70">   70</a></b> <a href="#70">NSS_CMSAttribute_Create</a>(<a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *poolp, <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> oidtag, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> encoded)
+<b><a name="71">   71</a></b> {
+<b><a name="72">   72</a></b>     <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *attr;
+<b><a name="73">   73</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *copiedvalue;
+<b><a name="74">   74</a></b>     void *mark;
+<b><a name="75">   75</a></b> 
+<b><a name="76">   76</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a> (poolp != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="77">   77</a></b> 
+<b><a name="78">   78</a></b>     mark = <a href="../util/secport.c.dep.html#PORT_ArenaMark">PORT_ArenaMark</a> (poolp);
+<b><a name="79">   79</a></b> 
+<b><a name="80">   80</a></b>     attr = (<a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(poolp, sizeof(<a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a>));
+<b><a name="81">   81</a></b>     if (attr == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="82">   82</a></b>         goto loser;
+<b><a name="83">   83</a></b> 
+<b><a name="84">   84</a></b>     attr-&gt;typeTag = <a href="../util/secoid.c.dep.html#SECOID_FindOIDByTag">SECOID_FindOIDByTag</a>(oidtag);
+<b><a name="85">   85</a></b>     if (attr-&gt;typeTag == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="86">   86</a></b>         goto loser;
+<b><a name="87">   87</a></b> 
+<b><a name="88">   88</a></b>     if (<a href="../util/secitem.c.dep.html#SECITEM_CopyItem">SECITEM_CopyItem</a>(poolp, &amp;(attr-&gt;<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>), &amp;(attr-&gt;<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>Tag-&gt;oid)) != <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>)
+<b><a name="89">   89</a></b>         goto loser;
+<b><a name="90">   90</a></b> 
+<b><a name="91">   91</a></b>     if (<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a> != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="92">   92</a></b>         if ((copied<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a> = <a href="../util/secitem.c.dep.html#SECITEM_ArenaDupItem">SECITEM_ArenaDupItem</a>(poolp, <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>)) == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="93">   93</a></b>             goto loser;
+<b><a name="94">   94</a></b> 
+<b><a name="95">   95</a></b>         if (<a href="../smime/cmsarray.c.dep.html#NSS_CMSArray_Add">NSS_CMSArray_Add</a>(poolp, (void ***)&amp;(attr-&gt;values), (void *)copiedvalue) != <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>)
+<b><a name="96">   96</a></b>             goto loser;
+<b><a name="97">   97</a></b>     }
+<b><a name="98">   98</a></b> 
+<b><a name="99">   99</a></b>     attr-&gt;encoded = encoded;
+<b><a name="100">  100</a></b> 
+<b><a name="101">  101</a></b>     <a href="../util/secport.c.dep.html#PORT_ArenaUnmark">PORT_ArenaUnmark</a> (poolp, mark);
+<b><a name="102">  102</a></b> 
+<b><a name="103">  103</a></b>     return attr;
+<b><a name="104">  104</a></b> 
+<b><a name="105">  105</a></b> loser:
+<b><a name="106">  106</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a> (mark != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="107">  107</a></b>     <a href="../util/secport.c.dep.html#PORT_ArenaRelease">PORT_ArenaRelease</a> (poolp, mark);
+<b><a name="108">  108</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="109">  109</a></b> }
+<b><a name="110">  110</a></b> 
+<b><a name="111">  111</a></b> /*
+<b><a name="112">  112</a></b>  * NSS_CMSAttribute_AddValue - add another value to an attribute
+<b><a name="113">  113</a></b>  */
+<b><a name="114">  114</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="115">  115</a></b> <a href="#115">NSS_CMSAttribute_AddValue</a>(<a href="../mozilla/nsprpub/lib/ds/plarena.h.dep.html#PLArenaPool">PLArenaPool</a><a href="../mozilla/nsprpub/lib/ds/plarenas.h.dep.html#PLArenaPool"><sup>[1]</sup></a> *poolp, <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *attr, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>)
+<b><a name="116">  116</a></b> {
+<b><a name="117">  117</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *copiedvalue;
+<b><a name="118">  118</a></b>     void *mark;
+<b><a name="119">  119</a></b> 
+<b><a name="120">  120</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a> (poolp != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="121">  121</a></b> 
+<b><a name="122">  122</a></b>     mark = <a href="../util/secport.c.dep.html#PORT_ArenaMark">PORT_ArenaMark</a>(poolp);
+<b><a name="123">  123</a></b> 
+<b><a name="124">  124</a></b>     if (<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="125">  125</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="126">  126</a></b>         goto loser;
+<b><a name="127">  127</a></b>     }
+<b><a name="128">  128</a></b> 
+<b><a name="129">  129</a></b>     if ((copied<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a> = <a href="../util/secitem.c.dep.html#SECITEM_ArenaDupItem">SECITEM_ArenaDupItem</a>(poolp, <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>)) == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="130">  130</a></b>         goto loser;
+<b><a name="131">  131</a></b> 
+<b><a name="132">  132</a></b>     if (<a href="../smime/cmsarray.c.dep.html#NSS_CMSArray_Add">NSS_CMSArray_Add</a>(poolp, (void ***)&amp;(attr-&gt;values), (void *)copiedvalue) != <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>)
+<b><a name="133">  133</a></b>         goto loser;
+<b><a name="134">  134</a></b> 
+<b><a name="135">  135</a></b>     <a href="../util/secport.c.dep.html#PORT_ArenaUnmark">PORT_ArenaUnmark</a>(poolp, mark);
+<b><a name="136">  136</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="137">  137</a></b> 
+<b><a name="138">  138</a></b> loser:
+<b><a name="139">  139</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a> (mark != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="140">  140</a></b>     <a href="../util/secport.c.dep.html#PORT_ArenaRelease">PORT_ArenaRelease</a> (poolp, mark);
+<b><a name="141">  141</a></b>     return SECFailure;
+<b><a name="142">  142</a></b> }
+<b><a name="143">  143</a></b> 
+<b><a name="144">  144</a></b> /*
+<b><a name="145">  145</a></b>  * NSS_CMSAttribute_GetType - return the OID tag
+<b><a name="146">  146</a></b>  */
+<b><a name="147">  147</a></b> <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a>
+<b><a name="148">  148</a></b> <a href="#148">NSS_CMSAttribute_GetType</a>(<a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *attr)
+<b><a name="149">  149</a></b> {
+<b><a name="150">  150</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a> *typetag;
+<b><a name="151">  151</a></b> 
+<b><a name="152">  152</a></b>     <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>tag = <a href="../util/secoid.c.dep.html#SECOID_FindOID">SECOID_FindOID</a>(&amp;(attr-&gt;<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>));
+<b><a name="153">  153</a></b>     if (typetag == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="154">  154</a></b>         return SEC_OID_UNKNOWN;
+<b><a name="155">  155</a></b> 
+<b><a name="156">  156</a></b>     return typetag-&gt;<a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#offset">offset</a>;
+<b><a name="157">  157</a></b> }
+<b><a name="158">  158</a></b> 
+<b><a name="159">  159</a></b> /*
+<b><a name="160">  160</a></b>  * NSS_CMSAttribute_GetValue - return the first attribute value
+<b><a name="161">  161</a></b>  *
+<b><a name="162">  162</a></b>  * We do some sanity checking first:
+<b><a name="163">  163</a></b>  * - Multiple values are *not* expected.
+<b><a name="164">  164</a></b>  * - Empty values are *not* expected.
+<b><a name="165">  165</a></b>  */
+<b><a name="166">  166</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="167">  167</a></b> <a href="#167">NSS_CMSAttribute_GetValue</a>(<a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *attr)
+<b><a name="168">  168</a></b> {
+<b><a name="169">  169</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>;
+<b><a name="170">  170</a></b> 
+<b><a name="171">  171</a></b>     if (attr == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="172">  172</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="173">  173</a></b> 
+<b><a name="174">  174</a></b>     <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a> = attr-&gt;<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>s[0];
+<b><a name="175">  175</a></b> 
+<b><a name="176">  176</a></b>     if (<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> || <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> || <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> == 0)
+<b><a name="177">  177</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="178">  178</a></b> 
+<b><a name="179">  179</a></b>     if (attr-&gt;values[1] != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="180">  180</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="181">  181</a></b> 
+<b><a name="182">  182</a></b>     return <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>;
+<b><a name="183">  183</a></b> }
+<b><a name="184">  184</a></b> 
+<b><a name="185">  185</a></b> /*
+<b><a name="186">  186</a></b>  * NSS_CMSAttribute_CompareValue - compare the attribute's first value against data
+<b><a name="187">  187</a></b>  */
+<b><a name="188">  188</a></b> <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a>
+<b><a name="189">  189</a></b> <a href="#189">NSS_CMSAttribute_CompareValue</a>(<a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *attr, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *av)
+<b><a name="190">  190</a></b> {
+<b><a name="191">  191</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>;
+<b><a name="192">  192</a></b>     
+<b><a name="193">  193</a></b>     if (attr == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="194">  194</a></b>         return <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>;
+<b><a name="195">  195</a></b> 
+<b><a name="196">  196</a></b>     <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a> = <a href="../smime/cmsattr.c.dep.html#NSS_CMSAttribute_GetValue">NSS_CMSAttribute_GetValue</a>(attr);
+<b><a name="197">  197</a></b> 
+<b><a name="198">  198</a></b>     return (<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a> != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> &amp;&amp; <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> == av-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> &amp;&amp;
+<b><a name="199">  199</a></b>         <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a> (<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, av-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>, <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>-&gt;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>) == 0);
+<b><a name="200">  200</a></b> }
+<b><a name="201">  201</a></b> 
+<b><a name="202">  202</a></b> /*
+<b><a name="203">  203</a></b>  * templates and functions for separate ASN.1 encoding of attributes
+<b><a name="204">  204</a></b>  *
+<b><a name="205">  205</a></b>  * used in NSS_CMSAttributeArray_Reorder
+<b><a name="206">  206</a></b>  */
+<b><a name="207">  207</a></b> 
+<b><a name="208">  208</a></b> /*
+<b><a name="209">  209</a></b>  * helper function for dynamic template determination of the attribute value
+<b><a name="210">  210</a></b>  */
+<b><a name="211">  211</a></b> static const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> *
+<b><a name="212">  212</a></b> <a href="#212">cms_attr_choose_attr_value_template</a>(void *src_or_dest, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> encoding)
+<b><a name="213">  213</a></b> {
+<b><a name="214">  214</a></b>     const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> *theTemplate;
+<b><a name="215">  215</a></b>     <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *attribute;
+<b><a name="216">  216</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a> *oiddata;
+<b><a name="217">  217</a></b>     <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> encoded;
+<b><a name="218">  218</a></b> 
+<b><a name="219">  219</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a> (src_or_dest != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="220">  220</a></b>     if (src_or_dest == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="221">  221</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="222">  222</a></b> 
+<b><a name="223">  223</a></b>     attribute = (<a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *)src_or_dest;
+<b><a name="224">  224</a></b> 
+<b><a name="225">  225</a></b>     if (encoding &amp;&amp; (!attribute-&gt;values || !attribute-&gt;values[0] ||
+<b><a name="226">  226</a></b>         attribute-&gt;encoded)) {
+<b><a name="227">  227</a></b>         /* we're encoding, and the attribute has no value or the attribute
+<b><a name="228">  228</a></b>          * value is already encoded. */
+<b><a name="229">  229</a></b>         return <a href="../util/secasn1t.h.dep.html#SEC_ASN1_GET">SEC_ASN1_GET</a></a>(<a href="../util/secasn1.h.dep.html#SEC_AnyTemplate">SEC_AnyTemplate</a><a href="../util/secasn1d.c.dep.html#SEC_AnyTemplate"><sup>[1]</sup></a>);
+<b><a name="230">  230</a></b>     }
+<b><a name="231">  231</a></b> 
+<b><a name="232">  232</a></b>     /* get attribute's typeTag */
+<b><a name="233">  233</a></b>     oiddata = attribute-&gt;typeTag;
+<b><a name="234">  234</a></b>     if (oiddata == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="235">  235</a></b>         oiddata = <a href="../util/secoid.c.dep.html#SECOID_FindOID">SECOID_FindOID</a>(&amp;attribute-&gt;<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>);
+<b><a name="236">  236</a></b>         attribute-&gt;typeTag = oiddata;
+<b><a name="237">  237</a></b>     }
+<b><a name="238">  238</a></b> 
+<b><a name="239">  239</a></b>     if (oiddata == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="240">  240</a></b>         /* still no OID tag? OID is unknown then. en/decode value as ANY. */
+<b><a name="241">  241</a></b>         encoded = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>;
+<b><a name="242">  242</a></b>         theTemplate = <a href="../util/secasn1t.h.dep.html#SEC_ASN1_GET">SEC_ASN1_GET</a></a>(<a href="../util/secasn1.h.dep.html#SEC_AnyTemplate">SEC_AnyTemplate</a><a href="../util/secasn1d.c.dep.html#SEC_AnyTemplate"><sup>[1]</sup></a>);
+<b><a name="243">  243</a></b>     } else {
+<b><a name="244">  244</a></b>         switch (oiddata-&gt;<a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#offset">offset</a>) {
+<b><a name="245">  245</a></b>         case SEC_OID_PKCS9_SMIME_CAPABILITIES:
+<b><a name="246">  246</a></b>         case SEC_OID_SMIME_ENCRYPTION_KEY_PREFERENCE:
+<b><a name="247">  247</a></b>             /* these guys need to stay DER-encoded */
+<b><a name="248">  248</a></b>         default:
+<b><a name="249">  249</a></b>             /* same goes for OIDs that are not handled here */
+<b><a name="250">  250</a></b>             encoded = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>;
+<b><a name="251">  251</a></b>             theTemplate = <a href="../util/secasn1t.h.dep.html#SEC_ASN1_GET">SEC_ASN1_GET</a></a>(<a href="../util/secasn1.h.dep.html#SEC_AnyTemplate">SEC_AnyTemplate</a><a href="../util/secasn1d.c.dep.html#SEC_AnyTemplate"><sup>[1]</sup></a>);
+<b><a name="252">  252</a></b>             break;
+<b><a name="253">  253</a></b>             /* otherwise choose proper template */
+<b><a name="254">  254</a></b>         case SEC_OID_PKCS9_EMAIL_ADDRESS:
+<b><a name="255">  255</a></b>         case SEC_OID_RFC1274_MAIL:
+<b><a name="256">  256</a></b>         case SEC_OID_PKCS9_UNSTRUCTURED_NAME:
+<b><a name="257">  257</a></b>             encoded = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>;
+<b><a name="258">  258</a></b>             theTemplate = <a href="../util/secasn1t.h.dep.html#SEC_ASN1_GET">SEC_ASN1_GET</a></a>(<a href="../util/secasn1.h.dep.html#SEC_IA5StringTemplate">SEC_IA5StringTemplate</a><a href="../util/secasn1d.c.dep.html#SEC_IA5StringTemplate"><sup>[1]</sup></a>);
+<b><a name="259">  259</a></b>             break;
+<b><a name="260">  260</a></b>         case SEC_OID_PKCS9_CONTENT_TYPE:
+<b><a name="261">  261</a></b>             encoded = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>;
+<b><a name="262">  262</a></b>             theTemplate = <a href="../util/secasn1t.h.dep.html#SEC_ASN1_GET">SEC_ASN1_GET</a></a>(<a href="../util/secasn1.h.dep.html#SEC_ObjectIDTemplate">SEC_ObjectIDTemplate</a><a href="../util/secasn1d.c.dep.html#SEC_ObjectIDTemplate"><sup>[1]</sup></a>);
+<b><a name="263">  263</a></b>             break;
+<b><a name="264">  264</a></b>         case SEC_OID_PKCS9_MESSAGE_DIGEST:
+<b><a name="265">  265</a></b>             encoded = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>;
+<b><a name="266">  266</a></b>             theTemplate = <a href="../util/secasn1t.h.dep.html#SEC_ASN1_GET">SEC_ASN1_GET</a></a>(<a href="../util/secasn1.h.dep.html#SEC_OctetStringTemplate">SEC_OctetStringTemplate</a><a href="../util/secasn1d.c.dep.html#SEC_OctetStringTemplate"><sup>[1]</sup></a>);
+<b><a name="267">  267</a></b>             break;
+<b><a name="268">  268</a></b>         case SEC_OID_PKCS9_SIGNING_TIME:
+<b><a name="269">  269</a></b>             encoded = <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>;
+<b><a name="270">  270</a></b>             theTemplate = <a href="../util/secasn1t.h.dep.html#SEC_ASN1_GET">SEC_ASN1_GET</a></a>(<a href="../certdb/certt.h.dep.html#CERT_TimeChoiceTemplate">CERT_TimeChoiceTemplate</a><a href="../util/sectime.c.dep.html#CERT_TimeChoiceTemplate"><sup>[1]</sup></a>);
+<b><a name="271">  271</a></b>             break;
+<b><a name="272">  272</a></b>           /* XXX Want other types here, too */
+<b><a name="273">  273</a></b>         }
+<b><a name="274">  274</a></b>     }
+<b><a name="275">  275</a></b> 
+<b><a name="276">  276</a></b>     if (encoding) {
+<b><a name="277">  277</a></b>         /*
+<b><a name="278">  278</a></b>          * If we are encoding and we think we have an already-encoded value,
+<b><a name="279">  279</a></b>          * then the code which initialized this attribute should have set
+<b><a name="280">  280</a></b>          * the "encoded" property to true (and we would have returned early,
+<b><a name="281">  281</a></b>          * up above).  No devastating error, but that code should be fixed.
+<b><a name="282">  282</a></b>          * (It could indicate that the resulting encoded bytes are wrong.)
+<b><a name="283">  283</a></b>          */
+<b><a name="284">  284</a></b>         <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a> (!encoded);
+<b><a name="285">  285</a></b>     } else {
+<b><a name="286">  286</a></b>         /*
+<b><a name="287">  287</a></b>          * We are decoding; record whether the resulting value is
+<b><a name="288">  288</a></b>          * still encoded or not.
+<b><a name="289">  289</a></b>          */
+<b><a name="290">  290</a></b>         attribute-&gt;encoded = encoded;
+<b><a name="291">  291</a></b>     }
+<b><a name="292">  292</a></b>     return theTemplate;
+<b><a name="293">  293</a></b> }
+<b><a name="294">  294</a></b> 
+<b><a name="295">  295</a></b> static const <a href="../util/secasn1t.h.dep.html#SEC_ASN1TemplateChooserPtr">SEC_ASN1TemplateChooserPtr</a> <a href="#295">cms_attr_chooser</a>
+<b><a name="296">  296</a></b>         = <a href="../smime/cmsattr.c.dep.html#cms_attr_choose_attr_value_template">cms_attr_choose_attr_value_template</a>;
+<b><a name="297">  297</a></b> 
+<b><a name="298">  298</a></b> const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#298">nss_cms_attribute_template</a>[] = {
+<b><a name="299">  299</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SEQUENCE">SEC_ASN1_SEQUENCE</a>,
+<b><a name="300">  300</a></b>           0, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, sizeof(<a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a>) },
+<b><a name="301">  301</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OBJECT_ID">SEC_ASN1_OBJECT_ID</a>,
+<b><a name="302">  302</a></b>           offsetof(<a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a>,<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>) },
+<b><a name="303">  303</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_DYNAMIC">SEC_ASN1_DYNAMIC</a> | <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SET_OF">SEC_ASN1_SET_OF</a>,
+<b><a name="304">  304</a></b>           offsetof(<a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a>,values),
+<b><a name="305">  305</a></b>           &amp;<a href="../smime/cmsattr.c.dep.html#cms_attr_chooser">cms_attr_chooser</a> },
+<b><a name="306">  306</a></b>     { 0 }
+<b><a name="307">  307</a></b> };
+<b><a name="308">  308</a></b> 
+<b><a name="309">  309</a></b> const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#309">nss_cms_set_of_attribute_template</a>[] = {
+<b><a name="310">  310</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SET_OF">SEC_ASN1_SET_OF</a>, 0, <a href="../smime/cmsattr.c.dep.html#nss_cms_attribute_template">nss_cms_attribute_template</a> },
+<b><a name="311">  311</a></b> };
+<b><a name="312">  312</a></b> 
+<b><a name="313">  313</a></b> /* =============================================================================
+<b><a name="314">  314</a></b>  * Attribute Array methods
+<b><a name="315">  315</a></b>  */
+<b><a name="316">  316</a></b> 
+<b><a name="317">  317</a></b> /*
+<b><a name="318">  318</a></b>  * NSS_CMSAttributeArray_Encode - encode an Attribute array as SET OF Attributes
+<b><a name="319">  319</a></b>  *
+<b><a name="320">  320</a></b>  * If you are wondering why this routine does not reorder the attributes
+<b><a name="321">  321</a></b>  * first, and might be tempted to make it do so, see the comment by the
+<b><a name="322">  322</a></b>  * call to ReorderAttributes in cmsencode.c.  (Or, see who else calls this
+<b><a name="323">  323</a></b>  * and think long and hard about the implications of making it always
+<b><a name="324">  324</a></b>  * do the reordering.)
+<b><a name="325">  325</a></b>  */
+<b><a name="326">  326</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="327">  327</a></b> <a href="#327">NSS_CMSAttributeArray_Encode</a>(<a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *poolp, <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> ***attrs, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest"><sup>[5]</sup></a></a>)
+<b><a name="328">  328</a></b> {
+<b><a name="329">  329</a></b>     return <a href="../util/secasn1e.c.dep.html#SEC_ASN1EncodeItem">SEC_ASN1EncodeItem</a> (poolp, <a href="../mozilla/security/nss/cmd/zlib/compress.c.dep.html#dest">dest</a></a><a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#dest"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#dest"><sup>[3]</sup></a><a href="../mozilla/security/nss/cmd/zlib/uncompr.c.dep.html#dest"><sup>[4]</sup></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#dest"><sup>[5]</sup></a></a>, (void *)attrs, <a href="../smime/cmsasn1.c.dep.html#nss_cms_set_of_attribute_template">nss_cms_set_of_attribute_template</a><a href="../smime/cmsattr.c.dep.html#nss_cms_set_of_attribute_template"><sup>[1]</sup></a>);
+<b><a name="330">  330</a></b> }
+<b><a name="331">  331</a></b> 
+<b><a name="332">  332</a></b> /*
+<b><a name="333">  333</a></b>  * NSS_CMSAttributeArray_Reorder - sort attribute array by attribute's DER encoding
+<b><a name="334">  334</a></b>  *
+<b><a name="335">  335</a></b>  * make sure that the order of the attributes guarantees valid DER (which must be
+<b><a name="336">  336</a></b>  * in lexigraphically ascending order for a SET OF); if reordering is necessary it
+<b><a name="337">  337</a></b>  * will be done in place (in attrs).
+<b><a name="338">  338</a></b>  */
+<b><a name="339">  339</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="340">  340</a></b> <a href="#340">NSS_CMSAttributeArray_Reorder</a>(<a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> **attrs)
+<b><a name="341">  341</a></b> {
+<b><a name="342">  342</a></b>     return <a href="../smime/cmsutil.c.dep.html#NSS_CMSArray_SortByDER">NSS_CMSArray_SortByDER</a>((void **)attrs, <a href="../smime/cmsattr.c.dep.html#nss_cms_attribute_template">nss_cms_attribute_template</a>, <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="343">  343</a></b> }
+<b><a name="344">  344</a></b> 
+<b><a name="345">  345</a></b> /*
+<b><a name="346">  346</a></b>  * NSS_CMSAttributeArray_FindAttrByOidTag - look through a set of attributes and
+<b><a name="347">  347</a></b>  * find one that matches the specified object ID.
+<b><a name="348">  348</a></b>  *
+<b><a name="349">  349</a></b>  * If "only" is true, then make sure that there is not more than one attribute
+<b><a name="350">  350</a></b>  * of the same type.  Otherwise, just return the first one found. (XXX Does
+<b><a name="351">  351</a></b>  * anybody really want that first-found behavior?  It was like that when I found it...)
+<b><a name="352">  352</a></b>  */
+<b><a name="353">  353</a></b> <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *
+<b><a name="354">  354</a></b> <a href="#354">NSS_CMSAttributeArray_FindAttrByOidTag</a>(<a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> **attrs, <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> oidtag, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a> only)
+<b><a name="355">  355</a></b> {
+<b><a name="356">  356</a></b>     <a href="../util/secoidt.h.dep.html#SECOidData">SECOidData</a> *oid;
+<b><a name="357">  357</a></b>     <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *attr1, *attr2;
+<b><a name="358">  358</a></b> 
+<b><a name="359">  359</a></b>     if (attrs == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="360">  360</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="361">  361</a></b> 
+<b><a name="362">  362</a></b>     oid = <a href="../util/secoid.c.dep.html#SECOID_FindOIDByTag">SECOID_FindOIDByTag</a>(oidtag);
+<b><a name="363">  363</a></b>     if (oid == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="364">  364</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="365">  365</a></b> 
+<b><a name="366">  366</a></b>     while ((attr1 = *attrs++) != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="367">  367</a></b>         if (attr1-&gt;<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> == oid-&gt;oid.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> &amp;&amp; <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a> (attr1-&gt;<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>,
+<b><a name="368">  368</a></b>                                                             oid-&gt;oid.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>,
+<b><a name="369">  369</a></b>                                                             oid-&gt;oid.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>) == 0)
+<b><a name="370">  370</a></b>             break;
+<b><a name="371">  371</a></b>     }
+<b><a name="372">  372</a></b> 
+<b><a name="373">  373</a></b>     if (attr1 == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="374">  374</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="375">  375</a></b> 
+<b><a name="376">  376</a></b>     if (!only)
+<b><a name="377">  377</a></b>         return attr1;
+<b><a name="378">  378</a></b> 
+<b><a name="379">  379</a></b>     while ((attr2 = *attrs++) != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="380">  380</a></b>         if (attr2-&gt;<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> == oid-&gt;oid.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a> &amp;&amp; <a href="../util/secport.h.dep.html#PORT_Memcmp">PORT_Memcmp</a> (attr2-&gt;<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>,
+<b><a name="381">  381</a></b>                                                             oid-&gt;oid.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>,
+<b><a name="382">  382</a></b>                                                             oid-&gt;oid.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>) == 0)
+<b><a name="383">  383</a></b>             break;
+<b><a name="384">  384</a></b>     }
+<b><a name="385">  385</a></b> 
+<b><a name="386">  386</a></b>     if (attr2 != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="387">  387</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="388">  388</a></b> 
+<b><a name="389">  389</a></b>     return attr1;
+<b><a name="390">  390</a></b> }
+<b><a name="391">  391</a></b> 
+<b><a name="392">  392</a></b> /*
+<b><a name="393">  393</a></b>  * NSS_CMSAttributeArray_AddAttr - add an attribute to an
+<b><a name="394">  394</a></b>  * array of attributes. 
+<b><a name="395">  395</a></b>  */
+<b><a name="396">  396</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="397">  397</a></b> <a href="#397">NSS_CMSAttributeArray_AddAttr</a>(<a href="../mozilla/nsprpub/lib/ds/plarena.h.dep.html#PLArenaPool">PLArenaPool</a><a href="../mozilla/nsprpub/lib/ds/plarenas.h.dep.html#PLArenaPool"><sup>[1]</sup></a> *poolp, <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> ***attrs, <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *attr)
+<b><a name="398">  398</a></b> {
+<b><a name="399">  399</a></b>     <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *oattr;
+<b><a name="400">  400</a></b>     void *mark;
+<b><a name="401">  401</a></b>     <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>;
+<b><a name="402">  402</a></b> 
+<b><a name="403">  403</a></b>     mark = <a href="../util/secport.c.dep.html#PORT_ArenaMark">PORT_ArenaMark</a>(poolp);
+<b><a name="404">  404</a></b> 
+<b><a name="405">  405</a></b>     /* find oidtag of attr */
+<b><a name="406">  406</a></b>     <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a> = <a href="../smime/cmsattr.c.dep.html#NSS_CMSAttribute_GetType">NSS_CMSAttribute_GetType</a>(attr);
+<b><a name="407">  407</a></b> 
+<b><a name="408">  408</a></b>     /* see if we have one already */
+<b><a name="409">  409</a></b>     oattr = <a href="../smime/cmsattr.c.dep.html#NSS_CMSAttributeArray_FindAttrByOidTag">NSS_CMSAttributeArray_FindAttrByOidTag</a>(*attrs, <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>, <a href="../mozilla/nsprpub/pr/include/pr<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>s.h.dep.html#PR_FALSE">PR_FALSE</a>);
+<b><a name="410">  410</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a> (oattr == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="411">  411</a></b>     if (oattr != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="412">  412</a></b>         goto loser;        /* XXX or would it be better to replace it? */
+<b><a name="413">  413</a></b> 
+<b><a name="414">  414</a></b>     /* no, shove it in */
+<b><a name="415">  415</a></b>     if (<a href="../smime/cmsarray.c.dep.html#NSS_CMSArray_Add">NSS_CMSArray_Add</a>(poolp, (void ***)attrs, (void *)attr) != <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>)
+<b><a name="416">  416</a></b>         goto loser;
+<b><a name="417">  417</a></b> 
+<b><a name="418">  418</a></b>     <a href="../util/secport.c.dep.html#PORT_ArenaUnmark">PORT_ArenaUnmark</a>(poolp, mark);
+<b><a name="419">  419</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="420">  420</a></b> 
+<b><a name="421">  421</a></b> loser:
+<b><a name="422">  422</a></b>     <a href="../util/secport.c.dep.html#PORT_ArenaRelease">PORT_ArenaRelease</a>(poolp, mark);
+<b><a name="423">  423</a></b>     return SECFailure;
+<b><a name="424">  424</a></b> }
+<b><a name="425">  425</a></b> 
+<b><a name="426">  426</a></b> /*
+<b><a name="427">  427</a></b>  * NSS_CMSAttributeArray_SetAttr - set an attribute's value in a set of attributes
+<b><a name="428">  428</a></b>  */
+<b><a name="429">  429</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="430">  430</a></b> <a href="#430">NSS_CMSAttributeArray_SetAttr</a>(<a href="../mozilla/nsprpub/lib/ds/plarena.h.dep.html#PLArenaPool">PLArenaPool</a><a href="../mozilla/nsprpub/lib/ds/plarenas.h.dep.html#PLArenaPool"><sup>[1]</sup></a> *poolp, <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> ***attrs, <a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>, <a href="../mozilla/nsprpub/pr/include/pr<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>s.h.dep.html#PRBool">PRBool</a> encoded)
+<b><a name="431">  431</a></b> {
+<b><a name="432">  432</a></b>     <a href="../smime/cmst.h.dep.html#NSSCMSAttribute">NSSCMSAttribute</a> *attr;
+<b><a name="433">  433</a></b>     void *mark;
+<b><a name="434">  434</a></b> 
+<b><a name="435">  435</a></b>     mark = <a href="../util/secport.c.dep.html#PORT_ArenaMark">PORT_ArenaMark</a>(poolp);
+<b><a name="436">  436</a></b> 
+<b><a name="437">  437</a></b>     /* see if we have one already */
+<b><a name="438">  438</a></b>     attr = <a href="../smime/cmsattr.c.dep.html#NSS_CMSAttributeArray_FindAttrByOidTag">NSS_CMSAttributeArray_FindAttrByOidTag</a>(*attrs, <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>, <a href="../mozilla/nsprpub/pr/include/pr<a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>s.h.dep.html#PR_FALSE">PR_FALSE</a>);
+<b><a name="439">  439</a></b>     if (attr == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="440">  440</a></b>         /* not found? create one! */
+<b><a name="441">  441</a></b>         attr = <a href="../smime/cmsattr.c.dep.html#NSS_CMSAttribute_Create">NSS_CMSAttribute_Create</a>(poolp, <a href="../mozilla/security/nss/cmd/zlib/inftrees.c.dep.html#type">type</a>, <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>, encoded);
+<b><a name="442">  442</a></b>         if (attr == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>)
+<b><a name="443">  443</a></b>             goto loser;
+<b><a name="444">  444</a></b>         /* and add it to the list */
+<b><a name="445">  445</a></b>         if (<a href="../smime/cmsarray.c.dep.html#NSS_CMSArray_Add">NSS_CMSArray_Add</a>(poolp, (void ***)attrs, (void *)attr) != <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>)
+<b><a name="446">  446</a></b>             goto loser;
+<b><a name="447">  447</a></b>     } else {
+<b><a name="448">  448</a></b>         /* found, shove it in */
+<b><a name="449">  449</a></b>         /* XXX we need a decent memory model @#$#$!#!!! */
+<b><a name="450">  450</a></b>         attr-&gt;<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>s[0] = <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>;
+<b><a name="451">  451</a></b>         attr-&gt;encoded = encoded;
+<b><a name="452">  452</a></b>     }
+<b><a name="453">  453</a></b> 
+<b><a name="454">  454</a></b>     <a href="../util/secport.c.dep.html#PORT_ArenaUnmark">PORT_ArenaUnmark</a> (poolp, mark);
+<b><a name="455">  455</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="456">  456</a></b> 
+<b><a name="457">  457</a></b> loser:
+<b><a name="458">  458</a></b>     <a href="../util/secport.c.dep.html#PORT_ArenaRelease">PORT_ArenaRelease</a> (poolp, mark);
+<b><a name="459">  459</a></b>     return SECFailure;
+<b><a name="460">  460</a></b> }
+<b><a name="461">  461</a></b> 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

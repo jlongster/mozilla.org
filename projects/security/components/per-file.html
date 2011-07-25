@@ -1,0 +1,66 @@
+<?php
+
+$html_title = 'Per-File Permissions';
+$page_title = 'Per-File Permissions';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="DC.author" content="Mitch Stoltz">
+<meta name="DC.contributor" content="Jesse Ruderman">
+<meta name="DC.title" content="Per-File Permissions">
+<meta name="DC.subject" content="Per-File Permissions">
+<meta name="DC.date.created" content="2001-01-31T12:34:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2006-09-08T09:54:03+11:00" scheme="W3CDTF">
+<link rel="contents" href="index.html" title="Component Security Main Page">
+<link rel="section" href="#description" title="What are Per-File Permissions?">
+<link rel="section" href="#howtodoit" title="How To Do It">
+<link rel="section" href="#problems" title="Problems">
+<link rel="glossary" href="terms.html" title="Terminology in Javascript Security">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<address class="author">Mitch Stoltz</address>
+
+<p>This page describes how to configure privileges for individual files.</p>
+
+<h2><a name="description">What are Per-File Permissions?</a></h2>
+
+<p>Normally, permissions are granted to all pages from a particular host (or all pages signed by a particular certificate) as a bloc. When a script requests privileges, and no preference has been set by the user for that host or certificate, the "grant/deny" dialog is presented, and the user's decision applies to all files with that host/certificate.<p>
+
+<p>A shortcoming of this model is that the local filesystem (everything accessed through the file:// protocol) is treated as a single security domain, such that privileges granted to one page on the local filesystem apply to all pages, which is potentially insecure. Per-File Permissions allow privileges to be granted to individual files.</p>
+
+<h2><a name="howtodoit">How To Do It</a></h2>
+
+<p>Per-file permissions must be configured in the user preferences, either by a script with privileges to modify user preferences, or through some other means of editing the preferences file. As an example, suppose a Web application developer has installed an HTML page on the user's drive at <tt>C:/Programs/Webapp/index.html</tt>, and that page contains JavaScript which needs to access XPConnect. It would be insecure to grant the UniversalXPConnect privilege to every file on the user's drive. Instead of doing this, the developer could add these lines to the user's preferences:</p>
+
+<pre class="code">
+user_pref("capability.principal.myapp.id", "file:///C|/Programs/Webapp/index.html");
+user_pref("capability.principal.myapp.granted", "UniversalXPConnect");
+</pre>
+
+<p>These lines will grant XPConnect access to <tt>index.html</tt> and no other file. The word <tt>myapp</tt> above can be replaced with any unique identifier for your application, as long as both lines have the same identifier. To state the syntax a little more generally:</p>
+
+<pre class="code">
+user_pref("capability.principal.&lt;group name&gt;.id", "&lt;Space-separated list of absolute URLs.&gt;");<br>
+user_pref("capability.principal.&lt;group name&gt;.&lt;granted|denied&gt;", "&lt;privilege name&gt;");
+</pre>
+
+<p>where &lt;group name&gt; is any alphanumeric identifier and &lt;privilege name&gt; is <code>UniversalXPConnect</code> or any other privilege string representing the extended functionality your script needs. See the <a href="signed-scripts.html">Signed Script Policy documentation</a> for more information about privileges.</p>
+
+<h2><a name="problems">Problems</a></h2>
+
+<p>This mechanism is not cross-platform. Obviously, the URL in the example above would need to be changed for every platform, and also must be changed if the file is moved. A way to specify relative links would be better.</p>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

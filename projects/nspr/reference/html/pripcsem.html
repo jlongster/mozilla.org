@@ -1,0 +1,199 @@
+<?php
+
+$html_title = 'NSPR Reference: Chapter 30 IPC Semaphores';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<link rel="prev" href="./prshma.html">
+<link rel="contents" href="./">
+<link rel="next" href="./prtpool.html">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<h1><abbr>NSPR</abbr> Reference</h1>
+<ul class="snav">
+  <li><a href="prshma.html">Previous</a>
+  <li><a href="./">Contents</a>
+  <li><a href="prtpool.html">Next</a>
+</ul>
+<h1>IPC Semaphores (Chapter 30)</h1>
+<p>This chapter describes the NSPR API for using interprocess communication
+ semaphores.</p>
+<p>NSPR provides an interprocess communication mechanism using a counting
+ semaphore model similar to that which is provided in Unix and Windows
+ platforms.</p>
+<p class="note">See also <a href="prshm.html">Named Shared Memory 
+ (Chapter 28)</a>.</p>
+<div class="section">
+  <h2 id="functions">IPC Semaphore Functions</h2>
+  <ul class="toc">
+    <li><a href="#PR_OpenSemaphore"><code>PR_OpenSemaphore</code></a>
+    <li><a href="#PR_WaitSemaphore"><code>PR_WaitSemaphore</code></a>
+    <li><a href="#PR_PostSemaphore"><code>PR_PostSemaphore</code></a>
+    <li><a href="#PR_CloseSemaphore"><code>PR_CloseSemaphore</code></a>
+    <li><a href="#PR_DeleteSemaphore"><code>PR_DeleteSemaphore</code></a>
+  </ul>
+  <div class="section">
+    <h4 id="PR_OpenSemaphore">PR_OpenSemaphore</h4>
+    <p>Creates or opens a named semaphore with the specified name
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;pripcsem.h&gt;
+
+#define PR_SEM_CREATE 0x1 /* create if not exist */
+
+#define PR_SEM_EXCL 0x2 /* fail if already exists */
+
+NSPR_API(PRSem *) PR_OpenSemaphore(
+   const char *name,
+   PRIntn flags,
+   PRIntn mode,
+   PRUintn value
+);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameters:</p>
+      <dl>
+        <dt><code>name</code>
+          <dd>The name to be given the semaphore.
+        <dt><code>flags</code>
+          <dd>How to create or open the semaphore.
+        <dt><code>mode</code>
+          <dd>Unix style file mode to be used when creating the semaphore.
+        <dt><code>value</code>
+          <dd>The initial value assigned to the semaphore.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p>A pointer to a <code>PRSem</code> structure or <code>NULL</code> 
+       on error.</p>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p>If the named semaphore doesn't exist and the <code>PR_SEM_CREATE</code>
+       flag is specified, the named semaphore is created. The created semaphore 
+       needs to be removed from the system with a 
+       <code>PR_DeleteSemaphore</code> call.</p>
+      <p>If <code>PR_SEM_CREATE</code> is specified, the third argument is the 
+       access permission bits of the new semaphore (same interpretation as the 
+       mode argument to <a href="priofnc.html#17649"><code>PR_Open</code></a>) 
+       and the fourth argument is the initial value of the new semaphore. If 
+       <code>PR_SEM_CREATE</code> is not specified, the third and fourth 
+       arguments are ignored.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PR_WaitSemaphore">PR_WaitSemaphore</h4>
+    <p>Returns the value of the environment variable.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;pripcsem.h&gt;
+
+NSPR_API(PRStatus) PR_WaitSemaphore(PRSem *sem);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameter:</p>
+      <dl>
+        <dt><code>sem</code>
+          <dd>A pointer to a PRSem structure returned from a call to 
+           <a href="#PR_OpenSemaphore"><code>PR_OpenSemaphore</code></a>.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p><code>PRStatus</code></p>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p><code>PR_WaitSemaphore</code> tests the value of the semaphore. If the 
+       value of the semaphore is &gt; 0, the value of the semaphore is 
+       decremented and the function returns. If the value of the semaphore is 0,
+       the function blocks until the value becomes &gt; 0, then the semaphore is
+       decremented and the function returns.</p>
+      <p>The "test and decrement" operation is performed atomically.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PR_PostSemaphore">PR_PostSemaphore</h4>
+    <p>Increments the value of a specified semaphore.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;pripcsem.h&gt;
+
+NSPR_API(PRStatus) PR_PostSemaphore(PRSem *sem);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameter:</p>
+      <dl>
+        <dt><code>sem</code>
+          <dd>A pointer to a <code>PRSem</code> structure returned from a call 
+           to <a href="#PR_OpenSemaphore"><code>PR_OpenSemaphore</code></a>.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p><code>PRStatus</code></p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PR_CloseSemaphore">PR_CloseSemaphore</h4>
+    <p>Closes a specified semaphore.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;pripcsem.h&gt;
+
+NSPR_API(PRStatus) PR_CloseSemaphore(PRSem *sem);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameter:</p>
+      <dl>
+        <dt><code>sem</code>
+          <dd>A pointer to a <code>PRSem</code> structure returned from a call 
+           to <a href="#PR_OpenSemaphore"><code>PR_OpenSemaphore</code></a>.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p><code>PRStatus</code></p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PR_DeleteSemaphore">PR_DeleteSemaphore</h4>
+    <p>Removes a semaphore specified by name from the system.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;pripcsem.h&gt;
+
+NSPR_API(PRStatus) PR_DeleteSemaphore(const char *name);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameter:</p>
+      <dl>
+        <dt><code>name</code>
+          <dd>The name of a semaphore that was previously created via a call to 
+           <a href="#PR_OpenSemaphore"><code>PR_OpenSemaphore</code></a>.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p><code>PRStatus</code></p>
+    </div>
+  </div>
+</div>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,540 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> 
+<b><a name="37">   37</a></b> /*
+<b><a name="38">   38</a></b>  * nssilock.c - NSS lock instrumentation wrapper functions
+<b><a name="39">   39</a></b>  *
+<b><a name="40">   40</a></b>  * NOTE - These are not public interfaces
+<b><a name="41">   41</a></b>  *
+<b><a name="42">   42</a></b>  * Implementation Notes:
+<b><a name="43">   43</a></b>  * I've tried to make the instrumentation relatively non-intrusive.
+<b><a name="44">   44</a></b>  * To do this, I have used a single PR_LOG() call in each
+<b><a name="45">   45</a></b>  * instrumented function. There's room for improvement.
+<b><a name="46">   46</a></b>  *
+<b><a name="47">   47</a></b>  *
+<b><a name="48">   48</a></b>  */
+<b><a name="49">   49</a></b> 
+<b><a name="50">   50</a></b> #include "prinit.h"
+<b><a name="51">   51</a></b> #include "prerror.h"
+<b><a name="52">   52</a></b> #include "prlock.h"
+<b><a name="53">   53</a></b> #include "prmem.h"
+<b><a name="54">   54</a></b> #include "prenv.h"
+<b><a name="55">   55</a></b> #include "prcvar.h"
+<b><a name="56">   56</a></b> #include "prio.h"
+<b><a name="57">   57</a></b> 
+<b><a name="58">   58</a></b> #if defined(NEED_NSS_ILOCK)
+<b><a name="59">   59</a></b> #include "prlog.h"
+<b><a name="60">   60</a></b> #include "nssilock.h"
+<b><a name="61">   61</a></b> 
+<b><a name="62">   62</a></b> /*
+<b><a name="63">   63</a></b> ** Declare the instrumented PZLock 
+<b><a name="64">   64</a></b> */
+<b><a name="65">   65</a></b> struct <a href="#65">pzlock_s</a> {
+<b><a name="66">   66</a></b>     PRLock *lock;  /* the PZLock to be instrumented */
+<b><a name="67">   67</a></b>     PRIntervalTime time; /* timestamp when the lock was aquired */
+<b><a name="68">   68</a></b>     <a href="../util/nssilckt.h.dep.html#nssILockType">nssILockType</a> ltype;
+<b><a name="69">   69</a></b> };
+<b><a name="70">   70</a></b> 
+<b><a name="71">   71</a></b> /*
+<b><a name="72">   72</a></b> ** Declare the instrumented PZMonitor 
+<b><a name="73">   73</a></b> */
+<b><a name="74">   74</a></b> struct <a href="#74">pzmonitor_s</a> {
+<b><a name="75">   75</a></b>     PRMonitor *mon;   /* the PZMonitor to be instrumented */
+<b><a name="76">   76</a></b>     PRIntervalTime time; /* timestamp when the monitor was aquired */
+<b><a name="77">   77</a></b>     <a href="../util/nssilckt.h.dep.html#nssILockType">nssILockType</a> ltype;
+<b><a name="78">   78</a></b> };
+<b><a name="79">   79</a></b> 
+<b><a name="80">   80</a></b> /*
+<b><a name="81">   81</a></b> ** Declare the instrumented PZCondVar
+<b><a name="82">   82</a></b> */
+<b><a name="83">   83</a></b> struct <a href="#83">pzcondvar_s</a>  {
+<b><a name="84">   84</a></b>     PRCondVar   *cvar;  /* the PZCondVar to be instrumented */
+<b><a name="85">   85</a></b>     <a href="../util/nssilckt.h.dep.html#nssILockType">nssILockType</a> ltype;
+<b><a name="86">   86</a></b> };
+<b><a name="87">   87</a></b> 
+<b><a name="88">   88</a></b> 
+<b><a name="89">   89</a></b> /*
+<b><a name="90">   90</a></b> ** Define a CallOnce type to ensure serialized self-initialization
+<b><a name="91">   91</a></b> */
+<b><a name="92">   92</a></b> static PRCallOnceType <a href="#92">coNssILock</a>;     /* CallOnce type */
+<b><a name="93">   93</a></b> static PRIntn  <a href="#93">nssILockInitialized</a>;   /* initialization done when 1 */
+<b><a name="94">   94</a></b> static PRLogModuleInfo *<a href="#94">nssILog</a>;      /* Log instrumentation to this handle */
+<b><a name="95">   95</a></b> 
+<b><a name="96">   96</a></b> 
+<b><a name="97">   97</a></b> #define <a href="#97">NUM_TT_ENTRIES</a> 6000000
+<b><a name="98">   98</a></b> static PRInt32  <a href="#98">traceIndex</a> = -1;      /* index into trace table */
+<b><a name="99">   99</a></b> static struct <a href="../util/nssilckt.h.dep.html#pzTrace_s">pzTrace_s</a> *<a href="#99">tt</a>;          /* pointer to trace table */
+<b><a name="100">  100</a></b> static PRInt32  <a href="#100">ttBufSize</a> = (<a href="../util/nssilock.c.dep.html#NUM_TT_ENTRIES">NUM_TT_ENTRIES</a> * sizeof(struct <a href="../util/nssilckt.h.dep.html#pzTrace_s">pzTrace_s</a> ));
+<b><a name="101">  101</a></b> static PRCondVar *<a href="#101">ttCVar</a>;
+<b><a name="102">  102</a></b> static PRLock    *<a href="#102">ttLock</a>;
+<b><a name="103">  103</a></b> static PRFileDesc *<a href="#103">ttfd</a>;              /* trace table file */
+<b><a name="104">  104</a></b> 
+<b><a name="105">  105</a></b> /*
+<b><a name="106">  106</a></b> ** Vtrace() -- Trace events, write events to external media
+<b><a name="107">  107</a></b> **
+<b><a name="108">  108</a></b> ** Vtrace() records traced events in an in-memory trace table
+<b><a name="109">  109</a></b> ** when the trace table fills, Vtrace writes the entire table
+<b><a name="110">  110</a></b> ** to a file.
+<b><a name="111">  111</a></b> **
+<b><a name="112">  112</a></b> ** data can be lost!
+<b><a name="113">  113</a></b> **
+<b><a name="114">  114</a></b> */
+<b><a name="115">  115</a></b> static void <a href="#115">Vtrace</a>(
+<b><a name="116">  116</a></b>     <a href="../util/nssilckt.h.dep.html#nssILockOp">nssILockOp</a>      op,
+<b><a name="117">  117</a></b>     <a href="../util/nssilckt.h.dep.html#nssILockType">nssILockType</a>    ltype,
+<b><a name="118">  118</a></b>     PRIntervalTime  callTime,
+<b><a name="119">  119</a></b>     PRIntervalTime  heldTime,
+<b><a name="120">  120</a></b>     void            *lock,
+<b><a name="121">  121</a></b>     PRIntn          line,
+<b><a name="122">  122</a></b>     char            *file
+<b><a name="123">  123</a></b> )  {
+<b><a name="124">  124</a></b>     PRInt32 idx;
+<b><a name="125">  125</a></b>     struct <a href="../util/nssilckt.h.dep.html#pzTrace_s">pzTrace_s</a> *tp;
+<b><a name="126">  126</a></b> 
+<b><a name="127">  127</a></b> RetryTrace:
+<b><a name="128">  128</a></b>     idx = PR_AtomicIncrement( &amp;<a href="../util/nssilock.c.dep.html#traceIndex">traceIndex</a> );
+<b><a name="129">  129</a></b>     while( <a href="../util/nssilock.c.dep.html#NUM_TT_ENTRIES">NUM_TT_ENTRIES</a> &lt;= idx || op == FlushTT ) {
+<b><a name="130">  130</a></b>         if( <a href="../util/nssilock.c.dep.html#NUM_TT_ENTRIES">NUM_TT_ENTRIES</a> == idx  || op == FlushTT )  {
+<b><a name="131">  131</a></b>             int writeSize = idx * sizeof(struct <a href="../util/nssilckt.h.dep.html#pzTrace_s">pzTrace_s</a>);
+<b><a name="132">  132</a></b>             PR_Lock(<a href="../util/nssilock.c.dep.html#ttLock">ttLock</a>);
+<b><a name="133">  133</a></b>             PR_Write( <a href="../util/nssilock.c.dep.html#<a href="../util/nssilock.c.dep.html#tt">tt</a>fd"><a href="../util/nssilock.c.dep.html#tt">tt</a>fd</a>, <a href="../util/nssilock.c.dep.html#tt">tt</a>, writeSize );
+<b><a name="134">  134</a></b>             <a href="../util/nssilock.c.dep.html#traceIndex">traceIndex</a> = -1;
+<b><a name="135">  135</a></b>             PR_NotifyAllCondVar( <a href="../util/nssilock.c.dep.html#ttCVar">ttCVar</a> );
+<b><a name="136">  136</a></b>             PR_Unlock(<a href="../util/nssilock.c.dep.html#ttLock">ttLock</a>);
+<b><a name="137">  137</a></b>             goto RetryTrace;
+<b><a name="138">  138</a></b>         } else {
+<b><a name="139">  139</a></b>             PR_Lock(<a href="../util/nssilock.c.dep.html#ttLock">ttLock</a>);
+<b><a name="140">  140</a></b>             while( <a href="../util/nssilock.c.dep.html#NUM_TT_ENTRIES">NUM_TT_ENTRIES</a> &lt; idx )
+<b><a name="141">  141</a></b>                 PR_WaitCondVar(<a href="../util/nssilock.c.dep.html#ttCVar">ttCVar</a>, PR_INTERVAL_NO_WAIT);
+<b><a name="142">  142</a></b>             PR_Unlock(<a href="../util/nssilock.c.dep.html#ttLock">ttLock</a>);
+<b><a name="143">  143</a></b>             goto RetryTrace;
+<b><a name="144">  144</a></b>         }
+<b><a name="145">  145</a></b>     } /* end while() */
+<b><a name="146">  146</a></b> 
+<b><a name="147">  147</a></b>     /* create the trace entry */
+<b><a name="148">  148</a></b>     tp = <a href="../util/nssilock.c.dep.html#tt">tt</a> + idx;
+<b><a name="149">  149</a></b>     tp-&gt;threadID = PR_GetThreadID(PR_GetCurrentThread());
+<b><a name="150">  150</a></b>     tp-&gt;op = op;
+<b><a name="151">  151</a></b>     tp-&gt;ltype = ltype;
+<b><a name="152">  152</a></b>     tp-&gt;callTime = callTime;
+<b><a name="153">  153</a></b>     tp-&gt;heldTime = heldTime;
+<b><a name="154">  154</a></b>     tp-&gt;lock = lock;
+<b><a name="155">  155</a></b>     tp -&gt;line = line;
+<b><a name="156">  156</a></b>     strcpy(tp-&gt;file, file );
+<b><a name="157">  157</a></b>     return;
+<b><a name="158">  158</a></b> } /* --- end Vtrace() --- */
+<b><a name="159">  159</a></b> 
+<b><a name="160">  160</a></b> /*
+<b><a name="161">  161</a></b> ** pz_TraceFlush() -- Force trace table write to file
+<b><a name="162">  162</a></b> **
+<b><a name="163">  163</a></b> */
+<b><a name="164">  164</a></b> extern void <a href="#164">pz_TraceFlush</a>( void )
+<b><a name="165">  165</a></b> {
+<b><a name="166">  166</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( FlushTT, nssILockSelfServ, 0, 0, NULL, 0, "" );
+<b><a name="167">  167</a></b>     return;
+<b><a name="168">  168</a></b> } /* --- end pz_TraceFlush() --- */
+<b><a name="169">  169</a></b> 
+<b><a name="170">  170</a></b> /*
+<b><a name="171">  171</a></b> ** nssILockInit() -- Initialization for nssilock
+<b><a name="172">  172</a></b> **
+<b><a name="173">  173</a></b> ** This function is called from the CallOnce mechanism.
+<b><a name="174">  174</a></b> */
+<b><a name="175">  175</a></b> static PRStatus
+<b><a name="176">  176</a></b>     <a href="#176">nssILockInit</a>( void ) 
+<b><a name="177">  177</a></b> {   
+<b><a name="178">  178</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="179">  179</a></b>     <a href="../util/nssilock.c.dep.html#nssILockInitialized">nssILockInitialized</a> = 1;
+<b><a name="180">  180</a></b> 
+<b><a name="181">  181</a></b>     /* new log module */
+<b><a name="182">  182</a></b>     <a href="../util/nssilock.c.dep.html#nssILog">nssILog</a> = PR_NewLogModule("nssilock");
+<b><a name="183">  183</a></b>     if ( NULL == <a href="../util/nssilock.c.dep.html#nssILog">nssILog</a> )  {
+<b><a name="184">  184</a></b>         return(PR_FAILURE);
+<b><a name="185">  185</a></b>     }
+<b><a name="186">  186</a></b> 
+<b><a name="187">  187</a></b>     <a href="../util/nssilock.c.dep.html#tt">tt</a> = PR_Calloc( <a href="../util/nssilock.c.dep.html#NUM_TT_ENTRIES">NUM_TT_ENTRIES</a>, sizeof(struct <a href="../util/nssilckt.h.dep.html#pzTrace_s">pzTrace_s</a>));
+<b><a name="188">  188</a></b>     if (NULL == <a href="../util/nssilock.c.dep.html#tt">tt</a> ) {
+<b><a name="189">  189</a></b>         fprintf(stderr, "nssilock: can't allocate trace table\n");
+<b><a name="190">  190</a></b>         exit(1);
+<b><a name="191">  191</a></b>     }
+<b><a name="192">  192</a></b> 
+<b><a name="193">  193</a></b>     <a href="../util/nssilock.c.dep.html#ttfd">ttfd</a> = PR_Open( "xxxTTLog", PR_CREATE_FILE | PR_WRONLY, 0666 );
+<b><a name="194">  194</a></b>     if ( NULL == <a href="../util/nssilock.c.dep.html#ttfd">ttfd</a> )  {
+<b><a name="195">  195</a></b>         fprintf( stderr, "Oh Drat! Can't open 'xxxTTLog'\n");
+<b><a name="196">  196</a></b>         exit(1);
+<b><a name="197">  197</a></b>     }
+<b><a name="198">  198</a></b> 
+<b><a name="199">  199</a></b>     <a href="../util/nssilock.c.dep.html#ttLock">ttLock</a> = PR_NewLock();
+<b><a name="200">  200</a></b>     <a href="../util/nssilock.c.dep.html#ttCVar">ttCVar</a> = PR_NewCondVar(<a href="../util/nssilock.c.dep.html#ttLock">ttLock</a>);
+<b><a name="201">  201</a></b> 
+<b><a name="202">  202</a></b>     return(PR_SUCCESS);
+<b><a name="203">  203</a></b> } /* --- end nssILockInit() --- */
+<b><a name="204">  204</a></b> 
+<b><a name="205">  205</a></b> extern <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a> * <a href="#205">pz_NewLock</a>( 
+<b><a name="206">  206</a></b>     <a href="../util/nssilckt.h.dep.html#nssILockType">nssILockType</a> ltype,
+<b><a name="207">  207</a></b>     char *file,  
+<b><a name="208">  208</a></b>     PRIntn line )
+<b><a name="209">  209</a></b> {
+<b><a name="210">  210</a></b>     PRStatus rc;
+<b><a name="211">  211</a></b>     <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a>  *lock;
+<b><a name="212">  212</a></b>     
+<b><a name="213">  213</a></b>     /* Self Initialize the nssILock feature */
+<b><a name="214">  214</a></b>     if (!<a href="../util/nssilock.c.dep.html#nssILockInitialized">nssILockInitialized</a>)  {
+<b><a name="215">  215</a></b>         rc = PR_CallOnce( &amp;<a href="../util/nssilock.c.dep.html#coNssILock">coNssILock</a>, <a href="../util/nssilock.c.dep.html#nssILockInit">nssILockInit</a> );
+<b><a name="216">  216</a></b>         if ( PR_FAILURE == rc ) {
+<b><a name="217">  217</a></b>             PR_SetError( PR_UNKNOWN_ERROR, 0 );
+<b><a name="218">  218</a></b>             return( NULL );
+<b><a name="219">  219</a></b>         }
+<b><a name="220">  220</a></b>     }
+<b><a name="221">  221</a></b> 
+<b><a name="222">  222</a></b>     lock = PR_NEWZAP( <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a> );
+<b><a name="223">  223</a></b>     if ( NULL != lock )  {
+<b><a name="224">  224</a></b>         lock-&gt;lock = PR_NewLock();
+<b><a name="225">  225</a></b>         if ( NULL == lock-&gt;lock )  {
+<b><a name="226">  226</a></b>             PR_DELETE( lock );
+<b><a name="227">  227</a></b>             lock = NULL;
+<b><a name="228">  228</a></b>         }
+<b><a name="229">  229</a></b>     }
+<b><a name="230">  230</a></b>     lock-&gt;ltype = ltype;
+<b><a name="231">  231</a></b> 
+<b><a name="232">  232</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( NewLock, ltype, 0, 0, lock, line, file );
+<b><a name="233">  233</a></b>     return(lock);
+<b><a name="234">  234</a></b> } /* --- end pz_NewLock() --- */
+<b><a name="235">  235</a></b> 
+<b><a name="236">  236</a></b> extern void
+<b><a name="237">  237</a></b>     <a href="#237">pz_Lock</a>(
+<b><a name="238">  238</a></b>         <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a> *lock,
+<b><a name="239">  239</a></b>         char *file,
+<b><a name="240">  240</a></b>         PRIntn line
+<b><a name="241">  241</a></b>     )
+<b><a name="242">  242</a></b> {            
+<b><a name="243">  243</a></b>     PRIntervalTime callTime;
+<b><a name="244">  244</a></b> 
+<b><a name="245">  245</a></b>     callTime = PR_IntervalNow();
+<b><a name="246">  246</a></b>     PR_Lock( lock-&gt;lock );
+<b><a name="247">  247</a></b>     lock-&gt;time = PR_IntervalNow();
+<b><a name="248">  248</a></b>     callTime = lock-&gt;time - callTime;
+<b><a name="249">  249</a></b> 
+<b><a name="250">  250</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( Lock, lock-&gt;ltype, callTime, 0, lock, line, file );
+<b><a name="251">  251</a></b>     return;
+<b><a name="252">  252</a></b> } /* --- end  pz_Lock() --- */
+<b><a name="253">  253</a></b> 
+<b><a name="254">  254</a></b> extern PRStatus
+<b><a name="255">  255</a></b>     <a href="#255">pz_Unlock</a>(
+<b><a name="256">  256</a></b>         <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a> *lock,
+<b><a name="257">  257</a></b>         char *file,
+<b><a name="258">  258</a></b>         PRIntn line
+<b><a name="259">  259</a></b>     ) 
+<b><a name="260">  260</a></b> {
+<b><a name="261">  261</a></b>     PRStatus rc;
+<b><a name="262">  262</a></b>     PRIntervalTime callTime, <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a>, heldTime;
+<b><a name="263">  263</a></b> 
+<b><a name="264">  264</a></b>     callTime = PR_IntervalNow();
+<b><a name="265">  265</a></b>     rc = PR_Unlock( lock-&gt;lock );
+<b><a name="266">  266</a></b>     <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a> = PR_IntervalNow(); 
+<b><a name="267">  267</a></b>     callTime = <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a> - callTime;
+<b><a name="268">  268</a></b>     heldTime = <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a> - lock-&gt;time;
+<b><a name="269">  269</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( Unlock, lock-&gt;ltype, callTime, heldTime, lock, line, file );
+<b><a name="270">  270</a></b>     return( rc );
+<b><a name="271">  271</a></b> } /* --- end  pz_Unlock() --- */
+<b><a name="272">  272</a></b> 
+<b><a name="273">  273</a></b> extern void
+<b><a name="274">  274</a></b>     <a href="#274">pz_DestroyLock</a>(
+<b><a name="275">  275</a></b>         <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a> *lock,
+<b><a name="276">  276</a></b>         char *file,
+<b><a name="277">  277</a></b>         PRIntn line
+<b><a name="278">  278</a></b>     )
+<b><a name="279">  279</a></b> {
+<b><a name="280">  280</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( DestroyLock, lock-&gt;ltype, 0, 0, lock, line, file );
+<b><a name="281">  281</a></b>     PR_DestroyLock( lock-&gt;lock );
+<b><a name="282">  282</a></b>     PR_DELETE( lock );
+<b><a name="283">  283</a></b>     return;
+<b><a name="284">  284</a></b> } /* --- end  pz_DestroyLock() --- */
+<b><a name="285">  285</a></b> 
+<b><a name="286">  286</a></b> 
+<b><a name="287">  287</a></b> 
+<b><a name="288">  288</a></b> extern <a href="../util/nssilckt.h.dep.html#PZCondVar">PZCondVar</a></a> *
+<b><a name="289">  289</a></b>     <a href="#289">pz_NewCondVar</a>(
+<b><a name="290">  290</a></b>         <a href="../util/nssilckt.h.dep.html#PZLock">PZLock</a></a> *lock,
+<b><a name="291">  291</a></b>         char *file,
+<b><a name="292">  292</a></b>         PRIntn line
+<b><a name="293">  293</a></b>     )
+<b><a name="294">  294</a></b> {
+<b><a name="295">  295</a></b>     <a href="../util/nssilckt.h.dep.html#PZCondVar">PZCondVar</a></a> *cvar;
+<b><a name="296">  296</a></b> 
+<b><a name="297">  297</a></b>     cvar = PR_NEWZAP( <a href="../util/nssilckt.h.dep.html#PZCondVar">PZCondVar</a></a> );
+<b><a name="298">  298</a></b>     if ( NULL == cvar ) return(NULL);
+<b><a name="299">  299</a></b>    
+<b><a name="300">  300</a></b>     cvar-&gt;ltype = lock-&gt;ltype; 
+<b><a name="301">  301</a></b>     cvar-&gt;cvar = PR_NewCondVar( lock-&gt;lock );
+<b><a name="302">  302</a></b>     if ( NULL == cvar-&gt;cvar )  {
+<b><a name="303">  303</a></b>         PR_DELETE( cvar );
+<b><a name="304">  304</a></b>     }
+<b><a name="305">  305</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( NewCondVar, cvar-&gt;ltype, 0, 0, cvar, line, file );
+<b><a name="306">  306</a></b>     return( cvar );
+<b><a name="307">  307</a></b> } /* --- end  pz_NewCondVar() --- */
+<b><a name="308">  308</a></b> 
+<b><a name="309">  309</a></b> extern void
+<b><a name="310">  310</a></b>     <a href="#310">pz_DestroyCondVar</a>(
+<b><a name="311">  311</a></b>         <a href="../util/nssilckt.h.dep.html#PZCondVar">PZCondVar</a></a> *cvar,
+<b><a name="312">  312</a></b>         char *file,
+<b><a name="313">  313</a></b>         PRIntn line
+<b><a name="314">  314</a></b>     )
+<b><a name="315">  315</a></b> {
+<b><a name="316">  316</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( DestroyCondVar, cvar-&gt;ltype, 0, 0, cvar, line, file );
+<b><a name="317">  317</a></b>     PR_DestroyCondVar( cvar-&gt;cvar );
+<b><a name="318">  318</a></b>     PR_DELETE( cvar );
+<b><a name="319">  319</a></b> } /* --- end  pz_DestroyCondVar() --- */
+<b><a name="320">  320</a></b> 
+<b><a name="321">  321</a></b> extern PRStatus
+<b><a name="322">  322</a></b>     <a href="#322">pz_WaitCondVar</a>(
+<b><a name="323">  323</a></b>         <a href="../util/nssilckt.h.dep.html#PZCondVar">PZCondVar</a></a> *cvar,
+<b><a name="324">  324</a></b>         PRIntervalTime timeout,
+<b><a name="325">  325</a></b>         char *file,
+<b><a name="326">  326</a></b>         PRIntn line
+<b><a name="327">  327</a></b>     )
+<b><a name="328">  328</a></b> {
+<b><a name="329">  329</a></b>     PRStatus    rc;
+<b><a name="330">  330</a></b>     PRIntervalTime callTime;
+<b><a name="331">  331</a></b> 
+<b><a name="332">  332</a></b>     callTime = PR_IntervalNow();
+<b><a name="333">  333</a></b>     rc = PR_WaitCondVar( cvar-&gt;cvar, timeout );
+<b><a name="334">  334</a></b>     callTime = PR_IntervalNow() - callTime;
+<b><a name="335">  335</a></b>     
+<b><a name="336">  336</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( WaitCondVar, cvar-&gt;ltype, callTime, 0, cvar, line, file );
+<b><a name="337">  337</a></b>     return(rc);
+<b><a name="338">  338</a></b> } /* --- end  pz_WaitCondVar() --- */
+<b><a name="339">  339</a></b> 
+<b><a name="340">  340</a></b> extern PRStatus
+<b><a name="341">  341</a></b>     <a href="#341">pz_NotifyCondVar</a>(
+<b><a name="342">  342</a></b>         <a href="../util/nssilckt.h.dep.html#PZCondVar">PZCondVar</a></a> *cvar,
+<b><a name="343">  343</a></b>         char *file,
+<b><a name="344">  344</a></b>         PRIntn line
+<b><a name="345">  345</a></b>     )
+<b><a name="346">  346</a></b> {
+<b><a name="347">  347</a></b>     PRStatus    rc;
+<b><a name="348">  348</a></b>     
+<b><a name="349">  349</a></b>     rc = PR_NotifyCondVar( cvar-&gt;cvar );
+<b><a name="350">  350</a></b>     
+<b><a name="351">  351</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( NotifyCondVar, cvar-&gt;ltype, 0, 0, cvar, line, file );
+<b><a name="352">  352</a></b>     return(rc);
+<b><a name="353">  353</a></b> } /* --- end  pz_NotifyCondVar() --- */
+<b><a name="354">  354</a></b> 
+<b><a name="355">  355</a></b> extern PRStatus
+<b><a name="356">  356</a></b>     <a href="#356">pz_NotifyAllCondVar</a>(
+<b><a name="357">  357</a></b>         <a href="../util/nssilckt.h.dep.html#PZCondVar">PZCondVar</a></a> *cvar,
+<b><a name="358">  358</a></b>         char *file,
+<b><a name="359">  359</a></b>         PRIntn line
+<b><a name="360">  360</a></b>     )
+<b><a name="361">  361</a></b> {
+<b><a name="362">  362</a></b>     PRStatus    rc;
+<b><a name="363">  363</a></b>     
+<b><a name="364">  364</a></b>     rc = PR_NotifyAllCondVar( cvar-&gt;cvar );
+<b><a name="365">  365</a></b>     
+<b><a name="366">  366</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( NotifyAllCondVar, cvar-&gt;ltype, 0, 0, cvar, line, file );
+<b><a name="367">  367</a></b>     return(rc);
+<b><a name="368">  368</a></b> } /* --- end  pz_NotifyAllCondVar() --- */
+<b><a name="369">  369</a></b> 
+<b><a name="370">  370</a></b> extern <a href="../util/nssilckt.h.dep.html#PZMonitor">PZMonitor</a></a> *
+<b><a name="371">  371</a></b>     <a href="#371">pz_NewMonitor</a>( 
+<b><a name="372">  372</a></b>         <a href="../util/nssilckt.h.dep.html#nssILockType">nssILockType</a> ltype,
+<b><a name="373">  373</a></b>         char *file,
+<b><a name="374">  374</a></b>         PRIntn line
+<b><a name="375">  375</a></b>     )
+<b><a name="376">  376</a></b> {
+<b><a name="377">  377</a></b>     PRStatus rc;
+<b><a name="378">  378</a></b>     <a href="../util/nssilckt.h.dep.html#PZMonitor">PZMonitor</a></a>   *mon;
+<b><a name="379">  379</a></b> 
+<b><a name="380">  380</a></b>     /* Self Initialize the nssILock feature */
+<b><a name="381">  381</a></b>     if (!<a href="../util/nssilock.c.dep.html#nssILockInitialized">nssILockInitialized</a>)  {
+<b><a name="382">  382</a></b>         rc = PR_CallOnce( &amp;<a href="../util/nssilock.c.dep.html#coNssILock">coNssILock</a>, <a href="../util/nssilock.c.dep.html#nssILockInit">nssILockInit</a> );
+<b><a name="383">  383</a></b>         if ( PR_FAILURE == rc ) {
+<b><a name="384">  384</a></b>             PR_SetError( PR_UNKNOWN_ERROR, 0 );
+<b><a name="385">  385</a></b>             return( NULL );
+<b><a name="386">  386</a></b>         }
+<b><a name="387">  387</a></b>     }
+<b><a name="388">  388</a></b> 
+<b><a name="389">  389</a></b>     mon = PR_NEWZAP( <a href="../util/nssilckt.h.dep.html#PZMonitor">PZMonitor</a></a> );
+<b><a name="390">  390</a></b>     if ( NULL != mon )  {
+<b><a name="391">  391</a></b>         mon-&gt;mon = PR_NewMonitor();
+<b><a name="392">  392</a></b>         if ( NULL == mon-&gt;mon )  {
+<b><a name="393">  393</a></b>             PR_DELETE( mon );
+<b><a name="394">  394</a></b>             return NULL;
+<b><a name="395">  395</a></b>         }
+<b><a name="396">  396</a></b>     }
+<b><a name="397">  397</a></b>     mon-&gt;ltype = ltype;
+<b><a name="398">  398</a></b> 
+<b><a name="399">  399</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( NewMonitor, mon-&gt;ltype, 0, 0, mon, line, file );
+<b><a name="400">  400</a></b>     return(mon);
+<b><a name="401">  401</a></b> } /* --- end  pz_NewMonitor() --- */
+<b><a name="402">  402</a></b> 
+<b><a name="403">  403</a></b> extern void
+<b><a name="404">  404</a></b>     <a href="#404">pz_DestroyMonitor</a>(
+<b><a name="405">  405</a></b>         <a href="../util/nssilckt.h.dep.html#PZMonitor">PZMonitor</a></a> *mon,
+<b><a name="406">  406</a></b>         char *file,
+<b><a name="407">  407</a></b>         PRIntn line
+<b><a name="408">  408</a></b>     )
+<b><a name="409">  409</a></b> {
+<b><a name="410">  410</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( DestroyMonitor, mon-&gt;ltype, 0, 0, mon, line, file );
+<b><a name="411">  411</a></b>     PR_DestroyMonitor( mon-&gt;mon );
+<b><a name="412">  412</a></b>     PR_DELETE( mon );
+<b><a name="413">  413</a></b>     return;                
+<b><a name="414">  414</a></b> } /* --- end  pz_DestroyMonitor() --- */
+<b><a name="415">  415</a></b> 
+<b><a name="416">  416</a></b> extern void
+<b><a name="417">  417</a></b>     <a href="#417">pz_EnterMonitor</a>(
+<b><a name="418">  418</a></b>         <a href="../util/nssilckt.h.dep.html#PZMonitor">PZMonitor</a></a> *mon,
+<b><a name="419">  419</a></b>         char *file,
+<b><a name="420">  420</a></b>         PRIntn line
+<b><a name="421">  421</a></b>     )
+<b><a name="422">  422</a></b> {
+<b><a name="423">  423</a></b>     PRIntervalTime callTime, <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a>;
+<b><a name="424">  424</a></b> 
+<b><a name="425">  425</a></b>     callTime = PR_IntervalNow();
+<b><a name="426">  426</a></b>     PR_EnterMonitor( mon-&gt;mon );
+<b><a name="427">  427</a></b>     <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a> = PR_IntervalNow();
+<b><a name="428">  428</a></b>     callTime = <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a> - callTime;
+<b><a name="429">  429</a></b>     if ( PR_GetMonitorEntryCount(mon-&gt;mon) == 1 )  {
+<b><a name="430">  430</a></b>         mon-&gt;time = <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a>;
+<b><a name="431">  431</a></b>     }
+<b><a name="432">  432</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( EnterMonitor, mon-&gt;ltype, callTime, 0, mon, line, file );
+<b><a name="433">  433</a></b>     return;
+<b><a name="434">  434</a></b> } /* --- end  pz_EnterMonitor() --- */
+<b><a name="435">  435</a></b> 
+<b><a name="436">  436</a></b> extern PRStatus
+<b><a name="437">  437</a></b>     <a href="#437">pz_ExitMonitor</a>(
+<b><a name="438">  438</a></b>         <a href="../util/nssilckt.h.dep.html#PZMonitor">PZMonitor</a></a> *mon,
+<b><a name="439">  439</a></b>         char *file,
+<b><a name="440">  440</a></b>         PRIntn line
+<b><a name="441">  441</a></b>     )
+<b><a name="442">  442</a></b> {
+<b><a name="443">  443</a></b>     PRStatus rc;
+<b><a name="444">  444</a></b>     PRIntervalTime callTime, <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a>, heldTime;
+<b><a name="445">  445</a></b>     PRIntn  mec = PR_GetMonitorEntryCount( mon-&gt;mon );
+<b><a name="446">  446</a></b>    
+<b><a name="447">  447</a></b>     heldTime = (PRIntervalTime)-1; 
+<b><a name="448">  448</a></b>     callTime = PR_IntervalNow();
+<b><a name="449">  449</a></b>     rc = PR_ExitMonitor( mon-&gt;mon );
+<b><a name="450">  450</a></b>     <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a> = PR_IntervalNow();
+<b><a name="451">  451</a></b>     callTime = <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a> - callTime;
+<b><a name="452">  452</a></b>     if ( mec == 1 )
+<b><a name="453">  453</a></b>         heldTime = <a href="../freebl/mpi/tests/mptest-4a.c.dep.html#now">now</a><a href="../freebl/mpi/tests/mptest-4b.c.dep.html#now"><sup>[1]</sup></a><a href="../freebl/mpi/tests/mptest-5a.c.dep.html#now"><sup>[2]</sup></a> - mon-&gt;time;
+<b><a name="454">  454</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( ExitMonitor, mon-&gt;ltype, callTime, heldTime, mon, line, file );
+<b><a name="455">  455</a></b>     return( rc );
+<b><a name="456">  456</a></b> } /* --- end  pz_ExitMonitor() --- */
+<b><a name="457">  457</a></b> 
+<b><a name="458">  458</a></b> extern PRIntn
+<b><a name="459">  459</a></b>     <a href="#459">pz_GetMonitorEntryCount</a>(
+<b><a name="460">  460</a></b>         <a href="../util/nssilckt.h.dep.html#PZMonitor">PZMonitor</a></a> *mon,
+<b><a name="461">  461</a></b>         char *file,
+<b><a name="462">  462</a></b>         PRIntn line
+<b><a name="463">  463</a></b>     )
+<b><a name="464">  464</a></b> {
+<b><a name="465">  465</a></b>     return( PR_GetMonitorEntryCount(mon-&gt;mon));
+<b><a name="466">  466</a></b> } /* --- end pz_GetMonitorEntryCount() --- */
+<b><a name="467">  467</a></b> 
+<b><a name="468">  468</a></b> 
+<b><a name="469">  469</a></b> extern PRStatus
+<b><a name="470">  470</a></b>     <a href="#470">pz_Wait</a>(
+<b><a name="471">  471</a></b>         <a href="../util/nssilckt.h.dep.html#PZMonitor">PZMonitor</a></a> *mon,
+<b><a name="472">  472</a></b>         PRIntervalTime ticks,
+<b><a name="473">  473</a></b>         char *file,
+<b><a name="474">  474</a></b>         PRIntn line
+<b><a name="475">  475</a></b>     )
+<b><a name="476">  476</a></b> {
+<b><a name="477">  477</a></b>     PRStatus rc;
+<b><a name="478">  478</a></b>     PRIntervalTime callTime;
+<b><a name="479">  479</a></b> 
+<b><a name="480">  480</a></b>     callTime = PR_IntervalNow();
+<b><a name="481">  481</a></b>     rc = PR_Wait( mon-&gt;mon, ticks );
+<b><a name="482">  482</a></b>     callTime = PR_IntervalNow() - callTime;
+<b><a name="483">  483</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( Wait, mon-&gt;ltype, callTime, 0, mon, line, file );
+<b><a name="484">  484</a></b>     return( rc );
+<b><a name="485">  485</a></b> } /* --- end  pz_Wait() --- */
+<b><a name="486">  486</a></b> 
+<b><a name="487">  487</a></b> extern PRStatus
+<b><a name="488">  488</a></b>     <a href="#488">pz_Notify</a>(
+<b><a name="489">  489</a></b>         <a href="../util/nssilckt.h.dep.html#PZMonitor">PZMonitor</a></a> *mon,
+<b><a name="490">  490</a></b>         char *file,
+<b><a name="491">  491</a></b>         PRIntn line
+<b><a name="492">  492</a></b>     )
+<b><a name="493">  493</a></b> {
+<b><a name="494">  494</a></b>     PRStatus rc;
+<b><a name="495">  495</a></b>     PRIntervalTime callTime;
+<b><a name="496">  496</a></b> 
+<b><a name="497">  497</a></b>     callTime = PR_IntervalNow();
+<b><a name="498">  498</a></b>     rc = PR_Notify( mon-&gt;mon );
+<b><a name="499">  499</a></b>     callTime = PR_IntervalNow() - callTime;
+<b><a name="500">  500</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( Notify, mon-&gt;ltype, callTime, 0, mon, line, file );
+<b><a name="501">  501</a></b>     return( rc );
+<b><a name="502">  502</a></b> } /* --- end  pz_Notify() --- */
+<b><a name="503">  503</a></b> 
+<b><a name="504">  504</a></b> extern PRStatus
+<b><a name="505">  505</a></b>     <a href="#505">pz_NotifyAll</a>(
+<b><a name="506">  506</a></b>         <a href="../util/nssilckt.h.dep.html#PZMonitor">PZMonitor</a></a> *mon,
+<b><a name="507">  507</a></b>         char *file,
+<b><a name="508">  508</a></b>         PRIntn line
+<b><a name="509">  509</a></b>     )
+<b><a name="510">  510</a></b> {
+<b><a name="511">  511</a></b>     PRStatus rc;
+<b><a name="512">  512</a></b>     PRIntervalTime callTime;
+<b><a name="513">  513</a></b> 
+<b><a name="514">  514</a></b>     callTime = PR_IntervalNow();
+<b><a name="515">  515</a></b>     rc = PR_NotifyAll( mon-&gt;mon );
+<b><a name="516">  516</a></b>     callTime = PR_IntervalNow() - callTime;
+<b><a name="517">  517</a></b>     <a href="../util/nssilock.c.dep.html#Vtrace">Vtrace</a>( NotifyAll, mon-&gt;ltype, callTime, 0, mon, line, file );
+<b><a name="518">  518</a></b>     return( rc );
+<b><a name="519">  519</a></b> } /* --- end  pz_NotifyAll() --- */
+<b><a name="520">  520</a></b> 
+<b><a name="521">  521</a></b> #endif /* NEED_NSS_ILOCK */
+<b><a name="522">  522</a></b> /* --- end nssilock.c --------------------------------- */
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

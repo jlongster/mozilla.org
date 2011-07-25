@@ -1,0 +1,155 @@
+<?php
+
+$html_title = 'PSM 2.0 Roadmap - A Technical View';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>PSM 2.0 Roadmap - A Technical View</h2>
+
+<i><FONT SIZE="-1">
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Technical contact: 
+<a href="mailto:javi@netscape.com?Subject=PSM2.0%20Roadmap">Javier Delgadillo</A></FONT><BR>
+
+<FONT SIZE="-1">Manager: 
+<A HREF="mailto:lord@netscape.com?subject=PSM2.0%20Roadmap">Bob Lordd</A></FONT></i></center>
+
+
+
+<p>
+<h3>
+Where We Are Now</h3>
+
+Work on the next generation of PSM technology has started. With PSM 2.0,
+we plan to provide an in-process SSL implementation that takes advantage
+of all the technologies provided to us by Mozilla. PSM 2.0 
+will not work with Communicator 4.7x browsers as PSM1.x did, but will be
+strictly a Mozilla browser component. Any other projects that use
+the Mozilla code base in their project will be able to pick up the new
+implementation and have SSL work.
+<h3>
+Where We're Going</h3>
+Work related to Personal Security Manager is proceeding in the following
+areas:
+<ul>
+<li>
+<b>Netscape Personal Security Manager for Communicator 4.x.</b> This
+version goes into maintenance mode. Only bugs deemed extremely harmful
+to the end user or the end user's system will be considered for a fix. 
+We will forgo minor bug fixes to this version in favor of adding functionality
+and features to PSM 2.0.</li>
+
+<li>
+<b>Netscape Personal Security Manager for Mozilla.</b> This version
+goes into maintenance mode under the same conditions as Netscape Personal
+Security Manager for Communicator 4.x.</li>
+
+<li>
+<b>PSM 2.0 for Mozilla.</b> This version will use the mozilla environment to 
+provide functionality equivalent to that provided by the interfaces
+at <a href="http://lxr.mozilla.org/seamonkey/source/extensions/psm-glue/src/nsPSMModule.cpp#59">psm-glue</a>
+. This version will also require implementing the UI mockups under development at 
+<a href="http://people.netscape.com/lord/psm/readmefirst.html">UI.</a>
+PSM 2.0 will provide UI for many of the error cases that PSM and
+Netscape clients have provided in the past, and will also allow 
+other projects to customize behavior when SSL error
+conditions occur.</li>
+
+<li>
+<b>PSM 2.0 For Embedding Projects</b> The new PSM will be flexible
+enough to permit any embedding project that picks up necko and gecko to
+pick up the new PSM and have SSL functioning without any of the
+other PKI-related features available to Mozilla. Each embedding project
+must define the behavior for PSM in error cases.</li>
+</ul>
+
+<h3>
+How We're Going To Do It</h3>
+PSM 2.0 will consist of XPCOM shared libraries just like every component
+used by Mozilla: <tt>pipnss</tt> and <tt>pippki</tt>.
+
+<h4>
+<tt>pipnss</tt></h4>
+The base shared library will be <tt>pipnss</tt> (i.e. <tt>libpipnss.so</tt> on Linux and
+<tt>pipnss.dll</tt> on Win32). This library will be a generic mozilla
+module, will register XPCOM components, and will link in the static version of NSS
+3.2. It will be the only library provided by PSM that links with NSS directly.
+NSS 3.2 will support shared libraries, but there will not be enough symbols
+exported to implement all of the features required of PSM 2.0.
+When NSS releases a version that exports enough symbols to implement all
+of the features to be implemented by PSM, then this issue may be reconsidered
+and multiple shared libraries may link with NSS if the PSM team decides
+that solution is acceptable.
+<p><tt>pipnss</tt> will register objects that handle all of the SSL sockets required
+of necko. Currently there are three instances of sockets required by
+necko: 
+<ul>
+	<li>Default SSL socket, provided by NSS
+	<li>SSL Socket, which forces the handshake
+	<li>a socket that can upgrade from a clear socket to an SSL socket
+
+</UL>
+
+<p>Each socket may have a listener attached to it that will handle conditions
+that require UI. Such conditions could be caused by 
+an expired web site certificate or the need for the user select a 
+certificate for SSL client authentication.
+
+<p>If there is no listener attached to the socket that can handle a given
+condition, then pipnss will terminate the connection and report a "could
+not connect" error (or some equivalent). This has the advantage
+of not requiring embedding projects to bring up UI (since some projects
+may not support UI) and is flexible enough to allow different SSL protocols
+to handle error messages differently. For example, the HTTPS protocol
+may need to present the user with a dialog if the web site certificate
+has expired, whereas LDAPS may decide to fail silently in such cases. 
+The protocol implementation, rather than the SSL provider, decides what 
+constitutes correct behavior.
+
+<p>Since it will be the only module that directly links against NSS,
+<tt>pipnss</tt> will define IDL interfaces for access to NSS functions and implement
+those interfaces. This will prevent other components that want to
+use NSS from having to link in their own copy of NSS and prevent
+two copies of NSS from running simultaneously in two separate modules.
+When other components need access to NSS, they can look up the interfaces
+implemented by pipnss and call NSS through those interfaces.
+<p>There will not be any XUL files included with this module.
+<p>This module will be picked up by embedding projects and the Mozilla/Netscape
+browser.
+
+<h4>
+<tt>pippki</tt></h4>
+The <tt>pippki</tt> module will implement the
+<a href="http://people.netscape.com/lord/psm/readmefirst.html">PSM 2.0 UI</a>. 
+It will define all of the XPCOM objects needed to implement
+the UI using XUL. Specification of these XPCOM objects will be described in
+a future document. This library will also bundle all of the XUL that implements the UI.
+
+The library will query for the necessary NSS interfaces
+provided by <tt>pipnss</tt> when NSS operations are needed. To avoid bloating 
+footprint size, this library will not link with any NSS libraries.
+
+<p>The Secret Decoder Ring (SDR) implementation, needed by the Password
+Manager in Mozilla, will be bundled into this module as well. If
+in the future the PSM team decides there is enough demand for SDR functionality
+apart from the other features provided by the rest of the <tt>pippki</tt> module,
+then the SDR functionality may be be split into its own module.
+
+<p>The Mozilla/Netscape browser uses this module, but embedding projects need not 
+pick it up unless they need all the PSM-related security UI provided by the 
+Mozilla/Netscape browser. 
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

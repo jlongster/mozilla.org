@@ -1,0 +1,1665 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC
+  "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"
+  "http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd"
+[
+  <!ENTITY mathml "http://www.w3.org/1998/Math/MathML">
+  <!ATTLIST maction id ID #IMPLIED>
+]>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:html="http://www.w3.org/1999/xhtml">
+<!--
+  *  The contents of this file are subject to the Mozilla Public
+  *  License Version 1.1 (the "License"); you may not use this file
+  *  except in compliance with the License. You may obtain a copy of
+  *  the License at http://www.mozilla.org/MPL/
+  *
+  *  Software distributed under the License is distributed on an "AS
+  *  IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+  *  implied. See the License for the specific language governing
+  *  rights and limitations under the License.
+  *
+  *  The Original Code is Mozilla MathML Project.
+  *
+  *  The Initial Developer of the Original Code is The University of
+  *  Queensland.  Portions created by The University of Queensland are
+  *  Copyright (C) 1999 The University of Queensland.  All
+  *  Rights Reserved.
+  *
+  *  Contributor(s):
+  *    Roger B. Sidje <rbs@maths.uq.edu.au>
+  *    Steve Swanson <steve.swanson@mackichan.com>
+  -->
+<head>
+<title>MathML Basics</title>
+<style type="text/css">
+[class="background"] {
+  background-image: url(http://www.mozilla.org/images/mozilla-banner.gif);
+  opacity: 0.2;
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 58px;
+}
+[_moz-math-state="zoommath"], [_moz-math-state="zoommath+viewmath"] {
+  font-size: 300%;
+}
+.control {
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 200%;
+}
+input {
+  color: red;
+}
+[class="inputmath"] {
+  border: 1px dotted;
+}
+</style>
+<script type="text/javascript" src="entity.js" />
+<script type="text/javascript" src="viewmath.js" />
+<script type="text/javascript">
+<![CDATA[
+function setSelection(id,value) {
+  document.getElementById(id).setAttribute("selection",value);
+}
+function expand()
+{
+  setSelection("a11","2");  setSelection("a12","2");  setSelection("a13","2");
+  setSelection("a21","2");  setSelection("a22","2");  setSelection("a23","2");
+  setSelection("a31","2");  setSelection("a32","2");  setSelection("a33","2");
+  setSelection("a41","2");  setSelection("a42","2");  setSelection("a43","2");
+}
+function unexpand()
+{
+  setSelection("a11","1");  setSelection("a12","1");  setSelection("a13","1");
+  setSelection("a21","1");  setSelection("a22","1");  setSelection("a23","1");
+  setSelection("a31","1");  setSelection("a32","1");  setSelection("a33","1");
+  setSelection("a41","1");  setSelection("a42","1");  setSelection("a43","1");
+}
+function handlecontext(evt)
+{
+  var target = evt.target;
+  if (target.nodeType == Node.TEXT_NODE) { // leaf text
+    target = target.parentNode;
+  }
+  var m = findmathparent(target);
+  if (m) {
+    // leave the link demo alone
+    if (m.parentNode.localName == 'a') {
+      return;
+    }
+    // avoid a bug in input fields: styledata isn't updated
+    if (m.getAttribute('class') == 'inputmath'){
+      return;
+    }
+
+    // _moz-math-state is used as a tri-state flag
+    // [not there], [value='zoommath'], [value='zoommath+viewmmath']
+    var mathstate = m.getAttribute('_moz-math-state');
+    if (!mathstate) {
+      m.setAttribute('_moz-math-state', 'zoommath');
+    }
+    else if (mathstate == 'zoommath') {
+      viewmath(evt);
+      m.setAttribute('_moz-math-state', 'zoommath+viewmath');
+    }
+    else if (mathstate == 'zoommath+viewmath') {
+      m.removeAttribute('_moz-math-state');
+
+      // close the viewsource window - disabled because it is slowwww...
+      // if (gWYSIWYGWindow && !gWYSIWYGWindow.closed) {
+      //   gWYSIWYGWindow.close();
+      //   gWYSIWYGWindow = null;
+      // }
+    }
+
+    // the math context disables the normal context menu
+    evt.preventDefault();
+  }
+}
+function incrementInput(inputID, increment)
+{
+  var inputElement = document.getElementById(inputID);
+  var size = parseInt(inputElement.size) + increment;
+  if (size <= 0) 
+    size = 1
+  inputElement.size = size;
+}
+]]>
+</script>
+</head>
+
+<body style="background-color: #ffffff;"
+      onload="this.addEventListener('contextmenu', handlecontext, true);">
+
+<div style="margin-bottom: 3em;">
+  <div style="background: black; width: 100%;">
+    <a href="http://www.mozilla.org/">
+      <img src="../../../images/mozilla-banner.gif" alt="banner logo" style="border: 0;"/>
+    </a>
+  </div>
+
+  <div style="font-size: small; margin: .2em;">
+    <div style="float: left; width: 33%">
+      <a href="../../../">Home</a> |
+      <a href="../../../projects/">Projects</a> |
+      <a href="../../../docs/">Docs</a> |
+      <a href="../../../docs/jargon.html">Jargon</a>
+    </div>
+
+    <div style="float: left;">
+      <a href="http://bugzilla.mozilla.org/">Bugzilla</a> |
+      <a href="http://lxr.mozilla.org/">LXR</a> |
+      <a href="http://tinderbox.mozilla.org/showbuilds.cgi?tree=SeaMonkey">Tree Status</a> |
+      <a href="http://bonsai.mozilla.org/cvsquery.cgi?treeid=default&amp;module=SeaMonkeyAll&amp;branch=HEAD&amp;branchtype=match&amp;dir=&amp;file=&amp;filetype=match&amp;who=&amp;whotype=match&amp;sortby=Date&amp;hours=2&amp;date=day&amp;mindate=&amp;maxdate=&amp;cvsroot=%2Fcvsroot">Checkins</a>
+    </div>
+
+    <div style="float: right;">
+      <a href="../../../feedback.html">Feedback</a> |
+      <a href="../../../faq.html">FAQ</a> |
+      <a href="../../../search.html">Search</a>
+    </div>
+  </div>
+</div>
+
+<h2 style="text-align: center;">MathML Basics</h2>
+
+<p>
+This document illustrates some basic MathML constructions.
+It is tailored to display correctly with just the Symbol font.
+You can view its source. However, MathML documents tend to be
+verbose and you might get lost trying to locate a MathML fragment
+with the usual view source. This demo has been made to illustrate
+the following aspects. You can right-click on any math
+fragment of interest throughout this document. The context menu won't
+show up. Rather, the math fragment will zoom, and if you right-click a
+second time, you will see the MathML WYSIWYG markup of the fragment,
+and if you right-click again a third time, the fragment will revert to
+its initial state. This tri-state mode is aimed at limiting conflicts
+with other agents that compete for the mouse.
+</p>
+
+<p>
+With MathML, one can build sets such as (go on, right-click 
+any of these equations to experiment the zoom)
+<math xmlns="&mathml;">
+    <mrow>
+      <mo>{</mo>
+      <mrow>
+        <mn>0</mn>
+        <mo>,</mo>
+        <mn>1</mn>
+        <mo>,</mo>
+        <mn>2</mn>
+        <mo>,</mo>
+        <mn>3</mn>
+        <mo>,</mo>
+        <mn>4</mn>
+      </mrow>
+      <mo>}</mo>
+    </mrow>
+</math>
+   or
+<math xmlns="&mathml;">
+    <mrow>
+      <mo>{</mo>
+      <mrow>
+        <mrow>
+          <mo>&LeftFloor;</mo>
+          <mfrac>
+            <mi>a</mi>
+            <mi>b</mi>
+          </mfrac>
+          <mo>&RightFloor;</mo>
+        </mrow>
+        <mo stretchy="true" fence="true">|</mo>
+        <mrow>
+          <mrow>
+            <msup>
+              <mi>a</mi>
+              <mn>2</mn>
+            </msup>
+            <mo>+</mo>
+            <msup>
+              <mi>b</mi>
+              <mn>2</mn>
+            </msup>
+          </mrow>
+          <mo>&le;</mo>
+          <mn>3</mn>
+        </mrow>
+      </mrow>
+      <mo>}</mo>
+    </mrow>
+</math>,
+   write calculus
+<math xmlns="&mathml;">
+    <mrow>
+      <mfrac>
+        <mrow>
+          <mi>d</mi>
+          <mi>y</mi>
+        </mrow>
+        <mrow>
+          <mi>d</mi>
+          <mi>x</mi>
+        </mrow>
+      </mfrac>
+      <mo>=</mo>
+      <mfrac>
+        <mn>1</mn>
+        <msup>
+          <mi>y</mi>
+          <mn>2</mn>
+        </msup>
+      </mfrac>
+    </mrow>
+</math>,
+   form rather complicated expressions
+<math xmlns="&mathml;">
+    <mrow>
+      <mrow>
+        <munder>
+          <mo form="prefix" movablelimits="false">lim</mo>
+          <mrow>
+            <mi>n</mi>
+            <mo>&rarr;</mo>
+            <mi>N</mi>
+          </mrow>
+        </munder>
+        <msup>
+          <mrow>
+            <mo>(</mo>
+            <mrow>
+              <mn>1</mn>
+              <mo>+</mo>
+              <mfrac>
+                <mn>1</mn>
+                <mi>n</mi>
+              </mfrac>
+            </mrow>
+            <mo>)</mo>
+          </mrow>
+          <mi>n</mi>
+        </msup>
+      </mrow>
+      <mo>&minus;</mo>
+      <msup>
+        <mi>e</mi>
+        <mi>N</mi>
+      </msup>
+    </mrow>
+</math>,
+<math xmlns="&mathml;">
+<mrow>
+  <mi>k</mi>
+  <mo>=</mo>
+  <mfrac>
+    <mrow>
+      <mfrac>
+         <mrow>
+          <msup>
+            <mo>&PartialD;</mo>
+            <mn>2</mn>
+          </msup>
+          <mi>z</mi>
+        </mrow>
+        <mrow>
+          <mo>&PartialD;</mo>
+          <msup>
+            <mi>x</mi>
+            <mn>2</mn>
+          </msup>
+        </mrow>
+      </mfrac>
+      <mfrac>
+        <mrow>
+          <msup>
+            <mo>&PartialD;</mo>
+            <mn>2</mn>
+          </msup>
+          <mi>z</mi>
+        </mrow>
+        <mrow>
+          <mo>&PartialD;</mo>
+          <msup>
+            <mi>y</mi>
+            <mn>2</mn>
+          </msup>
+        </mrow>
+      </mfrac>
+      <mo>-</mo>
+      <msup>
+        <mrow>
+          <mo>(</mo>
+          <mfrac>
+            <mrow>
+              <msup>
+                <mo>&PartialD;</mo>
+                <mn>2</mn>
+              </msup>
+              <mi>z</mi>
+            </mrow>
+            <mrow>
+              <mo>&PartialD;</mo>
+              <mi>x</mi>
+              <mo>&PartialD;</mo>
+              <mi>y</mi>
+              </mrow>
+          </mfrac>
+          <mo>)</mo>
+        </mrow>
+        <mn>2</mn>
+      </msup>
+    </mrow>
+    <mrow>
+      <msup>
+        <mrow>
+          <mo>(</mo>
+          <mn>1</mn>
+          <mo>+</mo>
+          <msup>
+            <mrow>
+              <mo>(</mo>
+              <mfrac>
+                <mrow>
+                  <mo>&PartialD;</mo>
+                  <mi>z</mi>
+                </mrow>
+                <mrow>
+                  <mo>&PartialD;</mo>
+                  <mi>x</mi>
+                </mrow>
+              </mfrac>
+              <mo>)</mo>
+            </mrow>
+            <mn>2</mn>
+          </msup>
+          <mo>+</mo>
+          <msup>
+            <mrow>
+              <mo>(</mo>
+              <mfrac>
+                <mrow>
+                  <mo>&PartialD;</mo>
+                  <mi>z</mi>
+                </mrow>
+                <mrow>
+                  <mo>&PartialD;</mo>
+                  <mi>y</mi>
+                </mrow>
+              </mfrac>
+              <mo>)</mo>
+            </mrow>
+            <mn>2</mn>
+          </msup>
+          <mo>)</mo>
+        </mrow>
+        <mn>2</mn>
+      </msup>
+    </mrow>
+  </mfrac>
+</mrow>
+</math>,
+   write vector equations
+<math xmlns="&mathml;">
+    <mrow mathvariant="bold">
+          <mi>Y</mi>
+          <mo>=</mo>
+          <mrow>
+            <mrow>
+              <mi>a</mi>
+              <mo>&InvisibleTimes;</mo>
+              <mi>X</mi>
+            </mrow>
+            <mo>+</mo>
+            <mi>b</mi>
+          </mrow>
+    </mrow>
+</math>,
+   etc.
+</p>
+<p>
+   Notice how the mathematics appear in the main flow of text 
+   and respond as you resize the window. 
+   You can also make displayed equations, such as the following ones:
+</p>
+<p>
+<math xmlns="&mathml;" display="block">
+    <mrow>
+      <mrow>
+        <mi>x</mi>
+        <mover>
+           <mo>&RightArrow;</mo>
+           <mtext>maps to</mtext>
+        </mover>
+        <mi>y</mi>
+        <mo>=</mo>
+        <msub>
+          <mi>f</mi>
+          <mi>n</mi>
+        </msub>
+        <mo>&ApplyFunction;</mo>
+        <mrow>
+          <mo>(</mo>
+          <mi>x</mi>
+          <mo>)</mo>
+        </mrow>
+      </mrow>
+      <mo>=</mo>
+      <msup>
+        <mrow>
+          <mo>(</mo>
+          <mrow>
+            <mn>1</mn>
+            <mo>+</mo>
+            <mfrac>
+              <mn>1</mn>
+              <msup>
+                <mi>x</mi>
+                <mi>n</mi>
+              </msup>
+            </mfrac>
+          </mrow>
+          <mo>)</mo>
+        </mrow>
+        <mi>n</mi>
+      </msup>
+    </mrow>
+</math>
+
+<math display="block" xmlns="&mathml;">
+  <mrow>
+    <msubsup>
+      <mo>&Integral;</mo>
+      <mi>a</mi>
+      <mi>b</mi>
+    </msubsup>
+    <mi>f</mi>
+    <mrow>
+      <mo>(</mo>
+      <mi>x</mi>
+      <mo>)</mo>
+    </mrow>
+    <mi>d</mi>
+    <mi>x</mi>
+  </mrow>
+  <mrow>
+    <mo>=</mo>
+    <mfrac>
+      <mrow>
+        <mi>b</mi>
+        <mo>-</mo>
+        <mi>a</mi>
+      </mrow>
+      <mn>6</mn>
+    </mfrac>
+    <mrow>
+      <mo>[</mo>
+      <mi>f</mi>
+      <mrow>
+        <mo>(</mo>
+        <mi>a</mi>
+        <mo>)</mo>
+      </mrow>
+      <mo>+</mo>
+      <mn>4</mn>
+      <mi>f</mi>
+      <mrow>
+        <mo>(</mo>
+        <mfrac>
+          <mrow>
+            <mi>a</mi>
+            <mo>+</mo>
+            <mi>b</mi>
+          </mrow>
+          <mn>2</mn>
+        </mfrac>
+        <mo>)</mo>
+      </mrow>
+      <mo>+</mo>
+      <mi>f</mi>
+      <mrow>
+        <mo>(</mo>
+        <mi>b</mi>
+        <mo>)</mo>
+      </mrow>
+      <mo>]</mo>
+    </mrow>
+    <mo>-</mo>
+    <mfrac>
+      <msup>
+        <mrow>
+          <mo>(</mo>
+          <mi>b</mi>
+          <mo>-</mo>
+          <mi>a</mi>
+          <mo>)</mo>
+        </mrow>
+        <mn>5</mn>
+      </msup>
+      <mrow>
+        <mn>4</mn>
+        <mo>!</mo>
+        <mn>5</mn>
+        <mo>!</mo>
+      </mrow>
+    </mfrac>
+    <msup>
+      <mi>f</mi>
+      <mrow>
+        <mo>(</mo>
+        <mn>4</mn>
+        <mo>)</mo>
+      </mrow>
+    </msup>
+    <mrow>
+      <mo>(</mo>
+      <mi>&eta;</mi>
+      <mo>)</mo>
+    </mrow>
+    <mo>,</mo>
+    <mspace width="1em"/>
+    <mi>a</mi>
+    <mo>&leq;</mo>
+    <mi>&eta;</mi>
+    <mo>&leq;</mo>
+    <mi>b</mi>
+  </mrow>
+</math>
+
+<math display="block" xmlns="&mathml;">
+<mrow>
+  <mrow>
+    <mo>|</mo>
+    <mi>x</mi>
+    <mo>|</mo>
+  </mrow>
+  <mo>=</mo>
+  <mo>{</mo>
+  <mtable>
+  <mtr>
+    <mtd columnalign="right">
+      <mrow>
+      <mo>-</mo>
+      <mi>x</mi>
+      </mrow>
+    </mtd>
+    <mtd columnalign="left">
+      <mtext>&nbsp;if&nbsp;</mtext>
+      <mi>x</mi>
+      <mo>&lt;</mo>
+      <mn>0</mn>
+    </mtd>
+  </mtr>
+  <mtr>
+    <mtd columnalign="right">
+      <mi>x</mi>
+    </mtd>
+    <mtd columnalign="left">
+      <mtext>&nbsp;otherwise</mtext>
+    </mtd>
+  </mtr>
+</mtable>
+</mrow>
+</math>
+
+
+
+You can also typeset 2D mathematical constructs such as matrices.
+The following example shows the <i>i</i>-th step of the multiplication
+of a matrix <i>A</i> by a vector <i>x</i> (notice how 
+<math xmlns="&mathml;">
+  <msub>
+    <mi>a</mi><mrow><mi>i</mi><mn>1</mn></mrow>
+  </msub>
+  <mo>,</mo>
+  <mo>...</mo>
+  <mo>,</mo>
+  <msub>
+    <mi>a</mi><mrow><mi>i</mi><mi>n</mi></mrow>
+  </msub>
+  <mo>,</mo>
+  <msub><mi>x</mi><mn>1</mn></msub>
+</math>
+are on the same baseline, other alignments are possible):
+<math display="block" xmlns="&mathml;">
+<mrow>
+<mi>i</mi><mtext>-th row</mtext>
+<mrow>
+  <mo>[</mo>
+  <mtable align="baseline3" rowlines="none solid solid none">
+    <mtr>
+      <mtd>
+        <msub>
+          <mi>a</mi><mrow><mn>1</mn><mn>1</mn></mrow>
+        </msub>
+      </mtd>
+      <mtd>
+        <msub>
+          <mi>a</mi><mrow><mn>1</mn><mn>2</mn></mrow>
+        </msub>
+      </mtd>
+      <mtd>
+        <msub>
+          <mi>a</mi><mrow><mn>1</mn><mn>3</mn></mrow>
+        </msub>
+      </mtd>
+      <mtd>
+        <mo>...</mo>
+      </mtd>
+      <mtd>
+        <msub>
+          <mi>a</mi><mrow><mn>1</mn><mi>n</mi></mrow>
+        </msub>
+      </mtd>
+    </mtr>
+    <mtr>
+      <mtd>
+        <mo>:</mo>
+     </mtd>
+      <mtd>
+        <mo>:</mo>
+      </mtd>
+      <mtd>
+        <mo>:</mo>
+     </mtd>
+      <mtd>
+        <mo>...</mo>
+      </mtd>
+      <mtd>
+        <mo>:</mo>
+      </mtd>
+    </mtr>
+    <mtr>
+      <mtd>
+        <msub>
+          <mi>a</mi><mrow><mi>i</mi><mn>1</mn></mrow>
+        </msub>
+      </mtd>
+      <mtd>
+        <msub>
+          <mi>a</mi><mrow><mi>i</mi><mn>2</mn></mrow>
+        </msub>
+      </mtd>
+      <mtd>
+        <msub>
+          <mi>a</mi><mrow><mi>i</mi><mn>3</mn></mrow>
+        </msub>
+      </mtd>
+      <mtd>
+        <mo>...</mo>
+      </mtd>
+      <mtd>
+        <msub>
+          <mi>a</mi><mrow><mi>i</mi><mi>n</mi></mrow>
+        </msub>
+      </mtd>
+    </mtr>
+    <mtr>
+      <mtd>
+        <mo>:</mo>
+      </mtd>
+      <mtd>
+        <mo>:</mo>
+      </mtd>
+      <mtd>
+        <mo>:</mo>
+      </mtd>
+      <mtd>
+      </mtd>
+      <mtd>
+        <mo>:</mo>
+      </mtd>
+    </mtr>
+    <mtr>
+      <mtd>
+        <msub>
+          <mi>a</mi><mrow><mi>n</mi><mn>1</mn></mrow>
+        </msub>
+      </mtd>
+      <mtd>
+        <msub>
+          <mi>a</mi><mrow><mi>n</mi><mn>2</mn></mrow>
+        </msub>
+      </mtd>
+      <mtd>
+        <msub>
+          <mi>a</mi><mrow><mi>n</mi><mn>3</mn></mrow>
+        </msub>
+      </mtd>
+      <mtd>
+        <mo>...</mo>
+      </mtd>
+      <mtd>
+        <msub>
+          <mi>a</mi>
+          <mrow>
+            <mi>n</mi>
+            <mi>n</mi>
+          </mrow>
+        </msub>
+      </mtd>
+    </mtr>
+  </mtable>
+  <mo>]</mo>
+</mrow>
+<mrow>
+<mo symmetric="false">[</mo>
+      <mtable align="baseline1">
+        <mtr>
+          <mtd>
+            <msub><mi>x</mi><mn>1</mn></msub>
+          </mtd>
+        </mtr>
+        <mtr>
+          <mtd>
+            <msub><mi>x</mi><mn>2</mn></msub>
+          </mtd>
+        </mtr>
+        <mtr>
+          <mtd>
+            <msub><mi>x</mi><mn>3</mn></msub>
+          </mtd>
+        </mtr>
+        <mtr>
+          <mtd>
+            <mo>:</mo>
+          </mtd>
+        </mtr>
+        <mtr>
+          <mtd>
+            <msub><mi>x</mi><mi>n</mi></msub>
+          </mtd>
+        </mtr>
+      </mtable>
+<mo symmetric="false">]</mo>
+</mrow>
+</mrow>
+</math>
+
+</p>
+<p>
+In Mozilla, MathML runs inside the main browser. So it
+responds to other browser operations such as the zoom (try View -> Text Zoom), and   
+you can do links
+<math xmlns="&mathml;" href="http://en.wikipedia.org/wiki/Pythagorean_theorem">
+    <mrow>
+      <mrow>
+        <msup>
+          <mi>a</mi>
+          <mn>2</mn>
+        </msup>
+        <mo>+</mo>
+        <msup>
+          <mi>b</mi>
+          <mn>2</mn>
+        </msup>
+      </mrow>
+      <mo>=</mo>
+      <msup>
+        <mi>c</mi>
+        <mn>2</mn>
+      </msup>
+    </mrow>
+</math>, 
+   apply stylistic
+<span style="font-size: 2em; -moz-transform: rotate(-5deg)">effects
+<math xmlns="&mathml;">
+    <mrow>
+      <mrow>
+        <msup>
+          <mi>a</mi>
+          <mn>2</mn>
+        </msup>
+        <mrow>
+            <mo>+</mo>
+        </mrow>
+        <msup>
+          <mi>b</mi>
+          <mn>2</mn>
+        </msup>
+      </mrow>
+      <mrow>
+          <mo>=</mo>
+      </mrow>
+      <msup>
+        <mi>c</mi>
+        <mn>2</mn>
+      </msup>
+    </mrow>
+</math>
+</span>,
+   or use color
+<math xmlns="&mathml;">
+    <mrow>
+      <mrow>
+        <msup mathcolor="red">
+          <mi>a</mi>
+          <mn>2</mn>
+        </msup>
+        <mo>+</mo>
+        <msup mathcolor="green">
+          <mi>b</mi>
+          <mn>2</mn>
+        </msup>
+      </mrow>
+      <mo mathbackground="yellow">=</mo>
+      <msup mathcolor="purple">
+        <mi>c</mi>
+        <mn>2</mn>
+      </msup>
+    </mrow>
+</math>
+in very strange ways
+<math display="block" xmlns="&mathml;">
+<mrow mathcolor="red">
+<mfrac>
+   <mrow>
+      <mi>p</mi><mo>(</mo><mi>x</mi><mo>)</mo>
+    </mrow>
+   <mrow>
+      <mi>q</mi><mo>(</mo><mi>x</mi><mo>)</mo>
+    </mrow>
+</mfrac>
+<mo>=</mo>
+<mfrac>
+<mrow mathcolor="blue">
+       <msub><mi>a</mi><mn>0</mn></msub> <mo>+</mo>
+       <msub><mi>a</mi><mn>1</mn></msub><mi>x</mi> <mo>+</mo>
+       <msub><mi>a</mi><mn>2</mn></msub>
+       <msup><mi>x</mi><mn>2</mn></msup> <mo>+</mo>
+       <mo>...</mo> <mo>+</mo> 
+       <msub><mi>a</mi><mrow><mi>n</mi><mo>-</mo><mn>1</mn></mrow></msub>
+       <msup><mi>x</mi><mrow><mi>n</mi><mo>-</mo><mn>1</mn></mrow></msup>
+</mrow>
+<mrow mathcolor="green">
+       <msub><mi>b</mi><mn>0</mn></msub> <mo>+</mo>
+       <msub><mi>b</mi><mn>1</mn></msub><mi>x</mi> <mo>+</mo>
+       <msub><mi>b</mi><mn>2</mn></msub>
+       <msup><mi>x</mi><mn>2</mn></msup> <mo>+</mo>
+       <mo>...</mo> <mo>+</mo> 
+       <msub><mi>b</mi><mrow><mi>n</mi><mo>-</mo><mn>1</mn></mrow></msub>
+       <msup><mi>x</mi><mrow><mi>n</mi><mo>-</mo><mn>1</mn></mrow></msup>
+</mrow>
+</mfrac>
+<mo>.</mo>
+</mrow>
+</math>
+</p>
+
+<p>
+You can also do other weird and risky things which are not portable,
+bongo warns, such as mixing MathML with other markups
+<math display="block" xmlns="&mathml;">
+<mrow>
+<mi>lizard</mi>
+<mo>+</mo>
+<mi>bongo</mi>
+<mo>=</mo>
+<mfrac>
+  <html:img width="197" height="200" src="http://www.mozilla.org/images/logo-star.gif" />
+  <mrow>
+    <mo>&int;</mo>
+    <munderover>
+      <html:img width="16" height="16" src="http://www.mozilla.org/images/mozilla-16.png" />
+      <mi>a</mi>
+      <mi>b</mi>
+    </munderover>
+    <mi>d</mi>
+    <mi>x</mi>
+  </mrow>
+</mfrac>
+<mo>+</mo>
+<html:img width="120" height="82" src="http://lxr.mozilla.org/seamonkey/source/xpfe/browser/samples/sampleimages/bongo.gif?raw=1" border="0" alt="bongo.gif" />
+</mrow>
+</math>
+</p>
+
+<p>
+And you can turn to JavaScript and the DOM for dynamic operations.
+</p>
+
+<div style="text-align:center">
+Fill the gaps in this matrix with resizable input fields.
+</div>
+<math class="inputmath" display="block" xmlns="&mathml;">
+<mrow>
+  <mi>A</mi>
+  <mo>=</mo>
+  <mo>[</mo>
+  <mtable>
+    <mtr>
+      <mtd><mn>1</mn></mtd>
+      <mtd><html:input id="input12" value="?" size="1"/></mtd>
+    </mtr>
+    <mtr>
+      <mtd><html:input id="input21" value="?" size="1"/></mtd>      
+      <mtd><mn>4</mn></mtd>
+    </mtr>
+  </mtable>
+  <mo>]</mo>
+</mrow>
+</math>
+<div style="text-align:center">
+Left size:
+<a class="control" href="javascript:incrementInput('input21', 1);" title="increase input">+</a>
+<a class="control" href="javascript:incrementInput('input21',-1);" title="decrease input">-</a>
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+
+Right size:
+<a class="control" href="javascript:incrementInput('input12', 1);" title="increase input">+</a>
+<a class="control" href="javascript:incrementInput('input12',-1);" title="decrease input">-</a>
+<br/>
+(click these control buttons to see their effects.)
+</div>
+
+<p>
+Each entry of the following matrix represents
+<math xmlns="&mathml;">
+<msup><mrow><mo>(</mo><mi>x</mi><mo>+</mo><mi>y</mi><mo>)</mo></mrow><mi>n</mi></msup>
+</math> for some <i>n</i>.
+When you left-click any individual entry, it should toggle between its expanded and 
+unexpanded forms. You can also <a href="javascript:unexpand();">unexpand all</a> or
+<a href="javascript:expand();">expand all</a>.
+</p>
+
+<div>
+<math xmlns="&mathml;" display="block">
+    <mtable>
+      <mtr>
+        <mtd>
+          <mtable align="axis" columnalign="left left left">
+            <mtr>
+              <mtd>
+                <maction id="a11" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>0</mn>
+                  </msup>
+                  <mn>1</mn>
+                </maction>
+              </mtd>
+              <mtd>
+                <maction id="a12" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>1</mn>
+                  </msup>
+                  <mrow>
+                    <mi>x</mi>
+                    <mo>+</mo>
+                    <mi>y</mi>
+                  </mrow>
+                </maction>
+              </mtd>
+              <mtd>
+                <maction id="a13" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>2</mn>
+                  </msup>
+                  <mrow>
+                    <msup>
+                      <mi>x</mi>
+                      <mn>2</mn>
+                    </msup>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>2</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>x</mi>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>y</mi>
+                    </mrow>
+                    <mo>+</mo>
+                    <msup>
+                      <mi>y</mi>
+                      <mn>2</mn>
+                    </msup>
+                  </mrow>
+                </maction>
+              </mtd>
+            </mtr>
+            <mtr>
+              <mtd>
+                <maction id="a21" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>1</mn>
+                  </msup>
+                  <mrow>
+                    <mi>x</mi>
+                    <mo>+</mo>
+                    <mi>y</mi>
+                  </mrow>
+                </maction>
+              </mtd>
+              <mtd>
+                <maction id="a22" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>2</mn>
+                  </msup>
+                  <mrow>
+                    <msup>
+                      <mi>x</mi>
+                      <mn>2</mn>
+                    </msup>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>2</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>x</mi>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>y</mi>
+                    </mrow>
+                    <mo>+</mo>
+                    <msup>
+                      <mi>y</mi>
+                      <mn>2</mn>
+                    </msup>
+                  </mrow>
+                </maction>
+              </mtd>
+              <mtd>
+                <maction id="a23" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>3</mn>
+                  </msup>
+                  <mrow>
+                    <msup>
+                      <mi>x</mi>
+                      <mn>3</mn>
+                    </msup>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>3</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>x</mi>
+                        <mn>2</mn>
+                      </msup>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>y</mi>
+                    </mrow>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>3</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>x</mi>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>y</mi>
+                        <mn>2</mn>
+                      </msup>
+                    </mrow>
+                    <mo>+</mo>
+                    <msup>
+                      <mi>y</mi>
+                      <mn>3</mn>
+                    </msup>
+                  </mrow>
+                </maction>
+              </mtd>
+            </mtr>
+            <mtr>
+              <mtd>
+                <maction id="a31" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>2</mn>
+                  </msup>
+                  <mrow>
+                    <msup>
+                      <mi>x</mi>
+                      <mn>2</mn>
+                    </msup>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>2</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>x</mi>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>y</mi>
+                    </mrow>
+                    <mo>+</mo>
+                    <msup>
+                      <mi>y</mi>
+                      <mn>2</mn>
+                    </msup>
+                  </mrow>
+                </maction>
+              </mtd>
+              <mtd>
+                <maction id="a32" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>3</mn>
+                  </msup>
+                  <mrow>
+                    <msup>
+                      <mi>x</mi>
+                      <mn>3</mn>
+                    </msup>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>3</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>x</mi>
+                        <mn>2</mn>
+                      </msup>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>y</mi>
+                    </mrow>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>3</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>x</mi>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>y</mi>
+                        <mn>2</mn>
+                      </msup>
+                    </mrow>
+                    <mo>+</mo>
+                    <msup>
+                      <mi>y</mi>
+                      <mn>3</mn>
+                    </msup>
+                  </mrow>
+                </maction>
+              </mtd>
+              <mtd>
+                <maction id="a33" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>4</mn>
+                  </msup>
+                  <mrow>
+                    <msup>
+                      <mi>x</mi>
+                      <mn>4</mn>
+                    </msup>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>4</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>x</mi>
+                        <mn>3</mn>
+                      </msup>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>y</mi>
+                    </mrow>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>6</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>x</mi>
+                        <mn>2</mn>
+                      </msup>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>y</mi>
+                        <mn>2</mn>
+                      </msup>
+                    </mrow>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>4</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>x</mi>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>y</mi>
+                        <mn>3</mn>
+                      </msup>
+                    </mrow>
+                    <mo>+</mo>
+                    <msup>
+                      <mi>y</mi>
+                      <mn>4</mn>
+                    </msup>
+                  </mrow>
+                </maction>
+              </mtd>
+            </mtr>
+            <mtr>
+              <mtd>
+                <maction id="a41" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>3</mn>
+                  </msup>
+                  <mrow>
+                    <msup>
+                      <mi>x</mi>
+                      <mn>3</mn>
+                    </msup>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>3</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>x</mi>
+                        <mn>2</mn>
+                      </msup>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>y</mi>
+                    </mrow>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>3</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>x</mi>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>y</mi>
+                        <mn>2</mn>
+                      </msup>
+                    </mrow>
+                    <mo>+</mo>
+                    <msup>
+                      <mi>y</mi>
+                      <mn>3</mn>
+                    </msup>
+                  </mrow>
+                </maction>
+              </mtd>
+              <mtd>
+                <maction id="a42" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>4</mn>
+                  </msup>
+                  <mrow>
+                    <msup>
+                      <mi>x</mi>
+                      <mn>4</mn>
+                    </msup>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>4</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>x</mi>
+                        <mn>3</mn>
+                      </msup>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>y</mi>
+                    </mrow>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>6</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>x</mi>
+                        <mn>2</mn>
+                      </msup>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>y</mi>
+                        <mn>2</mn>
+                      </msup>
+                    </mrow>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>4</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>x</mi>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>y</mi>
+                        <mn>3</mn>
+                      </msup>
+                    </mrow>
+                    <mo>+</mo>
+                    <msup>
+                      <mi>y</mi>
+                      <mn>4</mn>
+                    </msup>
+                  </mrow>
+                </maction>
+              </mtd>
+              <mtd>
+                <maction id="a43" actiontype="toggle" selection="2">
+                  <msup>
+                    <mrow>
+                      <mo>(</mo>
+                      <mrow>
+                        <mi>x</mi>
+                        <mo>+</mo>
+                        <mi>y</mi>
+                      </mrow>
+                      <mo>)</mo>
+                    </mrow>
+                    <mn>5</mn>
+                  </msup>
+                  <mrow>
+                    <msup>
+                      <mi>x</mi>
+                      <mn>5</mn>
+                    </msup>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>5</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>x</mi>
+                        <mn>4</mn>
+                      </msup>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>y</mi>
+                    </mrow>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>10</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>x</mi>
+                        <mn>3</mn>
+                      </msup>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>y</mi>
+                        <mn>2</mn>
+                      </msup>
+                    </mrow>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>10</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>x</mi>
+                        <mn>2</mn>
+                      </msup>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>y</mi>
+                        <mn>3</mn>
+                      </msup>
+                    </mrow>
+                    <mo>+</mo>
+                    <mrow>
+                      <mn>5</mn>
+                      <mo>&InvisibleTimes;</mo>
+                      <mi>x</mi>
+                      <mo>&InvisibleTimes;</mo>
+                      <msup>
+                        <mi>y</mi>
+                        <mn>4</mn>
+                      </msup>
+                    </mrow>
+                    <mo>+</mo>
+                    <msup>
+                      <mi>y</mi>
+                      <mn>5</mn>
+                    </msup>
+                  </mrow>
+                </maction>
+              </mtd>
+            </mtr>
+          </mtable>
+        </mtd>
+      </mtr>
+    </mtable>
+</math>
+</div>
+
+<p>
+And there could be more...
+</p>
+
+<div style="text-align: center">
+  <button style="white-space: normal;">
+     <span style="color: brown;">
+
+       For example, <b>click</b> this MathML continued fraction<br/>
+       inside this HTML button<br />
+     </span>
+     <math xmlns="&mathml;">
+       <mrow>
+         <mfrac>
+           <mi>&pi;</mi>
+           <mn>4</mn>
+         </mfrac>
+         <mo>=</mo>
+         <mfrac numalign="left">
+            <mstyle scriptlevel="0">
+              <mn>1</mn>
+            </mstyle>
+            <mstyle scriptlevel="0">
+               <mrow>
+                 <mn>2</mn>
+                 <mo>+</mo>
+                 <mfrac numalign="left">
+                   <mstyle scriptlevel="0">
+                     <msup><mn>1</mn><mn>2</mn></msup>
+                   </mstyle>
+                   <mstyle scriptlevel="0">
+                      <mrow>
+                        <mn>2</mn>
+                        <mo>+</mo>
+                        <mfrac numalign="left">
+                          <mstyle scriptlevel="0">
+                            <msup><mn>3</mn><mn>2</mn></msup>
+                          </mstyle>               
+                          <mstyle scriptlevel="0">
+                            <mrow>
+                               <mn>2</mn>
+                               <mo>+</mo>
+                               <mfrac numalign="left">
+                                 <mstyle scriptlevel="0">
+                                   <msup><mn>5</mn><mn>2</mn></msup>
+                                 </mstyle>
+                                 <mstyle scriptlevel="0">
+                                   <mrow>
+                                      <mn>2</mn>
+                                      <mo>+</mo>
+                                      <mfrac numalign="left">
+                                        <mstyle scriptlevel="0">
+                                          <msup><mn>7</mn><mn>2</mn></msup>
+                                        </mstyle>
+                                        <mstyle scriptlevel="0">
+                                          <mn>2</mn><mo>+</mo><mo mathvariant="bold">...</mo>
+                                        </mstyle>
+                                      </mfrac>
+                                    </mrow>
+                                 </mstyle>
+                               </mfrac>
+                             </mrow>
+                          </mstyle>
+                        </mfrac>
+                      </mrow>
+                   </mstyle>
+                 </mfrac>      
+               </mrow> 
+            </mstyle> 
+         </mfrac>  
+      </mrow>
+    </math>
+  </button>
+</div>
+
+<p>
+For more information about MathML in Mozilla, see the
+<a href="http://www.mozilla.org/projects/mathml/">MathML Project Page</a>.
+There are links to more samples,
+<a href="http://www.mozilla.org/projects/mathml/screenshots/">screenshots</a>
+and instructions on how to 
+<a href="http://www.mozilla.org/projects/mathml/fonts/">download fonts</a> for various platforms. These fonts
+are <i>required</i> to view other examples beyond the basic constructions
+illustrated here.
+</p>
+
+<div class="background"/>
+<math xmlns="&mathml;" display="block">
+<mrow>
+  <msub>
+    <mi>Z</mi>
+    <mi>&alpha;</mi>
+  </msub>
+  <mrow>
+    <mo>(</mo>
+    <mi>f</mi>
+    <mo>)</mo>
+  </mrow>
+  <mo>=</mo>
+
+  <mfrac>
+    <mn>1</mn>
+    <mrow>
+      <mn>2</mn>
+      <mi>i</mi>
+      <mo>&ThinSpace;</mo>
+      <mi>cos</mi>
+      <mo>(</mo>
+      <mfrac>
+        <mrow>
+          <mi>&alpha;</mi>
+          <mi>&pi;</mi>
+        </mrow>
+        <mn>2</mn>
+      </mfrac>
+      <mo>)</mo>
+    </mrow>
+  </mfrac>
+
+  <mrow>
+    <msub>
+      <mo>&int;</mo>
+      <mi>C</mi>
+    </msub>
+    <mfrac>
+      <mrow>
+        <mi>f</mi>
+        <mo stretchy='false'>(</mo>
+        <mi>i</mi>
+        <mi>z</mi>
+        <mo stretchy='false'>)</mo>
+        <msup>
+          <mrow>
+            <mo>(</mo>
+            <mo>-</mo>
+            <mi>z</mi>
+            <mo>)</mo>
+          </mrow>
+          <mi>&alpha;</mi>
+        </msup>
+      </mrow>
+      <mrow>
+        <msup>
+          <mi>e</mi>
+          <mrow>
+            <mn>2</mn>
+            <mi>&pi;</mi>
+            <mi>z</mi>
+          </mrow>
+        </msup>
+        <mo>-</mo>
+        <mn>1</mn>
+      </mrow>
+    </mfrac>
+  </mrow>
+  <mi>d</mi>
+  <mi>z</mi>
+</mrow>
+</math>
+
+</body>
+</html>

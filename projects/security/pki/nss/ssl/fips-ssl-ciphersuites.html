@@ -1,0 +1,263 @@
+<?php
+
+$html_title = 'FIPS SSL CipherSuites';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>FIPS SSL CipherSuites</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Main technical contact: 
+<A HREF="mailto:nelson@bolyard.com?subject=FIPS SSL CipherSuites">Nelson Bolyard</A></FONT></i><BR>
+</center>
+<p>This document was originally written by Frank Hecker and Nelson Bolyard in November 1999. 
+Netscape browsers, beginning with Communicator 4.71, and later versions all used these FIPS 
+CipherSuites as described here. NSS 2.7.1 was the first version of NSS to use these CipherSuites. 
+NSS 3.0 (the first version released on Mozilla) and later versions also used these CipherSuites.
+  
+<h3>
+Introduction</h3>
+Netscape was an early participant in FIPS 140-1 validation, at a time when
+the SSL 3.0 protocol specification [<a href="#ssl3">SSL3</a>] had been
+finalized and broadly implemented, but the TLS 1.0 protocol specification
+[<a href="#tls">TLS</a>] (also known as SSL 3.1) was still in early draft form and 
+some way from being completed. Netscape therefore implemented FIPS 140-1 capabilities
+within the framework of the SSL 3.0 protocol.
+<p>In the course of validation NIST expressed concerns about the details
+of the SSL 3.0 protocol, and in particular about the SSL 3.0 key derivation
+algorithm and the particular manner in which it used a non-FIPS algorithm
+(MD5). NIST's concerns were the SSL 3.0 protocol specification itself, not 
+with any one implementation of SSL 3.0, and could only be addressed by changing 
+the SSL 3.0 protocol specification itself.
+<p> The IETF TLS working group was already using SSL version number 3.1 in the draft
+specification of TLS 1.0, and NIST was satisfied that the key derivation function
+in TLS was acceptable.  NIST has published the list of approved TLS CipherSuites in table 3 of 
+<a href="http://csrc.nist.gov/publications/nistpubs/800-52/SP800-52.pdf">NIST Special Publication 800-52</a>.
+But in 1999 the TLS specification draft was not yet final, and products could not be
+made or sold that claimed to be conformant with the TLS 1.0 specification because it
+was unfinished.
+<p> Netscape therefore chose to address NIST's concerns by creating two new SSL 3.0
+ciphersuites.  These new "FIPS SSL" CipherSuites used FIPS-approved algorithms (DES 
+3DES and SHA-1), and also modified the behavior of the SSL3 protocol to incorporate 
+the changes suggested by NIST.  They made SSL 3.0 behave more like TLS 1.0.  Those 
+changes are described in detail below.
+<p> Today, the specification of IETF TLS 1.0 has been finalized, and many new 
+stronger AES CipherSuites exist that are approved for FIPS use.  Therefore, the 
+"FIPS SSL" CipherSuites described in this paper are now obsolete, and should no 
+longer be used.  NSS continues to support them ONLY for backwards compatiblity with
+old pre-TLS servers that supported them.  
+<p> Today, those who wish to use FIPS 140 compliant TLS cipher suites should configure
+their SSL/TLS software to disable SSL2 and SSL 3.0 and enable only TLS 1.0 (SSL 3.1),
+and to disable any CipherSuites not found in this list:
+<ul>
+<li><tt>TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA</tt></li>
+<li><tt>TLS_DHE_DSS_WITH_AES_128_CBC_SHA</tt></li>
+<li><tt>TLS_DHE_DSS_WITH_AES_256_CBC_SHA</tt></li>
+<li><tt>TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA</tt></li>
+<li><tt>TLS_DHE_RSA_WITH_AES_128_CBC_SHA</tt></li>
+<li><tt>TLS_DHE_RSA_WITH_AES_256_CBC_SHA</tt></li>
+<li><tt>TLS_RSA_WITH_3DES_EDE_CBC_SHA</tt></li>
+<li><tt>TLS_RSA_WITH_AES_128_CBC_SHA</tt></li>
+<li><tt>TLS_RSA_WITH_AES_256_CBC_SHA</tt></li>
+<li><tt>TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA</tt></li>
+<li><tt>TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA</tt></li>
+<li><tt>TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA</tt></li>
+<li><tt>TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA</tt></li>
+<li><tt>TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA</tt></li>
+<li><tt>TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA</tt></li>
+<li><tt>TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA</tt></li>
+<li><tt>TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA</tt></li>
+<li><tt>TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA</tt></li>
+<li><tt>TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA</tt></li>
+<li><tt>TLS_ECDH_RSA_WITH_AES_128_CBC_SHA</tt></li>
+<li><tt>TLS_ECDH_RSA_WITH_AES_256_CBC_SHA</tt></li>
+</ul>
+
+<h3>
+FIPS SSL CipherSuites (OBSOLETE)</h3>
+The two added FIPS SSL CipherSuites are designated
+<ul>
+<li>
+<tt>SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA</tt> and</li>
+
+<li>
+<tt>SSL_RSA_FIPS_WITH_DES_CBC_SHA</tt>.</li>
+</ul>
+When negotiated as part of a TLS 1.0 (SSL 3.1) session, these two CipherSuites
+are entirely identical (except for the ciphersuite number) to the TLS 1.0
+CipherSuites
+<ul>
+<li>
+<tt>TLS_RSA_WITH_3DES_EDE_CBC_SHA</tt> and</li>
+
+<li>
+<tt>TLS_RSA_WITH_DES_CBC_SHA</tt></li>
+</ul>
+respectively as defined in the TLS 1.0 specification.
+<p>When negotiated as part of an SSL 3.0 session, these two CipherSuites
+are identical to the SSL 3.0 CipherSuites
+<ul>
+<li>
+<tt>SSL_RSA_WITH_3DES_EDE_CBC_SHA</tt> and</li>
+
+<li>
+<tt>SSL_RSA_WITH_DES_CBC_SHA</tt></li>
+</ul>
+respectively as defined in the SSL 3.0 specification, except for the following
+differences:
+<p>When either of the above FIPS SSL CipherSuites is negotiated as part
+of an SSL 3.0 session, the derivation of the master secret from the pre-master
+secret, and the derivation of the "key block" from the master secret, are
+not done according to the SSL 3.0 specification, but rather are done according
+to the TLS 1.0 specification.
+<p>Specifically, the derivation of the master_secret from the pre_master_secret
+and the ServerHello.random and ClientHello.random values is not done according
+to section 6.1 of the SSL 3.0 specification. Rather, it is done according
+to the specification in section 8.1 of the TLS 1.0 specification (RFC 2246),
+which incorporates the PRF function, defined in section 5 of RFC 2246,
+which in turn incorporates the HMAC function, defined in RFC 2104 [<a href="#hmac">HMAC</a>].
+<p>Likewise, for the FIPS SSL CipherSuites the "key block" is not derived
+as specified in section 6.2.2 of the SSL 3.0 specification. Instead it
+is derived as specified in section 6.3 of RFC 2246, which incorporates
+the the PRF function, defined in section 5 of RFC 2246, which in turn incorporates
+the HMAC function, defined in RFC 2104.
+<p>Those are the only differences between the FIPS SSL CipherSuites and
+the corresponding non-FIPS SSL 3.0 CipherSuites, when negotiated in an
+SSL 3.0 session.&nbsp; In an SSL 3.0 session, all other computations are
+done exactly as specified in the SSL 3.0 specification. More specifically:
+<ul>
+<li>
+Version {3,0} is used, not {3,1}.</li>
+
+<li>
+Padding of block ciphers is done according to the SSL 3.0 specification,
+and not according to TLS 1.0.</li>
+
+<li>
+Record layer MACs are computed according to the SSL 3.0 specification,
+and not according to TLS 1.0.</li>
+
+<li>
+All alerts remain the same as in SSL 3.0, not as in TLS 1.0.</li>
+
+<li>
+RSA public- and private-key encrypted values are encoded as in SSL 3.0,
+not as in TLS 1.0.</li>
+
+<li>
+DSA signatures (i.e., in client authentication) are encoded as in SSL 3.0,
+not as in TLS 1.0.</li>
+
+<li>
+The "finished" handshake messages are computed as in SSL 3.0, not as TLS
+1.0.</li>
+
+<li>
+The no_certificates response to a certificate request is done as in SSL
+3.0 (with an alert), not as in TLS 1.0 (with an empty certificates message).</li>
+</ul>
+The two new FIPS SSL CipherSuites are not designated as exportable. (Neither
+were the two old RSA_WITH_*DES CipherSuites.) Hence, the additional steps
+defined in section 6.3 of RFC 2246 for exportable encryption algorithms,
+which derive "final" write keys from the key_block, do not apply to the
+new FIPS SSL CipherSuites. (Neither did they apply to the old RSA_WITH_*DES
+suites.)
+<p>Here are the definitions of the two new CipherSuites as they would appear
+in Appendix C of the SSL 3.0 specification:
+<br>&nbsp;
+
+<table BORDER=1 CELLSPACING=2 CELLPADDING=2>
+<tr>
+<td><B>CipherSuite</B></td>
+
+<td><B>Is Exportable</B></td>
+
+<td><B>Key Exchange</B></td>
+
+<td><B>Cipher</B></td>
+
+<td><B>Hash</B></td>
+</tr>
+
+<tr ALIGN=LEFT>
+<td><FONT SIZE=-2>SSL_RSA_FIPS_WITH_DES_CBC_SHA</FONT></td>
+
+<td ALIGN=CENTER><FONT SIZE=-2>(no)</FONT></td>
+
+<td ALIGN=CENTER><FONT SIZE=-2>RSA</FONT></td>
+
+<td><FONT SIZE=-2>DES_CBC</FONT></td>
+
+<td ALIGN=CENTER><FONT SIZE=-2>SHA</FONT></td>
+</tr>
+
+<tr ALIGN=LEFT>
+<td><FONT SIZE=-2>SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA</FONT></td>
+
+<td ALIGN=CENTER><FONT SIZE=-2>(no)</FONT></td>
+
+<td ALIGN=CENTER><FONT SIZE=-2>RSA</FONT></td>
+
+<td><FONT SIZE=-2>3DES_EDE_CBC</FONT></td>
+
+<td ALIGN=CENTER><FONT SIZE=-2>SHA</FONT></td>
+</tr>
+</table>
+
+
+<h3>
+FIPS SSL CipherSuite Numbers (OBSOLETE)</h3>
+Netscape's initial implementation of the FIPS SSL CipherSuites used code
+numbers in the space reserved for "local" algorithms, since these were
+thought to be of use only "locally" to certain specific U.S. government
+customers. The values of those CipherSuite codes were:
+<pre>&nbsp;&nbsp;&nbsp; CipherSuite SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA = { 0xFF,0xE0 };
+&nbsp;&nbsp;&nbsp; CipherSuite SSL_RSA_FIPS_WITH_DES_CBC_SHA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = { 0xFF,0xE1 };</pre>
+However, since Netscape has published the specification of these CipherSuites,
+to promote interoperability Netscape has chosen to use the following values
+from the "public" CipherSuite space, and has updated its implementation
+accordingly:
+<pre>&nbsp;&nbsp;&nbsp; CipherSuite SSL_RSA_FIPS_WITH_DES_CBC_SHA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = { 0xFE,0xFE };
+&nbsp;&nbsp;&nbsp; CipherSuite SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA = { 0xFE,0xFF };</pre>
+
+<h3>
+References</h3>
+
+<dt>
+<a NAME="ssl3"></a>[SSL3]</dt>
+
+<dd>
+A. Frier, P. Karlton, and P. Kocher, "The SSL Protocol, Version 3.0", Netscape
+Communications Corp., November 18, 1996, &lt;URL:<a href="http://home.netscape.com/eng/ssl3/draft302.txt">http://home.netscape.com/eng/ssl3/draft302.txt</a>></dd>
+
+<br>&nbsp;
+<dt>
+<a NAME="tls"></a>[TLS]</dt>
+
+<dd>
+T. Dierks and C. Allen, "The TLS Protocol, Version 1.0", RFC 2246, January
+1999, &lt;URL:<a href="ftp://ftp.ietf.org/rfc/rfc2246.txt">ftp://ftp.ietf.org/rfc/rfc2246.txt</a>></dd>
+
+<br>&nbsp;
+<dt>
+<a NAME="hmac"></a>[HMAC]</dt>
+
+<dd>
+H. Krawczyk, M. Bellare, and R. Canetti, "HMAC: Keyed-Hashing for Message
+Authentication", RFC 2104, February 1997, &lt;URL:<a href="ftp://ftp.ietf.org/rfc/rfc2104.txt">ftp://ftp.ietf.org/rfc/rfc2104.txt</a>></dd>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

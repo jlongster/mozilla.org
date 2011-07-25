@@ -1,0 +1,1173 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> /* $Id$ */
+<b><a name="37">   37</a></b> 
+<b><a name="38">   38</a></b> #include "prinit.h"
+<b><a name="39">   39</a></b> #include "prerr.h"
+<b><a name="40">   40</a></b> #include "secerr.h"
+<b><a name="41">   41</a></b> 
+<b><a name="42">   42</a></b> #include "prtypes.h"
+<b><a name="43">   43</a></b> #include "blapi.h"
+<b><a name="44">   44</a></b> #include "rijndael.h"
+<b><a name="45">   45</a></b> 
+<b><a name="46">   46</a></b> /*
+<b><a name="47">   47</a></b>  * There are currently five ways to build this code, varying in performance
+<b><a name="48">   48</a></b>  * and code size.
+<b><a name="49">   49</a></b>  *
+<b><a name="50">   50</a></b>  * RIJNDAEL_INCLUDE_TABLES         Include all tables from rijndael32.tab
+<b><a name="51">   51</a></b>  * RIJNDAEL_GENERATE_TABLES        Generate tables on first 
+<b><a name="52">   52</a></b>  *                                 encryption/decryption, then store them;
+<b><a name="53">   53</a></b>  *                                 use the function gfm
+<b><a name="54">   54</a></b>  * RIJNDAEL_GENERATE_TABLES_MACRO  Same as above, but use macros to do
+<b><a name="55">   55</a></b>  *                                 the generation
+<b><a name="56">   56</a></b>  * RIJNDAEL_GENERATE_VALUES        Do not store tables, generate the table
+<b><a name="57">   57</a></b>  *                                 values "on-the-fly", using gfm
+<b><a name="58">   58</a></b>  * RIJNDAEL_GENERATE_VALUES_MACRO  Same as above, but use macros
+<b><a name="59">   59</a></b>  *
+<b><a name="60">   60</a></b>  * The default is RIJNDAEL_INCLUDE_TABLES.
+<b><a name="61">   61</a></b>  */
+<b><a name="62">   62</a></b> 
+<b><a name="63">   63</a></b> /*
+<b><a name="64">   64</a></b>  * When building RIJNDAEL_INCLUDE_TABLES, includes S**-1, Rcon, T[0..4], 
+<b><a name="65">   65</a></b>  *                                                 T**-1[0..4], IMXC[0..4]
+<b><a name="66">   66</a></b>  * When building anything else, includes S, S**-1, Rcon
+<b><a name="67">   67</a></b>  */
+<b><a name="68">   68</a></b> #include "rijndael32.tab"
+<b><a name="69">   69</a></b> 
+<b><a name="70">   70</a></b> #if defined(RIJNDAEL_INCLUDE_TABLES)
+<b><a name="71">   71</a></b> /*
+<b><a name="72">   72</a></b>  * RIJNDAEL_INCLUDE_TABLES
+<b><a name="73">   73</a></b>  */
+<b><a name="74">   74</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#74">T0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    _T0[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="75">   75</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#75">T1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    _T1[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="76">   76</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#76">T2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    _T2[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="77">   77</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#77">T3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    _T3[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="78">   78</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#78">TInv0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) _TInv0[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="79">   79</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#79">TInv1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) _TInv1[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="80">   80</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#80">TInv2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) _TInv2[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="81">   81</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#81">TInv3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) _TInv3[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="82">   82</a></b> #define <a href="#82">IMXC0</a>(b) _IMXC0[b]
+<b><a name="83">   83</a></b> #define <a href="#83">IMXC1</a>(b) _IMXC1[b]
+<b><a name="84">   84</a></b> #define <a href="#84">IMXC2</a>(b) _IMXC2[b]
+<b><a name="85">   85</a></b> #define <a href="#85">IMXC3</a>(b) _IMXC3[b]
+<b><a name="86">   86</a></b> /* The S-box can be recovered from the T-tables */
+<b><a name="87">   87</a></b> #ifdef IS_LITTLE_ENDIAN
+<b><a name="88">   88</a></b> #define <a href="#88">SBOX</a>(b)    ((PRUint8)_T3[b])
+<b><a name="89">   89</a></b> #else
+<b><a name="90">   90</a></b> #define <a href="#90">SBOX</a>(b)    ((PRUint8)_T1[b])
+<b><a name="91">   91</a></b> #endif
+<b><a name="92">   92</a></b> #define <a href="#92">SINV</a>(b) (_SInv[b])
+<b><a name="93">   93</a></b> 
+<b><a name="94">   94</a></b> #else /* not RIJNDAEL_INCLUDE_TABLES */
+<b><a name="95">   95</a></b> 
+<b><a name="96">   96</a></b> /*
+<b><a name="97">   97</a></b>  * Code for generating T-table values.
+<b><a name="98">   98</a></b>  */
+<b><a name="99">   99</a></b> 
+<b><a name="100">  100</a></b> #ifdef IS_LITTLE_ENDIAN
+<b><a name="101">  101</a></b> #define <a href="#101">WORD4</a>(b0, b1, b2, b3) \
+<b><a name="102">  102</a></b>     (((b3) &lt;&lt; 24) | ((b2) &lt;&lt; 16) | ((b1) &lt;&lt; 8) | (b0))
+<b><a name="103">  103</a></b> #else
+<b><a name="104">  104</a></b> #define <a href="#104">WORD4</a>(b0, b1, b2, b3) \
+<b><a name="105">  105</a></b>     (((b0) &lt;&lt; 24) | ((b1) &lt;&lt; 16) | ((b2) &lt;&lt; 8) | (b3))
+<b><a name="106">  106</a></b> #endif
+<b><a name="107">  107</a></b> 
+<b><a name="108">  108</a></b> /*
+<b><a name="109">  109</a></b>  * Define the S and S**-1 tables (both have been stored)
+<b><a name="110">  110</a></b>  */
+<b><a name="111">  111</a></b> #define <a href="#111">SBOX</a>(b)    (_S[b])
+<b><a name="112">  112</a></b> #define <a href="#112">SINV</a>(b) (_SInv[b])
+<b><a name="113">  113</a></b> 
+<b><a name="114">  114</a></b> /*
+<b><a name="115">  115</a></b>  * The function xtime, used for Galois field multiplication
+<b><a name="116">  116</a></b>  */
+<b><a name="117">  117</a></b> #define <a href="#117">XTIME</a>(a) \
+<b><a name="118">  118</a></b>     ((a &amp; 0x80) ? ((a &lt;&lt; 1) ^ 0x1b) : (a &lt;&lt; 1))
+<b><a name="119">  119</a></b> 
+<b><a name="120">  120</a></b> /* Choose GFM method (macros or function) */
+<b><a name="121">  121</a></b> #if defined(RIJNDAEL_GENERATE_TABLES_MACRO) ||  \
+<b><a name="122">  122</a></b>     defined(RIJNDAEL_GENERATE_VALUES_MACRO)
+<b><a name="123">  123</a></b> 
+<b><a name="124">  124</a></b> /*
+<b><a name="125">  125</a></b>  * Galois field GF(2**8) multipliers, in macro form
+<b><a name="126">  126</a></b>  */
+<b><a name="127">  127</a></b> #define <a href="#127">GFM01</a>(a) \
+<b><a name="128">  128</a></b>     (a)                                 /* a * 01 = a, the identity */
+<b><a name="129">  129</a></b> #define <a href="#129">GFM02</a>(a) \
+<b><a name="130">  130</a></b>     (<a href="../freebl/rijndael.c.dep.html#XTIME">XTIME</a>(a) &amp; 0xff)                   /* a * 02 = xtime(a) */
+<b><a name="131">  131</a></b> #define <a href="#131">GFM04</a>(a) \
+<b><a name="132">  132</a></b>     (<a href="../freebl/rijndael.c.dep.html#GFM02">GFM02</a></a>(<a href="../freebl/rijndael.c.dep.html#GFM02">GFM02</a></a>(a)))                   /* a * 04 = xtime**2(a) */
+<b><a name="133">  133</a></b> #define <a href="#133">GFM08</a>(a) \
+<b><a name="134">  134</a></b>     (<a href="../freebl/rijndael.c.dep.html#GFM02">GFM02</a></a>(<a href="../freebl/rijndael.c.dep.html#GFM04">GFM04</a>(a)))                   /* a * 08 = xtime**3(a) */
+<b><a name="135">  135</a></b> #define <a href="#135">GFM03</a>(a) \
+<b><a name="136">  136</a></b>     (<a href="../freebl/rijndael.c.dep.html#GFM01">GFM01</a></a>(a) ^ <a href="../freebl/rijndael.c.dep.html#GFM02">GFM02</a></a>(a))               /* a * 03 = a * (01 + 02) */
+<b><a name="137">  137</a></b> #define <a href="#137">GFM09</a>(a) \
+<b><a name="138">  138</a></b>     (<a href="../freebl/rijndael.c.dep.html#GFM01">GFM01</a></a>(a) ^ <a href="../freebl/rijndael.c.dep.html#GFM08">GFM08</a>(a))               /* a * 09 = a * (01 + 08) */
+<b><a name="139">  139</a></b> #define <a href="#139">GFM0B</a>(a) \
+<b><a name="140">  140</a></b>     (<a href="../freebl/rijndael.c.dep.html#GFM01">GFM01</a></a>(a) ^ <a href="../freebl/rijndael.c.dep.html#GFM02">GFM02</a></a>(a) ^ <a href="../freebl/rijndael.c.dep.html#GFM08">GFM08</a>(a))    /* a * 0B = a * (01 + 02 + 08) */
+<b><a name="141">  141</a></b> #define <a href="#141">GFM0D</a>(a) \
+<b><a name="142">  142</a></b>     (<a href="../freebl/rijndael.c.dep.html#GFM01">GFM01</a></a>(a) ^ <a href="../freebl/rijndael.c.dep.html#GFM04">GFM04</a>(a) ^ <a href="../freebl/rijndael.c.dep.html#GFM08">GFM08</a>(a))    /* a * 0D = a * (01 + 04 + 08) */
+<b><a name="143">  143</a></b> #define <a href="#143">GFM0E</a>(a) \
+<b><a name="144">  144</a></b>     (<a href="../freebl/rijndael.c.dep.html#GFM02">GFM02</a></a>(a) ^ <a href="../freebl/rijndael.c.dep.html#GFM04">GFM04</a>(a) ^ <a href="../freebl/rijndael.c.dep.html#GFM08">GFM08</a>(a))    /* a * 0E = a * (02 + 04 + 08) */
+<b><a name="145">  145</a></b> 
+<b><a name="146">  146</a></b> #else  /* RIJNDAEL_GENERATE_TABLES or RIJNDAEL_GENERATE_VALUES */
+<b><a name="147">  147</a></b> 
+<b><a name="148">  148</a></b> /* GF_MULTIPLY
+<b><a name="149">  149</a></b>  *
+<b><a name="150">  150</a></b>  * multiply two bytes represented in GF(2**8), mod (x**4 + 1)
+<b><a name="151">  151</a></b>  */
+<b><a name="152">  152</a></b> PRUint8 gfm(PRUint8 a, PRUint8 b)
+<b><a name="153">  153</a></b> {
+<b><a name="154">  154</a></b>     PRUint8 <a href="../freebl/mpi/mpi-test.c.dep.html#res">res</a> = 0;
+<b><a name="155">  155</a></b>     while (b &gt; 0) {
+<b><a name="156">  156</a></b>         <a href="../freebl/mpi/mpi-test.c.dep.html#res">res</a> = (b &amp; 0x01) ? <a href="../freebl/mpi/mpi-test.c.dep.html#res">res</a> ^ a : <a href="../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="157">  157</a></b>         a = <a href="../freebl/rijndael.c.dep.html#XTIME">XTIME</a>(a);
+<b><a name="158">  158</a></b>         b &gt;&gt;= 1;
+<b><a name="159">  159</a></b>     }
+<b><a name="160">  160</a></b>     return <a href="../freebl/mpi/mpi-test.c.dep.html#res">res</a>;
+<b><a name="161">  161</a></b> }
+<b><a name="162">  162</a></b> 
+<b><a name="163">  163</a></b> #define <a href="#163">GFM01</a>(a) \
+<b><a name="164">  164</a></b>     (a)                                 /* a * 01 = a, the identity */
+<b><a name="165">  165</a></b> #define <a href="#165">GFM02</a>(a) \
+<b><a name="166">  166</a></b>     (<a href="../freebl/rijndael.c.dep.html#XTIME">XTIME</a>(a) &amp; 0xff)                   /* a * 02 = xtime(a) */
+<b><a name="167">  167</a></b> #define <a href="#167">GFM03</a>(a) \
+<b><a name="168">  168</a></b>     (gfm(a, 0x03))                      /* a * 03 */
+<b><a name="169">  169</a></b> #define <a href="#169">GFM09</a>(a) \
+<b><a name="170">  170</a></b>     (gfm(a, 0x09))                      /* a * 09 */
+<b><a name="171">  171</a></b> #define <a href="#171">GFM0B</a>(a) \
+<b><a name="172">  172</a></b>     (gfm(a, 0x0B))                      /* a * 0B */
+<b><a name="173">  173</a></b> #define <a href="#173">GFM0D</a>(a) \
+<b><a name="174">  174</a></b>     (gfm(a, 0x0D))                      /* a * 0D */
+<b><a name="175">  175</a></b> #define <a href="#175">GFM0E</a>(a) \
+<b><a name="176">  176</a></b>     (gfm(a, 0x0E))                      /* a * 0E */
+<b><a name="177">  177</a></b> 
+<b><a name="178">  178</a></b> #endif /* choosing GFM function */
+<b><a name="179">  179</a></b> 
+<b><a name="180">  180</a></b> /*
+<b><a name="181">  181</a></b>  * The T-tables
+<b><a name="182">  182</a></b>  */
+<b><a name="183">  183</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#183">G_T0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="184">  184</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM02">GFM02</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM01">GFM01</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM01">GFM01</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM03">GFM03</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)) ) )
+<b><a name="185">  185</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#185">G_T1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="186">  186</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM03">GFM03</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM02">GFM02</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM01">GFM01</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM01">GFM01</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)) ) )
+<b><a name="187">  187</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#187">G_T2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="188">  188</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM01">GFM01</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM03">GFM03</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM02">GFM02</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM01">GFM01</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)) ) )
+<b><a name="189">  189</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#189">G_T3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="190">  190</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM01">GFM01</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM01">GFM01</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM03">GFM03</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM02">GFM02</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)) ) )
+<b><a name="191">  191</a></b> 
+<b><a name="192">  192</a></b> /*
+<b><a name="193">  193</a></b>  * The inverse T-tables
+<b><a name="194">  194</a></b>  */
+<b><a name="195">  195</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#195">G_TInv0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="196">  196</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0E">GFM0E</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM09">GFM09</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0D">GFM0D</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0B">GFM0B</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)) ) )
+<b><a name="197">  197</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#197">G_TInv1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="198">  198</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0B">GFM0B</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0E">GFM0E</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM09">GFM09</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0D">GFM0D</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)) ) )
+<b><a name="199">  199</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#199">G_TInv2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="200">  200</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0D">GFM0D</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0B">GFM0B</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0E">GFM0E</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM09">GFM09</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)) ) )
+<b><a name="201">  201</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#201">G_TInv3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="202">  202</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM09">GFM09</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0D">GFM0D</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0B">GFM0B</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0E">GFM0E</a></a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)) ) )
+<b><a name="203">  203</a></b> 
+<b><a name="204">  204</a></b> /*
+<b><a name="205">  205</a></b>  * The inverse mix column tables
+<b><a name="206">  206</a></b>  */
+<b><a name="207">  207</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#207">G_IMXC0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="208">  208</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0E">GFM0E</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM09">GFM09</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0D">GFM0D</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0B">GFM0B</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) ) )
+<b><a name="209">  209</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#209">G_IMXC1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="210">  210</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0B">GFM0B</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0E">GFM0E</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM09">GFM09</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0D">GFM0D</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) ) )
+<b><a name="211">  211</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#211">G_IMXC2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="212">  212</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0D">GFM0D</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0B">GFM0B</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0E">GFM0E</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM09">GFM09</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) ) )
+<b><a name="213">  213</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#213">G_IMXC3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) \
+<b><a name="214">  214</a></b>     ( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>( <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM09">GFM09</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0D">GFM0D</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0B">GFM0B</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>), <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#GFM0E">GFM0E</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) ) )
+<b><a name="215">  215</a></b> 
+<b><a name="216">  216</a></b> /* Now choose the T-table indexing method */
+<b><a name="217">  217</a></b> #if defined(RIJNDAEL_GENERATE_VALUES)
+<b><a name="218">  218</a></b> /* generate values for the tables with a function*/
+<b><a name="219">  219</a></b> stat<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>c PRU<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt32 gen_TInvX<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>(PRU<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt8 tx, PRU<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt8 <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="220">  220</a></b> {
+<b><a name="221">  221</a></b>     PRUint8 si01, si02, si03, si04, si08, si09, si0B, si0D, si0E;
+<b><a name="222">  222</a></b>     s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>01 = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>);
+<b><a name="223">  223</a></b>     si02 = <a href="../freebl/rijndael.c.dep.html#XTIME">XTIME</a>(si01);
+<b><a name="224">  224</a></b>     si04 = <a href="../freebl/rijndael.c.dep.html#XTIME">XTIME</a>(si02);
+<b><a name="225">  225</a></b>     si08 = <a href="../freebl/rijndael.c.dep.html#XTIME">XTIME</a>(si04);
+<b><a name="226">  226</a></b>     si03 = si02 ^ si01;
+<b><a name="227">  227</a></b>     si09 = si08 ^ si01;
+<b><a name="228">  228</a></b>     si0B = si08 ^ si03;
+<b><a name="229">  229</a></b>     si0D = si09 ^ si04;
+<b><a name="230">  230</a></b>     si0E = si08 ^ si04 ^ si02;
+<b><a name="231">  231</a></b>     switch (tx) {
+<b><a name="232">  232</a></b>     case 0:
+<b><a name="233">  233</a></b>         return <a href="../freebl/rijndael.c.dep.html#WORD4">WORD4</a></a>(si0E, si09, si0D, si0B);
+<b><a name="234">  234</a></b>     case 1:
+<b><a name="235">  235</a></b>         return <a href="../freebl/rijndael.c.dep.html#WORD4">WORD4</a></a>(si0B, si0E, si09, si0D);
+<b><a name="236">  236</a></b>     case 2:
+<b><a name="237">  237</a></b>         return <a href="../freebl/rijndael.c.dep.html#WORD4">WORD4</a></a>(si0D, si0B, si0E, si09);
+<b><a name="238">  238</a></b>     case 3:
+<b><a name="239">  239</a></b>         return <a href="../freebl/rijndael.c.dep.html#WORD4">WORD4</a></a>(si09, si0D, si0B, si0E);
+<b><a name="240">  240</a></b>     }
+<b><a name="241">  241</a></b>     return -1;
+<b><a name="242">  242</a></b> }
+<b><a name="243">  243</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#243">T0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_T0">G_T0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="244">  244</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#244">T1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_T1">G_T1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="245">  245</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#245">T2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_T2">G_T2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="246">  246</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#246">T3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_T3">G_T3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="247">  247</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#247">TInv0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) gen_TInvX<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>(0, <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="248">  248</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#248">TInv1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) gen_TInvX<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>(1, <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="249">  249</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#249">TInv2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) gen_TInvX<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>(2, <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="250">  250</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#250">TInv3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) gen_TInvX<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>(3, <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="251">  251</a></b> #define <a href="#251">IMXC0</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC0">G_IMXC0</a>(b)
+<b><a name="252">  252</a></b> #define <a href="#252">IMXC1</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC1">G_IMXC1</a>(b)
+<b><a name="253">  253</a></b> #define <a href="#253">IMXC2</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC2">G_IMXC2</a>(b)
+<b><a name="254">  254</a></b> #define <a href="#254">IMXC3</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC3">G_IMXC3</a>(b)
+<b><a name="255">  255</a></b> #elif defined(RIJNDAEL_GENERATE_VALUES_MACRO)
+<b><a name="256">  256</a></b> /* generate values for the tables with macros */
+<b><a name="257">  257</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#257">T0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_T0">G_T0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="258">  258</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#258">T1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_T1">G_T1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="259">  259</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#259">T2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_T2">G_T2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="260">  260</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#260">T3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_T3">G_T3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="261">  261</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#261">TInv0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_TInv0">G_TInv0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="262">  262</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#262">TInv1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_TInv1">G_TInv1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="263">  263</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#263">TInv2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_TInv2">G_TInv2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="264">  264</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#264">TInv3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#G_TInv3">G_TInv3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)
+<b><a name="265">  265</a></b> #define <a href="#265">IMXC0</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC0">G_IMXC0</a>(b)
+<b><a name="266">  266</a></b> #define <a href="#266">IMXC1</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC1">G_IMXC1</a>(b)
+<b><a name="267">  267</a></b> #define <a href="#267">IMXC2</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC2">G_IMXC2</a>(b)
+<b><a name="268">  268</a></b> #define <a href="#268">IMXC3</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC3">G_IMXC3</a>(b)
+<b><a name="269">  269</a></b> #else  /* RIJNDAEL_GENERATE_TABLES or RIJNDAEL_GENERATE_TABLES_MACRO */
+<b><a name="270">  270</a></b> /* Generate T and T**-1 table values and store, then index */
+<b><a name="271">  271</a></b> /* The inverse mix column tables are still generated */
+<b><a name="272">  272</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#272">T0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables">r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables</a>-&gt;T0[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="273">  273</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#273">T1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables">r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables</a>-&gt;T1[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="274">  274</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#274">T2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables">r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables</a>-&gt;T2[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="275">  275</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#275">T3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>)    <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables">r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables</a>-&gt;T3[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="276">  276</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#276">TInv0</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables">r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables</a>-&gt;TInv0[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="277">  277</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#277">TInv1</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables">r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables</a>-&gt;TInv1[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="278">  278</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#278">TInv2</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables">r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables</a>-&gt;TInv2[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="279">  279</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#279">TInv3</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables">r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndaelTables</a>-&gt;TInv3[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="280">  280</a></b> #define <a href="#280">IMXC0</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC0">G_IMXC0</a>(b)
+<b><a name="281">  281</a></b> #define <a href="#281">IMXC1</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC1">G_IMXC1</a>(b)
+<b><a name="282">  282</a></b> #define <a href="#282">IMXC2</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC2">G_IMXC2</a>(b)
+<b><a name="283">  283</a></b> #define <a href="#283">IMXC3</a>(b) <a href="../freebl/rijndael.c.dep.html#G_IMXC3">G_IMXC3</a>(b)
+<b><a name="284">  284</a></b> #endif /* choose T-table indexing method */
+<b><a name="285">  285</a></b> 
+<b><a name="286">  286</a></b> #endif /* not RIJNDAEL_INCLUDE_TABLES */
+<b><a name="287">  287</a></b> 
+<b><a name="288">  288</a></b> #if defined(RIJNDAEL_GENERATE_TABLES) ||  \
+<b><a name="289">  289</a></b>     defined(RIJNDAEL_GENERATE_TABLES_MACRO)
+<b><a name="290">  290</a></b> 
+<b><a name="291">  291</a></b> /* Code to generate and store the tables */
+<b><a name="292">  292</a></b> 
+<b><a name="293">  293</a></b> struct <a href="#293">rijndael_tables_str</a> {
+<b><a name="294">  294</a></b>     PRUint32 <a href="../freebl/rijndael.c.dep.html#T0">T0</a></a></a></a>[256];
+<b><a name="295">  295</a></b>     PRUint32 <a href="../freebl/rijndael.c.dep.html#T1">T1</a></a></a></a>[256];
+<b><a name="296">  296</a></b>     PRUint32 <a href="../freebl/rijndael.c.dep.html#T2">T2</a></a></a></a>[256];
+<b><a name="297">  297</a></b>     PRUint32 <a href="../freebl/rijndael.c.dep.html#T3">T3</a></a></a></a>[256];
+<b><a name="298">  298</a></b>     PRUint32 <a href="../freebl/rijndael.c.dep.html#TInv0">TInv0</a></a></a></a>[256];
+<b><a name="299">  299</a></b>     PRUint32 <a href="../freebl/rijndael.c.dep.html#TInv1">TInv1</a></a></a></a>[256];
+<b><a name="300">  300</a></b>     PRUint32 <a href="../freebl/rijndael.c.dep.html#TInv2">TInv2</a></a></a></a>[256];
+<b><a name="301">  301</a></b>     PRUint32 <a href="../freebl/rijndael.c.dep.html#TInv3">TInv3</a></a></a></a>[256];
+<b><a name="302">  302</a></b> };
+<b><a name="303">  303</a></b> 
+<b><a name="304">  304</a></b> static struct <a href="../freebl/rijndael.c.dep.html#rijndael_tables_str">rijndael_tables_str</a> *<a href="#304">rijndaelTables</a> = NULL;
+<b><a name="305">  305</a></b> static PRCallOnceType <a href="#305">coRTInit</a> = { 0, 0, 0 };
+<b><a name="306">  306</a></b> static PRStatus 
+<b><a name="307">  307</a></b> <a href="#307">init_rijndael_tables</a>(void)
+<b><a name="308">  308</a></b> {
+<b><a name="309">  309</a></b>     PRU<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt32 <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="310">  310</a></b>     PRUint8 si01, si02, si03, si04, si08, si09, si0B, si0D, si0E;
+<b><a name="311">  311</a></b>     struct <a href="../freebl/rijndael.c.dep.html#rijndael_tables_str">rijndael_tables_str</a> *rts;
+<b><a name="312">  312</a></b>     rts = (struct <a href="../freebl/rijndael.c.dep.html#rijndael_tables_str">rijndael_tables_str</a> *)
+<b><a name="313">  313</a></b>                    <a href="../util/secport.c.dep.html#PORT_Alloc">PORT_Alloc</a>(sizeof(struct <a href="../freebl/rijndael.c.dep.html#rijndael_tables_str">rijndael_tables_str</a>));
+<b><a name="314">  314</a></b>     if (!rts) return PR_FAILURE;
+<b><a name="315">  315</a></b>     for (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>=0; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>&lt;256; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++) {
+<b><a name="316">  316</a></b>         /* The forward values */
+<b><a name="317">  317</a></b>         s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>01 = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SBOX">SBOX</a></a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>);
+<b><a name="318">  318</a></b>         si02 = <a href="../freebl/rijndael.c.dep.html#XTIME">XTIME</a>(si01);
+<b><a name="319">  319</a></b>         si03 = si02 ^ si01;
+<b><a name="320">  320</a></b>         rts-&gt;<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#T0">T0</a></a></a></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>(s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>02, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>01, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>01, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>03);
+<b><a name="321">  321</a></b>         rts-&gt;<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#T1">T1</a></a></a></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>(s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>03, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>02, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>01, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>01);
+<b><a name="322">  322</a></b>         rts-&gt;<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#T2">T2</a></a></a></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>(s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>01, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>03, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>02, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>01);
+<b><a name="323">  323</a></b>         rts-&gt;<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#T3">T3</a></a></a></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>(s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>01, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>01, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>03, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>02);
+<b><a name="324">  324</a></b>         /* The inverse values */
+<b><a name="325">  325</a></b>         s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>01 = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SINV">SINV</a></a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>);
+<b><a name="326">  326</a></b>         si02 = <a href="../freebl/rijndael.c.dep.html#XTIME">XTIME</a>(si01);
+<b><a name="327">  327</a></b>         si04 = <a href="../freebl/rijndael.c.dep.html#XTIME">XTIME</a>(si02);
+<b><a name="328">  328</a></b>         si08 = <a href="../freebl/rijndael.c.dep.html#XTIME">XTIME</a>(si04);
+<b><a name="329">  329</a></b>         si03 = si02 ^ si01;
+<b><a name="330">  330</a></b>         si09 = si08 ^ si01;
+<b><a name="331">  331</a></b>         si0B = si08 ^ si03;
+<b><a name="332">  332</a></b>         si0D = si09 ^ si04;
+<b><a name="333">  333</a></b>         si0E = si08 ^ si04 ^ si02;
+<b><a name="334">  334</a></b>         rts-&gt;<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#TInv0">TInv0</a></a></a></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>(s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0E, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>09, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0D, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0B);
+<b><a name="335">  335</a></b>         rts-&gt;<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#TInv1">TInv1</a></a></a></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>(s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0B, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0E, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>09, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0D);
+<b><a name="336">  336</a></b>         rts-&gt;<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#TInv2">TInv2</a></a></a></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>(s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0D, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0B, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0E, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>09);
+<b><a name="337">  337</a></b>         rts-&gt;<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#TInv3">TInv3</a></a></a></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>] = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#WORD4">WORD4</a></a>(s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>09, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0D, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0B, s<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>0E);
+<b><a name="338">  338</a></b>     }
+<b><a name="339">  339</a></b>     /* wait until all the values are in to set */
+<b><a name="340">  340</a></b>     <a href="../freebl/rijndael.c.dep.html#rijndaelTables">rijndaelTables</a> = rts;
+<b><a name="341">  341</a></b>     return PR_SUCCESS;
+<b><a name="342">  342</a></b> }
+<b><a name="343">  343</a></b> 
+<b><a name="344">  344</a></b> #endif /* code to generate tables */
+<b><a name="345">  345</a></b> 
+<b><a name="346">  346</a></b> /**************************************************************************
+<b><a name="347">  347</a></b>  *
+<b><a name="348">  348</a></b>  * Stuff related to the Rijndael key schedule
+<b><a name="349">  349</a></b>  *
+<b><a name="350">  350</a></b>  *************************************************************************/
+<b><a name="351">  351</a></b> 
+<b><a name="352">  352</a></b> #define <a href="#352">SUBBYTE</a>(w) \
+<b><a name="353">  353</a></b>     ((<a href="../freebl/rijndael.c.dep.html#SBOX">SBOX</a></a></a>((w &gt;&gt; 24) &amp; 0xff) &lt;&lt; 24) | \
+<b><a name="354">  354</a></b>      (<a href="../freebl/rijndael.c.dep.html#SBOX">SBOX</a></a></a>((w &gt;&gt; 16) &amp; 0xff) &lt;&lt; 16) | \
+<b><a name="355">  355</a></b>      (<a href="../freebl/rijndael.c.dep.html#SBOX">SBOX</a></a></a>((w &gt;&gt;  8) &amp; 0xff) &lt;&lt;  8) | \
+<b><a name="356">  356</a></b>      (<a href="../freebl/rijndael.c.dep.html#SBOX">SBOX</a></a></a>((w      ) &amp; 0xff)         ))
+<b><a name="357">  357</a></b> 
+<b><a name="358">  358</a></b> #ifdef IS_LITTLE_ENDIAN
+<b><a name="359">  359</a></b> #define <a href="#359">ROTBYTE</a>(b) \
+<b><a name="360">  360</a></b>     ((b &gt;&gt; 8) | (b &lt;&lt; 24))
+<b><a name="361">  361</a></b> #else
+<b><a name="362">  362</a></b> #define <a href="#362">ROTBYTE</a>(b) \
+<b><a name="363">  363</a></b>     ((b &lt;&lt; 8) | (b &gt;&gt; 24))
+<b><a name="364">  364</a></b> #endif
+<b><a name="365">  365</a></b> 
+<b><a name="366">  366</a></b> /* rijndael_key_expansion7
+<b><a name="367">  367</a></b>  *
+<b><a name="368">  368</a></b>  * Generate the expanded key from the key input by the user.
+<b><a name="369">  369</a></b>  * XXX
+<b><a name="370">  370</a></b>  * Nk == 7 (224 key bits) is a weird case.  Since Nk &gt; 6, an added SubByte
+<b><a name="371">  371</a></b>  * transformation is done periodically.  The period is every 4 bytes, and
+<b><a name="372">  372</a></b>  * since 7%4 != 0 this happens at different times for each key word (unlike
+<b><a name="373">  373</a></b>  * Nk == 8 where it happens twice in every key word, in the same positions).
+<b><a name="374">  374</a></b>  * For now, I'm implementing this case "dumbly", w/o any unrolling.
+<b><a name="375">  375</a></b>  */
+<b><a name="376">  376</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="377">  377</a></b> <a href="#377">rijndael_key_expansion7</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, const unsigned char *key, unsigned int Nk)
+<b><a name="378">  378</a></b> {
+<b><a name="379">  379</a></b>     uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="380">  380</a></b>     PRUint32 *<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>;
+<b><a name="381">  381</a></b>     PRUint32 *pW;
+<b><a name="382">  382</a></b>     PRUint32 <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="383">  383</a></b>     <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = cx-&gt;expandedKey;
+<b><a name="384">  384</a></b>     /* 1.  the first Nk words contain the cipher key */
+<b><a name="385">  385</a></b>     memcpy(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>, key, Nk * 4);
+<b><a name="386">  386</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = Nk;
+<b><a name="387">  387</a></b>     /* 2.  loop until full expanded key is obtained */
+<b><a name="388">  388</a></b>     p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> + <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> - 1;
+<b><a name="389">  389</a></b>     for (; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; cx-&gt;Nb * (cx-&gt;Nr + 1); ++<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) {
+<b><a name="390">  390</a></b>         <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *pW++;
+<b><a name="391">  391</a></b>         <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> % Nk == 0)
+<b><a name="392">  392</a></b>             <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SUBBYTE">SUBBYTE</a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#ROTBYTE">ROTBYTE</a></a>(<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>)) ^ Rcon[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> / Nk - 1];
+<b><a name="393">  393</a></b>         else <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> % Nk == 4)
+<b><a name="394">  394</a></b>             <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = <a href="../freebl/rijndael.c.dep.html#SUBBYTE">SUBBYTE</a>(<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>);
+<b><a name="395">  395</a></b>         *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="396">  396</a></b>     }
+<b><a name="397">  397</a></b>     return SECSuccess;
+<b><a name="398">  398</a></b> }
+<b><a name="399">  399</a></b> 
+<b><a name="400">  400</a></b> /* rijndael_key_expansion
+<b><a name="401">  401</a></b>  *
+<b><a name="402">  402</a></b>  * Generate the expanded key from the key input by the user.
+<b><a name="403">  403</a></b>  */
+<b><a name="404">  404</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="405">  405</a></b> <a href="#405">rijndael_key_expansion</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, const unsigned char *key, unsigned int Nk)
+<b><a name="406">  406</a></b> {
+<b><a name="407">  407</a></b>     uns<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>gned <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>nt <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>;
+<b><a name="408">  408</a></b>     PRUint32 *<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>;
+<b><a name="409">  409</a></b>     PRUint32 *pW;
+<b><a name="410">  410</a></b>     PRUint32 <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="411">  411</a></b>     unsigned int round_key_words = cx-&gt;Nb * (cx-&gt;Nr + 1);
+<b><a name="412">  412</a></b>     if (Nk == 7)
+<b><a name="413">  413</a></b>         return <a href="../freebl/rijndael.c.dep.html#rijndael_key_expansion7">rijndael_key_expansion7</a>(cx, key, Nk);
+<b><a name="414">  414</a></b>     <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = cx-&gt;expandedKey;
+<b><a name="415">  415</a></b>     /* The first Nk words contain the input cipher key */
+<b><a name="416">  416</a></b>     memcpy(<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>, key, Nk * 4);
+<b><a name="417">  417</a></b>     <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> = Nk;
+<b><a name="418">  418</a></b>     p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> + <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> - 1;
+<b><a name="419">  419</a></b>     /* Loop over all sets of Nk words, except the last */
+<b><a name="420">  420</a></b>     wh<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>le (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; round_key_words - Nk) {
+<b><a name="421">  421</a></b>         <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *pW++;
+<b><a name="422">  422</a></b>         <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SUBBYTE">SUBBYTE</a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#ROTBYTE">ROTBYTE</a></a>(<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>)) ^ Rcon[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> / Nk - 1];
+<b><a name="423">  423</a></b>         *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++ - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="424">  424</a></b>         <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>++; *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++ - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="425">  425</a></b>         <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>++; *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++ - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="426">  426</a></b>         <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>++; *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++ - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="427">  427</a></b>         if (Nk == 4)
+<b><a name="428">  428</a></b>             continue;
+<b><a name="429">  429</a></b>         switch (Nk) {
+<b><a name="430">  430</a></b>         case 8: <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>++; <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SUBBYTE">SUBBYTE</a>(<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>); *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++ - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="431">  431</a></b>         case 7: <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>++; *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++ - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="432">  432</a></b>         case 6: <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>++; *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++ - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="433">  433</a></b>         case 5: <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>++; *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++ - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="434">  434</a></b>         }
+<b><a name="435">  435</a></b>     }
+<b><a name="436">  436</a></b>     /* Generate the last word */
+<b><a name="437">  437</a></b>     <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *pW++;
+<b><a name="438">  438</a></b>     <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = <a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#SUBBYTE">SUBBYTE</a>(<a href="../freebl/r<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>jndael.c.dep.html#ROTBYTE">ROTBYTE</a></a>(<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>)) ^ Rcon[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> / Nk - 1];
+<b><a name="439">  439</a></b>     *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>++ - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="440">  440</a></b>     /* There may be overflow here, if Nk % (Nb * (Nr + 1)) &gt; 0.  However,
+<b><a name="441">  441</a></b>      * since the above loop generated all but the last Nk key words, there
+<b><a name="442">  442</a></b>      * is no more need for the SubByte transformation.
+<b><a name="443">  443</a></b>      */
+<b><a name="444">  444</a></b>     if (Nk &lt; 8) {
+<b><a name="445">  445</a></b>         for (; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; round_key_words; ++<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) {
+<b><a name="446">  446</a></b>             <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *pW++; 
+<b><a name="447">  447</a></b>             *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="448">  448</a></b>         }
+<b><a name="449">  449</a></b>     } else {
+<b><a name="450">  450</a></b>         /* except in the case when Nk == 8.  Then one more SubByte may have
+<b><a name="451">  451</a></b>          * to be performed, at i % Nk == 4.
+<b><a name="452">  452</a></b>          */
+<b><a name="453">  453</a></b>         for (; <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> &lt; round_key_words; ++<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) {
+<b><a name="454">  454</a></b>             <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = *pW++;
+<b><a name="455">  455</a></b>             <a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>f (<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> % Nk == 4)
+<b><a name="456">  456</a></b>                 <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a> = <a href="../freebl/rijndael.c.dep.html#SUBBYTE">SUBBYTE</a>(<a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>);
+<b><a name="457">  457</a></b>             *p<a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a> = <a href="../freebl/sha512.c.dep.html#W">W</a><a href="../freebl/sha_fast.c.dep.html#W"><sup>[1]</sup></a>[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a> - Nk] ^ <a href="../softoken/pk11pars.h.dep.html#tmp">tmp</a><a href="../freebl/sha_fast.c.dep.html#tmp"><sup>[1]</sup></a></a>;
+<b><a name="458">  458</a></b>         }
+<b><a name="459">  459</a></b>     }
+<b><a name="460">  460</a></b>     return SECSuccess;
+<b><a name="461">  461</a></b> }
+<b><a name="462">  462</a></b> 
+<b><a name="463">  463</a></b> /* rijndael_invkey_expansion
+<b><a name="464">  464</a></b>  *
+<b><a name="465">  465</a></b>  * Generate the expanded key for the inverse cipher from the key input by 
+<b><a name="466">  466</a></b>  * the user.
+<b><a name="467">  467</a></b>  */
+<b><a name="468">  468</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="469">  469</a></b> <a href="#469">rijndael_invkey_expansion</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, const unsigned char *key, unsigned int Nk)
+<b><a name="470">  470</a></b> {
+<b><a name="471">  471</a></b>     unsigned int r;
+<b><a name="472">  472</a></b>     PRUint32 *roundkeyw;
+<b><a name="473">  473</a></b>     PRUint8 *b;
+<b><a name="474">  474</a></b>     int Nb = cx-&gt;Nb;
+<b><a name="475">  475</a></b>     /* begins like usual key expansion ... */
+<b><a name="476">  476</a></b>     if (<a href="../freebl/rijndael.c.dep.html#rijndael_key_expansion">rijndael_key_expansion</a>(cx, key, Nk) != SECSuccess)
+<b><a name="477">  477</a></b>         return SECFailure;
+<b><a name="478">  478</a></b>     /* ... but has the additional step of InvMixColumn,
+<b><a name="479">  479</a></b>      * excepting the first and last round keys.
+<b><a name="480">  480</a></b>      */
+<b><a name="481">  481</a></b>     roundkeyw = cx-&gt;expandedKey + cx-&gt;Nb;
+<b><a name="482">  482</a></b>     for (r=1; r&lt;cx-&gt;Nr; ++r) {
+<b><a name="483">  483</a></b>         /* each key word, roundkeyw, represents a column in the key
+<b><a name="484">  484</a></b>          * matrix.  Each column is multiplied by the InvMixColumn matrix.
+<b><a name="485">  485</a></b>          *   [ 0E 0B 0D 09 ]   [ b0 ]
+<b><a name="486">  486</a></b>          *   [ 09 0E 0B 0D ] * [ b1 ]
+<b><a name="487">  487</a></b>          *   [ 0D 09 0E 0B ]   [ b2 ]
+<b><a name="488">  488</a></b>          *   [ 0B 0D 09 0E ]   [ b3 ]
+<b><a name="489">  489</a></b>          */
+<b><a name="490">  490</a></b>         b = (PRUint8 *)roundkeyw;
+<b><a name="491">  491</a></b>         *roundkeyw++ = <a href="../freebl/rijndael.c.dep.html#IMXC0">IMXC0</a></a></a></a>(b[0]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC1">IMXC1</a></a></a></a>(b[1]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC2">IMXC2</a></a></a></a>(b[2]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC3">IMXC3</a></a></a></a>(b[3]);
+<b><a name="492">  492</a></b>         b = (PRUint8 *)roundkeyw;
+<b><a name="493">  493</a></b>         *roundkeyw++ = <a href="../freebl/rijndael.c.dep.html#IMXC0">IMXC0</a></a></a></a>(b[0]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC1">IMXC1</a></a></a></a>(b[1]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC2">IMXC2</a></a></a></a>(b[2]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC3">IMXC3</a></a></a></a>(b[3]);
+<b><a name="494">  494</a></b>         b = (PRUint8 *)roundkeyw;
+<b><a name="495">  495</a></b>         *roundkeyw++ = <a href="../freebl/rijndael.c.dep.html#IMXC0">IMXC0</a></a></a></a>(b[0]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC1">IMXC1</a></a></a></a>(b[1]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC2">IMXC2</a></a></a></a>(b[2]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC3">IMXC3</a></a></a></a>(b[3]);
+<b><a name="496">  496</a></b>         b = (PRUint8 *)roundkeyw;
+<b><a name="497">  497</a></b>         *roundkeyw++ = <a href="../freebl/rijndael.c.dep.html#IMXC0">IMXC0</a></a></a></a>(b[0]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC1">IMXC1</a></a></a></a>(b[1]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC2">IMXC2</a></a></a></a>(b[2]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC3">IMXC3</a></a></a></a>(b[3]);
+<b><a name="498">  498</a></b>         if (Nb &lt;= 4)
+<b><a name="499">  499</a></b>             continue;
+<b><a name="500">  500</a></b>         switch (Nb) {
+<b><a name="501">  501</a></b>         case 8: b = (PRUint8 *)roundkeyw;
+<b><a name="502">  502</a></b>                 *roundkeyw++ = <a href="../freebl/rijndael.c.dep.html#IMXC0">IMXC0</a></a></a></a>(b[0]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC1">IMXC1</a></a></a></a>(b[1]) ^ 
+<b><a name="503">  503</a></b>                                <a href="../freebl/rijndael.c.dep.html#IMXC2">IMXC2</a></a></a></a>(b[2]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC3">IMXC3</a></a></a></a>(b[3]);
+<b><a name="504">  504</a></b>         case 7: b = (PRUint8 *)roundkeyw;
+<b><a name="505">  505</a></b>                 *roundkeyw++ = <a href="../freebl/rijndael.c.dep.html#IMXC0">IMXC0</a></a></a></a>(b[0]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC1">IMXC1</a></a></a></a>(b[1]) ^ 
+<b><a name="506">  506</a></b>                                <a href="../freebl/rijndael.c.dep.html#IMXC2">IMXC2</a></a></a></a>(b[2]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC3">IMXC3</a></a></a></a>(b[3]);
+<b><a name="507">  507</a></b>         case 6: b = (PRUint8 *)roundkeyw;
+<b><a name="508">  508</a></b>                 *roundkeyw++ = <a href="../freebl/rijndael.c.dep.html#IMXC0">IMXC0</a></a></a></a>(b[0]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC1">IMXC1</a></a></a></a>(b[1]) ^ 
+<b><a name="509">  509</a></b>                                <a href="../freebl/rijndael.c.dep.html#IMXC2">IMXC2</a></a></a></a>(b[2]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC3">IMXC3</a></a></a></a>(b[3]);
+<b><a name="510">  510</a></b>         case 5: b = (PRUint8 *)roundkeyw;
+<b><a name="511">  511</a></b>                 *roundkeyw++ = <a href="../freebl/rijndael.c.dep.html#IMXC0">IMXC0</a></a></a></a>(b[0]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC1">IMXC1</a></a></a></a>(b[1]) ^ 
+<b><a name="512">  512</a></b>                                <a href="../freebl/rijndael.c.dep.html#IMXC2">IMXC2</a></a></a></a>(b[2]) ^ <a href="../freebl/rijndael.c.dep.html#IMXC3">IMXC3</a></a></a></a>(b[3]);
+<b><a name="513">  513</a></b>         }
+<b><a name="514">  514</a></b>     }
+<b><a name="515">  515</a></b>     return SECSuccess;
+<b><a name="516">  516</a></b> }
+<b><a name="517">  517</a></b> /**************************************************************************
+<b><a name="518">  518</a></b>  *
+<b><a name="519">  519</a></b>  * Stuff related to Rijndael encryption/decryption, optimized for
+<b><a name="520">  520</a></b>  * a 128-bit blocksize.
+<b><a name="521">  521</a></b>  *
+<b><a name="522">  522</a></b>  *************************************************************************/
+<b><a name="523">  523</a></b> 
+<b><a name="524">  524</a></b> #ifdef IS_LITTLE_ENDIAN
+<b><a name="525">  525</a></b> #define <a href="#525">BYTE0WORD</a>(w) ((w) &amp; 0x000000ff)
+<b><a name="526">  526</a></b> #define <a href="#526">BYTE1WORD</a>(w) ((w) &amp; 0x0000ff00)
+<b><a name="527">  527</a></b> #define <a href="#527">BYTE2WORD</a>(w) ((w) &amp; 0x00ff0000)
+<b><a name="528">  528</a></b> #define <a href="#528">BYTE3WORD</a>(w) ((w) &amp; 0xff000000)
+<b><a name="529">  529</a></b> #else
+<b><a name="530">  530</a></b> #define <a href="#530">BYTE0WORD</a>(w) ((w) &amp; 0xff000000)
+<b><a name="531">  531</a></b> #define <a href="#531">BYTE1WORD</a>(w) ((w) &amp; 0x00ff0000)
+<b><a name="532">  532</a></b> #define <a href="#532">BYTE2WORD</a>(w) ((w) &amp; 0x0000ff00)
+<b><a name="533">  533</a></b> #define <a href="#533">BYTE3WORD</a>(w) ((w) &amp; 0x000000ff)
+<b><a name="534">  534</a></b> #endif
+<b><a name="535">  535</a></b> 
+<b><a name="536">  536</a></b> typedef union {
+<b><a name="537">  537</a></b>     PRUint32 w[4];
+<b><a name="538">  538</a></b>     PRUint8  b[16];
+<b><a name="539">  539</a></b> } <a href="#539">rijndael_state</a>;
+<b><a name="540">  540</a></b> 
+<b><a name="541">  541</a></b> #define <a href="#541">COLUMN_0</a>(state) state.w[0]
+<b><a name="542">  542</a></b> #define <a href="#542">COLUMN_1</a>(state) state.w[1]
+<b><a name="543">  543</a></b> #define <a href="#543">COLUMN_2</a>(state) state.w[2]
+<b><a name="544">  544</a></b> #define <a href="#544">COLUMN_3</a>(state) state.w[3]
+<b><a name="545">  545</a></b> 
+<b><a name="546">  546</a></b> #def<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>ne <a href="#546">STATE_BYTE</a>(<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>) state.b[<a href="../softoken/pk11pars.h.dep.html#i">i</a></a></a>]
+<b><a name="547">  547</a></b> 
+<b><a name="548">  548</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="549">  549</a></b> <a href="#549">rijndael_encryptBlock128</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, 
+<b><a name="550">  550</a></b>                          unsigned char *output,
+<b><a name="551">  551</a></b>                          const unsigned char *input)
+<b><a name="552">  552</a></b> {
+<b><a name="553">  553</a></b>     unsigned int r;
+<b><a name="554">  554</a></b>     PRUint32 *roundkeyw;
+<b><a name="555">  555</a></b>     <a href="../freebl/rijndael.c.dep.html#rijndael_state">rijndael_state</a> state;
+<b><a name="556">  556</a></b>     PRUint32 <a href="../freebl/mknewpc2.c.dep.html#C0">C0</a>, C1, C2, C3;
+<b><a name="557">  557</a></b> #if defined(_X86_)
+<b><a name="558">  558</a></b> #define <a href="#558">pIn</a> input
+<b><a name="559">  559</a></b> #define <a href="#559">pOut</a> output
+<b><a name="560">  560</a></b> #else
+<b><a name="561">  561</a></b>     unsigned char *<a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a>, *<a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>;
+<b><a name="562">  562</a></b>     PRUint32 <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>[4], outBuf[4];
+<b><a name="563">  563</a></b> 
+<b><a name="564">  564</a></b>     if ((ptrdiff_t)input &amp; 0x3) {
+<b><a name="565">  565</a></b>         memcpy(<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>, input, sizeof <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>);
+<b><a name="566">  566</a></b>         <a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a> = (unsigned char *)<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>;
+<b><a name="567">  567</a></b>     } else {
+<b><a name="568">  568</a></b>         <a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a> = (unsigned char *)input;
+<b><a name="569">  569</a></b>     }
+<b><a name="570">  570</a></b>     if ((ptrdiff_t)output &amp; 0x3) {
+<b><a name="571">  571</a></b>         <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a> = (unsigned char *)outBuf;
+<b><a name="572">  572</a></b>     } else {
+<b><a name="573">  573</a></b>         <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a> = (unsigned char *)output;
+<b><a name="574">  574</a></b>     }
+<b><a name="575">  575</a></b> #endif
+<b><a name="576">  576</a></b>     roundkeyw = cx-&gt;expandedKey;
+<b><a name="577">  577</a></b>     /* Step 1: Add Round Key 0 to initial state */
+<b><a name="578">  578</a></b>     <a href="../freebl/rijndael.c.dep.html#COLUMN_0">COLUMN_0</a>(state) = *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a>     )) ^ *roundkeyw++;
+<b><a name="579">  579</a></b>     <a href="../freebl/rijndael.c.dep.html#COLUMN_1">COLUMN_1</a>(state) = *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a> + 4 )) ^ *roundkeyw++;
+<b><a name="580">  580</a></b>     <a href="../freebl/rijndael.c.dep.html#COLUMN_2">COLUMN_2</a>(state) = *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a> + 8 )) ^ *roundkeyw++;
+<b><a name="581">  581</a></b>     <a href="../freebl/rijndael.c.dep.html#COLUMN_3">COLUMN_3</a>(state) = *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a> + 12)) ^ *roundkeyw++;
+<b><a name="582">  582</a></b>     /* Step 2: Loop over rounds [1..NR-1] */
+<b><a name="583">  583</a></b>     for (r=1; r&lt;cx-&gt;Nr; ++r) {
+<b><a name="584">  584</a></b>         /* Do ShiftRow, ByteSub, and MixColumn all at once */
+<b><a name="585">  585</a></b>         <a href="../freebl/mknewpc2.c.dep.html#C0">C0</a> = <a href="../freebl/rijndael.c.dep.html#T0">T0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(0))  ^
+<b><a name="586">  586</a></b>              <a href="../freebl/rijndael.c.dep.html#T1">T1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(5))  ^
+<b><a name="587">  587</a></b>              <a href="../freebl/rijndael.c.dep.html#T2">T2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(10)) ^
+<b><a name="588">  588</a></b>              <a href="../freebl/rijndael.c.dep.html#T3">T3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(15));
+<b><a name="589">  589</a></b>         C1 = <a href="../freebl/rijndael.c.dep.html#T0">T0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4))  ^
+<b><a name="590">  590</a></b>              <a href="../freebl/rijndael.c.dep.html#T1">T1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(9))  ^
+<b><a name="591">  591</a></b>              <a href="../freebl/rijndael.c.dep.html#T2">T2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(14)) ^
+<b><a name="592">  592</a></b>              <a href="../freebl/rijndael.c.dep.html#T3">T3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(3));
+<b><a name="593">  593</a></b>         C2 = <a href="../freebl/rijndael.c.dep.html#T0">T0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(8))  ^
+<b><a name="594">  594</a></b>              <a href="../freebl/rijndael.c.dep.html#T1">T1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(13)) ^
+<b><a name="595">  595</a></b>              <a href="../freebl/rijndael.c.dep.html#T2">T2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(2))  ^
+<b><a name="596">  596</a></b>              <a href="../freebl/rijndael.c.dep.html#T3">T3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(7));
+<b><a name="597">  597</a></b>         C3 = <a href="../freebl/rijndael.c.dep.html#T0">T0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(12)) ^
+<b><a name="598">  598</a></b>              <a href="../freebl/rijndael.c.dep.html#T1">T1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(1))  ^
+<b><a name="599">  599</a></b>              <a href="../freebl/rijndael.c.dep.html#T2">T2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(6))  ^
+<b><a name="600">  600</a></b>              <a href="../freebl/rijndael.c.dep.html#T3">T3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(11));
+<b><a name="601">  601</a></b>         /* Round key addition */
+<b><a name="602">  602</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN_0">COLUMN_0</a>(state) = <a href="../freebl/mknewpc2.c.dep.html#C0">C0</a> ^ *roundkeyw++;
+<b><a name="603">  603</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN_1">COLUMN_1</a>(state) = C1 ^ *roundkeyw++;
+<b><a name="604">  604</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN_2">COLUMN_2</a>(state) = C2 ^ *roundkeyw++;
+<b><a name="605">  605</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN_3">COLUMN_3</a>(state) = C3 ^ *roundkeyw++;
+<b><a name="606">  606</a></b>     }
+<b><a name="607">  607</a></b>     /* Step 3: Do the last round */
+<b><a name="608">  608</a></b>     /* Final round does not employ MixColumn */
+<b><a name="609">  609</a></b>     <a href="../freebl/mknewpc2.c.dep.html#C0">C0</a> = ((<a href="../freebl/rijndael.c.dep.html#BYTE0WORD">BYTE0WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T2">T2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(0))))   |
+<b><a name="610">  610</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE1WORD">BYTE1WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T3">T3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(5))))   |
+<b><a name="611">  611</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE2WORD">BYTE2WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T0">T0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(10))))  |
+<b><a name="612">  612</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE3WORD">BYTE3WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T1">T1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(15)))))  ^
+<b><a name="613">  613</a></b>           *roundkeyw++;
+<b><a name="614">  614</a></b>     C1 = ((<a href="../freebl/rijndael.c.dep.html#BYTE0WORD">BYTE0WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T2">T2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4))))   |
+<b><a name="615">  615</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE1WORD">BYTE1WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T3">T3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(9))))   |
+<b><a name="616">  616</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE2WORD">BYTE2WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T0">T0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(14))))  |
+<b><a name="617">  617</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE3WORD">BYTE3WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T1">T1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(3)))))   ^
+<b><a name="618">  618</a></b>           *roundkeyw++;
+<b><a name="619">  619</a></b>     C2 = ((<a href="../freebl/rijndael.c.dep.html#BYTE0WORD">BYTE0WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T2">T2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(8))))   |
+<b><a name="620">  620</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE1WORD">BYTE1WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T3">T3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(13))))  |
+<b><a name="621">  621</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE2WORD">BYTE2WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T0">T0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(2))))   |
+<b><a name="622">  622</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE3WORD">BYTE3WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T1">T1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(7)))))   ^
+<b><a name="623">  623</a></b>           *roundkeyw++;
+<b><a name="624">  624</a></b>     C3 = ((<a href="../freebl/rijndael.c.dep.html#BYTE0WORD">BYTE0WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T2">T2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(12))))  |
+<b><a name="625">  625</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE1WORD">BYTE1WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T3">T3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(1))))   |
+<b><a name="626">  626</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE2WORD">BYTE2WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T0">T0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(6))))   |
+<b><a name="627">  627</a></b>           (<a href="../freebl/rijndael.c.dep.html#BYTE3WORD">BYTE3WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T1">T1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(11)))))  ^
+<b><a name="628">  628</a></b>           *roundkeyw++;
+<b><a name="629">  629</a></b>     *((PRUint32 *) <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>     )  = <a href="../freebl/mknewpc2.c.dep.html#C0">C0</a>;
+<b><a name="630">  630</a></b>     *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a> + 4))  = C1;
+<b><a name="631">  631</a></b>     *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a> + 8))  = C2;
+<b><a name="632">  632</a></b>     *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a> + 12)) = C3;
+<b><a name="633">  633</a></b> #if defined(_X86_)
+<b><a name="634">  634</a></b> #undef <a href="#634">pIn</a>
+<b><a name="635">  635</a></b> #undef <a href="#635">pOut</a>
+<b><a name="636">  636</a></b> #else
+<b><a name="637">  637</a></b>     if ((ptrdiff_t)output &amp; 0x3) {
+<b><a name="638">  638</a></b>         memcpy(output, outBuf, sizeof outBuf);
+<b><a name="639">  639</a></b>     }
+<b><a name="640">  640</a></b> #endif
+<b><a name="641">  641</a></b>     return SECSuccess;
+<b><a name="642">  642</a></b> }
+<b><a name="643">  643</a></b> 
+<b><a name="644">  644</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="645">  645</a></b> <a href="#645">rijndael_decryptBlock128</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, 
+<b><a name="646">  646</a></b>                          unsigned char *output,
+<b><a name="647">  647</a></b>                          const unsigned char *input)
+<b><a name="648">  648</a></b> {
+<b><a name="649">  649</a></b>     int r;
+<b><a name="650">  650</a></b>     PRUint32 *roundkeyw;
+<b><a name="651">  651</a></b>     <a href="../freebl/rijndael.c.dep.html#rijndael_state">rijndael_state</a> state;
+<b><a name="652">  652</a></b>     PRUint32 <a href="../freebl/mknewpc2.c.dep.html#C0">C0</a>, C1, C2, C3;
+<b><a name="653">  653</a></b> #if defined(_X86_)
+<b><a name="654">  654</a></b> #define <a href="#654">pIn</a> input
+<b><a name="655">  655</a></b> #define <a href="#655">pOut</a> output
+<b><a name="656">  656</a></b> #else
+<b><a name="657">  657</a></b>     unsigned char *<a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a>, *<a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>;
+<b><a name="658">  658</a></b>     PRUint32 <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>[4], outBuf[4];
+<b><a name="659">  659</a></b> 
+<b><a name="660">  660</a></b>     if ((ptrdiff_t)input &amp; 0x3) {
+<b><a name="661">  661</a></b>         memcpy(<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>, input, sizeof <a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>);
+<b><a name="662">  662</a></b>         <a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a> = (unsigned char *)<a href="../freebl/md5.c.dep.html#inBuf">inBuf</a>;
+<b><a name="663">  663</a></b>     } else {
+<b><a name="664">  664</a></b>         <a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a> = (unsigned char *)input;
+<b><a name="665">  665</a></b>     }
+<b><a name="666">  666</a></b>     if ((ptrdiff_t)output &amp; 0x3) {
+<b><a name="667">  667</a></b>         <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a> = (unsigned char *)outBuf;
+<b><a name="668">  668</a></b>     } else {
+<b><a name="669">  669</a></b>         <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a> = (unsigned char *)output;
+<b><a name="670">  670</a></b>     }
+<b><a name="671">  671</a></b> #endif
+<b><a name="672">  672</a></b>     roundkeyw = cx-&gt;expandedKey + cx-&gt;Nb * cx-&gt;Nr + 3;
+<b><a name="673">  673</a></b>     /* reverse the final key addition */
+<b><a name="674">  674</a></b>     <a href="../freebl/rijndael.c.dep.html#COLUMN_3">COLUMN_3</a>(state) = *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a> + 12)) ^ *roundkeyw--;
+<b><a name="675">  675</a></b>     <a href="../freebl/rijndael.c.dep.html#COLUMN_2">COLUMN_2</a>(state) = *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a> +  8)) ^ *roundkeyw--;
+<b><a name="676">  676</a></b>     <a href="../freebl/rijndael.c.dep.html#COLUMN_1">COLUMN_1</a>(state) = *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a> +  4)) ^ *roundkeyw--;
+<b><a name="677">  677</a></b>     <a href="../freebl/rijndael.c.dep.html#COLUMN_0">COLUMN_0</a>(state) = *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pIn">pIn</a></a></a></a>     )) ^ *roundkeyw--;
+<b><a name="678">  678</a></b>     /* Loop over rounds in reverse [NR..1] */
+<b><a name="679">  679</a></b>     for (r=cx-&gt;Nr; r&gt;1; --r) {
+<b><a name="680">  680</a></b>         /* Invert the (InvByteSub*InvMixColumn)(InvShiftRow(state)) */
+<b><a name="681">  681</a></b>         <a href="../freebl/mknewpc2.c.dep.html#C0">C0</a> = <a href="../freebl/rijndael.c.dep.html#TInv0">TInv0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(0))  ^
+<b><a name="682">  682</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv1">TInv1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(13)) ^
+<b><a name="683">  683</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv2">TInv2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(10)) ^
+<b><a name="684">  684</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv3">TInv3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(7));
+<b><a name="685">  685</a></b>         C1 = <a href="../freebl/rijndael.c.dep.html#TInv0">TInv0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4))  ^
+<b><a name="686">  686</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv1">TInv1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(1))  ^
+<b><a name="687">  687</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv2">TInv2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(14)) ^
+<b><a name="688">  688</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv3">TInv3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(11));
+<b><a name="689">  689</a></b>         C2 = <a href="../freebl/rijndael.c.dep.html#TInv0">TInv0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(8))  ^
+<b><a name="690">  690</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv1">TInv1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(5))  ^
+<b><a name="691">  691</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv2">TInv2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(2))  ^
+<b><a name="692">  692</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv3">TInv3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(15));
+<b><a name="693">  693</a></b>         C3 = <a href="../freebl/rijndael.c.dep.html#TInv0">TInv0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(12)) ^
+<b><a name="694">  694</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv1">TInv1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(9))  ^
+<b><a name="695">  695</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv2">TInv2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(6))  ^
+<b><a name="696">  696</a></b>              <a href="../freebl/rijndael.c.dep.html#TInv3">TInv3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(3));
+<b><a name="697">  697</a></b>         /* Invert the key addition step */
+<b><a name="698">  698</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN_3">COLUMN_3</a>(state) = C3 ^ *roundkeyw--;
+<b><a name="699">  699</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN_2">COLUMN_2</a>(state) = C2 ^ *roundkeyw--;
+<b><a name="700">  700</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN_1">COLUMN_1</a>(state) = C1 ^ *roundkeyw--;
+<b><a name="701">  701</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN_0">COLUMN_0</a>(state) = <a href="../freebl/mknewpc2.c.dep.html#C0">C0</a> ^ *roundkeyw--;
+<b><a name="702">  702</a></b>     }
+<b><a name="703">  703</a></b>     /* inverse sub */
+<b><a name="704">  704</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[ 0] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>( 0));
+<b><a name="705">  705</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[ 1] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(13));
+<b><a name="706">  706</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[ 2] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(10));
+<b><a name="707">  707</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[ 3] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>( 7));
+<b><a name="708">  708</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[ 4] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>( 4));
+<b><a name="709">  709</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[ 5] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>( 1));
+<b><a name="710">  710</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[ 6] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(14));
+<b><a name="711">  711</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[ 7] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(11));
+<b><a name="712">  712</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[ 8] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>( 8));
+<b><a name="713">  713</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[ 9] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>( 5));
+<b><a name="714">  714</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[10] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>( 2));
+<b><a name="715">  715</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[11] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(15));
+<b><a name="716">  716</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[12] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(12));
+<b><a name="717">  717</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[13] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>( 9));
+<b><a name="718">  718</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[14] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>( 6));
+<b><a name="719">  719</a></b>     <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>[15] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>( 3));
+<b><a name="720">  720</a></b>     /* final key addition */
+<b><a name="721">  721</a></b>     *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a> + 12)) ^= *roundkeyw--;
+<b><a name="722">  722</a></b>     *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a> +  8)) ^= *roundkeyw--;
+<b><a name="723">  723</a></b>     *((PRUint32 *)(<a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a> +  4)) ^= *roundkeyw--;
+<b><a name="724">  724</a></b>     *((PRUint32 *) <a href="../freebl/rijndael.c.dep.html#pOut">pOut</a></a></a></a>      ) ^= *roundkeyw--;
+<b><a name="725">  725</a></b> #if defined(_X86_)
+<b><a name="726">  726</a></b> #undef <a href="#726">pIn</a>
+<b><a name="727">  727</a></b> #undef <a href="#727">pOut</a>
+<b><a name="728">  728</a></b> #else
+<b><a name="729">  729</a></b>     if ((ptrdiff_t)output &amp; 0x3) {
+<b><a name="730">  730</a></b>         memcpy(output, outBuf, sizeof outBuf);
+<b><a name="731">  731</a></b>     }
+<b><a name="732">  732</a></b> #endif
+<b><a name="733">  733</a></b>     return SECSuccess;
+<b><a name="734">  734</a></b> }
+<b><a name="735">  735</a></b> 
+<b><a name="736">  736</a></b> /**************************************************************************
+<b><a name="737">  737</a></b>  *
+<b><a name="738">  738</a></b>  * Stuff related to general Rijndael encryption/decryption, for blocksizes
+<b><a name="739">  739</a></b>  * greater than 128 bits.
+<b><a name="740">  740</a></b>  *
+<b><a name="741">  741</a></b>  * XXX This code is currently untested!  So far, AES specs have only been
+<b><a name="742">  742</a></b>  *     released for 128 bit blocksizes.  This will be tested, but for now
+<b><a name="743">  743</a></b>  *     only the code above has been tested using known values.
+<b><a name="744">  744</a></b>  *
+<b><a name="745">  745</a></b>  *************************************************************************/
+<b><a name="746">  746</a></b> 
+<b><a name="747">  747</a></b> #define <a href="#747">COLUMN</a>(array, j) *((PRUint32 *)(array + j))
+<b><a name="748">  748</a></b> 
+<b><a name="749">  749</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="750">  750</a></b> <a href="#750">rijndael_encryptBlock</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, 
+<b><a name="751">  751</a></b>                       unsigned char *output,
+<b><a name="752">  752</a></b>                       const unsigned char *input)
+<b><a name="753">  753</a></b> {
+<b><a name="754">  754</a></b>     return SECFailure;
+<b><a name="755">  755</a></b> #ifdef rijndael_large_blocks_fixed
+<b><a name="756">  756</a></b>     unsigned int j, r, Nb;
+<b><a name="757">  757</a></b>     unsigned int c2=0, c3=0;
+<b><a name="758">  758</a></b>     PRUint32 *roundkeyw;
+<b><a name="759">  759</a></b>     PRUint8 clone[<a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MAX_STATE_SIZE">RIJNDAEL_MAX_STATE_SIZE</a>];
+<b><a name="760">  760</a></b>     Nb = cx-&gt;Nb;
+<b><a name="761">  761</a></b>     roundkeyw = cx-&gt;expandedKey;
+<b><a name="762">  762</a></b>     /* Step 1: Add Round Key 0 to initial state */
+<b><a name="763">  763</a></b>     for (j=0; j&lt;4*Nb; j+=4) {
+<b><a name="764">  764</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(clone, j) = <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(input, j) ^ *roundkeyw++;
+<b><a name="765">  765</a></b>     }
+<b><a name="766">  766</a></b>     /* Step 2: Loop over rounds [1..NR-1] */
+<b><a name="767">  767</a></b>     for (r=1; r&lt;cx-&gt;Nr; ++r) {
+<b><a name="768">  768</a></b>         for (j=0; j&lt;Nb; ++j) {
+<b><a name="769">  769</a></b>             <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(output, j) = <a href="../freebl/rijndael.c.dep.html#T0">T0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4*  j          )) ^
+<b><a name="770">  770</a></b>                                 <a href="../freebl/rijndael.c.dep.html#T1">T1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4*((j+ 1)%Nb)+1)) ^
+<b><a name="771">  771</a></b>                                 <a href="../freebl/rijndael.c.dep.html#T2">T2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4*((j+c2)%Nb)+2)) ^
+<b><a name="772">  772</a></b>                                 <a href="../freebl/rijndael.c.dep.html#T3">T3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4*((j+c3)%Nb)+3));
+<b><a name="773">  773</a></b>         }
+<b><a name="774">  774</a></b>         for (j=0; j&lt;4*Nb; j+=4) {
+<b><a name="775">  775</a></b>             <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(clone, j) = <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(output, j) ^ *roundkeyw++;
+<b><a name="776">  776</a></b>         }
+<b><a name="777">  777</a></b>     }
+<b><a name="778">  778</a></b>     /* Step 3: Do the last round */
+<b><a name="779">  779</a></b>     /* Final round does not employ MixColumn */
+<b><a name="780">  780</a></b>     for (j=0; j&lt;Nb; ++j) {
+<b><a name="781">  781</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(output, j) = ((<a href="../freebl/rijndael.c.dep.html#BYTE0WORD">BYTE0WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T2">T2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4* j         ))))  |
+<b><a name="782">  782</a></b>                              (<a href="../freebl/rijndael.c.dep.html#BYTE1WORD">BYTE1WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T3">T3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4*(j+ 1)%Nb)+1)))  |
+<b><a name="783">  783</a></b>                              (<a href="../freebl/rijndael.c.dep.html#BYTE2WORD">BYTE2WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T0">T0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4*(j+c2)%Nb)+2)))  |
+<b><a name="784">  784</a></b>                              (<a href="../freebl/rijndael.c.dep.html#BYTE3WORD">BYTE3WORD</a></a>(<a href="../freebl/rijndael.c.dep.html#T1">T1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4*(j+c3)%Nb)+3)))) ^
+<b><a name="785">  785</a></b>                              *roundkeyw++;
+<b><a name="786">  786</a></b>     }
+<b><a name="787">  787</a></b>     return SECSuccess;
+<b><a name="788">  788</a></b> #endif
+<b><a name="789">  789</a></b> }
+<b><a name="790">  790</a></b> 
+<b><a name="791">  791</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="792">  792</a></b> <a href="#792">rijndael_decryptBlock</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, 
+<b><a name="793">  793</a></b>                       unsigned char *output,
+<b><a name="794">  794</a></b>                       const unsigned char *input)
+<b><a name="795">  795</a></b> {
+<b><a name="796">  796</a></b>     return SECFailure;
+<b><a name="797">  797</a></b> #ifdef rijndael_large_blocks_fixed
+<b><a name="798">  798</a></b>     int j, r, Nb;
+<b><a name="799">  799</a></b>     int c2=0, c3=0;
+<b><a name="800">  800</a></b>     PRUint32 *roundkeyw;
+<b><a name="801">  801</a></b>     PRUint8 clone[<a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MAX_STATE_SIZE">RIJNDAEL_MAX_STATE_SIZE</a>];
+<b><a name="802">  802</a></b>     Nb = cx-&gt;Nb;
+<b><a name="803">  803</a></b>     roundkeyw = cx-&gt;expandedKey + cx-&gt;Nb * cx-&gt;Nr + 3;
+<b><a name="804">  804</a></b>     /* reverse key addition */
+<b><a name="805">  805</a></b>     for (j=4*Nb; j&gt;=0; j-=4) {
+<b><a name="806">  806</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(clone, j) = <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(input, j) ^ *roundkeyw--;
+<b><a name="807">  807</a></b>     }
+<b><a name="808">  808</a></b>     /* Loop over rounds in reverse [NR..1] */
+<b><a name="809">  809</a></b>     for (r=cx-&gt;Nr; r&gt;1; --r) {
+<b><a name="810">  810</a></b>         /* Invert the (InvByteSub*InvMixColumn)(InvShiftRow(state)) */
+<b><a name="811">  811</a></b>         for (j=0; j&lt;Nb; ++j) {
+<b><a name="812">  812</a></b>             <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(output, 4*j) = <a href="../freebl/rijndael.c.dep.html#TInv0">TInv0</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4* j            )) ^
+<b><a name="813">  813</a></b>                                   <a href="../freebl/rijndael.c.dep.html#TInv1">TInv1</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4*(j+Nb- 1)%Nb)+1) ^
+<b><a name="814">  814</a></b>                                   <a href="../freebl/rijndael.c.dep.html#TInv2">TInv2</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4*(j+Nb-c2)%Nb)+2) ^
+<b><a name="815">  815</a></b>                                   <a href="../freebl/rijndael.c.dep.html#TInv3">TInv3</a></a></a></a>(<a href="../freebl/rijndael.c.dep.html#STATE_BYTE">STATE_BYTE</a>(4*(j+Nb-c3)%Nb)+3);
+<b><a name="816">  816</a></b>         }
+<b><a name="817">  817</a></b>         /* Invert the key addition step */
+<b><a name="818">  818</a></b>         for (j=4*Nb; j&gt;=0; j-=4) {
+<b><a name="819">  819</a></b>             <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(clone, j) = <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(output, j) ^ *roundkeyw--;
+<b><a name="820">  820</a></b>         }
+<b><a name="821">  821</a></b>     }
+<b><a name="822">  822</a></b>     /* inverse sub */
+<b><a name="823">  823</a></b>     for (j=0; j&lt;4*Nb; ++j) {
+<b><a name="824">  824</a></b>         output[j] = <a href="../freebl/rijndael.c.dep.html#SINV">SINV</a></a>(clone[j]);
+<b><a name="825">  825</a></b>     }
+<b><a name="826">  826</a></b>     /* final key addition */
+<b><a name="827">  827</a></b>     for (j=4*Nb; j&gt;=0; j-=4) {
+<b><a name="828">  828</a></b>         <a href="../freebl/rijndael.c.dep.html#COLUMN">COLUMN</a>(output, j) ^= *roundkeyw--;
+<b><a name="829">  829</a></b>     }
+<b><a name="830">  830</a></b>     return SECSuccess;
+<b><a name="831">  831</a></b> #endif
+<b><a name="832">  832</a></b> }
+<b><a name="833">  833</a></b> 
+<b><a name="834">  834</a></b> /**************************************************************************
+<b><a name="835">  835</a></b>  *
+<b><a name="836">  836</a></b>  *  Rijndael modes of operation (ECB and CBC)
+<b><a name="837">  837</a></b>  *
+<b><a name="838">  838</a></b>  *************************************************************************/
+<b><a name="839">  839</a></b> 
+<b><a name="840">  840</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="841">  841</a></b> <a href="#841">rijndael_encryptECB</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, unsigned char *output,
+<b><a name="842">  842</a></b>                     unsigned int *outputLen, unsigned int maxOutputLen,
+<b><a name="843">  843</a></b>                     const unsigned char *input, unsigned int inputLen, 
+<b><a name="844">  844</a></b>                     unsigned int blocksize)
+<b><a name="845">  845</a></b> {
+<b><a name="846">  846</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv;
+<b><a name="847">  847</a></b>     <a href="../freebl/rijndael.h.dep.html#AESBlockFunc">AESBlockFunc</a> *encryptor;
+<b><a name="848">  848</a></b>     encryptor = (blocksize == <a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MIN_BLOCKSIZE">RIJNDAEL_MIN_BLOCKSIZE</a>) 
+<b><a name="849">  849</a></b>                                   ? &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_encryptBlock128">rijndael_encryptBlock128</a> 
+<b><a name="850">  850</a></b>                                   : &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_encryptBlock">rijndael_encryptBlock</a>;
+<b><a name="851">  851</a></b>     while (inputLen &gt; 0) {
+<b><a name="852">  852</a></b>         rv = (*encryptor)(cx, output, input);
+<b><a name="853">  853</a></b>         if (rv != SECSuccess)
+<b><a name="854">  854</a></b>             return rv;
+<b><a name="855">  855</a></b>         output += blocksize;
+<b><a name="856">  856</a></b>         input += blocksize;
+<b><a name="857">  857</a></b>         inputLen -= blocksize;
+<b><a name="858">  858</a></b>     }
+<b><a name="859">  859</a></b>     return SECSuccess;
+<b><a name="860">  860</a></b> }
+<b><a name="861">  861</a></b> 
+<b><a name="862">  862</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="863">  863</a></b> <a href="#863">rijndael_encryptCBC</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, unsigned char *output,
+<b><a name="864">  864</a></b>                     unsigned int *outputLen, unsigned int maxOutputLen,
+<b><a name="865">  865</a></b>                     const unsigned char *input, unsigned int inputLen, 
+<b><a name="866">  866</a></b>                     unsigned int blocksize)
+<b><a name="867">  867</a></b> {
+<b><a name="868">  868</a></b>     unsigned int j;
+<b><a name="869">  869</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv;
+<b><a name="870">  870</a></b>     <a href="../freebl/rijndael.h.dep.html#AESBlockFunc">AESBlockFunc</a> *encryptor;
+<b><a name="871">  871</a></b>     unsigned char *lastblock;
+<b><a name="872">  872</a></b>     unsigned char inblock[<a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MAX_STATE_SIZE">RIJNDAEL_MAX_STATE_SIZE</a> * 8];
+<b><a name="873">  873</a></b> 
+<b><a name="874">  874</a></b>     if (!inputLen)
+<b><a name="875">  875</a></b>         return SECSuccess;
+<b><a name="876">  876</a></b>     lastblock = cx-&gt;iv;
+<b><a name="877">  877</a></b>     encryptor = (blocksize == <a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MIN_BLOCKSIZE">RIJNDAEL_MIN_BLOCKSIZE</a>) 
+<b><a name="878">  878</a></b>                                   ? &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_encryptBlock128">rijndael_encryptBlock128</a> 
+<b><a name="879">  879</a></b>                                   : &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_encryptBlock">rijndael_encryptBlock</a>;
+<b><a name="880">  880</a></b>     while (inputLen &gt; 0) {
+<b><a name="881">  881</a></b>         /* XOR with the last block (IV if first block) */
+<b><a name="882">  882</a></b>         for (j=0; j&lt;blocksize; ++j)
+<b><a name="883">  883</a></b>             inblock[j] = input[j] ^ lastblock[j];
+<b><a name="884">  884</a></b>         /* encrypt */
+<b><a name="885">  885</a></b>         rv = (*encryptor)(cx, output, inblock);
+<b><a name="886">  886</a></b>         if (rv != SECSuccess)
+<b><a name="887">  887</a></b>             return rv;
+<b><a name="888">  888</a></b>         /* move to the next block */
+<b><a name="889">  889</a></b>         lastblock = output;
+<b><a name="890">  890</a></b>         output += blocksize;
+<b><a name="891">  891</a></b>         input += blocksize;
+<b><a name="892">  892</a></b>         inputLen -= blocksize;
+<b><a name="893">  893</a></b>     }
+<b><a name="894">  894</a></b>     memcpy(cx-&gt;iv, lastblock, blocksize);
+<b><a name="895">  895</a></b>     return SECSuccess;
+<b><a name="896">  896</a></b> }
+<b><a name="897">  897</a></b> 
+<b><a name="898">  898</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="899">  899</a></b> <a href="#899">rijndael_decryptECB</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, unsigned char *output,
+<b><a name="900">  900</a></b>                     unsigned int *outputLen, unsigned int maxOutputLen,
+<b><a name="901">  901</a></b>                     const unsigned char *input, unsigned int inputLen, 
+<b><a name="902">  902</a></b>                     unsigned int blocksize)
+<b><a name="903">  903</a></b> {
+<b><a name="904">  904</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv;
+<b><a name="905">  905</a></b>     <a href="../freebl/rijndael.h.dep.html#AESBlockFunc">AESBlockFunc</a> *decryptor;
+<b><a name="906">  906</a></b>     decryptor = (blocksize == <a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MIN_BLOCKSIZE">RIJNDAEL_MIN_BLOCKSIZE</a>) 
+<b><a name="907">  907</a></b>                                   ? &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_decryptBlock128">rijndael_decryptBlock128</a> 
+<b><a name="908">  908</a></b>                                   : &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_decryptBlock">rijndael_decryptBlock</a>;
+<b><a name="909">  909</a></b>     while (inputLen &gt; 0) {
+<b><a name="910">  910</a></b>         rv = (*decryptor)(cx, output, input);
+<b><a name="911">  911</a></b>         if (rv != SECSuccess)
+<b><a name="912">  912</a></b>             return rv;
+<b><a name="913">  913</a></b>         output += blocksize;
+<b><a name="914">  914</a></b>         input += blocksize;
+<b><a name="915">  915</a></b>         inputLen -= blocksize;
+<b><a name="916">  916</a></b>     }
+<b><a name="917">  917</a></b>     return SECSuccess;
+<b><a name="918">  918</a></b> }
+<b><a name="919">  919</a></b> 
+<b><a name="920">  920</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="921">  921</a></b> <a href="#921">rijndael_decryptCBC</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, unsigned char *output,
+<b><a name="922">  922</a></b>                     unsigned int *outputLen, unsigned int maxOutputLen,
+<b><a name="923">  923</a></b>                     const unsigned char *input, unsigned int inputLen, 
+<b><a name="924">  924</a></b>                     unsigned int blocksize)
+<b><a name="925">  925</a></b> {
+<b><a name="926">  926</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv;
+<b><a name="927">  927</a></b>     <a href="../freebl/rijndael.h.dep.html#AESBlockFunc">AESBlockFunc</a> *decryptor;
+<b><a name="928">  928</a></b>     const unsigned char *in;
+<b><a name="929">  929</a></b>     unsigned char *out;
+<b><a name="930">  930</a></b>     unsigned int j;
+<b><a name="931">  931</a></b>     unsigned char newIV[<a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MAX_BLOCKSIZE">RIJNDAEL_MAX_BLOCKSIZE</a>];
+<b><a name="932">  932</a></b> 
+<b><a name="933">  933</a></b>     if (!inputLen) 
+<b><a name="934">  934</a></b>         return SECSuccess;
+<b><a name="935">  935</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(output - input &gt;= 0 || input - output &gt;= (int)inputLen );
+<b><a name="936">  936</a></b>     decryptor = (blocksize == <a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MIN_BLOCKSIZE">RIJNDAEL_MIN_BLOCKSIZE</a>) 
+<b><a name="937">  937</a></b>                                   ? &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_decryptBlock128">rijndael_decryptBlock128</a> 
+<b><a name="938">  938</a></b>                                   : &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_decryptBlock">rijndael_decryptBlock</a>;
+<b><a name="939">  939</a></b>     in  = input  + (inputLen - blocksize);
+<b><a name="940">  940</a></b>     memcpy(newIV, in, blocksize);
+<b><a name="941">  941</a></b>     out = output + (inputLen - blocksize);
+<b><a name="942">  942</a></b>     while (inputLen &gt; blocksize) {
+<b><a name="943">  943</a></b>         rv = (*decryptor)(cx, out, in);
+<b><a name="944">  944</a></b>         if (rv != SECSuccess)
+<b><a name="945">  945</a></b>             return rv;
+<b><a name="946">  946</a></b>         for (j=0; j&lt;blocksize; ++j)
+<b><a name="947">  947</a></b>             out[j] ^= in[(int)(j - blocksize)];
+<b><a name="948">  948</a></b>         out -= blocksize;
+<b><a name="949">  949</a></b>         in -= blocksize;
+<b><a name="950">  950</a></b>         inputLen -= blocksize;
+<b><a name="951">  951</a></b>     }
+<b><a name="952">  952</a></b>     if (in == input) {
+<b><a name="953">  953</a></b>         rv = (*decryptor)(cx, out, in);
+<b><a name="954">  954</a></b>         if (rv != SECSuccess)
+<b><a name="955">  955</a></b>             return rv;
+<b><a name="956">  956</a></b>         for (j=0; j&lt;blocksize; ++j)
+<b><a name="957">  957</a></b>             out[j] ^= cx-&gt;iv[j];
+<b><a name="958">  958</a></b>     }
+<b><a name="959">  959</a></b>     memcpy(cx-&gt;iv, newIV, blocksize);
+<b><a name="960">  960</a></b>     return SECSuccess;
+<b><a name="961">  961</a></b> }
+<b><a name="962">  962</a></b> 
+<b><a name="963">  963</a></b> /************************************************************************
+<b><a name="964">  964</a></b>  *
+<b><a name="965">  965</a></b>  * BLAPI Interface functions
+<b><a name="966">  966</a></b>  *
+<b><a name="967">  967</a></b>  * The following functions implement the encryption routines defined in
+<b><a name="968">  968</a></b>  * BLAPI for the AES cipher, Rijndael.
+<b><a name="969">  969</a></b>  *
+<b><a name="970">  970</a></b>  ***********************************************************************/
+<b><a name="971">  971</a></b> 
+<b><a name="972">  972</a></b> <a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> * <a href="#972">AES_AllocateContext</a>(void)
+<b><a name="973">  973</a></b> {
+<b><a name="974">  974</a></b>     return <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a>);
+<b><a name="975">  975</a></b> }
+<b><a name="976">  976</a></b> 
+<b><a name="977">  977</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>   
+<b><a name="978">  978</a></b> <a href="#978">AES_InitContext</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, const unsigned char *key, unsigned int keysize, 
+<b><a name="979">  979</a></b>                 const unsigned char *iv, int mode, unsigned int encrypt,
+<b><a name="980">  980</a></b>                 unsigned int blocksize)
+<b><a name="981">  981</a></b> {
+<b><a name="982">  982</a></b>     unsigned int Nk;
+<b><a name="983">  983</a></b>     /* According to Rijndael AES Proposal, section 12.1, block and key
+<b><a name="984">  984</a></b>      * lengths between 128 and 256 bits are supported, as long as the
+<b><a name="985">  985</a></b>      * length in bytes is divisible by 4.
+<b><a name="986">  986</a></b>      */
+<b><a name="987">  987</a></b>     if (key == NULL || 
+<b><a name="988">  988</a></b>         keysize &lt; <a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MIN_BLOCKSIZE">RIJNDAEL_MIN_BLOCKSIZE</a>   || 
+<b><a name="989">  989</a></b>         keysize &gt; <a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MAX_BLOCKSIZE">RIJNDAEL_MAX_BLOCKSIZE</a>   || 
+<b><a name="990">  990</a></b>         keysize % 4 != 0 ||
+<b><a name="991">  991</a></b>         blocksize &lt; <a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MIN_BLOCKSIZE">RIJNDAEL_MIN_BLOCKSIZE</a> || 
+<b><a name="992">  992</a></b>         blocksize &gt; <a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MAX_BLOCKSIZE">RIJNDAEL_MAX_BLOCKSIZE</a> || 
+<b><a name="993">  993</a></b>         blocksize % 4 != 0) {
+<b><a name="994">  994</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="995">  995</a></b>         return SECFailure;
+<b><a name="996">  996</a></b>     }
+<b><a name="997">  997</a></b>     if (mode != <a href="../freebl/blapit.h.dep.html#NSS_AES">NSS_AES</a> &amp;&amp; mode != <a href="../freebl/blapit.h.dep.html#NSS_AES">NSS_AES</a>_CBC) {
+<b><a name="998">  998</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="999">  999</a></b>         return SECFailure;
+<b><a name="1000"> 1000</a></b>     }
+<b><a name="1001"> 1001</a></b>     if (mode == <a href="../freebl/blapit.h.dep.html#NSS_AES_CBC">NSS_AES_CBC</a> &amp;&amp; iv == NULL) {
+<b><a name="1002"> 1002</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="1003"> 1003</a></b>         return SECFailure;
+<b><a name="1004"> 1004</a></b>     }
+<b><a name="1005"> 1005</a></b>     if (!cx) {
+<b><a name="1006"> 1006</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="1007"> 1007</a></b>             return SECFailure;
+<b><a name="1008"> 1008</a></b>     }
+<b><a name="1009"> 1009</a></b>     /* Nb = (block size in bits) / 32 */
+<b><a name="1010"> 1010</a></b>     cx-&gt;Nb = blocksize / 4;
+<b><a name="1011"> 1011</a></b>     /* Nk = (key size in bits) / 32 */
+<b><a name="1012"> 1012</a></b>     Nk = keysize / 4;
+<b><a name="1013"> 1013</a></b>     /* Obtain number of rounds from "table" */
+<b><a name="1014"> 1014</a></b>     cx-&gt;Nr = <a href="../freebl/rijndael.h.dep.html#RIJNDAEL_NUM_ROUNDS">RIJNDAEL_NUM_ROUNDS</a>(Nk, cx-&gt;Nb);
+<b><a name="1015"> 1015</a></b>     /* copy in the iv, if neccessary */
+<b><a name="1016"> 1016</a></b>     if (mode == <a href="../freebl/blapit.h.dep.html#NSS_AES_CBC">NSS_AES_CBC</a>) {
+<b><a name="1017"> 1017</a></b>         memcpy(cx-&gt;iv, iv, blocksize);
+<b><a name="1018"> 1018</a></b>         cx-&gt;worker = (encrypt) ? &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_encryptCBC">rijndael_encryptCBC</a> : &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_decryptCBC">rijndael_decryptCBC</a>;
+<b><a name="1019"> 1019</a></b>     } else {
+<b><a name="1020"> 1020</a></b>         cx-&gt;worker = (encrypt) ? &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_encryptECB">rijndael_encryptECB</a> : &amp;<a href="../freebl/rijndael.c.dep.html#rijndael_decryptECB">rijndael_decryptECB</a>;
+<b><a name="1021"> 1021</a></b>     }
+<b><a name="1022"> 1022</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>((cx-&gt;Nb * (cx-&gt;Nr + 1)) &lt;= <a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MAX_EXP_KEY_SIZE">RIJNDAEL_MAX_EXP_KEY_SIZE</a>);
+<b><a name="1023"> 1023</a></b>     if ((cx-&gt;Nb * (cx-&gt;Nr + 1)) &gt; <a href="../freebl/rijndael.h.dep.html#RIJNDAEL_MAX_EXP_KEY_SIZE">RIJNDAEL_MAX_EXP_KEY_SIZE</a>) {
+<b><a name="1024"> 1024</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_LIBRARY_FAILURE);
+<b><a name="1025"> 1025</a></b>         goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="1026"> 1026</a></b>     }
+<b><a name="1027"> 1027</a></b>     /* Generate expanded key */
+<b><a name="1028"> 1028</a></b>     if (encrypt) {
+<b><a name="1029"> 1029</a></b>         if (<a href="../freebl/rijndael.c.dep.html#rijndael_key_expansion">rijndael_key_expansion</a>(cx, key, Nk) != SECSuccess)
+<b><a name="1030"> 1030</a></b>             goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="1031"> 1031</a></b>     } else {
+<b><a name="1032"> 1032</a></b>         if (<a href="../freebl/rijndael.c.dep.html#rijndael_invkey_expansion">rijndael_invkey_expansion</a>(cx, key, Nk) != SECSuccess)
+<b><a name="1033"> 1033</a></b>             goto <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>;
+<b><a name="1034"> 1034</a></b>     }
+<b><a name="1035"> 1035</a></b>     return SECSuccess;
+<b><a name="1036"> 1036</a></b> <a href="../freebl/mpi/montmulf.c.dep.html#cleanup">cleanup</a>:
+<b><a name="1037"> 1037</a></b>     return SECFailure;
+<b><a name="1038"> 1038</a></b> }
+<b><a name="1039"> 1039</a></b> 
+<b><a name="1040"> 1040</a></b> 
+<b><a name="1041"> 1041</a></b> /* AES_CreateContext
+<b><a name="1042"> 1042</a></b>  *
+<b><a name="1043"> 1043</a></b>  * create a new context for Rijndael operations
+<b><a name="1044"> 1044</a></b>  */
+<b><a name="1045"> 1045</a></b> <a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *
+<b><a name="1046"> 1046</a></b> <a href="#1046">AES_CreateContext</a>(const unsigned char *key, const unsigned char *iv, 
+<b><a name="1047"> 1047</a></b>                   int mode, int encrypt,
+<b><a name="1048"> 1048</a></b>                   unsigned int keysize, unsigned int blocksize)
+<b><a name="1049"> 1049</a></b> {
+<b><a name="1050"> 1050</a></b>     <a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx = <a href="../freebl/rijndael.c.dep.html#AES_AllocateContext">AES_AllocateContext</a>();
+<b><a name="1051"> 1051</a></b>     if (cx) {
+<b><a name="1052"> 1052</a></b>         <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = <a href="../freebl/rijndael.c.dep.html#AES_InitContext">AES_InitContext</a>(cx, key, keysize, iv, mode, encrypt,
+<b><a name="1053"> 1053</a></b>                                        blocksize);
+<b><a name="1054"> 1054</a></b>         if (rv != SECSuccess) {
+<b><a name="1055"> 1055</a></b>             <a href="../freebl/rijndael.c.dep.html#AES_DestroyContext">AES_DestroyContext</a>(cx, PR_TRUE);
+<b><a name="1056"> 1056</a></b>             cx = NULL;
+<b><a name="1057"> 1057</a></b>         }
+<b><a name="1058"> 1058</a></b>     }
+<b><a name="1059"> 1059</a></b>     return cx;
+<b><a name="1060"> 1060</a></b> }
+<b><a name="1061"> 1061</a></b> 
+<b><a name="1062"> 1062</a></b> /*
+<b><a name="1063"> 1063</a></b>  * AES_DestroyContext
+<b><a name="1064"> 1064</a></b>  * 
+<b><a name="1065"> 1065</a></b>  * Zero an AES cipher context.  If freeit is true, also free the pointer
+<b><a name="1066"> 1066</a></b>  * to the context.
+<b><a name="1067"> 1067</a></b>  */
+<b><a name="1068"> 1068</a></b> void 
+<b><a name="1069"> 1069</a></b> <a href="#1069">AES_DestroyContext</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, PRBool freeit)
+<b><a name="1070"> 1070</a></b> {
+<b><a name="1071"> 1071</a></b> /*  memset(cx, 0, sizeof *cx); */
+<b><a name="1072"> 1072</a></b>     if (freeit)
+<b><a name="1073"> 1073</a></b>         <a href="../util/secport.c.dep.html#PORT_Free">PORT_Free</a>(cx);
+<b><a name="1074"> 1074</a></b> }
+<b><a name="1075"> 1075</a></b> 
+<b><a name="1076"> 1076</a></b> /*
+<b><a name="1077"> 1077</a></b>  * AES_Encrypt
+<b><a name="1078"> 1078</a></b>  *
+<b><a name="1079"> 1079</a></b>  * Encrypt an arbitrary-length buffer.  The output buffer must already be
+<b><a name="1080"> 1080</a></b>  * allocated to at least inputLen.
+<b><a name="1081"> 1081</a></b>  */
+<b><a name="1082"> 1082</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="1083"> 1083</a></b> <a href="#1083">AES_Encrypt</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, unsigned char *output,
+<b><a name="1084"> 1084</a></b>             unsigned int *outputLen, unsigned int maxOutputLen,
+<b><a name="1085"> 1085</a></b>             const unsigned char *input, unsigned int inputLen)
+<b><a name="1086"> 1086</a></b> {
+<b><a name="1087"> 1087</a></b>     int blocksize;
+<b><a name="1088"> 1088</a></b>     /* Check args */
+<b><a name="1089"> 1089</a></b>     if (cx == NULL || output == NULL || input == NULL) {
+<b><a name="1090"> 1090</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="1091"> 1091</a></b>         return SECFailure;
+<b><a name="1092"> 1092</a></b>     }
+<b><a name="1093"> 1093</a></b>     blocksize = 4 * cx-&gt;Nb;
+<b><a name="1094"> 1094</a></b>     if (inputLen % blocksize != 0) {
+<b><a name="1095"> 1095</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INPUT_LEN);
+<b><a name="1096"> 1096</a></b>         return SECFailure;
+<b><a name="1097"> 1097</a></b>     }
+<b><a name="1098"> 1098</a></b>     if (maxOutputLen &lt; inputLen) {
+<b><a name="1099"> 1099</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_OUTPUT_LEN);
+<b><a name="1100"> 1100</a></b>         return SECFailure;
+<b><a name="1101"> 1101</a></b>     }
+<b><a name="1102"> 1102</a></b>     *outputLen = inputLen;
+<b><a name="1103"> 1103</a></b> #if defined(RIJNDAEL_GENERATE_TABLES) ||  \
+<b><a name="1104"> 1104</a></b>     defined(RIJNDAEL_GENERATE_TABLES_MACRO)
+<b><a name="1105"> 1105</a></b>     if (<a href="../freebl/rijndael.c.dep.html#rijndaelTables">rijndaelTables</a> == NULL) {
+<b><a name="1106"> 1106</a></b>         if (PR_CallOnce(&amp;<a href="../freebl/rijndael.c.dep.html#coRTInit">coRTInit</a>, <a href="../freebl/rijndael.c.dep.html#init_rijndael_tables">init_rijndael_tables</a>) 
+<b><a name="1107"> 1107</a></b>               != PR_SUCCESS) {
+<b><a name="1108"> 1108</a></b>             return PR_FAILURE;
+<b><a name="1109"> 1109</a></b>         }
+<b><a name="1110"> 1110</a></b>     }
+<b><a name="1111"> 1111</a></b> #endif
+<b><a name="1112"> 1112</a></b>     return (*cx-&gt;worker)(cx, output, outputLen, maxOutputLen,        
+<b><a name="1113"> 1113</a></b>                              input, inputLen, blocksize);
+<b><a name="1114"> 1114</a></b> }
+<b><a name="1115"> 1115</a></b> 
+<b><a name="1116"> 1116</a></b> /*
+<b><a name="1117"> 1117</a></b>  * AES_Decrypt
+<b><a name="1118"> 1118</a></b>  *
+<b><a name="1119"> 1119</a></b>  * Decrypt and arbitrary-length buffer.  The output buffer must already be
+<b><a name="1120"> 1120</a></b>  * allocated to at least inputLen.
+<b><a name="1121"> 1121</a></b>  */
+<b><a name="1122"> 1122</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="1123"> 1123</a></b> <a href="#1123">AES_Decrypt</a>(<a href="../freebl/blapit.h.dep.html#AESContext">AESContext</a> *cx, unsigned char *output,
+<b><a name="1124"> 1124</a></b>             unsigned int *outputLen, unsigned int maxOutputLen,
+<b><a name="1125"> 1125</a></b>             const unsigned char *input, unsigned int inputLen)
+<b><a name="1126"> 1126</a></b> {
+<b><a name="1127"> 1127</a></b>     int blocksize;
+<b><a name="1128"> 1128</a></b>     /* Check args */
+<b><a name="1129"> 1129</a></b>     if (cx == NULL || output == NULL || input == NULL) {
+<b><a name="1130"> 1130</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ARGS);
+<b><a name="1131"> 1131</a></b>         return SECFailure;
+<b><a name="1132"> 1132</a></b>     }
+<b><a name="1133"> 1133</a></b>     blocksize = 4 * cx-&gt;Nb;
+<b><a name="1134"> 1134</a></b>     if (inputLen % blocksize != 0) {
+<b><a name="1135"> 1135</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INPUT_LEN);
+<b><a name="1136"> 1136</a></b>         return SECFailure;
+<b><a name="1137"> 1137</a></b>     }
+<b><a name="1138"> 1138</a></b>     if (maxOutputLen &lt; inputLen) {
+<b><a name="1139"> 1139</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_OUTPUT_LEN);
+<b><a name="1140"> 1140</a></b>         return SECFailure;
+<b><a name="1141"> 1141</a></b>     }
+<b><a name="1142"> 1142</a></b>     *outputLen = inputLen;
+<b><a name="1143"> 1143</a></b> #if defined(RIJNDAEL_GENERATE_TABLES) ||  \
+<b><a name="1144"> 1144</a></b>     defined(RIJNDAEL_GENERATE_TABLES_MACRO)
+<b><a name="1145"> 1145</a></b>     if (<a href="../freebl/rijndael.c.dep.html#rijndaelTables">rijndaelTables</a> == NULL) {
+<b><a name="1146"> 1146</a></b>         if (PR_CallOnce(&amp;<a href="../freebl/rijndael.c.dep.html#coRTInit">coRTInit</a>, <a href="../freebl/rijndael.c.dep.html#init_rijndael_tables">init_rijndael_tables</a>) 
+<b><a name="1147"> 1147</a></b>               != PR_SUCCESS) {
+<b><a name="1148"> 1148</a></b>             return PR_FAILURE;
+<b><a name="1149"> 1149</a></b>         }
+<b><a name="1150"> 1150</a></b>     }
+<b><a name="1151"> 1151</a></b> #endif
+<b><a name="1152"> 1152</a></b>     return (*cx-&gt;worker)(cx, output, outputLen, maxOutputLen,        
+<b><a name="1153"> 1153</a></b>                              input, inputLen, blocksize);
+<b><a name="1154"> 1154</a></b> }
+<b><a name="1155"> 1155</a></b> 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

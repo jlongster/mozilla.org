@@ -1,0 +1,125 @@
+<?php
+
+$html_title = 'plugin-futures: tabbing integration';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_style = '
+<style type="text/css"> <!-- body { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 11px; background-color:#FFFFFF }
+h1 { font-size: 21px; font-weight: bold }
+pre { font-family: "Courier New", Courier, mono; font-size: 11px; margin-left: 40px; margin-top: 12px; margin-bottom: 12px; }
+p { margin-left: 20px; margin-right: 20px; margin-top: 6px; margin-bottom: 6px }
+--></style>
+
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+    <h1>Plug-In API Proposal: Tabbing Integration
+    </h1>
+    <p><a href="mailto:dmeketa@macromedia.com">Deneb Meketa</a><br>
+      <a href="mailto:msintov@macromedia.com">Michelle Sintov</a><br>
+      <a href="mailto:grandma@macromedia.com">Peter Grandmaison</a><br>
+      Macromedia</p>
+    <p><a href="mailto:aaronleventhal@moonset.net">Aaron Leventhal</a><br>
+      IBM</p>
+    <h2>Requirements for Keyboard Accessibility</h2>
+    <p>1. Tabbing into and out of plugins.<br>
+    </p>
+    <p>It is desirable to allow users to tab through HTML content, into plugins that
+      contain focusable elements, and out the other side of such plugins back into
+      either the surrounding HTML content, or to the browser's UI if there are no
+      additional focusable items in the surrounding HTML, or if the plugin is alone
+      in the browser window. In the current broken model, once a plugin has focus, a
+      keyboard-only user is stuck there.<br>
+    </p>
+    <p>2. Sharing of accelerator keys</p>
+    <p>When a plugin is active, it should have the first shot at most keystrokes.
+      However, if the plugin sees a keystroke it does not need, it should be able to
+      pass on the keystroke, so that it can bubble back up to the user agent. For
+      example, if the plugin does not use Alt+Left and Alt+Right these should find
+      their way up to the browser for back/forward navigation. Or, perhaps the user
+      has typed Alt by itself. On Windows and Linux, this should be forwarded to the
+      user agent so it can focus the menu bar, if the plugin doesn't already have its
+      own menu bar. In the current broken model, when a plugin has focus it swallows
+      all keystrokes.<br>
+    </p>
+    <h2>Two Different Keyboard Models for Plugins Today<br>
+    </h2>
+    <p>There are two different keyboard-handling modes for plugins.
+    </p>
+    <p>1. Focused mode, applicable on Windows, with a non-windowless plugin: the
+      plugin has its own HWND, and becomes focused when users click in it or tab into
+      it, and from then on receives keyboard events directly.
+    </p>
+    <p>2. Non-focused mode, applicable for windowless plugins, and all plugins on the
+      Mac: the plugin draws into a window maintained by the browser, and never has
+      focus from an OS point of view, and thus depends on the browser for keyboard
+      input.</p>
+    <p>I don't know what Unixen do, but I assume all cases on all OSes fall into one
+      of the two modes described above. I also assume that plugins and browsers will
+      always be able to determine which of these two modes they are in, based only on
+      platform and windowlessness.</p>
+    <h2>Proposed API Change - new keyPressEvent<br>
+    </h2>
+    <p>We propose to handle tabbing using the existing NPP_HandleEvent and
+      NPN_HandleEvent mechanisms, via the following new event: <em>keyPressEvent</em></p>
+    <p>The keyPressEvent will contain boolean event parameters indicating whether
+      alt, ctrl, shift or meta modifier keys were used, along with an unsigned 32 bit
+      integer representing key's <a href="http://www.w3.org/TR/2001/WD-DOM-Level-3-Events-20010410/events.html#Events-KeyEvent">
+        DOM_VK</a> key code, via event parameters<br>
+    </p>
+    <p>For modifier keys (alt, ctrl, shift, meta) alone, the event will be fired on
+      key up. For keys that involve a non-modifier key the event will be fired on key
+      down, to attain the appropriate leven of UI responsiveness.<br>
+    </p>
+    <p><br>
+    </p>
+    <p>How this helps with
+      <span style="TEXT-DECORATION: underline">tabbing
+into a plugin</span>:<br>
+    </p>
+    <p>When the browser wants to give the plugin focus and/or advance the focus
+      within the plugin, because a user is currently tabbing, it would forward a
+      keyPressEvent event to the plugin&nbsp; for tab or shift+tab.</p>
+    <p>If the plugin accepts the tab press, but does not already have the real OS
+      focus, it needs to give itself OS focus.<br>
+    </p>
+    <br>
+    <p>How this helps with
+      <span style="TEXT-DECORATION: underline">tabbing
+out of a plugin</span>:</p>
+    <p>When the plugin receives key down and up events for tab or shift+tab, either
+      via the new plugin events or from the OS, and it is already at the end of it's
+      tab order, it will send a keyPressEvent up to the browser.</p>
+    <br>
+    <p>How this helps pass
+      <span style="TEXT-DECORATION: underline">unused keystrokes</span>:</p>
+    <p>When the plugin receives a key press event, either from the browser firing
+      keyPressEvent in non-focused mode, or from the operating system, it will
+      analyze to see if it needs the keystroke. If it does not need the key, it must
+      send the key back to the browser via keyPressEvent.</p>
+    <p><br>
+    </p>
+    <p>Return codes for keyPressEvent:</p>
+    <p>0: browser or plugin does not understand keyPressEvent</p>
+    <p>1: keyPressEvent not used. The browse should never return this when it
+      receives a Tab or Shift+Tab, because it should always have a way of accepting
+      focus.</p>
+    <p>2: keyPressEvent accepted and used<br>
+      <br>
+    </p>
+    <p>The plugin and browser still need to handle getFocusEvent and loseFocusEvent
+      as they do now.whenever it received a tab key event that caused focus to pass
+      beyond the end of its list of focusable items.<br>
+    </p>
+    <br>
+  
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

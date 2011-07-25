@@ -1,0 +1,168 @@
+<?php
+
+$html_title = 'Component Security';
+$page_title = 'Component Security for Mozilla';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="DC.author" content="Mitch Stoltz">
+<meta name="DC.creator" content="Mitch Stoltz">
+<meta name="DC.contributor" content="Boris Zbarsky, Jesse Ruderman, J. Taylor">
+<meta name="DC.title" content="Component Security">
+<meta name="DC.subject" content="Component Security">
+<meta name="DC.date.created" content="2000-01-18T11:09:03+11:00" scheme="W3CDTF">
+<meta name="DC.date.modified" content="2006-09-08T09:54:03+11:00" scheme="W3CDTF">
+<link rel="section" href="#securitymodel" title="Security Model">
+<link rel="section" href="#implementation" title="Implementation">
+<link rel="section" href="#component" title="Component Security Analysis">
+<link rel="subsection" href="#dom" title="DOM">
+<link rel="subsection" href="#xul" title="XUL">
+<link rel="subsection" href="#rdf" title="RDF">
+<link rel="subsection" href="#xpconnect" title="XPConnect">
+<link rel="subsection" href="#netlib" title="Netlib and Necko">
+<link rel="section" href="#apis" title="APIs for Review">
+<link rel="glossary" href="terms.html" title="Terminology in Javascript Security">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<address class="author">Mitch Stoltz</address>
+
+<p>Hackers point out that it is vendors, not they, who are responsible
+for the gaping holes that permeate so many products. With companies releasing
+software as fast as possible, proper security often gets lost in the rush
+toward store shelves. 
+<q cite="http://www.usnews.com/usnews/culture/articles/990614/archive_001225.htm">As 
+complexity increases, the opportunity for vulnerability
+increases</q> says Steven Foote, a senior vice president at the Hurwitz Group,
+which analyzes strategic business applications. -- U.S. News, <a class="ex-ref" href="http://www.usnews.com/usnews/culture/articles/990614/archive_001225.htm">Can
+hackers be stopped?</a></p>
+
+<p>Mozilla will make increasing use of Internet technologies to implement
+the browser itself. This has many benefits for modularity, cross-platform
+development, and encouraging development by a wider range of people. However,
+it also makes the process of ensuring browser security more challenging
+because the lines distinguishing the trusted browser from the untrusted
+content it displays have become blurred.</p>
+
+<h2><a name="securitymodel">Security Model</a></h2>
+
+<p>Mozilla should support the existing security model for JavaScript in web
+content (see <a class="ex-ref" href="http://web.archive.org/web/20040621232800/http://developer.netscape.com/docs/manuals/communicator/jssec/index.htm">JavaScript
+Security in Communicator 4.x</a>), with the possible exception of
+<a href="signed-scripts.html">signed scripts</a>. Any 
+<a href="#apis">new APIs</a> accessible from web content
+using Java or JavaScript should be reviewed for security.</p>
+
+<p>Unlike Communicator 4.x (or Mozilla classic), Mozilla makes heavy use
+of web-style programming to build the browser itself. This is accomplished
+by making powerful actions available to JavaScript, and means that the
+security model for Mozilla must grow to support two kinds of code: untrusted
+web content and trusted browser implementation code.</p>
+
+<p>Eventually we will need a full capabilities system similar to what Java
+has reached in Java2. However, given the need to ship quickly, we should
+implement a simpler binary trust model. All code used to implement the
+browser should be given full privileges, while the privileges of any code
+from off the net should be limited as it was in 4.x.</p>
+
+<p>I'm proposing the following limitations to the capabilities of web-based
+code:</p>
+
+<ul>
+  <li>No web-based XUL</li>
+  <li>No direct access to RDF</li>
+  <li>Chrome only runs from the local filesystem (i.e., no downloadable chrome,
+only installable chrome)</li>
+  <li>Limited access to XPConnect components--most components will not be accessible
+from web content, and those that are accessible must undergo security review</li>
+  <li>No access of web content to the surrounding chrome</li>
+</ul>
+
+<p>These limitations serve to make the system simpler and more secure.</p>
+
+<h2><a name="implementation">Implementation</a></h2>
+
+<h3>Distinguishing types of code</h3>
+
+<p>There are two types of code in our security model: web content and browser
+implementation code. How do we distinquish the two? The existing JavaScript
+codebase contains support for associating a principal with every script
+that is evaluated. Then during execution, a stack of principals corresponding
+to the stack frame of the executing JavaScript can be retrieved. Thus at
+any point security critical code can check to see if it has been called
+by script, and if so, whether that script was privileged or not.</p>
+
+<h2><a name="component">Component Security Analysis</a></h2>
+
+<h3><a name="dom">DOM</a></h3>
+
+<p>The DOM should implement the security model from 4.x (at least the unsigned
+part). Historically the DOM has been the area with the most public exploits,
+so security implementation here will need careful review.
+<p>There are several proposals for additions to the 4.x DOM security model.
+Researchers from Bell Labs have proposed several new features, most notably
+domain-specific policies. There's a similar proposal described and elaborated
+in <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=858">Bugzilla bug
+858</a>.</p>
+
+<h3><a name="xul">XUL</a></h3>
+
+<p>Since XUL is used to implement chrome, it needs access to highly privileged
+services. All code in chrome should be trusted, which means that installing
+code into chrome is a privileged action. Note that skins don't contain
+any code and should be safe to install without any heavy safeguards.</p>
+
+<p>XUL code can interact with web content. However, we must ensure that
+web content cannot interact with privileged XUL code. The web content must
+live in a sandbox that cannot be breached through prototype chains or by
+the JavaScript "caller" property.</p>
+
+<h3><a name="rdf">RDF</a></h3>
+
+<p>Through the sidebar, RDF content can be retrieved directly from untrusted
+servers and aggregated with other RDF content. We'll need a filter for
+RDF that can remove potentially dangerous pieces like JavaScript event
+handlers and link cancellation.</p>
+
+<p>Many RDF data sources reflect security assets. Most obvious is the filesystem,
+but others like the chrome registry have security implications as well.
+We should prohibit direct access to RDF from untrusted code.</p>
+
+<h3><a name="xpconnect">XPConnect</a></h3>
+
+<p>XPConnect allows JavaScript (and soon Java) to get access to native XPCOM
+components that can perform privileged actions. John Bandhauer has implemented
+support for restricting which components are visible through XPConnect.
+Scripts running from web content should be limited to a small set of components,
+each of which is reviewed for security.</p>
+
+<h3><a name="netlib">Netlib and Necko</a></h3>
+
+<p>Currently protocols like "chrome:" and "resource:" are implemented by pluggable
+protocol handlers. Any untrusted code will need to have limits on which
+protocols it can access. Historically, this has been a source of many exploits
+through protocols like "about:" and "javascript:".</p>
+
+<h2><a name="apis">APIs for Review</a></h2>
+
+<h3>New DOM APIs</h3>
+
+<p>Not sure what's here.... joki will help.</p>
+
+<h3>Chrome registry API</h3>
+
+<p>This is an API that allows web pages to request adding XUL files to chrome.</p>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

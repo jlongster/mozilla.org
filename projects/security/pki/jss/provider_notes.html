@@ -1,0 +1,429 @@
+<?php
+
+$html_title = 'The Mozilla-JSS JCA Provider';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>The Mozilla-JSS JCA Provider</h2>
+<font size="-1"><i>
+Newsgroup:
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">
+mozilla.dev.tech.crypto</A>
+
+</i></font>
+</center>
+
+<h3>Overview</h3><ul>
+<p>This document describes the JCA Provider shipped with JSS. The provider's
+name is "Mozilla-JSS". It implements cryptographic operations in native
+code using the <a href="../nss">NSS</a> libraries.
+</ul>
+
+<h3>Contents</h3><ul>
+<li><a href="#signed-jar">Signed JAR file</a><br>
+<li><a href="#installing-provider">Installing the Provider</a><br>
+<li><a href="#specifying-token">Specifying the CryptoToken</a><br>
+<li><a href="#supported-classes">Supported Classes</a><br>
+<li><a href="#not-supported">What's Not Supported</a>
+</ul>
+
+<hr>
+
+<a name="signed-jar"><h3>Signed JAR file</h3></a>
+<ul>
+JSS 3.2 implements several JCE (Java Cryptography Extension) algorithms.
+These algorithms have at various times been export-controlled by the US
+government. Sun therefore requires that JAR files implementing JCE
+algorithms be digitally signed by an approved organization. Netscape has
+this approval and signs the official builds of <tt>jss32.jar</tt>.
+At runtime, the JRE automatically verifies this signature whenever a JSS
+class is loaded
+that implements a JCE algorithm. The verification is transparent to the
+application (unless it fails and throws an exception). If you are curious,
+you can verify the signature on the JAR file using the <tt>jarsigner</tt>
+tool, which is distributed with the JDK.
+
+<p>If you build JSS yourself from source instead of using binaries downloaded
+from mozilla.org, your JAR file will not have a valid signature. This
+means you will not be able to use the JSS provider for JCE algorithms.
+You have two choices.
+<ol>
+<li>Use the binary release of JSS from mozilla.org.
+<p><li>Apply for your own JCE code-signing certificate following the
+procedure at
+<a href="http://java.sun.com/javase/6/docs/technotes/guides/security/crypto/HowToImplAProvider.html#Step61">How to Implement a Provider for the
+Java<sup><font SIZE=-2>TM</font></sup> Cryptography Extension</a>.
+Then you can sign your own JSS JAR file.
+</ul>
+</ul>
+
+<a name="installing-provider"><h3>Installing the Provider</h3></a>
+<ul>
+In order to use any part of JSS, including the JCA provider, you must first
+call <tt>
+<a href="javadoc/org/mozilla/jss/CryptoManager.html">CryptoManager</a>.initialize()</tt>. By default, the JCA provider will be installed in the list
+of providers maintained by the <tt>java.security.Security</tt> class.
+If you do not wish the provider to be installed, create a
+<a href="javadoc/org/mozilla/jss/CryptoManager.InitializationValues.html"><tt>
+CryptoManager.InitializationValues</tt></a> object, set its
+<tt>installJSSProvider</tt> field to <tt>false</tt>, and pass the
+<tt>InitializationValues</tt> object to <tt>CryptoManager.initialize()</tt>.
+</ul>
+
+<a name="specifying-token"><h3>Specifying the CryptoToken</h3></a>
+<ul>
+All cryptographic operations in JSS and NSS occur on a particular PKCS #11
+token, implemented in software or hardware. There is no clean way to specify
+this token through the JCA API. By default, the JSS provider carries out
+all operations except MessageDigest
+on the Internal Key Storage Token, a software token included in
+JSS/NSS. MessageDigest operations take place by default on the
+Internal Crypto Token, another internal software token in JSS/NSS.
+There is no good design reason for this difference, but it is necessitated
+by a quirk in the NSS implementation.
+
+<p>
+In order to use a different token, use 
+<tt>CryptoManager.setThreadToken()</tt>. This sets the token to be used
+by the JSS JCA provider in the current thread.
+When you call <tt>getInstance()</tt> on a JCA class, the JSS provider
+checks the current per-thread default token (by calling
+<tt>CryptoManager.getThreadToken()</tt>) and instructs the new object
+to use that token for cryptographic
+operations. The per-thread default token setting is only consulted inside
+<tt>getInstance()</tt>. Once a JCA object has been created it will continue
+to use the same token, even if the application later changes the per-thread
+default token.
+
+<p>Whenever a new thread is created, its token is initialized to 
+the default, the Internal Key Storage Token. Thus, the thread token is
+not inherited from the parent thread.
+
+<p>The following example shows how you can specify which token is used
+for various JCA operations:
+<ul>
+<pre><tt>
+// Lookup PKCS #11 tokens
+CryptoManager manager = CryptoManager.getInstance();
+CryptoToken tokenA = manager.getTokenByName("TokenA");
+CryptoToken tokenB = manager.getTokenByName("TokenB");
+
+// Create an RSA KeyPairGenerator using TokenA
+manager.setThreadToken(tokenA);
+KeyPairGenerator rsaKpg = KeyPairGenerator.getInstance("Mozilla-JSS", "RSA");
+
+// Create a DSA KeyPairGenerator using TokenB
+manager.setThreadToken(tokenB);
+KeyPairGenerator dsaKpg  = KeyPairGenerator.getInstance("Mozilla-JSS", "DSA");
+
+// Generate an RSA KeyPair. This will happen on TokenA because TokenA
+// was the per-thread default token when rsaKpg was created.
+rsaKpg.initialize(1024);
+KeyPair rsaPair = rsaKpg.generateKeyPair();
+
+// Generate a DSA KeyPair. This will happen on TokenB because TokenB
+// was the per-thread default token when dsaKpg was created.
+dsaKpg.initialize(1024);
+KeyPair dsaPair = dsaKpg.generateKeyPair();
+</tt></pre></ul>
+</ol>
+
+</ul>
+
+<a name="supported-classes"><h3>Supported Classes</h3></a>
+<ul>
+
+<li><a href="#Cipher">Cipher</a>
+<li><a href="#DSAPrivateKey">DSAPrivateKey</a>
+<li>DSAPublicKey
+<li><a href="#KeyFactory">KeyFactory</a>
+<li><a href="#KeyGenerator">KeyGenerator</a>
+<li><a href="#KeyPairGenerator">KeyPairGenerator</a>
+<li><a href="#Mac">Mac</a>
+<li><a href="#MessageDigest">MessageDigest</a>
+<li><a href="#RSAPrivateKey">RSAPrivateKey</a>
+<li>RSAPublicKey
+<li><a href="#SecretKeyFactory">SecretKeyFactory</a>
+<li><a href="#SecretKey">SecretKey</a>
+<li><a href="#SecureRandom">SecureRandom</a>
+<li><a href="#Signature">Signature</a>
+
+<p><table border>
+<tr><td>
+<a name="Cipher"><h3>Cipher</h3></a>
+<ul>
+<h4>Supported Algorithms</h4>
+<ul>
+<li>AES
+<li>DES
+<li>DESede (<i>DES3</i>)
+<li>RC2
+<li>RC4
+<li>RSA
+</ul>
+<h4>Notes</h4>
+<ul>
+<li>The following modes and padding schemes are supported:
+<table border>
+<tr><th>Algorithm</th><th>Mode</th><th>Padding</th></th></tr>
+<tr><td rowspan="3">DES</td><td>ECB</td><td>NoPadding</td></tr>
+<tr><td rowspan="2">CBC</td><td>NoPadding</td></tr>
+<tr><td>PKCS5 Padding</td></tr>
+<tr><td rowspan="3">DESede<br><i>DES3</i></td><td>ECB</td><td>NoPadding</td></tr>
+<tr><td rowspan="2">CBC</td><td>NoPadding</td></tr>
+<tr><td>PKCS5 Padding</td></tr>
+<tr><td rowspan="3">AES</td><td>ECB</td><td>NoPadding</td></tr>
+<tr><td rowspan="2">CBC</td><td>NoPadding</td></tr>
+<tr><td>PKCS5 Padding</td></tr>
+<tr><td>RC4</td><td><i>None</i></td><td><i>None</i></td></tr>
+<tr><td rowspan="2">RC2</td><td rowspan="2">CBC</td><td>NoPadding</td></tr>
+<tr><td>PKCS5Padding</td></tr>
+</table>
+<li>The SecureRandom argument passed to <tt>initSign()</tt> and
+<tt>initVerify()</tt> is ignored, because NSS does not support specifying
+an external source of randomness.
+</ul>
+</tr>
+
+<tr><td>
+<a name="DSAPrivateKey"><h3>DSAPrivateKey</h3></a><ul>
+<li><tt>getX()</tt> is not supported because NSS does not support extracting
+data from private keys.
+</ul>
+</td></tr>
+
+<tr><td>
+<a name="KeyFactory"><h3>KeyFactory</h3></a><ul>
+<h4>Supported Algorithms</h4><ul>
+<li>DSA
+<li>RSA
+</ul>
+<h4>Notes</h4>
+<ul><li>
+The following transformations are supported for <tt>generatePublic()</tt>
+and <tt>generatePrivate()</tt>:<p>
+<table border>
+<tr><th>From</th><th>To</th></tr>
+<tr><td><tt>RSAPublicKeySpec</tt></td><td><tt>RSAPublicKey</tt></td></tr>
+<tr><td><tt>DSAPublicKeySpec</tt></td><td><tt>DSAPublicKey</tt></td></tr>
+<tr><td><tt>X509EncodedKeySpec</tt></td><td><tt>RSAPublicKey</tt><br>
+<tt>DSAPublicKey</tt></td></tr>
+<tr><td><tt>RSAPrivateCrtKeySpec</tt></td><td><tt>RSAPrivateKey</tt></td>
+<tr><td><tt>DSAPrivateKeySpec</tt></td><td><tt>DSAPrivateKey</tt></td></tr>
+<tr><td><tt>PKCS8EncodedKeySpec</tt></td><td><tt>RSAPrivateKey</tt><br>
+<tt>DSAPrivateKey</tt></td></tr>
+</table>
+<p><li><tt>getKeySpec()</tt> is not supported. This method exports key material
+in plaintext and is therefore insecure. Note that a public key's data can
+be accessed directly from the key.
+<p><li><tt>translateKey()</tt> simply gets the encoded form of the given
+key and then tries to import it by calling <tt>generatePublic()</tt> or
+<tt>generatePrivate()</tt>. Only <tt>X509EncodedKeySpec</tt>
+is supported for public keys, and only <tt>PKCS8EncodedKeySpec</tt> is supported
+for private keys.
+</ul>
+</ul>
+</td></tr>
+
+<tr><td>
+<a name="KeyGenerator"><h3>KeyGenerator</h3></a><ul>
+<h4>Supported Algorithms</h4><ul>
+<li>AES
+<li>DES
+<li>DESede (<i>DES3</i>)
+<li>RC4
+</ul>
+<h4>Notes</h4><ul>
+<li>The SecureRandom argument passed to <tt>init()</tt> is ignored,
+because NSS does not support specifying an external source of randomness.
+<p><li>None of the key generation algorithms accepts an
+<tt>AlgorithmParameterSpec</tt>.
+</ul>
+</ul>
+</td></tr>
+
+<tr><td>
+<a name="KeyPairGenerator"><h3>KeyPairGenerator</h3></a><ul>
+<h4>Supported Algorithms</h4><ul>
+<li>DSA
+<li>RSA
+</ul>
+<h4>Notes</h4><ul>
+<li>The SecureRandom argument passed to initialize() is ignored, because
+NSS does not support specifying an external source of randomness.
+</ul>
+</ul>
+</td></tr>
+
+<tr><td>
+<a name="Mac"><h3>Mac</h3></a><ul>
+<h4>Supported Algorithms</h4><ul>
+<li>HmacSHA1 (<i>Hmac-SHA1</i>)
+</ul>
+<h4>Notes</h4><ul>
+<li>Any secret key type (AES, DES, etc.) can be used as the MAC key,
+but it must be a JSS key. That is, it must be an <tt>instanceof
+org.mozilla.jss.crypto.SecretKeyFacade</tt>.
+<p><li>The params passed to <tt>init()</tt> are ignored.
+</ul>
+</ul>
+</td></tr>
+
+<tr><td>
+<a name="MessageDigest"><h3>MessageDigest</h3></a><ul>
+<h4>Supported Algorithms</h4><ul>
+<li>MD5
+<li>MD2
+<li>SHA-1 (<i>SHA1, SHA</i>)
+</ul>
+</ul>
+</td></tr>
+
+<tr><td>
+<a name="RSAPrivateKey"><h3>RSAPrivateKey</h3></a><ul>
+<h4>Notes</h4>
+<ul>
+<li><tt>getModulus()</tt> is not supported because NSS does not support
+    extracting data from private keys.
+<p><li><tt>getPrivateExponent()</tt> is not supported because NSS does not
+    support extracting data from private keys.
+</ul>
+</ul>
+</td></tr>
+
+<tr><td>
+<a name="SecretKeyFactory"><h3>SecretKeyFactory</h3></a><ul>
+<h4>Supported Algorithms</h4><ul>
+<li>AES
+<li>DES
+<li>DESede (<i>DES3</i>)
+<li>PBAHmacSHA1
+<li>PBEWithMD5AndDES
+<li>PBEWithSHA1AndDES
+<li>PBEWithSHA1AndDESede (<i>PBEWithSHA1AndDES3</i>)
+<li>PBEWithSHA1And128RC4
+<li>RC4
+</ul>
+<h4>Notes</h4><ul>
+<li><tt>generateSecret</tt> supports the following transformations:
+<table border>
+<tr><th>KeySpec Class</th><th>Key Algorithm</th></tr>
+<tr><td>PBEKeySpec<br>org.mozilla.jss.crypto.PBEKeyGenParams</td>
+<td>
+<i>Using the appropriate PBE algorithm:</i><br>
+DES<br>DESede<br>RC4</td>
+<tr><td>DESedeKeySpec</td><td>DESede</td></tr>
+<tr><td>DESKeySpec</td><td>DES</td></tr>
+<tr><td>SecretKeySpec</td><td>AES<br>DES<br>DESede<br>RC4</td></tr>
+</table>
+<p><li><tt>getKeySpec</tt> supports the following transformations:
+<table border>
+<tr><th>Key Algorithm</th><th>KeySpec Class</th></tr>
+<tr><td>DESede</td><td>DESedeKeySpec</td></tr>
+<tr><td>DES</td><td>DESKeySpec</td></tr>
+<tr><td>DESede<br>DES<br>AES<br>RC4</td><td>SecretKeySpec</td><tr>
+</table>
+<p><li>For increased security, some SecretKeys may not be extractable from
+their PKCS #11 token.
+In this case, the key should be wrapped (encrypted with another
+key), and then the encrypted key might be extractable from the token.
+This policy varies across PKCS #11 tokens.
+<p><li><tt>translateKey</tt> tries two approaches to copying keys. First,
+it tries to copy the key material directly using NSS calls to PKCS #11. If
+that fails, it calls <tt>getEncoded()</tt> on the source key, and then
+tries to create a new key on the target token from the encoded bits.
+Both of these operations will fail if the source key is not extractable.
+
+<p><li>The class <tt>java.security.spec.PBEKeySpec</tt> in JDK versions earlier
+than 1.4 does not contain the
+salt and iteration fields, which are necessary for PBE key generation.
+These fields were added in JDK 1.4. If you are using a JDK (or JRE) version
+earlier than 1.4, you cannot use class <tt>java.security.spec.PBEKeySpec</tt>.
+Instead, you can use
+<tt>org.mozilla.jss.crypto.PBEKeyGenParams</tt>. If you are using JDK (or JRE)
+1.4 or later, you can use <tt>java.security.spec.PBEKeySpec</tt> or
+<tt>org.mozilla.jss.crypto.PBEKeyGenParams</tt>.
+</ul>
+</ul>
+</td></tr>
+
+<tr><td>
+<a name="SecretKey"><h3>SecretKey</h3></a><ul>
+<h4>Supported Algorithms</h4><ul>
+<li>AES
+<li>DES
+<li>DESede (<i>DES3</i>)
+<li>HmacSHA1
+<li>RC2
+<li>RC4
+</ul>
+<h4>Notes</h4><ul>
+<li><tt>SecretKey</tt> is implemented by the class
+<tt>org.mozilla.jss.crypto.SecretKeyFacade</tt>, which acts as a wrapper
+around the JSS class <tt>SymmetricKey</tt>. Any  <tt>SecretKeys</tt> handled
+by JSS will actually be <tt>SecretKeyFacades</tt>. This should usually be
+transparent.
+</ul>
+</ul>
+</td></tr>
+
+<tr><td>
+<a name="SecureRandom"><h3>SecureRandom</h3></a><ul>
+<h4>Supported Algorithms</h4><ul>
+<li>pkcs11prng
+</ul>
+<h4>Notes</h4><ul>
+<li>This invokes the NSS internal pseudorandom number generator.
+</ul>
+</ul>
+</td></tr>
+
+<tr><td>
+<a name="Signature"><h3>Signature</h3></a><ul>
+<h4>Supported Algorithms</h4><ul>
+<li>SHA1withDSA (<i>DSA, DSS, SHA/DSA, SHA-1/DSA, SHA1/DSA, DSAWithSHA1,
+SHAwithDSA</i>)
+<li>SHA-1/RSA (<i>SHA1/RSA, SHA1withRSA</i>)
+<li>MD5/RSA (<i>MD5withRSA</i>)
+<li>MD2/RSA
+</ul>
+<h4>Notes</h4><ul>
+<li>The SecureRandom argument passed to <tt>initSign()</tt> and
+<tt>initVerify()</tt> is ignored, because NSS does not support specifying
+an external source of randomness.
+</ul>
+</ul>
+</td></tr>
+
+</ul>
+
+<a name="not-supported"><h3>What's Not Supported</h3></a>
+<ul>
+The following classes don't work very well:
+
+<ul>
+<p><li><b>KeyStore:</b> There are many serious problems mapping the JCA
+keystore interface onto NSS's model of PKCS #11 modules. The current
+implementation is almost useless. Since these problems lie deep in the NSS
+design and implementation, there is no clear timeframe for fixing them.
+Meanwhile, the <tt>org.mozilla.jss.crypto.CryptoStore</tt> class
+can be used for some of this functionality.
+</ul>
+
+</ul>
+
+
+</ul>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

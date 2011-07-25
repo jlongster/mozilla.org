@@ -1,0 +1,1654 @@
+#
+# Root .htaccess file for site-wide server settings
+#
+
+##############################################################################
+#                       DEVELOPMENT/DEBUGGING SETTINGS                       #
+##############################################################################
+
+# Uncomment to debug; otherwise, leave commented
+#php_value apc.enabled 0
+#php_flag display_errors on
+#php_flag display_startup_errors on
+#php_value error_reporting 2047
+
+##############################################################################
+#                          GLOBAL DOCUMENT HANDLING                          #
+##############################################################################
+
+# Allow content negotiated MultiViews; disallow directory indexes
+Options +MultiViews -Indexes
+
+# Page expires 15 minutes after access
+ExpiresActive on
+ExpiresDefault "access plus 15 minutes"
+
+# Set default charset
+AddDefaultCharset UTF-8
+
+# Add text types
+AddType text/calendar .ics
+AddType text/x-component .htc
+AddType text/xml .rdf
+
+# Add image types
+AddType image/svg+xml .svg
+AddType image/x-icon .ico
+
+# Add Mozilla application types
+AddType application/vnd.mozilla.xul+xml .xul
+AddType application/x-xpinstall .xpi
+
+# Add StarOffice document types
+AddType application/vnd.stardivision.calc .sdc
+AddType application/vnd.stardivision.draw .sda
+AddType application/vnd.stardivision.impress .sdd
+AddType application/vnd.stardivision.writer .sdw
+
+# Add PHP type
+# Process HTML files as PHP for legacy reasons
+AddType application/x-httpd-php .php .html
+
+# Set order for determining directory index file
+DirectoryIndex index.php index.html index.xml
+
+# Turn on RewriteEngine for URL rewriting
+RewriteEngine On
+
+# All our pages hit this prefetch script.
+# This will determine the language and forward them to the right place.
+Action init /includes/prefetch.php
+AddHandler init .html
+
+##############################################################################
+#                               ERROR HANDLING                               #
+##############################################################################
+
+# If someone tries to go to an old-style URL (e.g. http://www.mozilla.com/de/firefox/help),
+# this handler will pick it up, detect the language, and if it's a "valid" page
+# (despite the 404) it'll still forward them to the correct place.  If it's not a
+# valid page, they'll get a localized 404 (if available)
+ErrorDocument 404 /includes/prefetch.php
+
+# Use regular error pages for Forbidden, Gone, and Internal Server Error
+ErrorDocument 403 /403.html
+ErrorDocument 410 /410.html
+ErrorDocument 500 /500.html
+
+##############################################################################
+#              SPECIFIC AND CATEGORIZED REDIRECTS AND REWRITES               #
+##############################################################################
+
+# Rewrite for Whippet project (Bug 665019)
+RewriteRule ^(hp7|HP7)/?$ http://www.mozilla.com/hp7
+
+# Rewrite for Join Mozilla locale-specific thank you page
+RewriteRule ^join/thankyou\.en\.html$ join/thankyou.php?locale=en_US
+RewriteRule ^join/thankyou\.de\.html$ join/thankyou.php?locale=de_DE
+
+# Alias for Mozilla Application Suite 1.7.1 start page
+Redirect permanent /start/1.7.1 http://www.mozilla.org/start/1.7
+
+# Redirect Firefox 0.8 and 0.9.x users to security notice.
+RewriteCond %{HTTP_USER_AGENT} Firefox/0\.[89](\.\d)?$
+RewriteRule ^products/firefox/start/$ /security/update-2004-10-01.html [R]
+
+# Redirect Firefox 0.10 users to their specialized security page.
+# This is different from the one for earlier versions because earlier versions
+# have to upgrade to 0.10 first, while 0.10 users just have to install
+# a patch.
+RewriteCond %{HTTP_USER_AGENT} Firefox/0\.10$
+RewriteRule ^products/firefox/start/$ https://update.mozilla.org/critical/firefox/2004-10-01.html
+
+# Redirects for SeaMonkey project website, now living at seamonkey-project.org
+Redirect permanent /projects/seamonkey/ http://www.seamonkey-project.org/
+Redirect permanent /projects/seamonkey/artwork.html http://www.seamonkey-project.org/dev/artwork
+Redirect permanent /projects/seamonkey/community.html http://www.seamonkey-project.org/community
+Redirect permanent /projects/seamonkey/get-involved.html http://www.seamonkey-project.org/dev/get-involved
+Redirect permanent /projects/seamonkey/index.html http://www.seamonkey-project.org/
+Redirect permanent /projects/seamonkey/news.html http://www.seamonkey-project.org/news
+Redirect permanent /projects/seamonkey/project-areas.html http://www.seamonkey-project.org/dev/project-areas
+Redirect permanent /projects/seamonkey/releases/ http://www.seamonkey-project.org/releases/
+Redirect permanent /projects/seamonkey/releases/index.html http://www.seamonkey-project.org/releases/
+Redirect permanent /projects/seamonkey/review-and-flags.html http://www.seamonkey-project.org/dev/review-and-flags
+RedirectMatch permanent ^/projects/seamonkey/releases/(1\..*).html$ http://www.seamonkey-project.org/releases/$1
+RedirectMatch permanent ^/projects/seamonkey/releases/seamonkey(.*)/(.*).html$ http://www.seamonkey-project.org/releases/seamonkey$1/$2
+RedirectMatch permanent ^/projects/seamonkey/releases/seamonkey(.*)/index.html$ http://www.seamonkey-project.org/releases/seamonkey$1/
+RedirectMatch permanent ^/projects/seamonkey/releases/updates/(.*)$ http://www.seamonkey-project.org/releases/updates/$1
+RedirectMatch permanent ^/projects/seamonkey/start/ http://www.seamonkey-project.org/start/
+
+# Fix for reed
+RewriteRule ^security/phishing-test/?$ /security/phishing-test.html  [R]
+
+# Testing language negotiation --fantasai (r57307)
+# *** Is this still necessary? ***
+# *** I hope not!! ***
+# RewriteRule ^ja/(.*) /$1 [E=prefer-language:ja]
+
+##############################################################################
+#           GENERIC REDIRECTS AND REWRITES ONLY BEYOND THIS POINT            #
+##############################################################################
+
+#
+# These files are gone and will return a 410 status.
+#
+Redirect gone /catalog/end-user/release
+Redirect gone /help-wanted.html
+Redirect gone /projects/ui/accessibility/access-radar.html
+Redirect gone /projects/ui/accessibility/header.html
+Redirect gone /projects/ui/accessibility/unix/to-do.html
+Redirect gone /projects/user-docs/index.html
+Redirect gone /projects/user-docs/local/browserhelp/browserbanner.html
+Redirect gone /projects/user-docs/local/browserhelp/browsercont.html
+Redirect gone /projects/user-docs/local/browserhelp/browsertoc.html
+Redirect gone /projects/user-docs/local/browserhelp/browsertop.html
+Redirect gone /projects/user-docs/local/index.html
+Redirect gone /projects/user-docs/local/mailhelp/mailbanner.html
+Redirect gone /projects/user-docs/local/mailhelp/mailcont.html
+Redirect gone /projects/user-docs/local/mailhelp/mailtoc.html
+Redirect gone /projects/user-docs/local/mailhelp/mailtop.html
+Redirect gone /projects/user-docs/local/troubleshoot/troublebanner.html
+Redirect gone /projects/user-docs/local/troubleshoot/troublecont.html
+Redirect gone /projects/user-docs/local/troubleshoot/troubletoc.html
+Redirect gone /projects/user-docs/local/troubleshoot/troubletop.html
+Redirect gone /projects/user-docs/served/custhelp/custbanner.html
+Redirect gone /projects/user-docs/served/custhelp/custcont.html
+Redirect gone /projects/user-docs/served/custhelp/custtoc.html
+Redirect gone /projects/user-docs/served/custhelp/custtop.html
+Redirect gone /projects/user-docs/served/index.html
+Redirect gone /projects/user-docs/served/shophelp/shopbanner.html
+Redirect gone /projects/user-docs/served/shophelp/shopcont.html
+Redirect gone /projects/user-docs/served/shophelp/shoptoc.html
+Redirect gone /projects/user-docs/served/shophelp/shoptop.html
+Redirect gone /projects/user-docs/served/updatehelp/updatebanner.html
+Redirect gone /projects/user-docs/served/updatehelp/updatecont.html
+Redirect gone /projects/user-docs/served/updatehelp/updatetoc.html
+Redirect gone /projects/user-docs/served/updatehelp/updatetop.html
+Redirect gone /projects/user-docs/served/whatsnew/newbanner.html
+Redirect gone /projects/user-docs/served/whatsnew/newcont.html
+Redirect gone /projects/user-docs/served/whatsnew/newtoc.html
+Redirect gone /projects/user-docs/served/whatsnew/newtop.html
+Redirect gone /projects/xpcom/atoms.html
+Redirect gone /projects/xpcom/style-guide.html
+Redirect gone /quality/embed/archives/
+Redirect gone /quality/embed/builds/
+Redirect gone /quality/embed/tools/
+Redirect gone /quality/help/mozilla-testers.html
+Redirect gone /quality/help/simplesearch.html
+Redirect gone /quality/installation/browseronly4.jpg
+Redirect gone /quality/installation/complete7.jpg
+Redirect gone /quality/installation/custom9.jpg
+Redirect gone /quality/installation/custom10.jpg
+Redirect gone /quality/installation/download16.jpg
+Redirect gone /quality/installation/downloadoptions5.jpg
+Redirect gone /quality/installation/initialize.jpg
+Redirect gone /quality/installation/inpause17.jpg
+Redirect gone /quality/installation/install19.jpg
+Redirect gone /quality/installation/license3.jpg
+Redirect gone /quality/installation/Mozilla_Windows_Installer_FTP.html
+Redirect gone /quality/installation/Mozilla-Linux_install_FTP.html
+Redirect gone /quality/installation/Mozilla-Mac_Installer_FTP.html
+Redirect gone /quality/installation/MozillaSanityChecklist.html
+Redirect gone /quality/installation/MozillaWindowsScreenShots.html
+Redirect gone /quality/installation/programfolder.jpg
+Redirect gone /quality/installation/proxy12.jpg
+Redirect gone /quality/installation/quit14.jpg
+Redirect gone /quality/installation/selprogfolder11.jpg
+Redirect gone /quality/installation/start6.jpg
+Redirect gone /quality/installation/start8.jpg
+Redirect gone /quality/installation/start13.jpg
+Redirect gone /quality/installation/TC-Linux-1.html
+Redirect gone /quality/installation/TC-Linux-2.html
+Redirect gone /quality/installation/TC-Linux-3.html
+Redirect gone /quality/installation/TC-Linux-4.html
+Redirect gone /quality/installation/TC-Linux-5.html
+Redirect gone /quality/installation/TC-Linux-6.html
+Redirect gone /quality/installation/TC-Linux-7.html
+Redirect gone /quality/installation/TC-Linux-8.html
+Redirect gone /quality/installation/TC-Linux-9.html
+Redirect gone /quality/installation/TC-Mac-1.html
+Redirect gone /quality/installation/TC-Mac-2.html
+Redirect gone /quality/installation/TC-Mac-3.html
+Redirect gone /quality/installation/TC-Mac-4.html
+Redirect gone /quality/installation/TC-Mac-5.html
+Redirect gone /quality/installation/TC-Mac-6.html
+Redirect gone /quality/installation/TC-Mac-7.html
+Redirect gone /quality/installation/TC-Mac-8.html
+Redirect gone /quality/installation/TC-Mac-9.html
+Redirect gone /quality/installation/TC-Mac-10.html
+Redirect gone /quality/installation/TC-Mac-11.html
+Redirect gone /quality/installation/TC-Mac-12.html
+Redirect gone /quality/installation/TC-Win-1.html
+Redirect gone /quality/installation/TC-Win-2.html
+Redirect gone /quality/installation/TC-Win-3.html
+Redirect gone /quality/installation/TC-Win-4.html
+Redirect gone /quality/installation/TC-Win-5.html
+Redirect gone /quality/installation/TC-Win-6.html
+Redirect gone /quality/installation/TC-Win-7.html
+Redirect gone /quality/installation/TC-Win-8.html
+Redirect gone /quality/installation/TC-Win-9.html
+Redirect gone /quality/installation/TC-Win-10.html
+Redirect gone /quality/installation/TC-Win-11.html
+Redirect gone /quality/installation/TC-Win-12.html
+Redirect gone /quality/installation/TC-Win-13.html
+Redirect gone /quality/installation/upgrade15.jpg
+Redirect gone /quality/installation/verify18.jpg
+Redirect gone /quality/installation/welcome2.jpg
+Redirect gone /quality/qacontacts.html
+Redirect gone /support/firefox/adblock.html
+Redirect gone /xpfe/xptoolkit/xbl.html
+
+#
+# These files have permanently moved and will return a 301 status.
+#
+Redirect permanent /about.html http://www.mozilla.org/about/roles
+Redirect permanent /about/etiquette.html http://www.mozilla.org/about/forums/etiquette.html
+Redirect permanent /about/free.html http://www.mozilla.org/causes/free.html
+Redirect permanent /about/owners.html https://wiki.mozilla.org/Modules
+Redirect permanent /access/donate.html https://donate.mozilla.org/page/contribute/accessibility
+Redirect permanent /airmozilla http://air.mozilla.com/
+Redirect permanent /binaries.html http://www.mozilla.org/projects/
+Redirect permanent /blue-sky.html http://www.mozilla.org/blue-sky/
+Redirect permanent /bonsai.html http://developer.mozilla.org/en/Bonsai
+Redirect permanent /bugs.html   http://www.mozilla.org/bugs/
+Redirect permanent /bugs/bug-reporting.html http://www.mozilla.org/quality/bug-writing-guidelines.html
+Redirect permanent /bugs/changes.html http://www.bugzilla.org/status/changes.html
+Redirect permanent /bugs/query.html http://www.mozilla.org/quality/bug-writing-guidelines.html
+Redirect permanent /bugs/report.html http://developer.mozilla.org/en/Bug_writing_guidelines
+Redirect permanent /bugs/source.html http://www.bugzilla.org/
+Redirect permanent /bugs/text-searching.html http://www.mozilla.org/quality/bug-writing-guidelines.html
+Redirect permanent /build/build-system.html http://developer.mozilla.org/en/How_mozilla%27s_build_system_works
+Redirect permanent /build/configure-build.html http://developer.mozilla.org/en/Configuring_Build_Options
+Redirect permanent /build/cross-compiling.html http://developer.mozilla.org/en/Cross-Compiling_Mozilla
+Redirect permanent /build/cvs-tag.html http://developer.mozilla.org/en/Creating_a_Release_Tag
+Redirect permanent /build/distribution.html http://developer.mozilla.org/en/Building_a_Mozilla_Distribution
+Redirect permanent /build/faq.html http://developer.mozilla.org/en/Mozilla_Build_FAQ
+Redirect permanent /build/index.html http://developer.mozilla.org/en/Build_Documentation
+Redirect permanent /build/jar-packaging.html http://developer.mozilla.org/en/JAR_Packaging
+Redirect permanent /build/mac-build-system.html http://developer.mozilla.org/en/Mac_OS_X_Build_Prerequisites
+Redirect permanent /build/mac.html http://developer.mozilla.org/en/Mac_OS_X_Build_Prerequisites
+Redirect permanent /build/make-build.html http://developer.mozilla.org/en/Build_and_Install
+Redirect permanent /build/making-additions.html http://developer.mozilla.org/en/Adding_Files_to_the_Build
+Redirect permanent /build/release-build-notes.html http://developer.mozilla.org/en/Mozilla_Release_Build_Notes
+Redirect permanent /build/release-checklist.html http://developer.mozilla.org/en/Mozilla_Release_Checklist
+Redirect permanent /build/revised-user-agent-strings.html http://developer.mozilla.org/en/User_Agent_Strings_Reference
+Redirect permanent /build/sheriff-schedule.html http://wiki.mozilla.org/Sheriff_Schedule
+Redirect permanent /build/sheriff.html http://wiki.mozilla.org/Sheriff_Duty
+Redirect permanent /build/sheriff/sheriff-schedule.html http://wiki.mozilla.org/Sheriff_Schedule
+Redirect permanent /build/unix-cheatsheet.html http://developer.mozilla.org/en/Linux_Cheat_Sheet_for_Mac_and_Windows_Programmers
+Redirect permanent /build/unix-details.html http://developer.mozilla.org/En/Unix_Detailed_Build_Instructions
+Redirect permanent /build/unix.html http://developer.mozilla.org/en/Linux_Build_Prerequisites
+Redirect permanent /build/win32-debugging-faq.html http://developer.mozilla.org/en/Debugging_Mozilla_on_Windows_FAQ
+Redirect permanent /build/win32.html http://developer.mozilla.org/en/Windows_Build_Prerequisites
+Redirect permanent /build/windbgdlg.html http://developer.mozilla.org/En/Automatically_Handle_Failed_Asserts_in_Debug_Builds
+Redirect permanent /camino http://caminobrowser.org/
+Redirect permanent /catalog/development/compiling/ http://developer.mozilla.org/en/Build_Documentation
+Redirect permanent /catalog/development/compiling/cvs-sourcecode.html http://www.mozilla.org/cvs.html
+Redirect permanent /catalog/development/tools/cvs-tarball.html http://developer.mozilla.org/en/Mozilla_Source_Code_(CVS)
+Redirect permanent /catalog/development/website/cvs-website.html http://www.mozilla.org/contribute/writing/cvs
+Redirect permanent /catalog/end-user/customizing/briefprefs.html http://developer.mozilla.org/En/A_Brief_Guide_to_Mozilla_Preferences
+Redirect permanent /causes/access.html http://www.mozilla.org/about/mission.html
+Redirect permanent /causes/accessibility.html http://www.mozilla.org/causes/access.html
+Redirect permanent /causes/better.html http://www.mozilla.org/about/mission.html
+Redirect permanent /causes/education.html http://www.mozilla.org/about/mission.html
+Redirect permanent /causes/free.html http://www.mozilla.org/about/mission.html
+Redirect permanent /causes/openweb.html http://www.mozilla.org/about/mission.html
+Redirect permanent /causes/security.html http://www.mozilla.org/about/mission.html
+Redirect permanent /classic/nsprdesc.html http://developer.mozilla.org/en/About_NSPR
+Redirect permanent /community-etiquette.html http://www.mozilla.org/about/forums/etiquette.html
+Redirect permanent /community.html http://www.mozilla.org/about/forums/
+Redirect permanent /community/blogs.html http://www.mozilla.org/community/directory.html
+Redirect permanent /community/cancellation.html http://www.mozilla.org/about/forums/cancellation.html
+Redirect permanent /community/chat.html http://www.mozilla.org/about/forums/
+Redirect permanent /community/developer-forums.html http://www.mozilla.org/about/forums/
+Redirect permanent /community/developer-sites.html http://www.mozilla.org/community/
+Redirect permanent /community/etiquette.html http://www.mozilla.org/about/forums/etiquette.html
+Redirect permanent /community/events.html http://www.spreadfirefox.com/news_events
+Redirect permanent /community/news.html http://www.mozilla.org/community/blogs.html
+Redirect permanent /community/newsgroups.txt http://www.mozilla.org/about/forums/
+Redirect permanent /community/social.html http://www.mozilla.com/firefox/connect/
+Redirect permanent /community/universe.html http://www.mozilla.org/community/index.html
+Redirect permanent /community/user-forums.html http://www.mozilla.org/support/#community
+Redirect permanent /community/user-sites.html http://www.mozilla.org/community/
+Redirect permanent /community/websites.html http://www.mozilla.org/community/directory.html
+Redirect permanent /community/wikis.html http://www.mozilla.org/community/directory.html
+Redirect permanent /contribute/get-involved.html http://www.mozilla.org/contribute/
+Redirect permanent /contribute/writing/cvs.html https://wiki.mozilla.org/Mozilla.org:How_to_Work_with_Site
+Redirect permanent /contribute/writing/how-to.html https://developer.mozilla.org/Project:en/How_to_document_Mozilla
+Redirect permanent /contribute/writing/process.html https://developer.mozilla.org/Project:en/Getting_started
+Redirect permanent /crypto-faq.html http://developer.mozilla.org/en/Mozilla_Crypto_FAQ
+Redirect permanent /cvs-ssh-faq.html http://developer.mozilla.org/en/Using_SSH_to_connect_to_CVS
+Redirect permanent /cvs.html http://developer.mozilla.org/en/Mozilla_Source_Code_Via_CVS
+Redirect permanent /dejanews.gif http://www.mozilla.org/images/dejanews.gif
+Redirect permanent /docs.html   http://www.mozilla.org/docs/
+Redirect permanent /docs/command-line-args.html http://developer.mozilla.org/en/Command_Line_Options
+Redirect permanent /docs/contribute.html http://www.mozilla.org/contribute/writing/process
+Redirect permanent /docs/docshell/mozilla_downloads_path2.png https://developer.mozilla.org/@api/deki/files/279/=Mozilla_downloads_path2.png
+Redirect permanent /docs/docshell/mozilla_downloads.html http://developer.mozilla.org/en/Overview_of_how_downloads_work
+Redirect permanent /docs/docshell/mozilla_downloads.png https://developer.mozilla.org/@api/deki/files/278/=Mozilla_downloads.png
+Redirect permanent /docs/docshell/uri-load-start.html http://developer.mozilla.org/en/Document_Loading_-_From_Load_Start_to_Finding_a_Handler
+Redirect permanent /docs/dom/about/ http://developer.mozilla.org/en/About_the_Document_Object_Model
+Redirect permanent /docs/dom/dom-talk/ http://developer.mozilla.org/en/DOM_Implementation_and_Scriptability
+Redirect permanent /docs/dom/domref/clientHeight.html http://developer.mozilla.org/en/DOM:element.clientHeight
+Redirect permanent /docs/dom/domref/clientWidth.html http://developer.mozilla.org/en/DOM:element.clientWidth
+Redirect permanent /docs/dom/domref/dom_doc_ref.html http://developer.mozilla.org/en/DOM:document
+Redirect permanent /docs/dom/domref/dom_doc_ref2.html http://developer.mozilla.org/en/DOM:element.attributes
+Redirect permanent /docs/dom/domref/dom_doc_ref3.html http://developer.mozilla.org/en/DOM:document.alinkColor
+Redirect permanent /docs/dom/domref/dom_doc_ref4.html http://developer.mozilla.org/en/DOM:document.anchors
+Redirect permanent /docs/dom/domref/dom_doc_ref5.html http://developer.mozilla.org/en/DOM:document.applets
+Redirect permanent /docs/dom/domref/dom_doc_ref6.html http://developer.mozilla.org/en/DOM:document.bgColor
+Redirect permanent /docs/dom/domref/dom_doc_ref7.html http://developer.mozilla.org/en/DOM:document.body
+Redirect permanent /docs/dom/domref/dom_doc_ref8.html http://developer.mozilla.org/en/DOM:document.characterSet
+Redirect permanent /docs/dom/domref/dom_doc_ref9.html http://developer.mozilla.org/en/DOM:element.childNodes
+Redirect permanent /docs/dom/domref/dom_doc_ref10.html http://developer.mozilla.org/en/DOM:document.compatMode
+Redirect permanent /docs/dom/domref/dom_doc_ref11.html http://developer.mozilla.org/en/DOM:document.cookie
+Redirect permanent /docs/dom/domref/dom_doc_ref12.html http://developer.mozilla.org/en/DOM:document.contentWindow
+Redirect permanent /docs/dom/domref/dom_doc_ref13.html http://developer.mozilla.org/en/DOM:document.doctype
+Redirect permanent /docs/dom/domref/dom_doc_ref14.html http://developer.mozilla.org/en/DOM:document.documentElement
+Redirect permanent /docs/dom/domref/dom_doc_ref15.html http://developer.mozilla.org/en/DOM:document.domain
+Redirect permanent /docs/dom/domref/dom_doc_ref16.html http://developer.mozilla.org/en/DOM:document.embeds
+Redirect permanent /docs/dom/domref/dom_doc_ref17.html http://developer.mozilla.org/en/DOM:document.fgColor
+Redirect permanent /docs/dom/domref/dom_doc_ref18.html http://developer.mozilla.org/en/DOM:element.firstChild
+Redirect permanent /docs/dom/domref/dom_doc_ref19.html http://developer.mozilla.org/en/DOM:document.forms
+Redirect permanent /docs/dom/domref/dom_doc_ref20.html http://developer.mozilla.org/en/DOM:document.height
+Redirect permanent /docs/dom/domref/dom_doc_ref21.html http://developer.mozilla.org/en/DOM:document.images
+Redirect permanent /docs/dom/domref/dom_doc_ref22.html http://developer.mozilla.org/en/DOM:document.implementation
+Redirect permanent /docs/dom/domref/dom_doc_ref23.html http://developer.mozilla.org/en/DOM:document.lastModified
+Redirect permanent /docs/dom/domref/dom_doc_ref24.html http://developer.mozilla.org/en/DOM:document.linkColor
+Redirect permanent /docs/dom/domref/dom_doc_ref25.html http://developer.mozilla.org/en/DOM:document.links
+Redirect permanent /docs/dom/domref/dom_doc_ref26.html http://developer.mozilla.org/en/DOM:document.location
+Redirect permanent /docs/dom/domref/dom_doc_ref27.html http://developer.mozilla.org/en/DOM:element.namespaceURI
+Redirect permanent /docs/dom/domref/dom_doc_ref28.html http://developer.mozilla.org/en/DOM:element.nextSibling
+Redirect permanent /docs/dom/domref/dom_doc_ref29.html http://developer.mozilla.org/en/DOM:element.nodeName
+Redirect permanent /docs/dom/domref/dom_doc_ref30.html http://developer.mozilla.org/en/DOM:element.nodeType
+Redirect permanent /docs/dom/domref/dom_doc_ref31.html http://developer.mozilla.org/en/DOM:element.nodeValue
+Redirect permanent /docs/dom/domref/dom_doc_ref32.html http://developer.mozilla.org/en/DOM:element.ownerDocument
+Redirect permanent /docs/dom/domref/dom_doc_ref33.html http://developer.mozilla.org/en/DOM:element.parentNode
+Redirect permanent /docs/dom/domref/dom_doc_ref34.html http://developer.mozilla.org/en/DOM:document.plugins
+Redirect permanent /docs/dom/domref/dom_doc_ref35.html http://developer.mozilla.org/en/DOM:element.previousSibling
+Redirect permanent /docs/dom/domref/dom_doc_ref36.html http://developer.mozilla.org/en/DOM:document.referrer
+Redirect permanent /docs/dom/domref/dom_doc_ref37.html http://developer.mozilla.org/en/DOM:document.styleSheets
+Redirect permanent /docs/dom/domref/dom_doc_ref38.html http://developer.mozilla.org/en/DOM:document.title
+Redirect permanent /docs/dom/domref/dom_doc_ref39.html http://developer.mozilla.org/en/DOM:document.URL
+Redirect permanent /docs/dom/domref/dom_doc_ref40.html http://developer.mozilla.org/en/DOM:document.vlinkColor
+Redirect permanent /docs/dom/domref/dom_doc_ref41.html http://developer.mozilla.org/en/DOM:document.width
+Redirect permanent /docs/dom/domref/dom_doc_ref42.html http://developer.mozilla.org/en/DOM:document.clear
+Redirect permanent /docs/dom/domref/dom_doc_ref43.html http://developer.mozilla.org/en/DOM:document.close
+Redirect permanent /docs/dom/domref/dom_doc_ref44.html http://developer.mozilla.org/en/DOM:document.createAttribute
+Redirect permanent /docs/dom/domref/dom_doc_ref45.html http://developer.mozilla.org/en/DOM:document.createDocumentFragment
+Redirect permanent /docs/dom/domref/dom_doc_ref46.html http://developer.mozilla.org/en/DOM:document.createElement
+Redirect permanent /docs/dom/domref/dom_doc_ref47.html http://developer.mozilla.org/en/DOM:document.createTextNode
+Redirect permanent /docs/dom/domref/dom_doc_ref48.html http://developer.mozilla.org/en/DOM:document.getElementById
+Redirect permanent /docs/dom/domref/dom_doc_ref49.html http://developer.mozilla.org/en/DOM:document.getElementsByName
+Redirect permanent /docs/dom/domref/dom_doc_ref50.html http://developer.mozilla.org/en/DOM:element.getElementsByTagName
+Redirect permanent /docs/dom/domref/dom_doc_ref51.html http://developer.mozilla.org/en/DOM:document.open
+Redirect permanent /docs/dom/domref/dom_doc_ref52.html http://developer.mozilla.org/en/DOM:document.write
+Redirect permanent /docs/dom/domref/dom_doc_ref53.html http://developer.mozilla.org/en/DOM:document.writeln
+Redirect permanent /docs/dom/domref/dom_doc_ref54.html http://developer.mozilla.org/en/DOM:element.onblur
+Redirect permanent /docs/dom/domref/dom_doc_ref55.html http://developer.mozilla.org/en/DOM:element.onclick
+Redirect permanent /docs/dom/domref/dom_doc_ref56.html http://developer.mozilla.org/en/DOM:element.ondblclick
+Redirect permanent /docs/dom/domref/dom_doc_ref57.html http://developer.mozilla.org/en/DOM:element.onfocus
+Redirect permanent /docs/dom/domref/dom_doc_ref58.html http://developer.mozilla.org/en/DOM:element.onkeydown
+Redirect permanent /docs/dom/domref/dom_doc_ref59.html http://developer.mozilla.org/en/DOM:element.onkeypress
+Redirect permanent /docs/dom/domref/dom_doc_ref60.html http://developer.mozilla.org/en/DOM:element.onkeyup
+Redirect permanent /docs/dom/domref/dom_doc_ref61.html http://developer.mozilla.org/en/DOM:element.onmousedown
+Redirect permanent /docs/dom/domref/dom_doc_ref62.html http://developer.mozilla.org/en/DOM:element.onmousemove
+Redirect permanent /docs/dom/domref/dom_doc_ref63.html http://developer.mozilla.org/en/DOM:element.onmouseout
+Redirect permanent /docs/dom/domref/dom_doc_ref64.html http://developer.mozilla.org/en/DOM:element.onmouseover
+Redirect permanent /docs/dom/domref/dom_doc_ref65.html http://developer.mozilla.org/en/DOM:element.onmouseup
+Redirect permanent /docs/dom/domref/dom_doc_ref66.html http://developer.mozilla.org/en/DOM:element.onresize
+Redirect permanent /docs/dom/domref/dom_doc_ref67.html http://developer.mozilla.org/en/DOM:element.onresize
+Redirect permanent /docs/dom/domref/dom_el_ref.html http://developer.mozilla.org/en/DOM:element
+Redirect permanent /docs/dom/domref/dom_el_ref2.html http://developer.mozilla.org/en/DOM:element.attributes
+Redirect permanent /docs/dom/domref/dom_el_ref3.html http://developer.mozilla.org/en/DOM:element.childNodes
+Redirect permanent /docs/dom/domref/dom_el_ref4.html http://developer.mozilla.org/en/DOM:element.className
+Redirect permanent /docs/dom/domref/dom_el_ref5.html http://developer.mozilla.org/en/DOM:element.dir
+Redirect permanent /docs/dom/domref/dom_el_ref6.html http://developer.mozilla.org/en/DOM:element.firstChild
+Redirect permanent /docs/dom/domref/dom_el_ref7.html http://developer.mozilla.org/en/DOM:element.id
+Redirect permanent /docs/dom/domref/dom_el_ref8.html http://developer.mozilla.org/en/DOM:element.innerHTML
+Redirect permanent /docs/dom/domref/dom_el_ref9.html http://developer.mozilla.org/en/DOM:element.lang
+Redirect permanent /docs/dom/domref/dom_el_ref10.html http://developer.mozilla.org/en/DOM:element.lastChild
+Redirect permanent /docs/dom/domref/dom_el_ref11.html http://developer.mozilla.org/en/DOM:element.length
+Redirect permanent /docs/dom/domref/dom_el_ref12.html http://developer.mozilla.org/en/DOM:element.localName
+Redirect permanent /docs/dom/domref/dom_el_ref13.html http://developer.mozilla.org/en/DOM:element.namespaceURI
+Redirect permanent /docs/dom/domref/dom_el_ref14.html http://developer.mozilla.org/en/DOM:element.nextSibling
+Redirect permanent /docs/dom/domref/dom_el_ref15.html http://developer.mozilla.org/en/DOM:element.nodeName
+Redirect permanent /docs/dom/domref/dom_el_ref16.html http://developer.mozilla.org/en/DOM:element.nodeType
+Redirect permanent /docs/dom/domref/dom_el_ref17.html http://developer.mozilla.org/en/DOM:element.nodeValue
+Redirect permanent /docs/dom/domref/dom_el_ref18.html http://developer.mozilla.org/en/DOM:element.offsetHeight
+Redirect permanent /docs/dom/domref/dom_el_ref19.html http://developer.mozilla.org/en/DOM:element.offsetLeft
+Redirect permanent /docs/dom/domref/dom_el_ref20.html http://developer.mozilla.org/en/DOM:element.offsetParent
+Redirect permanent /docs/dom/domref/dom_el_ref21.html http://developer.mozilla.org/en/DOM:element.offsetTop
+Redirect permanent /docs/dom/domref/dom_el_ref22.html http://developer.mozilla.org/en/DOM:element.offsetWidth
+Redirect permanent /docs/dom/domref/dom_el_ref23.html http://developer.mozilla.org/en/DOM:element.ownerDocument
+Redirect permanent /docs/dom/domref/dom_el_ref24.html http://developer.mozilla.org/en/DOM:element.parentNode
+Redirect permanent /docs/dom/domref/dom_el_ref25.html http://developer.mozilla.org/en/DOM:element.prefix
+Redirect permanent /docs/dom/domref/dom_el_ref26.html http://developer.mozilla.org/en/DOM:element.previousSibling
+Redirect permanent /docs/dom/domref/dom_el_ref27.html http://developer.mozilla.org/en/DOM:element.style
+Redirect permanent /docs/dom/domref/dom_el_ref28.html http://developer.mozilla.org/en/DOM:element.tabIndex
+Redirect permanent /docs/dom/domref/dom_el_ref29.html http://developer.mozilla.org/en/DOM:element.tagName
+Redirect permanent /docs/dom/domref/dom_el_ref30.html http://developer.mozilla.org/en/DOM:document.title
+Redirect permanent /docs/dom/domref/dom_el_ref31.html http://developer.mozilla.org/en/DOM:element.addEventListener
+Redirect permanent /docs/dom/domref/dom_el_ref32.html http://developer.mozilla.org/en/DOM:element.appendChild
+Redirect permanent /docs/dom/domref/dom_el_ref33.html http://developer.mozilla.org/en/DOM:element.blur
+Redirect permanent /docs/dom/domref/dom_el_ref34.html http://developer.mozilla.org/en/DOM:element.click
+Redirect permanent /docs/dom/domref/dom_el_ref35.html http://developer.mozilla.org/en/DOM:element.cloneNode
+Redirect permanent /docs/dom/domref/dom_el_ref36.html http://developer.mozilla.org/en/DOM:element.dispatchEvent
+Redirect permanent /docs/dom/domref/dom_el_ref37.html http://developer.mozilla.org/en/DOM:element.focus
+Redirect permanent /docs/dom/domref/dom_el_ref38.html http://developer.mozilla.org/en/DOM:element.getAttribute
+Redirect permanent /docs/dom/domref/dom_el_ref39.html http://developer.mozilla.org/en/DOM:element.getAttributeNS
+Redirect permanent /docs/dom/domref/dom_el_ref40.html http://developer.mozilla.org/en/DOM:element.getAttributeNode
+Redirect permanent /docs/dom/domref/dom_el_ref41.html http://developer.mozilla.org/en/DOM:element.getAttributeNodeNS
+Redirect permanent /docs/dom/domref/dom_el_ref42.html http://developer.mozilla.org/en/DOM:element.getElementsByTagName
+Redirect permanent /docs/dom/domref/dom_el_ref43.html http://developer.mozilla.org/en/DOM:element.hasAttribute
+Redirect permanent /docs/dom/domref/dom_el_ref44.html http://developer.mozilla.org/en/DOM:element.hasAttributeNS
+Redirect permanent /docs/dom/domref/dom_el_ref45.html http://developer.mozilla.org/en/DOM:element.hasAttributes
+Redirect permanent /docs/dom/domref/dom_el_ref46.html http://developer.mozilla.org/en/DOM:element.hasChildNodes
+Redirect permanent /docs/dom/domref/dom_el_ref47.html http://developer.mozilla.org/en/DOM:element.insertBefore
+Redirect permanent /docs/dom/domref/dom_el_ref48.html http://developer.mozilla.org/en/DOM:element.item
+Redirect permanent /docs/dom/domref/dom_el_ref49.html http://developer.mozilla.org/en/DOM:element.nextSibling
+Redirect permanent /docs/dom/domref/dom_el_ref50.html http://developer.mozilla.org/en/DOM:element.normalize
+Redirect permanent /docs/dom/domref/dom_el_ref51.html http://developer.mozilla.org/en/DOM:element.removeAttribute
+Redirect permanent /docs/dom/domref/dom_el_ref52.html http://developer.mozilla.org/en/DOM:element.removeAttributeNS
+Redirect permanent /docs/dom/domref/dom_el_ref53.html http://developer.mozilla.org/en/DOM:element.removeAttributeNode
+Redirect permanent /docs/dom/domref/dom_el_ref54.html http://developer.mozilla.org/en/DOM:element.removeChild
+Redirect permanent /docs/dom/domref/dom_el_ref55.html http://developer.mozilla.org/en/DOM:element.removeEventListener
+Redirect permanent /docs/dom/domref/dom_el_ref56.html http://developer.mozilla.org/en/DOM:element.replaceChild
+Redirect permanent /docs/dom/domref/dom_el_ref57.html http://developer.mozilla.org/en/DOM:element.setAttribute
+Redirect permanent /docs/dom/domref/dom_el_ref58.html http://developer.mozilla.org/en/DOM:element.setAttributeNS
+Redirect permanent /docs/dom/domref/dom_el_ref59.html http://developer.mozilla.org/en/DOM:element.setAttributeNode
+Redirect permanent /docs/dom/domref/dom_el_ref60.html http://developer.mozilla.org/en/DOM:element.setAttributeNodeNS
+Redirect permanent /docs/dom/domref/dom_el_ref61.html http://developer.mozilla.org/en/DOM:element.supports
+Redirect permanent /docs/dom/domref/dom_el_ref62.html http://developer.mozilla.org/en/DOM:element.onblur
+Redirect permanent /docs/dom/domref/dom_el_ref63.html http://developer.mozilla.org/en/DOM:element.onclick
+Redirect permanent /docs/dom/domref/dom_el_ref64.html http://developer.mozilla.org/en/DOM:element.ondblclick
+Redirect permanent /docs/dom/domref/dom_el_ref65.html http://developer.mozilla.org/en/DOM:element.onfocus
+Redirect permanent /docs/dom/domref/dom_el_ref66.html http://developer.mozilla.org/en/DOM:element.onkeydown
+Redirect permanent /docs/dom/domref/dom_el_ref67.html http://developer.mozilla.org/en/DOM:element.onkeypress
+Redirect permanent /docs/dom/domref/dom_el_ref68.html http://developer.mozilla.org/en/DOM:element.onkeyup
+Redirect permanent /docs/dom/domref/dom_el_ref69.html http://developer.mozilla.org/en/DOM:element.onmousedown
+Redirect permanent /docs/dom/domref/dom_el_ref70.html http://developer.mozilla.org/en/DOM:element.onmousemove
+Redirect permanent /docs/dom/domref/dom_el_ref71.html http://developer.mozilla.org/en/DOM:element.onmouseout
+Redirect permanent /docs/dom/domref/dom_el_ref72.html http://developer.mozilla.org/en/DOM:element.onmouseover
+Redirect permanent /docs/dom/domref/dom_el_ref73.html http://developer.mozilla.org/en/DOM:element.onmouseup
+Redirect permanent /docs/dom/domref/dom_el_ref74.html http://developer.mozilla.org/en/DOM:element.onresize
+Redirect permanent /docs/dom/domref/dom_event_ref.html http://developer.mozilla.org/en/DOM:event
+Redirect permanent /docs/dom/domref/dom_event_ref2.html http://developer.mozilla.org/en/DOM:event.altKey
+Redirect permanent /docs/dom/domref/dom_event_ref3.html http://developer.mozilla.org/en/DOM:event.bubbles
+Redirect permanent /docs/dom/domref/dom_event_ref4.html http://developer.mozilla.org/en/DOM:event.cancelBubble
+Redirect permanent /docs/dom/domref/dom_event_ref5.html http://developer.mozilla.org/en/DOM:event.cancelable
+Redirect permanent /docs/dom/domref/dom_event_ref6.html http://developer.mozilla.org/en/DOM:event.charCode
+Redirect permanent /docs/dom/domref/dom_event_ref7.html http://developer.mozilla.org/en/DOM:event.clientX
+Redirect permanent /docs/dom/domref/dom_event_ref8.html http://developer.mozilla.org/en/DOM:event.clientY
+Redirect permanent /docs/dom/domref/dom_event_ref9.html http://developer.mozilla.org/en/DOM:event.ctrlKey
+Redirect permanent /docs/dom/domref/dom_event_ref10.html http://developer.mozilla.org/en/DOM:event.currentTarget
+Redirect permanent /docs/dom/domref/dom_event_ref11.html http://developer.mozilla.org/en/DOM:event.detail
+Redirect permanent /docs/dom/domref/dom_event_ref12.html http://developer.mozilla.org/en/DOM:event.eventPhase
+Redirect permanent /docs/dom/domref/dom_event_ref13.html http://developer.mozilla.org/en/DOM:event.isChar
+Redirect permanent /docs/dom/domref/dom_event_ref14.html http://developer.mozilla.org/en/DOM:event.keyCode
+Redirect permanent /docs/dom/domref/dom_event_ref15.html http://developer.mozilla.org/en/DOM:event.layerX
+Redirect permanent /docs/dom/domref/dom_event_ref16.html http://developer.mozilla.org/en/DOM:event.layerY
+Redirect permanent /docs/dom/domref/dom_event_ref17.html http://developer.mozilla.org/en/DOM:event.metaKey
+Redirect permanent /docs/dom/domref/dom_event_ref18.html http://developer.mozilla.org/en/DOM:event.pageX
+Redirect permanent /docs/dom/domref/dom_event_ref19.html http://developer.mozilla.org/en/DOM:event.pageY
+Redirect permanent /docs/dom/domref/dom_event_ref20.html http://developer.mozilla.org/en/DOM:event.relatedTarget
+Redirect permanent /docs/dom/domref/dom_event_ref21.html http://developer.mozilla.org/en/DOM:event.screenX
+Redirect permanent /docs/dom/domref/dom_event_ref22.html http://developer.mozilla.org/en/DOM:event.screenY
+Redirect permanent /docs/dom/domref/dom_event_ref23.html http://developer.mozilla.org/en/DOM:event.shiftKey
+Redirect permanent /docs/dom/domref/dom_event_ref24.html http://developer.mozilla.org/en/DOM:event.target
+Redirect permanent /docs/dom/domref/dom_event_ref25.html http://developer.mozilla.org/en/DOM:event.timeStamp
+Redirect permanent /docs/dom/domref/dom_event_ref26.html http://developer.mozilla.org/en/DOM:event.type
+Redirect permanent /docs/dom/domref/dom_event_ref27.html http://developer.mozilla.org/en/DOM:event.view
+Redirect permanent /docs/dom/domref/dom_event_ref28.html http://developer.mozilla.org/en/DOM:event.initEvent
+Redirect permanent /docs/dom/domref/dom_event_ref29.html http://developer.mozilla.org/en/DOM:event.initMouseEvent
+Redirect permanent /docs/dom/domref/dom_event_ref30.html http://developer.mozilla.org/en/DOM:event.initUIEvent
+Redirect permanent /docs/dom/domref/dom_event_ref31.html http://developer.mozilla.org/en/DOM:event.preventDefault
+Redirect permanent /docs/dom/domref/dom_event_ref32.html http://developer.mozilla.org/en/DOM:event.stopPropagation
+Redirect permanent /docs/dom/domref/dom_html_ref2.html http://developer.mozilla.org/en/DOM:form.elements
+Redirect permanent /docs/dom/domref/dom_html_ref3.html http://developer.mozilla.org/en/DOM:form.length
+Redirect permanent /docs/dom/domref/dom_html_ref4.html http://developer.mozilla.org/en/DOM:form.name
+Redirect permanent /docs/dom/domref/dom_html_ref5.html http://developer.mozilla.org/en/DOM:form.acceptCharset
+Redirect permanent /docs/dom/domref/dom_html_ref6.html http://developer.mozilla.org/en/DOM:form.action
+Redirect permanent /docs/dom/domref/dom_html_ref7.html http://developer.mozilla.org/en/DOM:form.enctype
+Redirect permanent /docs/dom/domref/dom_html_ref8.html http://developer.mozilla.org/en/DOM:form.encoding
+Redirect permanent /docs/dom/domref/dom_html_ref9.html http://developer.mozilla.org/en/DOM:form.method
+Redirect permanent /docs/dom/domref/dom_html_ref10.html http://developer.mozilla.org/en/DOM:form.target
+Redirect permanent /docs/dom/domref/dom_html_ref11.html http://developer.mozilla.org/en/DOM:form.submit
+Redirect permanent /docs/dom/domref/dom_html_ref12.html http://developer.mozilla.org/en/DOM:table
+Redirect permanent /docs/dom/domref/dom_html_ref13.html http://developer.mozilla.org/en/DOM:table.caption
+Redirect permanent /docs/dom/domref/dom_html_ref14.html http://developer.mozilla.org/en/DOM:table.tHead
+Redirect permanent /docs/dom/domref/dom_html_ref15.html http://developer.mozilla.org/en/DOM:table.tFoot
+Redirect permanent /docs/dom/domref/dom_html_ref16.html http://developer.mozilla.org/en/DOM:table.rows
+Redirect permanent /docs/dom/domref/dom_html_ref17.html http://developer.mozilla.org/en/DOM:table.tBodies
+Redirect permanent /docs/dom/domref/dom_html_ref18.html http://developer.mozilla.org/en/DOM:table.align
+Redirect permanent /docs/dom/domref/dom_html_ref19.html http://developer.mozilla.org/en/DOM:table.bgColor
+Redirect permanent /docs/dom/domref/dom_html_ref20.html http://developer.mozilla.org/en/DOM:table.border
+Redirect permanent /docs/dom/domref/dom_html_ref21.html http://developer.mozilla.org/en/DOM:table.cellPadding
+Redirect permanent /docs/dom/domref/dom_html_ref22.html http://developer.mozilla.org/en/DOM:table.frame
+Redirect permanent /docs/dom/domref/dom_html_ref23.html http://developer.mozilla.org/en/DOM:table.rules
+Redirect permanent /docs/dom/domref/dom_html_ref24.html http://developer.mozilla.org/en/DOM:table.summary
+Redirect permanent /docs/dom/domref/dom_html_ref25.html http://developer.mozilla.org/en/DOM:table.width
+Redirect permanent /docs/dom/domref/dom_html_ref26.html http://developer.mozilla.org/en/DOM:table.deleteTHead
+Redirect permanent /docs/dom/domref/dom_html_ref27.html http://developer.mozilla.org/en/DOM:table.createTFoot
+Redirect permanent /docs/dom/domref/dom_html_ref28.html http://developer.mozilla.org/en/DOM:table.deleteTFoot
+Redirect permanent /docs/dom/domref/dom_html_ref29.html http://developer.mozilla.org/en/DOM:table.createCaption
+Redirect permanent /docs/dom/domref/dom_html_ref30.html http://developer.mozilla.org/en/DOM:table.deleteCaption
+Redirect permanent /docs/dom/domref/dom_html_ref31.html http://developer.mozilla.org/en/DOM:table.insertRow
+Redirect permanent /docs/dom/domref/dom_html_ref32.html http://developer.mozilla.org/en/DOM:table.deleteRow
+Redirect permanent /docs/dom/domref/dom_html_ref33.html http://developer.mozilla.org/en/DOM:table.insertRow
+Redirect permanent /docs/dom/domref/dom_html_ref34.html http://developer.mozilla.org/en/DOM:table.deleteRow
+Redirect permanent /docs/dom/domref/dom_intro.html http://developer.mozilla.org/en/Gecko_DOM_Reference/Introduction
+Redirect permanent /docs/dom/domref/dom_range_ref.html http://developer.mozilla.org/en/DOM:range
+Redirect permanent /docs/dom/domref/dom_range_ref2.html http://developer.mozilla.org/en/DOM:range.collapsed
+Redirect permanent /docs/dom/domref/dom_range_ref3.html http://developer.mozilla.org/en/DOM:range.commonAncestorContainer
+Redirect permanent /docs/dom/domref/dom_range_ref4.html http://developer.mozilla.org/en/DOM:range.endContainer
+Redirect permanent /docs/dom/domref/dom_range_ref5.html http://developer.mozilla.org/en/DOM:range.endOffset
+Redirect permanent /docs/dom/domref/dom_range_ref6.html http://developer.mozilla.org/en/DOM:range.startContainer
+Redirect permanent /docs/dom/domref/dom_range_ref7.html http://developer.mozilla.org/en/DOM:range.startOffset
+Redirect permanent /docs/dom/domref/dom_range_ref8.html http://developer.mozilla.org/en/DOM:document.createRange
+Redirect permanent /docs/dom/domref/dom_range_ref9.html http://developer.mozilla.org/en/DOM:range.setStart
+Redirect permanent /docs/dom/domref/dom_range_ref10.html http://developer.mozilla.org/en/DOM:range.setEnd
+Redirect permanent /docs/dom/domref/dom_range_ref11.html http://developer.mozilla.org/en/DOM:range.setStartBefore
+Redirect permanent /docs/dom/domref/dom_range_ref12.html http://developer.mozilla.org/en/DOM:range.setStartAfter
+Redirect permanent /docs/dom/domref/dom_range_ref13.html http://developer.mozilla.org/en/DOM:range.setEndBefore
+Redirect permanent /docs/dom/domref/dom_range_ref14.html http://developer.mozilla.org/en/DOM:range.setEndAfter
+Redirect permanent /docs/dom/domref/dom_range_ref15.html http://developer.mozilla.org/en/DOM:range.selectNode
+Redirect permanent /docs/dom/domref/dom_range_ref16.html http://developer.mozilla.org/en/DOM:range.selectNodeContents
+Redirect permanent /docs/dom/domref/dom_range_ref17.html http://developer.mozilla.org/en/DOM:range.collapse
+Redirect permanent /docs/dom/domref/dom_range_ref18.html http://developer.mozilla.org/en/DOM:range.cloneContents
+Redirect permanent /docs/dom/domref/dom_range_ref19.html http://developer.mozilla.org/en/DOM:range.deleteContents
+Redirect permanent /docs/dom/domref/dom_range_ref20.html http://developer.mozilla.org/en/DOM:range.extractContents
+Redirect permanent /docs/dom/domref/dom_range_ref21.html http://developer.mozilla.org/en/DOM:range.insertNode
+Redirect permanent /docs/dom/domref/dom_range_ref22.html http://developer.mozilla.org/en/DOM:range.surroundContents
+Redirect permanent /docs/dom/domref/dom_range_ref23.html http://developer.mozilla.org/en/DOM:range.compareBoundaryPoints
+Redirect permanent /docs/dom/domref/dom_range_ref24.html http://developer.mozilla.org/en/DOM:range.cloneRange
+Redirect permanent /docs/dom/domref/dom_range_ref25.html http://developer.mozilla.org/en/DOM:range.detach
+Redirect permanent /docs/dom/domref/dom_range_ref26.html http://developer.mozilla.org/en/DOM:range.toString
+Redirect permanent /docs/dom/domref/dom_shortTOC.html http://developer.mozilla.org/en/Gecko_DOM_Reference
+Redirect permanent /docs/dom/domref/dom_style_ref.html http://developer.mozilla.org/en/DOM:style
+Redirect permanent /docs/dom/domref/dom_style_ref2.html http://developer.mozilla.org/en/DOM:style.media
+Redirect permanent /docs/dom/domref/dom_style_ref3.html http://developer.mozilla.org/en/DOM:stylesheet
+Redirect permanent /docs/dom/domref/dom_style_ref4.html http://developer.mozilla.org/en/DOM:stylesheet.cssRules
+Redirect permanent /docs/dom/domref/dom_style_ref5.html http://developer.mozilla.org/en/DOM:stylesheet.disabled
+Redirect permanent /docs/dom/domref/dom_style_ref6.html http://developer.mozilla.org/en/DOM:stylesheet.href
+Redirect permanent /docs/dom/domref/dom_style_ref7.html http://developer.mozilla.org/en/DOM:stylesheet.media
+Redirect permanent /docs/dom/domref/dom_style_ref8.html http://developer.mozilla.org/en/DOM:stylesheet.ownerNode
+Redirect permanent /docs/dom/domref/dom_style_ref9.html http://developer.mozilla.org/en/DOM:stylesheet.ownerRule
+Redirect permanent /docs/dom/domref/dom_style_ref10.html http://developer.mozilla.org/en/DOM:stylesheet.parentStyleSheet
+Redirect permanent /docs/dom/domref/dom_style_ref11.html http://developer.mozilla.org/en/DOM:stylesheet.title
+Redirect permanent /docs/dom/domref/dom_style_ref12.html http://developer.mozilla.org/en/DOM:stylesheet.type
+Redirect permanent /docs/dom/domref/dom_style_ref13.html http://developer.mozilla.org/en/DOM:stylesheet.deleteRule
+Redirect permanent /docs/dom/domref/dom_style_ref14.html http://developer.mozilla.org/en/DOM:stylesheet.insertRule
+Redirect permanent /docs/dom/domref/dom_style_ref15.html http://developer.mozilla.org/en/DOM:cssRule.cssText
+Redirect permanent /docs/dom/domref/dom_style_ref16.html http://developer.mozilla.org/en/DOM:cssRule.parentStyleSheet
+Redirect permanent /docs/dom/domref/dom_style_ref17.html http://developer.mozilla.org/en/DOM:cssRule.selectorText
+Redirect permanent /docs/dom/domref/dom_style_ref18.html http://developer.mozilla.org/en/DOM:cssRule.style
+Redirect permanent /docs/dom/domref/dom_style_ref19.html http://developer.mozilla.org/en/DOM:cssRule.parentStyleSheet
+Redirect permanent /docs/dom/domref/dom_style_ref20.html http://developer.mozilla.org/en/DOM:cssRule.selectorText
+Redirect permanent /docs/dom/domref/dom_style_ref21.html http://developer.mozilla.org/en/DOM:cssRule.style
+Redirect permanent /docs/dom/domref/dom_style_ref22.html http://developer.mozilla.org/en/DOM:CSS
+Redirect permanent /docs/dom/domref/dom_window_ref.html http://developer.mozilla.org/en/DOM:window
+Redirect permanent /docs/dom/domref/dom_window_ref2.html http://developer.mozilla.org/en/DOM:window.alert
+Redirect permanent /docs/dom/domref/dom_window_ref3.html http://developer.mozilla.org/en/DOM:window.content
+Redirect permanent /docs/dom/domref/dom_window_ref4.html http://developer.mozilla.org/en/DOM:window.back
+Redirect permanent /docs/dom/domref/dom_window_ref5.html http://developer.mozilla.org/en/DOM:window.blur
+Redirect permanent /docs/dom/domref/dom_window_ref6.html http://developer.mozilla.org/en/DOM:window.captureEvents
+Redirect permanent /docs/dom/domref/dom_window_ref7.html http://developer.mozilla.org/en/DOM:window.clearInterval
+Redirect permanent /docs/dom/domref/dom_window_ref8.html http://developer.mozilla.org/en/DOM:window.clearTimeout
+Redirect permanent /docs/dom/domref/dom_window_ref9.html http://developer.mozilla.org/en/DOM:window.close
+Redirect permanent /docs/dom/domref/dom_window_ref10.html http://developer.mozilla.org/en/DOM:window.closed
+Redirect permanent /docs/dom/domref/dom_window_ref11.html http://developer.mozilla.org/en/DOM:window.Components
+Redirect permanent /docs/dom/domref/dom_window_ref12.html http://developer.mozilla.org/en/DOM:window.confirm
+Redirect permanent /docs/dom/domref/dom_window_ref13.html http://developer.mozilla.org/en/DOM:window.controllers
+Redirect permanent /docs/dom/domref/dom_window_ref14.html http://developer.mozilla.org/en/DOM:window.crypto
+Redirect permanent /docs/dom/domref/dom_window_ref15.html http://developer.mozilla.org/en/DOM:window.defaultStatus
+Redirect permanent /docs/dom/domref/dom_window_ref16.html http://developer.mozilla.org/en/DOM:window.directories
+Redirect permanent /docs/dom/domref/dom_window_ref17.html http://developer.mozilla.org/en/DOM:window.document
+Redirect permanent /docs/dom/domref/dom_window_ref18.html http://developer.mozilla.org/en/DOM:window.dump
+Redirect permanent /docs/dom/domref/dom_window_ref19.html http://developer.mozilla.org/en/DOM:window.escape
+Redirect permanent /docs/dom/domref/dom_window_ref20.html http://developer.mozilla.org/en/DOM:window.focus
+Redirect permanent /docs/dom/domref/dom_window_ref21.html http://developer.mozilla.org/en/DOM:window.forward
+Redirect permanent /docs/dom/domref/dom_window_ref22.html http://developer.mozilla.org/en/DOM:window.frames
+Redirect permanent /docs/dom/domref/dom_window_ref23.html http://developer.mozilla.org/en/DOM:window.getAttention
+Redirect permanent /docs/dom/domref/dom_window_ref24.html http://developer.mozilla.org/en/DOM:window.getSelection
+Redirect permanent /docs/dom/domref/dom_window_ref25.html http://developer.mozilla.org/en/DOM:window.history
+Redirect permanent /docs/dom/domref/dom_window_ref26.html http://developer.mozilla.org/en/DOM:window.home
+Redirect permanent /docs/dom/domref/dom_window_ref27.html http://developer.mozilla.org/en/DOM:window.innerHeight
+Redirect permanent /docs/dom/domref/dom_window_ref28.html http://developer.mozilla.org/en/DOM:window.innerWidth
+Redirect permanent /docs/dom/domref/dom_window_ref29.html http://developer.mozilla.org/en/DOM:window.length
+Redirect permanent /docs/dom/domref/dom_window_ref30.html http://developer.mozilla.org/en/DOM:window.location
+Redirect permanent /docs/dom/domref/dom_window_ref31.html http://developer.mozilla.org/en/DOM:window.locationbar
+Redirect permanent /docs/dom/domref/dom_window_ref32.html http://developer.mozilla.org/en/DOM:window.menubar
+Redirect permanent /docs/dom/domref/dom_window_ref33.html http://developer.mozilla.org/en/DOM:window.moveBy
+Redirect permanent /docs/dom/domref/dom_window_ref34.html http://developer.mozilla.org/en/DOM:window.moveTo
+Redirect permanent /docs/dom/domref/dom_window_ref35.html http://developer.mozilla.org/en/DOM:window.name
+Redirect permanent /docs/dom/domref/dom_window_ref36.html http://developer.mozilla.org/en/DOM:window.navigator
+Redirect permanent /docs/dom/domref/dom_window_ref37.html http://developer.mozilla.org/en/DOM:window.navigator.appCodeName
+Redirect permanent /docs/dom/domref/dom_window_ref38.html http://developer.mozilla.org/en/DOM:window.navigator.appName
+Redirect permanent /docs/dom/domref/dom_window_ref39.html http://developer.mozilla.org/en/DOM:window.navigator.appVersion
+Redirect permanent /docs/dom/domref/dom_window_ref40.html http://developer.mozilla.org/en/DOM:window.navigator.cookieEnabled
+Redirect permanent /docs/dom/domref/dom_window_ref41.html http://developer.mozilla.org/en/DOM:window.navigator.javaEnabled
+Redirect permanent /docs/dom/domref/dom_window_ref42.html http://developer.mozilla.org/en/DOM:window.navigator.language
+Redirect permanent /docs/dom/domref/dom_window_ref43.html http://developer.mozilla.org/en/DOM:window.navigator.mimeTypes
+Redirect permanent /docs/dom/domref/dom_window_ref44.html http://developer.mozilla.org/en/DOM:window.navigator.oscpu
+Redirect permanent /docs/dom/domref/dom_window_ref45.html http://developer.mozilla.org/en/DOM:window.navigator.platform
+Redirect permanent /docs/dom/domref/dom_window_ref46.html http://developer.mozilla.org/en/DOM:window.navigator.plugins
+Redirect permanent /docs/dom/domref/dom_window_ref47.html http://developer.mozilla.org/en/DOM:window.navigator.product
+Redirect permanent /docs/dom/domref/dom_window_ref48.html http://developer.mozilla.org/en/DOM:window.navigator.productSub
+Redirect permanent /docs/dom/domref/dom_window_ref49.html http://developer.mozilla.org/en/DOM:window.navigator.userAgent
+Redirect permanent /docs/dom/domref/dom_window_ref50.html http://developer.mozilla.org/en/DOM:window.navigator.vendor
+Redirect permanent /docs/dom/domref/dom_window_ref51.html http://developer.mozilla.org/en/DOM:window.navigator.vendorSub
+Redirect permanent /docs/dom/domref/dom_window_ref52.html http://developer.mozilla.org/en/DOM:window.onabort
+Redirect permanent /docs/dom/domref/dom_window_ref53.html http://developer.mozilla.org/en/DOM:window.onblur
+Redirect permanent /docs/dom/domref/dom_window_ref54.html http://developer.mozilla.org/en/DOM:window.onchange
+Redirect permanent /docs/dom/domref/dom_window_ref55.html http://developer.mozilla.org/en/DOM:window.onclick
+Redirect permanent /docs/dom/domref/dom_window_ref56.html http://developer.mozilla.org/en/DOM:window.onclose
+Redirect permanent /docs/dom/domref/dom_window_ref57.html http://developer.mozilla.org/en/DOM:window.ondragdrop
+Redirect permanent /docs/dom/domref/dom_window_ref58.html http://developer.mozilla.org/en/DOM:window.onerror
+Redirect permanent /docs/dom/domref/dom_window_ref59.html http://developer.mozilla.org/en/DOM:window.onfocus
+Redirect permanent /docs/dom/domref/dom_window_ref60.html http://developer.mozilla.org/en/DOM:window.onkeydown
+Redirect permanent /docs/dom/domref/dom_window_ref61.html http://developer.mozilla.org/en/DOM:window.onkeypress
+Redirect permanent /docs/dom/domref/dom_window_ref62.html http://developer.mozilla.org/en/DOM:window.onkeyup
+Redirect permanent /docs/dom/domref/dom_window_ref63.html http://developer.mozilla.org/en/DOM:window.onload
+Redirect permanent /docs/dom/domref/dom_window_ref64.html http://developer.mozilla.org/en/DOM:window.onmousedown
+Redirect permanent /docs/dom/domref/dom_window_ref65.html http://developer.mozilla.org/en/DOM:window.onmousemove
+Redirect permanent /docs/dom/domref/dom_window_ref66.html http://developer.mozilla.org/en/DOM:window.onmouseout
+Redirect permanent /docs/dom/domref/dom_window_ref67.html http://developer.mozilla.org/en/DOM:window.onmouseover
+Redirect permanent /docs/dom/domref/dom_window_ref68.html http://developer.mozilla.org/en/DOM:window.onmouseup
+Redirect permanent /docs/dom/domref/dom_window_ref69.html http://developer.mozilla.org/en/DOM:window.onpaint
+Redirect permanent /docs/dom/domref/dom_window_ref70.html http://developer.mozilla.org/en/DOM:window.onreset
+Redirect permanent /docs/dom/domref/dom_window_ref71.html http://developer.mozilla.org/en/DOM:window.onresize
+Redirect permanent /docs/dom/domref/dom_window_ref72.html http://developer.mozilla.org/en/DOM:window.onscroll
+Redirect permanent /docs/dom/domref/dom_window_ref73.html http://developer.mozilla.org/en/DOM:window.onselect
+Redirect permanent /docs/dom/domref/dom_window_ref74.html http://developer.mozilla.org/en/DOM:window.onsubmit
+Redirect permanent /docs/dom/domref/dom_window_ref75.html http://developer.mozilla.org/en/DOM:window.onunload
+Redirect permanent /docs/dom/domref/dom_window_ref76.html http://developer.mozilla.org/en/DOM:window.open
+Redirect permanent /docs/dom/domref/dom_window_ref77.html http://developer.mozilla.org/en/DOM:window.opener
+Redirect permanent /docs/dom/domref/dom_window_ref78.html http://developer.mozilla.org/en/DOM:window.outerHeight
+Redirect permanent /docs/dom/domref/dom_window_ref79.html http://developer.mozilla.org/en/DOM:window.outerWidth
+Redirect permanent /docs/dom/domref/dom_window_ref80.html http://developer.mozilla.org/en/DOM:window.pageXOffset
+Redirect permanent /docs/dom/domref/dom_window_ref81.html http://developer.mozilla.org/en/DOM:window.pageYOffset
+Redirect permanent /docs/dom/domref/dom_window_ref82.html http://developer.mozilla.org/en/DOM:window.parent
+Redirect permanent /docs/dom/domref/dom_window_ref83.html http://developer.mozilla.org/en/DOM:window.personalbar
+Redirect permanent /docs/dom/domref/dom_window_ref84.html http://developer.mozilla.org/en/DOM:window.pkcs11
+Redirect permanent /docs/dom/domref/dom_window_ref85.html http://developer.mozilla.org/en/DOM:window.print
+Redirect permanent /docs/dom/domref/dom_window_ref86.html http://developer.mozilla.org/en/DOM:window.prompt
+Redirect permanent /docs/dom/domref/dom_window_ref87.html http://developer.mozilla.org/en/DOM:window.prompter
+Redirect permanent /docs/dom/domref/dom_window_ref88.html http://developer.mozilla.org/en/DOM:window.releaseEvents
+Redirect permanent /docs/dom/domref/dom_window_ref89.html http://developer.mozilla.org/en/DOM:window.resizeBy
+Redirect permanent /docs/dom/domref/dom_window_ref90.html http://developer.mozilla.org/en/DOM:window.resizeTo
+Redirect permanent /docs/dom/domref/dom_window_ref91.html http://developer.mozilla.org/en/DOM:window.screen
+Redirect permanent /docs/dom/domref/dom_window_ref92.html http://developer.mozilla.org/en/DOM:window.screen.availHeight
+Redirect permanent /docs/dom/domref/dom_window_ref93.html http://developer.mozilla.org/en/DOM:window.screen.availLeft
+Redirect permanent /docs/dom/domref/dom_window_ref94.html http://developer.mozilla.org/en/DOM:window.screen.availTop
+Redirect permanent /docs/dom/domref/dom_window_ref95.html http://developer.mozilla.org/en/DOM:window.screen.availWidth
+Redirect permanent /docs/dom/domref/dom_window_ref96.html http://developer.mozilla.org/en/DOM:window.screen.colorDepth
+Redirect permanent /docs/dom/domref/dom_window_ref97.html http://developer.mozilla.org/en/DOM:window.screen.height
+Redirect permanent /docs/dom/domref/dom_window_ref98.html http://developer.mozilla.org/en/DOM:window.screen.left
+Redirect permanent /docs/dom/domref/dom_window_ref99.html http://developer.mozilla.org/en/DOM:window.screen.pixelDepth
+Redirect permanent /docs/dom/domref/dom_window_ref100.html http://developer.mozilla.org/en/DOM:window.screen.top
+Redirect permanent /docs/dom/domref/dom_window_ref101.html http://developer.mozilla.org/en/DOM:window.screen.width
+Redirect permanent /docs/dom/domref/dom_window_ref102.html http://developer.mozilla.org/en/DOM:window.screenX
+Redirect permanent /docs/dom/domref/dom_window_ref103.html http://developer.mozilla.org/en/DOM:window.screenY
+Redirect permanent /docs/dom/domref/dom_window_ref104.html http://developer.mozilla.org/en/DOM:window.scrollbars
+Redirect permanent /docs/dom/domref/dom_window_ref105.html http://developer.mozilla.org/en/DOM:window.scroll
+Redirect permanent /docs/dom/domref/dom_window_ref106.html http://developer.mozilla.org/en/DOM:window.scrollBy
+Redirect permanent /docs/dom/domref/dom_window_ref107.html http://developer.mozilla.org/en/DOM:window.scrollByLines
+Redirect permanent /docs/dom/domref/dom_window_ref108.html http://developer.mozilla.org/en/DOM:window.scrollByPages
+Redirect permanent /docs/dom/domref/dom_window_ref109.html http://developer.mozilla.org/en/DOM:window.scrollTo
+Redirect permanent /docs/dom/domref/dom_window_ref110.html http://developer.mozilla.org/en/DOM:window.scrollX
+Redirect permanent /docs/dom/domref/dom_window_ref111.html http://developer.mozilla.org/en/DOM:window.scrollY
+Redirect permanent /docs/dom/domref/dom_window_ref112.html http://developer.mozilla.org/en/DOM:window.self
+Redirect permanent /docs/dom/domref/dom_window_ref113.html http://developer.mozilla.org/en/DOM:window.setCursor
+Redirect permanent /docs/dom/domref/dom_window_ref114.html http://developer.mozilla.org/en/DOM:window.setInterval
+Redirect permanent /docs/dom/domref/dom_window_ref115.html http://developer.mozilla.org/en/DOM:window.setTimeout
+Redirect permanent /docs/dom/domref/dom_window_ref116.html http://developer.mozilla.org/en/DOM:window.sidebar
+Redirect permanent /docs/dom/domref/dom_window_ref117.html http://developer.mozilla.org/en/DOM:window.sizeToContent
+Redirect permanent /docs/dom/domref/dom_window_ref118.html http://developer.mozilla.org/en/DOM:window.status
+Redirect permanent /docs/dom/domref/dom_window_ref119.html http://developer.mozilla.org/en/DOM:window.statusbar
+Redirect permanent /docs/dom/domref/dom_window_ref120.html http://developer.mozilla.org/en/DOM:window.stop
+Redirect permanent /docs/dom/domref/dom_window_ref121.html http://developer.mozilla.org/en/DOM:window.toolbar
+Redirect permanent /docs/dom/domref/dom_window_ref122.html http://developer.mozilla.org/en/DOM:window.top
+Redirect permanent /docs/dom/domref/dom_window_ref123.html http://developer.mozilla.org/en/DOM:window.unescape
+Redirect permanent /docs/dom/domref/dom_window_ref124.html http://developer.mozilla.org/en/DOM:window.updateCommands
+Redirect permanent /docs/dom/domref/dom_window_ref125.html http://developer.mozilla.org/en/DOM:window.window
+Redirect permanent /docs/dom/domref/dom_window_ref126.html http://developer.mozilla.org/en/DOM:window.window
+Redirect permanent /docs/dom/domref/dom_window_ref127.html http://developer.mozilla.org/en/DOM:window.window
+Redirect permanent /docs/dom/domref/dom_window_refa2.html http://developer.mozilla.org/en/DOM:window.alert
+Redirect permanent /docs/dom/domref/dom_window_refa3.html http://developer.mozilla.org/en/DOM:window.content
+Redirect permanent /docs/dom/domref/examples.html http://developer.mozilla.org/en/Gecko_DOM_Reference:Examples
+Redirect permanent /docs/dom/domref/examples2.html http://developer.mozilla.org/en/Gecko_DOM_Reference:Examples
+Redirect permanent /docs/dom/domref/examples3.html http://developer.mozilla.org/en/Gecko_DOM_Reference:Examples
+Redirect permanent /docs/dom/domref/examples4.html http://developer.mozilla.org/en/Gecko_DOM_Reference:Examples
+Redirect permanent /docs/dom/domref/examples5.html http://developer.mozilla.org/en/Gecko_DOM_Reference:Examples
+Redirect permanent /docs/dom/domref/examples6.html http://developer.mozilla.org/en/Gecko_DOM_Reference:Examples
+Redirect permanent /docs/dom/domref/examples7_res.html http://developer.mozilla.org/en/Gecko_DOM_Reference:Examples
+Redirect permanent /docs/dom/domref/examples7.html http://developer.mozilla.org/en/Gecko_DOM_Reference:Examples
+Redirect permanent /docs/dom/domref/examples8.html http://developer.mozilla.org/en/Gecko_DOM_Reference:Examples
+Redirect permanent /docs/dom/domref/images/alert.gif http://developer.mozilla.org/wiki-images/en/6/6c/domref-alert.gif
+Redirect permanent /docs/dom/domref/images/backgrnd.gif http://developer.mozilla.org/wiki-images/en/f/fe/domref-backgrnd.gif
+Redirect permanent /docs/dom/domref/images/cat.jpg http://developer.mozilla.org/wiki-images/en/1/17/domref-cat.jpg
+Redirect permanent /docs/dom/domref/images/clientHeight.png http://developer.mozilla.org/wiki-images/en/0/09/domref-clientHeight.png
+Redirect permanent /docs/dom/domref/images/clientWidth.png http://developer.mozilla.org/wiki-images/en/a/a3/domref-clientWidth.png
+Redirect permanent /docs/dom/domref/images/confirm.gif http://developer.mozilla.org/wiki-images/en/6/64/domref-confirm.gif
+Redirect permanent /docs/dom/domref/images/dom_window_ref2.gif http://developer.mozilla.org/wiki-images/en/2/20/domref-dom_window_ref2.gif
+Redirect permanent /docs/dom/domref/images/dom_window_ref3.gif http://developer.mozilla.org/wiki-images/en/6/65/domref-dom_window_ref3.gif
+Redirect permanent /docs/dom/domref/images/dom_window_refa.gif http://developer.mozilla.org/wiki-images/en/0/0f/domref-dom_window_refa.gif
+Redirect permanent /docs/dom/domref/images/dom_window_refa2.gif http://developer.mozilla.org/wiki-images/en/2/2b/domref-dom_window_refa2.gif
+Redirect permanent /docs/dom/domref/images/dom_window_refa3.gif http://developer.mozilla.org/wiki-images/en/5/53/domref-dom_window_refa3.gif
+Redirect permanent /docs/dom/domref/images/domref.gif http://developer.mozilla.org/wiki-images/en/e/ed/domref.gif
+Redirect permanent /docs/dom/domref/images/navidx.gif http://developer.mozilla.org/wiki-images/en/f/f7/domref-navidx.gif
+Redirect permanent /docs/dom/domref/images/navidxx.gif http://developer.mozilla.org/wiki-images/en/6/66/domref-navidxx.gif
+Redirect permanent /docs/dom/domref/images/navnext.gif http://developer.mozilla.org/wiki-images/en/5/5a/domref-navnext.gif
+Redirect permanent /docs/dom/domref/images/navnextx.gif http://developer.mozilla.org/wiki-images/en/e/e2/domref-navnextx.gif
+Redirect permanent /docs/dom/domref/images/navprev.gif http://developer.mozilla.org/wiki-images/en/2/20/domref-navprev.gif
+Redirect permanent /docs/dom/domref/images/navprevx.gif http://developer.mozilla.org/wiki-images/en/4/47/domref-navprevx.gif
+Redirect permanent /docs/dom/domref/images/navtoc.gif http://developer.mozilla.org/wiki-images/en/0/0f/domref-navtoc.gif
+Redirect permanent /docs/dom/domref/images/navtocx.gif http://developer.mozilla.org/wiki-images/en/6/63/domref-navtocx.gif
+Redirect permanent /docs/dom/domref/images/offsetHeight.png http://developer.mozilla.org/wiki-images/en/3/35/domref-offsetHeight.png
+Redirect permanent /docs/dom/domref/images/offsetWidth.png http://developer.mozilla.org/wiki-images/en/0/08/domref-offsetWidth.png
+Redirect permanent /docs/dom/domref/images/pdf.gif http://developer.mozilla.org/wiki-images/en/3/36/domref-pdf.gif
+Redirect permanent /docs/dom/domref/images/preface2.gif http://developer.mozilla.org/wiki-images/en/3/3d/domref-preface2.gif
+Redirect permanent /docs/dom/domref/images/prefacea.gif http://developer.mozilla.org/wiki-images/en/4/4e/domref-prefacea.gif
+Redirect permanent /docs/dom/domref/images/prompt.gif http://developer.mozilla.org/wiki-images/en/8/84/domref-prompt.gif
+Redirect permanent /docs/dom/domref/images/scrollHeight.png http://developer.mozilla.org/wiki-images/en/8/8c/domref-scrollHeight.png
+Redirect permanent /docs/dom/domref/images/scrollTop.png http://developer.mozilla.org/wiki-images/en/6/68/domref-scrollTop.png
+Redirect permanent /docs/dom/domref/images/test_page.gif http://developer.mozilla.org/wiki-images/en/5/53/domref-test_page.gif
+Redirect permanent /docs/dom/domref/images/webworks.gif http://developer.mozilla.org/wiki-images/en/f/fe/domref-webworks.gif
+Redirect permanent /docs/dom/domref/images/window-chrome.gif http://developer.mozilla.org/wiki-images/en/0/08/domref-window-chrome.gif
+Redirect permanent /docs/dom/domref/preface.html http://developer.mozilla.org/en/Gecko_DOM_Reference:Preface
+Redirect permanent /docs/dom/domref/scrollHeight.html http://developer.mozilla.org/en/DOM:element.scrollHeight
+Redirect permanent /docs/dom/domref/scrollTop.html http://developer.mozilla.org/en/DOM:element.scrollTop
+Redirect permanent /docs/dom/index.html http://developer.mozilla.org/en/DOM
+Redirect permanent /docs/dom/mozilla/hacking.html http://developer.mozilla.org/en/Mozilla_DOM_Hacking_Guide
+Redirect permanent /docs/dom/mozilla/protodoc.html http://developer.mozilla.org/en/JavaScript-DOM_Prototypes_in_Mozilla
+Redirect permanent /docs/dom/mozilla/xpcomintro.html http://developer.mozilla.org/en/Introduction_to_XPCOM_for_the_DOM
+Redirect permanent /docs/dom/reference/javascript.html http://developer.mozilla.org/en/The_DOM_and_JavaScript
+Redirect permanent /docs/dom/reference/levels.html http://developer.mozilla.org/en/DOM_Levels
+Redirect permanent /docs/dom/technote/intro/example.html http://developer.mozilla.org/@api/deki/files/2866/=example.html
+Redirect permanent /docs/dom/technote/intro/index.html http://developer.mozilla.org/en/Using_the_W3C_DOM_Level_1_Core
+Redirect permanent /docs/dom/technote/tn-dom-table/index.html http://developer.mozilla.org/en/Traversing_an_HTML_table_with_JavaScript_and_DOM_Interfaces
+Redirect permanent /docs/dom/technote/whitespace/index.html http://developer.mozilla.org/en/Whitespace_in_the_DOM
+Redirect permanent /docs/extendmoz.html https://developer.mozilla.org/En/Plugins
+Redirect permanent /docs/how-to-document.html http://www.mozilla.org/contribute/writing/how-to
+Redirect permanent /docs/hybrid-cd.html http://developer.mozilla.org/en/Creating_a_hybrid_CD
+Redirect permanent /docs/jargon.html http://developer.mozilla.org/en/Glossary
+Redirect permanent /docs/lxr-comments.html http://www.mozilla.org/contribute/writing/lxr-comments
+Redirect permanent /docs/mdp/index.html http://www.mozilla.org/contribute/writing/
+Redirect permanent /docs/modunote.htm http://developer.mozilla.org/en/Modularization_Techniques
+Redirect permanent /docs/mozilla-faq.html http://developer.mozilla.org/en/Mozilla_Release_FAQ
+Redirect permanent /docs/netlib/necko.html http://developer.mozilla.org/en/Necko
+Redirect permanent /docs/netlib/new-handler.html http://www.mozilla.org/projects/netlib/new-handler.html
+Redirect permanent /docs/plugin.html https://developer.mozilla.org/En/Plugins
+Redirect permanent /docs/refList/refNSPR/ http://www.mozilla.org/projects/nspr/reference/html/
+Redirect permanent /docs/scripting-plugins.html http://developer.mozilla.org/en/Scripting_Plugins_in_Mozilla
+Redirect permanent /docs/source-directories-overview.html http://developer.mozilla.org/en/Source_code_directories_overview
+Redirect permanent /docs/tplist/catBuild/portable-cpp.html http://www.mozilla.org/hacking/portable-cpp.html
+Redirect permanent /docs/tplist/catFAQ http://www.mozilla.org/classic
+Redirect permanent /docs/tplist/tplist.html https://developer.mozilla.org/
+Redirect permanent /docs/tutorials/sitenav/index.html http://developer.mozilla.org/en/Using_Remote_XUL
+Redirect permanent /docs/tutorials/tinderstatus/tinderstatus.xpi https://addons.mozilla.org/en-US/seamonkey/addon/832
+Redirect permanent /docs/url_load.dia http://developer.mozilla.org/@api/deki/files/2893/=url_load.dia
+Redirect permanent /docs/url_load.gif http://developer.mozilla.org/@api/deki/files/920/=Url_load.gif
+Redirect permanent /docs/url_load.html http://developer.mozilla.org/en/The_life_of_an_HTML_HTTP_request
+Redirect permanent /docs/web-developer/faq.html http://developer.mozilla.org/en/Mozilla_Web_Developer_FAQ
+Redirect permanent /docs/web-developer/mimetypes.html http://developer.mozilla.org/en/How_Mozilla_determines_MIME_Types
+Redirect permanent /docs/web-developer/quirks/quirklist.html http://developer.mozilla.org/en/Mozilla_Quirks_Mode_Behavior
+Redirect permanent /docs/web-developer/quirks/index.html http://developer.mozilla.org/en/Mozilla%27s_Quirks_Mode
+Redirect permanent /docs/web-developer/quirks/doctypes.html http://developer.mozilla.org/en/Mozilla%27s_DOCTYPE_sniffing
+Redirect permanent /docs/web-developer/sniffer/browser_type.html https://developer.mozilla.org/En/Browser_Detection_and_Cross_Browser_Support
+Redirect permanent /docs/web-developer/upgrade_2.html http://developer.mozilla.org/en/Using_Web_Standards_in_your_Web_Pages
+Redirect permanent /docs/xul/xulnotes/bubble.xul http://developer.mozilla.org/@api/deki/files/2865/=bubble.xul
+Redirect permanent /docs/xul/xulnotes/template-bindings.html http://developer.mozilla.org/en/XUL_Template_Primer_-_Bindings
+Redirect permanent /docs/xul/xulnotes/xulnote_beasts.html http://developer.mozilla.org/en/A_XUL_Bestiary
+Redirect permanent /docs/xul/xulnotes/xulnote_diagnostic.html http://developer.mozilla.org/en/XUL_Parser_in_Python
+Redirect permanent /docs/xul/xulnotes/xulnote_events.html http://developer.mozilla.org/en/XUL_Event_Propagation
+Redirect permanent /docs/xul/xulnotes/xulnote_oven.html http://developer.mozilla.org/en/My_Chrome_Oven:_Generating_XUL_with_Python
+Redirect permanent /docs/xul/xulnotes/xulnote_packages.html http://developer.mozilla.org/en/Creating_XPI_Installer_Modules
+Redirect permanent /docs/xul/xulnotes/xulnote_skins.html http://developer.mozilla.org/en/Skinning_XUL_Files_by_Hand
+Redirect permanent /docs/xul/xulnotes/xulnote_xml.html http://developer.mozilla.org/en/XUL_Genealogy:_XML
+Redirect permanent /docs/xul/xulnotes/xulnote_xpconnect.html http://developer.mozilla.org/en/Fun_With_XBL_and_XPConnect
+Redirect permanent /donate_faq.html http://www.mozilla.org/foundation/donate_faq.html
+Redirect permanent /donate_form.pdf http://www.mozilla.org/foundation/donate_form.pdf
+Redirect permanent /donate.html https://donate.mozilla.org/page/contribute/openwebfund
+Redirect permanent /download-mozilla.html http://developer.mozilla.org/en/Download_Mozilla_Source_Code
+Redirect permanent /editor/editor-embedding.html http://developer.mozilla.org/en/Embedding_the_Editor
+Redirect permanent /editor/midasdemo/securityprefs.html https://developer.mozilla.org/en/Midas/Security_preferences
+Redirect permanent /en-US/firefox/about http://www.mozilla.com/en-US/firefox/about
+Redirect permanent /feedback.html http://www.mozilla.org/contact/
+Redirect permanent /firebird http://www.firefox.com
+Redirect permanent /firefox http://www.mozilla.com/firefox
+Redirect permanent /foundation/donate.html https://donate.mozilla.org/page/contribute/openwebfund
+Redirect permanent /foundation/privacy-policy.html http://www.mozilla.org/about/policies/privacy-policy.html
+Redirect permanent /get-involved.html http://www.mozilla.org/contribute/
+Redirect permanent /glimpsesearch.html http://lxr.mozilla.org/
+Redirect permanent /hacking/bonsai.html http://developer.mozilla.org/en/Hacking_with_Bonsai
+Redirect permanent /hacking/code-review-faq.html http://developer.mozilla.org/en/Code_Review_FAQ
+Redirect permanent /hacking/coding-introduction.html http://developer.mozilla.org/en/Mozilla_Hacker%27s_Getting_Started_Guide
+Redirect permanent /hacking/cvs_over_ssh_plan.html http://developer.mozilla.org/En/Using_SSH_to_connect_to_CVS
+Redirect permanent /hacking/development-strategies.html http://developer.mozilla.org/en/Mozilla_Development_Strategies
+Redirect permanent /hacking/life-cycle.html http://developer.mozilla.org/en/Hacking_Mozilla
+Redirect permanent /hacking/mozilla-style-guide.html http://developer.mozilla.org/En/Mozilla_Coding_Style_Guide
+Redirect permanent /hacking/new-features.html http://developer.mozilla.org/en/Developing_New_Mozilla_Features
+Redirect permanent /images/favicon.png http://www.mozilla.org/favicon.ico
+Redirect permanent /index2.html http://www.mozilla.org/
+Redirect permanent /js/language/Edition4.pdf http://www.ecmascript-lang.org
+Redirect permanent /js/language/es4.html http://www.ecmascript-lang.org
+Redirect permanent /js/language/js20.html http://www.ecmascript-lang.org
+Redirect permanent /js/spidermonkey/apidoc/complete-frameset.html http://developer.mozilla.org/en/JSAPI_Reference
+Redirect permanent /js/spidermonkey/apidoc/guide.html http://developer.mozilla.org/en/Embedding_SpiderMonkey
+Redirect permanent /js/spidermonkey/apidoc/jsguide.html http://developer.mozilla.org/en/JavaScript_C_Engine_Embedder%27s_Guide
+Redirect permanent /js/spidermonkey/apidoc/jsref.htm http://developer.mozilla.org/en/JSAPI_Reference
+Redirect permanent /js/spidermonkey/apidoc/sparse-frameset.html http://developer.mozilla.org/en/JSAPI_Reference
+Redirect permanent /js/spidermonkey/apidoc/gen/api-BOOLEAN_TO_JSVAL.html http://developer.mozilla.org/en/BOOLEAN_TO_JSVAL
+Redirect permanent /js/spidermonkey/apidoc/gen/api-DOUBLE_TO_JSVAL.html http://developer.mozilla.org/en/DOUBLE_TO_JSVAL
+Redirect permanent /js/spidermonkey/apidoc/gen/api-INT_FITS_IN_JSVAL.html http://developer.mozilla.org/en/INT_FITS_IN_JSVAL
+Redirect permanent /js/spidermonkey/apidoc/gen/api-INT_TO_JSVAL.html http://developer.mozilla.org/en/INT_TO_JSVAL
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSCLASS_HAS_PRIVATE.html http://developer.mozilla.org/en/JSCLASS_HAS_PRIVATE
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSCLASS_NEW_ENUMERATE.html http://developer.mozilla.org/en/JSCLASS_NEW_ENUMERATE
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSCLASS_NEW_RESOLVE.html http://developer.mozilla.org/en/JSCLASS_NEW_RESOLVE
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSClass.html http://developer.mozilla.org/en/JSClass
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSConstDoubleSpec.html http://developer.mozilla.org/en/JSConstDoubleSpec
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSErrorReport.html http://developer.mozilla.org/en/JSErrorReport
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSFUN_BOUND_METHOD.html http://developer.mozilla.org/en/JSFUN_BOUND_METHOD
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSFUN_GLOBAL_PARENT.html http://developer.mozilla.org/en/JSFUN_GLOBAL_PARENT
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSFunctionSpec.html http://developer.mozilla.org/en/JSFunctionSpec
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSIdArray.html http://developer.mozilla.org/en/JSIdArray
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSObjectOps.html http://developer.mozilla.org/en/JSObjectOps
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSPRINCIPALS_DROP.html http://developer.mozilla.org/en/JSPRINCIPALS_DROP
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSPRINCIPALS_HOLD.html http://developer.mozilla.org/en/JSPRINCIPALS_HOLD
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSPROP_ENUMERATE.html http://developer.mozilla.org/en/JSPROP_ENUMERATE
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSPROP_EXPORTED.html http://developer.mozilla.org/en/JSPROP_EXPORTED
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSPROP_INDEX.html http://developer.mozilla.org/en/JSPROP_INDEX
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSPROP_PERMANENT.html http://developer.mozilla.org/en/JSPROP_PERMANENT
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSPROP_READONLY.html http://developer.mozilla.org/en/JSPROP_READONLY
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSPrincipals.html http://developer.mozilla.org/en/JSPrincipals
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSProperty.html http://developer.mozilla.org/en/JSProperty
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSPropertySpec.html http://developer.mozilla.org/en/JSPropertySpec
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSRESOLVE_ASSIGNING.html http://developer.mozilla.org/en/JSRESOLVE_ASSIGNING
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSRESOLVE_QUALIFIED.html http://developer.mozilla.org/en/JSRESOLVE_QUALIFIED
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_FALSE.html http://developer.mozilla.org/en/JSVAL_FALSE
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_IS_BOOLEAN.html http://developer.mozilla.org/en/JSVAL_IS_BOOLEAN
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_IS_DOUBLE.html http://developer.mozilla.org/en/JSVAL_IS_DOUBLE
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_IS_GCTHING.html http://developer.mozilla.org/en/JSVAL_IS_GCTHING
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_IS_INT.html http://developer.mozilla.org/en/JSVAL_IS_INT
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_IS_NULL.html http://developer.mozilla.org/en/JSVAL_IS_NULL
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_IS_NUMBER.html http://developer.mozilla.org/en/JSVAL_IS_NUMBER
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_IS_OBJECT.html http://developer.mozilla.org/en/JSVAL_IS_OBJECT
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_IS_PRIMITIVE.html http://developer.mozilla.org/en/JSVAL_IS_PRIMITIVE
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_IS_STRING.html http://developer.mozilla.org/en/JSVAL_IS_STRING
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_IS_VOID.html http://developer.mozilla.org/en/JSVAL_IS_VOID
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_LOCK.html http://developer.mozilla.org/en/JSVAL_LOCK
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_NULL.html http://developer.mozilla.org/en/JSVAL_NULL
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_ONE.html http://developer.mozilla.org/en/JSVAL_ONE
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_TO_BOOLEAN.html http://developer.mozilla.org/en/JSVAL_TO_BOOLEAN
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_TO_DOUBLE.html http://developer.mozilla.org/en/JSVAL_TO_DOUBLE
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_TO_GCTHING.html http://developer.mozilla.org/en/JSVAL_TO_GCTHING
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_TO_INT.html http://developer.mozilla.org/en/JSVAL_TO_INT
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_TO_OBJECT.html http://developer.mozilla.org/en/JSVAL_TO_OBJECT
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_TO_PRIVATE.html http://developer.mozilla.org/en/JSVAL_TO_PRIVATE
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_TO_STRING.html http://developer.mozilla.org/en/JSVAL_TO_STRING
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_TRUE.html http://developer.mozilla.org/en/JSVAL_TRUE
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_UNLOCK.html http://developer.mozilla.org/en/JSVAL_UNLOCK
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_VOID.html http://developer.mozilla.org/en/JSVAL_VOID
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JSVAL_ZERO.html http://developer.mozilla.org/en/JSVAL_ZERO
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_AddNamedRoot.html http://developer.mozilla.org/en/JS_AddNamedRoot
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_AddRoot.html http://developer.mozilla.org/en/JS_AddRoot
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_AliasElement.html http://developer.mozilla.org/en/JS_AliasElement
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_AliasProperty.html http://developer.mozilla.org/en/JS_AliasProperty
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_BeginRequest.html http://developer.mozilla.org/en/JS_BeginRequest
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CallFunction.html http://developer.mozilla.org/en/JS_CallFunction
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CallFunctionName.html http://developer.mozilla.org/en/JS_CallFunctionName
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CallFunctionValue.html http://developer.mozilla.org/en/JS_CallFunctionValue
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CheckAccess.html http://developer.mozilla.org/en/JS_CheckAccess
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ClearContextThread.html http://developer.mozilla.org/en/JS_ClearContextThread
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ClearScope.html http://developer.mozilla.org/en/JS_ClearScope
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CloneFunctionObject.html http://developer.mozilla.org/en/JS_CloneFunctionObject
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CompareStrings.html http://developer.mozilla.org/en/JS_CompareStrings
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CompileFile.html http://developer.mozilla.org/en/JS_CompileFile
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CompileFunction.html http://developer.mozilla.org/en/JS_CompileFunction
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CompileFunctionForPrincipals.html http://developer.mozilla.org/en/JS_CompileFunctionForPrincipals
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CompileScript.html http://developer.mozilla.org/en/JS_CompileScript
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CompileScriptForPrincipals.html http://developer.mozilla.org/en/JS_CompileScriptForPrincipals
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CompileUCFunction.html http://developer.mozilla.org/en/JS_CompileUCFunction
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CompileUCFunctionForPrincipals.html http://developer.mozilla.org/en/JS_CompileUCFunctionForPrincipals
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CompileUCScript.html http://developer.mozilla.org/en/JS_CompileUCScript
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_CompileUCScriptForPrincipals.html http://developer.mozilla.org/en/JS_CompileUCScriptForPrincipals
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ConstructObject.html http://developer.mozilla.org/en/JS_ConstructObject
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ContextIterator.html http://developer.mozilla.org/en/JS_ContextIterator
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ConvertArguments.html http://developer.mozilla.org/en/JS_ConvertArguments
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ConvertStub.html http://developer.mozilla.org/en/JS_ConvertStub
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ConvertValue.html http://developer.mozilla.org/en/JS_ConvertValue
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DecompileFunction.html http://developer.mozilla.org/en/JS_DecompileFunction
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DecompileFunctionBody.html http://developer.mozilla.org/en/JS_DecompileFunctionBody
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DecompileScript.html http://developer.mozilla.org/en/JS_DecompileScript
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DefineConstDoubles.html http://developer.mozilla.org/en/JS_DefineConstDoubles
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DefineElement.html http://developer.mozilla.org/en/JS_DefineElement
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DefineFunction.html http://developer.mozilla.org/en/JS_DefineFunction
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DefineFunctions.html http://developer.mozilla.org/en/JS_DefineFunctions
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DefineObject.html http://developer.mozilla.org/en/JS_DefineObject
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DefineProperties.html http://developer.mozilla.org/en/JS_DefineProperties
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DefineProperty.html http://developer.mozilla.org/en/JS_DefineProperty
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DefinePropertyWithTinyId.html http://developer.mozilla.org/en/JS_DefinePropertyWithTinyId
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DefineUCProperty.html http://developer.mozilla.org/en/JS_DefineUCProperty
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DefineUCPropertyWithTinyID.html http://developer.mozilla.org/en/JS_DefineUCPropertyWithTinyID
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DeleteElement.html http://developer.mozilla.org/en/JS_DeleteElement
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DeleteElement2.html http://developer.mozilla.org/en/JS_DeleteElement2
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DeleteProperty.html http://developer.mozilla.org/en/JS_DeleteProperty
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DeleteProperty2.html http://developer.mozilla.org/en/JS_DeleteProperty2
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DeleteUCProperty2.html http://developer.mozilla.org/en/JS_DeleteUCProperty2
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DestroyContext.html http://developer.mozilla.org/en/JS_DestroyContext
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DestroyIdArray.html http://developer.mozilla.org/en/JS_DestroyIdArray
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DestroyRuntime.html http://developer.mozilla.org/en/JS_DestroyRuntime
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DestroyScript.html http://developer.mozilla.org/en/JS_DestroyScript
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_DumpNamedRoots.html http://developer.mozilla.org/en/JS_DumpNamedRoots
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_EndRequest.html http://developer.mozilla.org/en/JS_EndRequest
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_Enumerate.html http://developer.mozilla.org/en/JS_Enumerate
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_EnumerateStub.html http://developer.mozilla.org/en/JS_EnumerateStub
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_EvaluateScript.html http://developer.mozilla.org/en/JS_EvaluateScript
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_EvaluateScriptForPrincipals.html http://developer.mozilla.org/en/JS_EvaluateScriptForPrincipals
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_EvaluateUCScript.html http://developer.mozilla.org/en/JS_EvaluateUCScript
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_EvaluateUCScriptForPrincipals.html http://developer.mozilla.org/en/JS_EvaluateUCScriptForPrincipals
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ExecuteScript.html http://developer.mozilla.org/en/JS_ExecuteScript
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_FinalizeStub.html http://developer.mozilla.org/en/JS_FinalizeStub
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_Finish.html http://developer.mozilla.org/en/JS_Finish
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GC.html http://developer.mozilla.org/en/JS_GC
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetArrayLength.html http://developer.mozilla.org/en/JS_GetArrayLength
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetClass.html http://developer.mozilla.org/en/JS_GetClass
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetConstructor.html http://developer.mozilla.org/en/JS_GetConstructor
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetContextPrivate.html http://developer.mozilla.org/en/JS_GetContextPrivate
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetContextThread.html http://developer.mozilla.org/en/JS_GetContextThread
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetElement.html http://developer.mozilla.org/en/JS_GetElement
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetEmptyStringValue.html http://developer.mozilla.org/en/JS_GetEmptyStringValue
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetFunctionName.html http://developer.mozilla.org/en/JS_GetFunctionName
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetFunctionObject.html http://developer.mozilla.org/en/JS_GetFunctionObject
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetGlobalObject.html http://developer.mozilla.org/en/JS_GetGlobalObject
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetImplementationVersion.html http://developer.mozilla.org/en/JS_GetImplementationVersion
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetInstancePrivate.html http://developer.mozilla.org/en/JS_GetInstancePrivate
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetNaNValue.html http://developer.mozilla.org/en/JS_GetNaNValue
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetNegativeInfinityValue.html http://developer.mozilla.org/en/JS_GetNegativeInfinityValue
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetParent.html http://developer.mozilla.org/en/JS_GetParent
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetPositiveInfinityValue.html http://developer.mozilla.org/en/JS_GetPositiveInfinityValue
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetPrivate.html http://developer.mozilla.org/en/JS_GetPrivate
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetProperty.html http://developer.mozilla.org/en/JS_GetProperty
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetPropertyAttributes.html http://developer.mozilla.org/en/JS_GetPropertyAttributes
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetPrototype.html http://developer.mozilla.org/en/JS_GetPrototype
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetRuntime.html http://developer.mozilla.org/en/JS_GetRuntime
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetScopeChain.html http://developer.mozilla.org/en/JS_GetScopeChain
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetStringBytes.html http://developer.mozilla.org/en/JS_GetStringBytes
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetStringChars.html http://developer.mozilla.org/en/JS_GetStringChars
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetStringLength.html http://developer.mozilla.org/en/JS_GetStringLength
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetTypeName.html http://developer.mozilla.org/en/JS_GetTypeName
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetUCProperty.html http://developer.mozilla.org/en/JS_GetUCProperty
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_GetVersion.html http://developer.mozilla.org/en/JS_GetVersion
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_HasArrayLength.html http://developer.mozilla.org/en/JS_HasArrayLength
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_IdToValue.html http://developer.mozilla.org/en/JS_IdToValue
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_Init.html http://developer.mozilla.org/en/JS_Init
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_InitClass.html http://developer.mozilla.org/en/JS_InitClass
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_InitStandardClasses.html http://developer.mozilla.org/en/JS_InitStandardClasses
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_InstanceOf.html http://developer.mozilla.org/en/JS_InstanceOf
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_InternString.html http://developer.mozilla.org/en/JS_InternString
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_InternUCString.html http://developer.mozilla.org/en/JS_InternUCString
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_InternUCStringN.html http://developer.mozilla.org/en/JS_InternUCStringN
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_IsArrayObject.html http://developer.mozilla.org/en/JS_IsArrayObject
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_IsConstructing.html http://developer.mozilla.org/en/JS_IsConstructing
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_IsRunning.html http://developer.mozilla.org/en/JS_IsRunning
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_Lock.html http://developer.mozilla.org/en/JS_Lock
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_LockGCThing.html http://developer.mozilla.org/en/JS_LockGCThing
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_LookupElement.html http://developer.mozilla.org/en/JS_LookupElement
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_LookupProperty.html http://developer.mozilla.org/en/JS_LookupProperty
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_LookupUCProperty.html http://developer.mozilla.org/en/JS_LookupUCProperty
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_MaybeGC.html http://developer.mozilla.org/en/JS_MaybeGC
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewArrayObject.html http://developer.mozilla.org/en/JS_NewArrayObject
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewContext.html http://developer.mozilla.org/en/JS_NewContext
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewDouble.html http://developer.mozilla.org/en/JS_NewDouble
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewDoubleValue.html http://developer.mozilla.org/en/JS_NewDoubleValue
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewFunction.html http://developer.mozilla.org/en/JS_NewFunction
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewIdArray.html http://developer.mozilla.org/en/JS_NewIdArray
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewNumberValue.html http://developer.mozilla.org/en/JS_NewNumberValue
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewObject.html http://developer.mozilla.org/en/JS_NewObject
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewRuntime.html http://developer.mozilla.org/en/JS_NewRuntime
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewScriptObject.html http://developer.mozilla.org/en/JS_NewScriptObject
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewString.html http://developer.mozilla.org/en/JS_NewString
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewStringCopyN.html http://developer.mozilla.org/en/JS_NewStringCopyN
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewStringCopyZ.html http://developer.mozilla.org/en/JS_NewStringCopyZ
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewUCString.html http://developer.mozilla.org/en/JS_NewUCString
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewUCStringCopyN.html http://developer.mozilla.org/en/JS_NewUCStringCopyN
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_NewUCStringCopyZ.html http://developer.mozilla.org/en/JS_NewUCStringCopyZ
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_PropertyStub.html http://developer.mozilla.org/en/JS_PropertyStub
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_RemoveRoot.html http://developer.mozilla.org/en/JS_RemoveRoot
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ReportError.html http://developer.mozilla.org/en/JS_ReportError
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ReportOutOfMemory.html http://developer.mozilla.org/en/JS_ReportOutOfMemory
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ResolveStub.html http://developer.mozilla.org/en/JS_ResolveStub
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ResumeRequest.html http://developer.mozilla.org/en/JS_ResumeRequest
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetArrayLength.html http://developer.mozilla.org/en/JS_SetArrayLength
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetBranchCallback.html http://developer.mozilla.org/en/JS_SetBranchCallback
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetContextPrivate.html http://developer.mozilla.org/en/JS_SetContextPrivate
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetContextThread.html http://developer.mozilla.org/en/JS_SetContextThread
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetElement.html http://developer.mozilla.org/en/JS_SetElement
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetErrorReporter.html http://developer.mozilla.org/en/JS_SetErrorReporter
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetGCCallback.html http://developer.mozilla.org/en/JS_SetGCCallback
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetGlobalObject.html http://developer.mozilla.org/en/JS_SetGlobalObject
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetParent.html http://developer.mozilla.org/en/JS_SetParent
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetPrivate.html http://developer.mozilla.org/en/JS_SetPrivate
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetProperty.html http://developer.mozilla.org/en/JS_SetProperty
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetPropertyAttributes.html http://developer.mozilla.org/en/JS_SetPropertyAttributes
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetPrototype.html http://developer.mozilla.org/en/JS_SetPrototype
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetUCProperty.html http://developer.mozilla.org/en/JS_SetUCProperty
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SetVersion.html http://developer.mozilla.org/en/JS_SetVersion
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_SuspendRequest.html http://developer.mozilla.org/en/JS_SuspendRequest
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_TypeOfValue.html http://developer.mozilla.org/en/JS_TypeOfValue
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_Unlock.html http://developer.mozilla.org/en/JS_Unlock
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_UnlockGCThing.html http://developer.mozilla.org/en/JS_UnlockGCThing
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ValueToBoolean.html http://developer.mozilla.org/en/JS_ValueToBoolean
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ValueToECMAInt32.html http://developer.mozilla.org/en/JS_ValueToECMAInt32
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ValueToECMAUint32.html http://developer.mozilla.org/en/JS_ValueToECMAUint32
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ValueToFunction.html http://developer.mozilla.org/en/JS_ValueToFunction
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ValueToId.html http://developer.mozilla.org/en/JS_ValueToId
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ValueToInt32.html http://developer.mozilla.org/en/JS_ValueToInt32
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ValueToNumber.html http://developer.mozilla.org/en/JS_ValueToNumber
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ValueToObject.html http://developer.mozilla.org/en/JS_ValueToObject
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ValueToString.html http://developer.mozilla.org/en/JS_ValueToString
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_ValueToUint16.html http://developer.mozilla.org/en/JS_ValueToUint16
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_free.html http://developer.mozilla.org/en/JS_free
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_malloc.html http://developer.mozilla.org/en/JS_malloc
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_realloc.html http://developer.mozilla.org/en/JS_realloc
+Redirect permanent /js/spidermonkey/apidoc/gen/api-JS_strdup.html http://developer.mozilla.org/en/JS_strdup
+Redirect permanent /js/spidermonkey/apidoc/gen/api-OBJECT_TO_JSVAL.html http://developer.mozilla.org/en/OBJECT_TO_JSVAL
+Redirect permanent /js/spidermonkey/apidoc/gen/api-PRIVATE_TO_JSVAL.html http://developer.mozilla.org/en/PRIVATE_TO_JSVAL
+Redirect permanent /js/spidermonkey/apidoc/gen/api-STRING_TO_JSVAL.html http://developer.mozilla.org/en/STRING_TO_JSVAL
+Redirect permanent /js/spidermonkey/apidoc/gen/complete-toc-abc.html http://developer.mozilla.org/en/JSAPI_Reference
+Redirect permanent /js/spidermonkey/apidoc/gen/complete-toc-grp.html http://developer.mozilla.org/en/JSAPI_Reference
+Redirect permanent /js/spidermonkey/apidoc/gen/complete-toc.html http://developer.mozilla.org/en/JSAPI_Reference
+Redirect permanent /js/spidermonkey/apidoc/gen/complete.html http://developer.mozilla.org/en/JSAPI_Reference
+Redirect permanent /js/spidermonkey/apidoc/gen/sidebar-toc.html http://developer.mozilla.org/en/JSAPI_Reference
+Redirect permanent /js/spidermonkey/apidoc/gen/sparse-toc-abc.html http://developer.mozilla.org/en/JSAPI_Reference
+Redirect permanent /js/spidermonkey/apidoc/gen/sparse-toc-grp.html http://developer.mozilla.org/en/JSAPI_Reference
+Redirect permanent /js/spidermonkey/apidoc/gen/sparse-toc.html http://developer.mozilla.org/en/JSAPI_Reference
+Redirect permanent /js/spidermonkey/gctips.html http://developer.mozilla.org/en/SpiderMonkey_Garbage_Collection_Tips
+Redirect permanent /mailman https://mail.mozilla.org
+Redirect permanent /mailnews/ABSyncClientDesign.html https://developer.mozilla.org/en/Thunderbird/Address_book_sync_client_design
+Redirect permanent /mailnews/arch/ABSyncClientDesign.html https://developer.mozilla.org/en/Thunderbird/Address_book_sync_client_design
+Redirect permanent /mailnews/arch/accountmanager.html https://developer.mozilla.org/en/Thunderbird/Using_the_Multiple_Accounts_API
+Redirect permanent /mailnews/arch/addrbook/hiddenprefs.html https://developer.mozilla.org/en/Thunderbird/Hidden_address_book_prefs
+Redirect permanent /mailnews/arch/compose-backend.html https://developer.mozilla.org/en/Thunderbird/Mail_composition_back_end
+Redirect permanent /mailnews/arch/compose/cached.html https://developer.mozilla.org/en/Thunderbird/Cached_compose_window_FAQ
+Redirect permanent /mailnews/arch/compose/hiddenprefs.html https://developer.mozilla.org/en/Thunderbird/Hidden_prefs
+Redirect permanent /mailnews/arch/events.html https://developer.mozilla.org/en/Thunderbird/Mail_event_system
+Redirect permanent /mailnews/arch/hiddenprefs.html https://developer.mozilla.org/en/Thunderbird/Hidden_prefs
+Redirect permanent /mailnews/arch/libmime-content-type-handlers.html https://developer.mozilla.org/en/Thunderbird/libmime_content_type_handlers
+Redirect permanent /mailnews/arch/libmime-description.html https://developer.mozilla.org/en/Thunderbird/The_libmime_module
+Redirect permanent /mailnews/arch/overview.html https://developer.mozilla.org/en/Thunderbird/Mail_client_architecture_overview
+Redirect permanent /mailnews/arch/rdf.html https://developer.mozilla.org/en/Thunderbird/Mail_and_RDF
+Redirect permanent /mailnews/arch/spam/index.html https://developer.mozilla.org/en/Thunderbird/Spam_filtering
+Redirect permanent /mailnews/compose-backend.html https://developer.mozilla.org/en/Thunderbird/Mail_composition_back_end
+Redirect permanent /mailnews/libmime-content-type-handlers.html https://developer.mozilla.org/en/Thunderbird/libmime_content_type_handlers
+Redirect permanent /mailnews/libmime-description.html https://developer.mozilla.org/en/Thunderbird/The_libmime_module
+Redirect permanent /mailnews/review-mail.html https://developer.mozilla.org/en/Mailnews_and_Mail_code_review_requirements
+Redirect permanent /mailnews/review.html https://developer.mozilla.org/en/Mailnews_and_Mail_code_review_requirements
+Redirect permanent /mirroring.html http://www.mozilla.org/community/mirroring.html
+Redirect permanent /mirrors.html http://www.mozilla.org/community/mirrors.html
+Redirect permanent /mission.html http://www.mozilla.org/about/mission.html
+Redirect permanent /mozilla1.x http://www.mozilla.org/projects/
+Redirect permanent /MPL/mozilla-relicense-faq.html http://www-archive.mozilla.org/MPL/relicensing-faq.html
+Redirect permanent /MPL/mozilla-relicensing-faq.html http://www-archive.mozilla.org/MPL/relicensing-faq.html
+Redirect permanent /my-mozilla.html http://www.mozilla.org/
+Redirect permanent /newlayout/bugathon.html http://developer.mozilla.org/en/Gecko_BugAThon
+Redirect permanent /newlayout/codestock http://www.mozilla.org/docs/codestock99
+Redirect permanent /newlayout/codestock/slides.html http://www.mozilla.org/docs/codestock99/
+Redirect permanent /newlayout/faq.html http://developer.mozilla.org/en/Gecko_FAQ
+Redirect permanent /newlayout/glossary.html https://developer.mozilla.org/en/Gecko_Glossary
+Redirect permanent /newlayout/index.html http://developer.mozilla.org/en/Gecko
+Redirect permanent /newlayout/regress.html http://www.mozilla.org/newlayout/doc/regression_tests.html
+Redirect permanent /newlayout/xml/index.html http://developer.mozilla.org/en/XML_in_Mozilla
+Redirect permanent /newsfeeds.html http://www.mozilla.org/about/forums/
+Redirect permanent /nglayout https://developer.mozilla.org/en/Gecko
+Redirect permanent /NPL http://www.mozilla.org/MPL/NPL-1.1.html
+Redirect permanent /old-roadmap.html https://wiki.mozilla.org/Roadmap_Scratchpad
+Redirect permanent /other-projects.html http://www.mozilla.org/projects/other-projects.html
+Redirect permanent /owners-js.html https://wiki.mozilla.org/Modules
+Redirect permanent /owners.html https://wiki.mozilla.org/Modules
+Redirect permanent /performance/tinderbox-tests.html http://wiki.mozilla.org/Performance:Tinderbox_Tests
+Redirect permanent /performance/leak-brownbag.html http://wiki.mozilla.org/Performance:Leak_Tools
+Redirect permanent /press/awards.html http://www.mozilla.com/press/awards.html
+Redirect permanent /privacy-policy http://www.mozilla.org/about/policies/privacy-policy.html
+Redirect permanent /privacy-policy.html http://www.mozilla.org/about/policies/privacy-policy.html
+Redirect permanent /products/camino/badges/ http://caminobrowser.org/community/promotion/
+Redirect permanent /products/camino/features/searchCustomization.html http://caminobrowser.org/help/
+Redirect permanent /products/camino/features/tipsTricks.html http://caminobrowser.org/help/
+Redirect permanent /products/camino/index.html http://caminobrowser.org/
+Redirect permanent /products/camino/releases/0.8.1.html http://caminobrowser.org/releases/0.8.1/
+Redirect permanent /products/camino/releases/0.8.2.html http://caminobrowser.org/releases/0.8.2/
+Redirect permanent /products/camino/releases/0.8.3.html http://caminobrowser.org/releases/0.8.3/
+Redirect permanent /products/camino/releases/0.8.4.html http://caminobrowser.org/releases/0.8.4/
+Redirect permanent /products/camino/releases/0.8.5.html http://caminobrowser.org/releases/0.8.5/
+Redirect permanent /products/camino/releases/0.8.html http://caminobrowser.org/releases/0.8/
+Redirect permanent /products/camino/releases/0.8b.html http://caminobrowser.org/releases/0.8b/
+Redirect permanent /products/camino/releases/0.9a1.html http://caminobrowser.org/releases/0.9a1/
+Redirect permanent /products/camino/releases/0.9a2.html http://caminobrowser.org/releases/0.9a2/
+Redirect permanent /products/camino/releases/1.0.1.html http://caminobrowser.org/releases/1.0.1/
+Redirect permanent /products/camino/releases/1.0.2.html http://caminobrowser.org/releases/1.0.2/
+Redirect permanent /products/camino/releases/1.0.3.html http://caminobrowser.org/releases/1.0.3/
+Redirect permanent /products/camino/releases/1.0.4.html http://caminobrowser.org/releases/1.0.4/
+Redirect permanent /products/camino/releases/1.0.5.html http://caminobrowser.org/releases/1.0.5/
+Redirect permanent /products/camino/releases/1.0.6.html http://caminobrowser.org/releases/1.0.6/
+Redirect permanent /products/camino/releases/1.0.html http://caminobrowser.org/releases/1.0/
+Redirect permanent /products/camino/releases/1.0a1.html http://caminobrowser.org/releases/1.0a1/
+Redirect permanent /products/camino/releases/1.0b1.html http://caminobrowser.org/releases/1.0b1/
+Redirect permanent /products/camino/releases/1.0b2.html http://caminobrowser.org/releases/1.0b2/
+Redirect permanent /products/camino/releases/1.0rc1.html http://caminobrowser.org/releases/1.0rc1/
+Redirect permanent /products/camino/support/ http://caminobrowser.org/help/
+Redirect permanent /products/choosing-products.html http://www.mozilla.org/projects/
+Redirect permanent /projects/embedding/GRE.html http://developer.mozilla.org/en/GRE
+Redirect permanent /projects/embedding/windowAPIs.html http://developer.mozilla.org/en/Embedded_Dialog_API
+Redirect permanent /projects/embedding/howto/config.html http://developer.mozilla.org/en/Roll_your_own_browser_-_An_embedding_HowTo
+Redirect permanent /projects/embedding/howto/Initializations.html http://developer.mozilla.org/en/Roll_your_own_browser_-_An_embedding_HowTo
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasicsTOC.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#toc
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics.html http://developer.mozilla.org/en/Gecko_Embedding_Basics
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics2.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#Why_Gecko
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics3.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#What_You_Need_to_Embed
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics4.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#Getting_the_Code
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics5.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#Understanding_the_Coding_Environment
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics6.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#XPCOM
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics7.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#XPIDL
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics8.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#XPConnect_and_XPT_files
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics9.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#String_classes
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics10.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#XUL.2FXBL
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics11.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#Choosing_Additional_Functionalities
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics12.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#What_Gecko_Provides
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics13.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#What_You_Provide
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics14.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#Common_Embedding_Tasks
+Redirect permanent /projects/embedding/embedoverview/EmbeddingBasics16.html http://developer.mozilla.org/en/Gecko_Embedding_Basics#Appendix:_Data_Flow_Inside_Gecko
+Redirect permanent /projects/embedding/examples/index.html http://developer.mozilla.org/en/Roll_your_own_browser_-_An_embedding_HowTo
+Redirect permanent /products/firebird http://www.mozilla.org/products/firefox
+Redirect permanent /products/firebird/download/index.html http://www.mozilla.org/products/firefox/download.html
+Redirect permanent /products/firebird/h-fb-dl.png http://www.mozilla.org/products/firefox/h-ff-dl.png
+Redirect permanent /products/firebird/productIconFirebird.png http://www.mozilla.org/products/firefox/productIconFirefox.png
+Redirect permanent /products/firefox/add-engines.html https://addons.mozilla.org/search-engines.php
+Redirect permanent /products/firefox/all http://www.mozilla.com/firefox/all.html
+Redirect permanent /products/firefox/all.html http://www.mozilla.com/firefox/all.html
+Redirect permanent /products/firefox/banners.html http://www.spreadfirefox.com/affiliates
+Redirect permanent /products/firefox/buttons.html http://www.spreadfirefox.com/affiliates
+Redirect permanent /products/firefox/central http://www.mozilla.com/firefox/central
+Redirect permanent /products/firefox/central-lite.html http://www.mozilla.com/firefox/central
+Redirect permanent /products/firefox/central.html http://www.mozilla.com/firefox/central
+Redirect permanent /products/firefox/download http://www.mozilla.com/firefox/
+Redirect permanent /products/firefox/download.html http://www.mozilla.com/firefox/
+Redirect permanent /products/firefox/get http://www.mozilla.com/firefox
+Redirect permanent /products/firefox/guidebook.jpg http://www.mozilla.com/firefox/guidebook.jpg
+Redirect permanent /products/firefox/index.html http://www.mozilla.com/firefox/
+Redirect permanent /products/firefox/live-bookmarks http://www.mozilla.com/firefox/livebookmarks.html
+Redirect permanent /products/firefox/live-bookmarks.html http://www.mozilla.com/firefox/livebookmarks.html
+Redirect permanent /products/firefox/mirrors.html http://www.mozilla.org/mirrors.html
+Redirect permanent /products/firefox/releases/ http://www.mozilla.com/firefox/releases/
+Redirect permanent /products/firefox/releases/0.9.2.html http://www.mozilla.com/firefox/releases/0.9.1.html
+Redirect permanent /products/firefox/releases/0.10.1.html http://www.mozilla.com/firefox/releases/0.10.html
+Redirect permanent /products/firefox/search http://www.mozilla.com/firefox/search.html
+Redirect permanent /products/firefox/search.html http://www.mozilla.com/firefox/search.html
+Redirect permanent /products/firefox/shelf.html http://www.mozilla.com/press/awards.html
+Redirect permanent /products/firefox/smart-keywords.html http://support.mozilla.com/en-US/kb/Smart+keywords
+Redirect permanent /products/firefox/start/ http://www.mozilla.com/firefox/central
+Redirect permanent /products/firefox/support/ http://support.mozilla.com/
+Redirect permanent /products/firefox/switch http://www.mozilla.com/firefox/switch
+Redirect permanent /products/firefox/switch.html http://www.mozilla.com/firefox/switch
+Redirect permanent /products/firefox/system-requirements http://www.mozilla.com/firefox/system-requirements.html
+Redirect permanent /products/firefox/system-requirements.html http://www.mozilla.com/firefox/system-requirements.html
+Redirect permanent /products/firefox/tabbed-browsing http://www.mozilla.com/firefox/tabs.html
+Redirect permanent /products/firefox/tabbed-browsing.html http://www.mozilla.com/firefox/tabs.html
+Redirect permanent /products/firefox/text-zoom.html http://support.mozilla.com/en-US/kb/Text+Zoom
+Redirect permanent /products/firefox/themes https://addons.mozilla.org/themes/
+Redirect permanent /products/firefox/themes.html https://addons.mozilla.org/themes/
+Redirect permanent /products/firefox/ui-customize.html http://support.mozilla.com/en-US/kb/How+to+customize+the+toolbar
+Redirect permanent /products/firefox/upgrade-2.html http://www.mozilla.com/firefox/upgrade-2.html
+Redirect permanent /products/firefox/upgrade/ http://www.mozilla.com/firefox/upgrade
+Redirect permanent /products/firefox/why/index.html http://www.mozilla.com/firefox/
+Redirect permanent /products/thunderbird/all-beta.html http://www.mozilla.com/thunderbird/all.html
+Redirect permanent /products/thunderbird/all.html http://www.mozilla.com/thunderbird/all.html
+Redirect permanent /products/thunderbird/buttons.html http://spreadthunderbird.com/affiliates
+Redirect permanent /products/thunderbird/dictionaries.html http://www.mozilla.com/thunderbird/dictionaries.html
+Redirect permanent /products/thunderbird/download.html http://www.mozilla.com/thunderbird/
+Redirect permanent /products/thunderbird/global-inbox.html http://kb.mozillazine.org/Global_Inbox
+Redirect permanent /products/thunderbird/index.html http://www.mozilla.com/thunderbird/
+Redirect permanent /products/thunderbird/junkmail.html http://kb.mozillazine.org/Junk_Mail_Controls
+Redirect permanent /products/thunderbird/message-grouping.html http://kb.mozillazine.org/Message_Grouping
+Redirect permanent /products/thunderbird/privacy-protection.html http://kb.mozillazine.org/Privacy_basics_%28Thunderbird%29
+Redirect permanent /products/thunderbird/releases/ http://www.mozilla.com/thunderbird/releases/
+Redirect permanent /products/thunderbird/releases/0.1-release-notes.html http://www.mozilla.com/thunderbird/releases/0.1.html
+Redirect permanent /products/thunderbird/releases/0.2-release-notes.html http://www.mozilla.com/thunderbird/releases/0.2.html
+Redirect permanent /products/thunderbird/releases/0.3-release-notes.html http://www.mozilla.com/thunderbird/releases/0.3.html
+Redirect permanent /products/thunderbird/releases/0.4-release-notes.html http://www.mozilla.com/thunderbird/releases/0.4.html
+Redirect permanent /products/thunderbird/releases/0.5-release-notes.html http://www.mozilla.com/thunderbird/releases/0.5.html
+Redirect permanent /products/thunderbird/releases/0.6-release-notes.html http://www.mozilla.com/thunderbird/releases/0.6.html
+Redirect permanent /products/thunderbird/releases/0.7-release-notes.html http://www.mozilla.com/thunderbird/releases/0.7.html
+Redirect permanent /products/thunderbird/releases/0.8-release-notes.html http://www.mozilla.com/thunderbird/releases/0.8.html
+Redirect permanent /products/thunderbird/releases/0.9-release-notes.html http://www.mozilla.com/thunderbird/releases/0.9.html
+Redirect permanent /products/thunderbird/releases/1.0-release-notes.html http://www.mozilla.com/thunderbird/releases/1.0.html
+Redirect permanent /products/thunderbird/releases/1.0.2-release-notes.html http://www.mozilla.com/thunderbird/releases/1.0.2.html
+Redirect permanent /products/thunderbird/releases/1.0.5-release-notes.html http://www.mozilla.com/thunderbird/releases/1.0.5.html
+Redirect permanent /products/thunderbird/releases/1.0.6-release-notes.html http://www.mozilla.com/thunderbird/releases/1.0.6.html
+Redirect permanent /products/thunderbird/releases/1.0.7-release-notes.html http://www.mozilla.com/thunderbird/releases/1.0.7.html
+Redirect permanent /products/thunderbird/rss.html http://kb.mozillazine.org/RSS_basics_%28Thunderbird%29
+Redirect permanent /products/thunderbird/search-folders.html http://kb.mozillazine.org/Saved_Search
+Redirect permanent /products/thunderbird/sysreq.html http://www.mozilla.com/thunderbird/system-requirements.html
+Redirect permanent /profilemanager/isp-rdf-info.txt http://developer.mozilla.org/En/Isp_Data
+Redirect permanent /projects.html http://www.mozilla.org/projects/
+Redirect permanent /projects/browsers.html http://www.mozilla.org
+Redirect permanent /projects/bugzilla http://www.bugzilla.org
+Redirect permanent /projects/camino/damagedBookmarks.html http://wiki.caminobrowser.org/QA:Damaged_Bookmarks
+Redirect permanent /projects/camino/development.html http://caminobrowser.org/contribute/
+Redirect permanent /projects/camino/docs/index.html http://caminobrowser.org/help/
+Redirect permanent /projects/camino/docs/miscfeatures.html http://caminobrowser.org/documentation/
+Redirect permanent /projects/camino/docs/profileprefs.html http://caminobrowser.org/documentation/hiddenprefs/
+Redirect permanent /projects/camino/docs/proxies.html http://caminobrowser.org/documentation/proxy/
+Redirect permanent /projects/camino/feedback.html http://caminobrowser.org/contact/
+Redirect permanent /projects/camino/homepage.html http://caminobrowser.org/start/
+Redirect permanent /projects/camino/releasenotes.html http://caminobrowser.org/releases/
+Redirect permanent /projects/camino/shortcuts.html http://caminobrowser.org/documentation/shortcuts/
+Redirect permanent /projects/camino/welcome.html http://caminobrowser.org/welcome/
+Redirect permanent /projects/deerpark/alpha2.html http://www.mozilla.org/projects/firefox
+Redirect permanent /projects/deerpark/deerpark-icon.png http://www.mozilla.org/images/deerpark-icon.png
+Redirect permanent /projects/distros.html http://www.mozilla.org/projects/mozilla-based.html
+Redirect permanent /projects/embedding/faq.html http://developer.mozilla.org/en/Mozilla_Embedding_FAQ
+Redirect permanent /projects/firebird/0.1-release-notes.html http://www.mozilla.org/products/firefox/releases/0.1.html
+Redirect permanent /projects/firebird/0.2-release-notes.html http://www.mozilla.org/products/firefox/releases/0.2.html
+Redirect permanent /projects/firebird/0.3-release-notes.html http://www.mozilla.org/products/firefox/releases/0.3.html
+Redirect permanent /projects/firebird/0.4-release-notes.html http://www.mozilla.org/products/firefox/releases/0.4.html
+Redirect permanent /projects/firebird/0.5-release-notes.html http://www.mozilla.org/products/firefox/releases/0.5.html
+Redirect permanent /projects/firebird/0.6-release-notes.html http://www.mozilla.org/products/firefox/releases/0.6.html
+Redirect permanent /projects/firebird/0.6.1-release-notes.html http://www.mozilla.org/products/firefox/releases/0.6.1.html
+Redirect permanent /projects/firebird/0.7-release-notes.html http://www.mozilla.org/products/firefox/releases/0.7.html
+Redirect permanent /projects/firebird/0.7.1-release-notes.html http://www.mozilla.org/products/firefox/releases/0.7.1.html
+Redirect permanent /projects/firebird/build.html http://www.mozilla.org/projects/firefox/build.html
+Redirect permanent /projects/firebird/charter.html http://www.mozilla.org/projects/firefox/charter.html
+Redirect permanent /projects/firebird/index.html http://www.mozilla.org/projects/firefox/
+Redirect permanent /projects/firebird/installer/build.html http://www.mozilla.org/projects/firefox/installer/build.html
+Redirect permanent /projects/firebird/qa/downloads.html http://www.mozilla.org/projects/firefox/qa/downloads.html
+Redirect permanent /projects/firebird/qa/index.html http://www.mozilla.org/projects/firefox/qa/
+Redirect permanent /projects/firebird/release-notes.html http://www.mozilla.org/products/firefox/releases/
+Redirect permanent /projects/firebird/releases.html http://texturizer.net/firebird/download.html
+Redirect permanent /projects/firebird/review.html http://www.mozilla.org/projects/firefox/review.html
+Redirect permanent /projects/firebird/roadmap.html http://www.mozilla.org/projects/firefox/roadmap.html
+Redirect permanent /projects/firebird/ue/downloads/index.html http://www.mozilla.org/projects/firefox/ue/downloads/
+Redirect permanent /projects/firebird/ue/index.html http://www.mozilla.org/projects/firefox/ue/
+Redirect permanent /projects/firebird/ue/installer/index.html http://www.mozilla.org/projects/firefox/ue/installer/
+Redirect permanent /projects/firebird/ue/migration/index.html http://www.mozilla.org/projects/firefox/ue/migration/
+Redirect permanent /projects/firebird/ue/philosophy/realities.html http://www.mozilla.org/projects/firefox/ue/philosophy/realities.html
+Redirect permanent /projects/firebird/why/index.html http://www.mozilla.org/products/firefox/why/
+Redirect permanent /projects/firefox/extensions/em-changes.html http://developer.mozilla.org/en/Enhanced_Extension_Installation
+Redirect permanent /projects/firefox/extensions/update.html http://developer.mozilla.org/en/Extension_Versioning%2C_Update_and_Compatibility
+Redirect permanent /projects/firefox/l10n/index.html https://wiki.mozilla.org/L10n
+Redirect permanent /projects/firefox/l10n/installer-encodings.html http://developer.mozilla.org/en/Encodings_for_localization_files
+Redirect permanent /projects/firefox/l10n/l10n-step-by-step.html https://wiki.mozilla.org/L10n
+Redirect permanent /projects/firefox/l10n/localize-release.html https://wiki.mozilla.org/L10n
+Redirect permanent /projects/firefox/l10n/using-cvs.html https://wiki.mozilla.org/L10n
+Redirect permanent /projects/foundation/ http://www.mozilla.org/foundation/
+Redirect permanent /projects/images/ico-osx.png http://www.mozilla.org/images/ico-osx.png
+Redirect permanent /projects/images/ico-tux.png http://www.mozilla.org/images/ico-tux.png
+Redirect permanent /projects/images/ico-win.png http://www.mozilla.org/images/ico-win.png
+Redirect permanent /projects/inspector/faq.html https://developer.mozilla.org/en/DOM_Inspector_FAQ
+Redirect permanent /projects/intl/xul-how2l10n.html http://www.mozilla.org/projects/l10n/mlp_status.html
+Redirect permanent /projects/intl/xul-l10n.html http://www.mozilla.org/projects/l10n/xul-l10n.html
+Redirect permanent /projects/intl/xul-styleguide.html http://www.mozilla.org/projects/l10n/xul-styleguide.html
+Redirect permanent /projects/intl/fonts.html http://wiki.mozilla.org/Font_selection
+Redirect permanent /projects/l10n/customizable-code.html https://developer.mozilla.org/en/Writing_localizable_code
+Redirect permanent /projects/l10n/mlp_docs.html https://wiki.mozilla.org/L10n:Localization_Process
+Redirect permanent /projects/l10n/mlp_howto_Firefox.html https://wiki.mozilla.org/L10n:Localization_Process
+Redirect permanent /projects/l10n/mlp_status.html https://wiki.mozilla.org/L10n:Localization_Teams
+Redirect permanent /projects/l10n/mlp_tools.html https://wiki.mozilla.org/L10n:Tools
+Redirect permanent /projects/list.html http://www.mozilla.org/projects/
+Redirect permanent /projects/marketing/banners.html http://www.spreadfirefox.com/affiliates/homepage
+Redirect permanent /projects/marketing/buttons.html http://www.spreadfirefox.com/affiliates/homepage
+Redirect permanent /projects/mathml/authoring.html https://developer.mozilla.org/en/Mozilla_MathML_Project/Authoring
+Redirect permanent /projects/mathml/update.html https://developer.mozilla.org/en/Mozilla_MathML_Project/Status
+Redirect permanent /projects/minefield/releases/ http://www.mozilla.org/projects/minefield/
+Redirect permanent /projects/mstone http://mstone.sourceforge.net/
+Redirect permanent /projects/netlib/http/http-debugging.html https://developer.mozilla.org/en/HTTP_Logging
+Redirect permanent /projects/netlib/integrated-auth.html http://developer.mozilla.org/En/Integrated_Authentication
+Redirect permanent /projects/netlib/Link_Prefetching_FAQ.html http://developer.mozilla.org/en/Link_prefetching_FAQ
+Redirect permanent /projects/other-projects.html http://www.mozilla.org/projects/mozilla-based.html
+Redirect permanent /projects/phoenix/0.1-release-notes.html http://www.mozilla.org/products/firefox/releases/0.1.html
+Redirect permanent /projects/phoenix/0.2-release-notes.html http://www.mozilla.org/products/firefox/releases/0.2.html
+Redirect permanent /projects/phoenix/0.3-release-notes.html http://www.mozilla.org/products/firefox/releases/0.3.html
+Redirect permanent /projects/phoenix/0.4-release-notes.html http://www.mozilla.org/products/firefox/releases/0.5.html
+Redirect permanent /projects/phoenix/0.5-release-notes.html http://www.mozilla.org/products/firefox/releases/0.5.html
+Redirect permanent /projects/phoenix/0.6-release-notes.html http://www.mozilla.org/products/firefox/releases/0.6.html
+Redirect permanent /projects/phoenix/extensions/index.html http://texturizer.net/firefox/extensions/
+Redirect permanent /projects/phoenix/index.html http://www.mozilla.org/projects/firefox/
+Redirect permanent /projects/phoenix/phoenix-advantages.html http://www.mozilla.org/products/firefox/releases/
+Redirect permanent /projects/phoenix/phoenix-roadmap.html http://www.mozilla.org/projects/firefox/roadmap.html
+Redirect permanent /projects/phoenix/releases.html http://www.mozilla.org/products/firefox/
+Redirect permanent /projects/phoenix/why/index.html http://www.mozilla.org/products/firefox/why/
+Redirect permanent /projects/plugins/first-install-problem.html http://developer.mozilla.org/en/Plugins:_The_first_install_problem
+Redirect permanent /projects/plugins/install-scheme.html http://developer.mozilla.org/en/Installing_plugins_to_Gecko_embedding_browsers_on_Windows
+Redirect permanent /projects/plugins/npruntime-sample-in-visual-studio.html http://developer.mozilla.org/en/Compiling_The_npruntime_Sample_Plugin_in_Visual_Studio
+Redirect permanent /projects/plugins/npruntime.html http://developer.mozilla.org/en/Gecko_Plugin_API_Reference:Scripting_plugins
+Redirect permanent /projects/plugins/plugin-host-control.html http://developer.mozilla.org/en/ActiveX_Control_for_Hosting_Netscape_Plug-ins_in_IE
+Redirect permanent /projects/plugins/xembed-plugin-extension.html http://developer.mozilla.org/en/XEmbed_Extension_for_Mozilla_Plugins
+Redirect permanent /projects/rt-messaging/chatzilla/user-guide.html http://chatzilla.hacksrus.com/intro
+Redirect permanent /projects/security/components/same-origin.html http://developer.mozilla.org/En/Same_origin_policy_for_JavaScript
+Redirect permanent /projects/sunbird http://www.mozilla.org/projects/calendar/sunbird/
+Redirect permanent /projects/svg/index.html https://developer.mozilla.org/en/SVG
+Redirect permanent /projects/svg/status.html https://developer.mozilla.org/en/Mozilla_SVG_Status
+Redirect permanent /projects/svg/build.html https://developer.mozilla.org/en/Developer_Guide/Build_Instructions
+Redirect permanent /projects/ui/accessibility/index.html http://www.mozilla.org/access/
+Redirect permanent /projects/ui/accessibility/access-today.html http://www.mozilla.org/access/today
+Redirect permanent /projects/ui/accessibility/slides/moz_accslides.html http://www.mozilla.org/access/slideshow/
+Redirect permanent /projects/ui/accessibility/slides http://www.mozilla.org/access/slideshow
+Redirect permanent /projects/ui/accessibility/moz_accslides_text_version.html http://www.mozilla.org/access/slideshow/text
+Redirect permanent /projects/ui/accessibility/index-users.html http://www.mozilla.org/access/users
+Redirect permanent /projects/ui/accessibility/Accessibility_Features_in_Mozilla.html http://www.mozilla.org/access/features
+Redirect permanent /projects/ui/accessibility/index-procurement.html http://www.mozilla.org/access/evaluators
+Redirect permanent /projects/ui/accessibility/index-authors.html http://www.mozilla.org/access/authors
+Redirect permanent /projects/ui/accessibility/dynamic-accessibility.html http://www.mozilla.org/access/dynamic-content
+Redirect permanent /projects/ui/accessibility/index-atvendors.html http://www.mozilla.org/access/at-vendors
+Redirect permanent /projects/ui/accessibility/index-qa-ui.html http://www.mozilla.org/access/qa
+Redirect permanent /projects/ui/accessibility/index-frontend-coders.html http://www.mozilla.org/access/ui-developers
+Redirect permanent /projects/ui/accessibility/index-core-hackers.html http://www.mozilla.org/access/core-developers
+Redirect permanent /projects/ui/accessibility/index-external-developers.html http://www.mozilla.org/access/external-developers
+Redirect permanent /projects/ui/accessibility/toolkit-checklist.html http://www.mozilla.org/access/toolkit-checklist
+Redirect permanent /projects/ui/accessibility/msaa-server-impl.html http://www.mozilla.org/access/windows/msaa-server
+Redirect permanent /projects/ui/accessibility/accessible-xul-authoring.html http://www.mozilla.org/access/xul-guidelines
+Redirect permanent /projects/ui/accessibility/window-eyes-status.html http://www.mozilla.org/access/windows/window-eyes
+Redirect permanent /projects/ui/accessibility/typeaheadfind.html http://www.mozilla.org/access/type-ahead
+Redirect permanent /projects/ui/accessibility/planning-ahead-for-accessibility.html http://www.mozilla.org/access/planning
+Redirect permanent /projects/ui/accessibility/zoomtext-status.html http://www.mozilla.org/access/windows/zoomtext
+Redirect permanent /projects/ui/accessibility/keyboard-status.html http://www.mozilla.org/access/keyboard/testing
+Redirect permanent /projects/ui/accessibility/vendors-win.html http://www.mozilla.org/access/windows/at-apis
+Redirect permanent /projects/ui/accessibility/section508.html http://www.mozilla.org/access/section508
+Redirect permanent /projects/ui/accessibility/w3c-uaag.html http://www.mozilla.org/access/w3c-uaag
+Redirect permanent /projects/ui/accessibility/span-checkbox.html http://www.mozilla.org/access/samples/span-checkbox.html
+Redirect permanent /projects/ui/accessibility/ISimpleDOMNode.idl http://lxr.mozilla.org/seamonkey/source/accessible/public/msaa/ISimpleDOMNode.idl?raw=1
+Redirect permanent /projects/ui/accessibility/ISimpleDOMText.idl http://lxr.mozilla.org/seamonkey/source/accessible/public/msaa/ISimpleDOMText.idl?raw=1
+Redirect permanent /projects/ui/accessibility/ISimpleDOMDocument.idl http://lxr.mozilla.org/seamonkey/source/accessible/public/msaa/ISimpleDOMDocument.idl?raw=1
+Redirect permanent /projects/ui/accessibility/accesskey.html http://www.mozilla.org/access/keyboard/accesskey
+Redirect permanent /projects/ui/accessibility/mozkeyintro.html http://www.mozilla.org/access/keyboard/
+Redirect permanent /projects/ui/accessibility/Javascript-nsIAccessible.html http://www.mozilla.org/access/samples/js-nsIAccessible
+Redirect permanent /projects/ui/accessibility/Javascript-nsIAccessible.js http://www.mozilla.org/access/samples/js-nsIAccessible.js
+Redirect permanent /projects/ui/accessibility/mozkeyplan.html http://www.mozilla.org/access/keyboard/interactive
+Redirect permanent /projects/ui/accessibility/mozkeylist.html http://www.mozilla.org/access/keyboard/mozilla
+Redirect permanent /projects/ui/accessibility/mozkeyboard.html http://www.mozilla.org/access/keyboard/layout
+Redirect permanent /projects/ui/accessibility/Javascript-nsIAccessible-notes.html http://www.mozilla.org/access/samples/js-nsIAccessible-notes
+Redirect permanent /projects/ui/accessibility/accessible-architecture.html http://www.mozilla.org/access/architecture
+Redirect permanent /projects/ui/accessibility/accessible-events.html http://www.mozilla.org/access/event-flow
+Redirect permanent /projects/ui/accessibility/cross-ref-apis.html http://www.mozilla.org/access/platform-apis
+Redirect permanent /projects/ui/accessibility/resources.html http://www.mozilla.org/access/resources
+Redirect permanent /projects/ui/accessibility/access-mozilla.png http://www.mozilla.org/access/access-mozilla.png
+Redirect permanent /projects/ui/accessibility/powerbraille.jpg http://www.mozilla.org/access/powerbraille.jpg
+Redirect permanent /projects/ui/accessibility/vpduo2.jpg http://www.mozilla.org/access/vpduo2.jpg
+Redirect permanent /projects/ui/accessibility/qa/taf_acceptance.html http://www.mozilla.org/access/type-ahead/basic
+Redirect permanent /projects/ui/accessibility/qa/taf_functional.html http://www.mozilla.org/access/type-ahead/full
+Redirect permanent /projects/ui/accessibility/qa/taf_qa.html http://www.mozilla.org/access/type-ahead/testing
+Redirect permanent /projects/ui/accessibility/tabindex.html http://www.mozilla.org/access/keyboard/tabindex
+Redirect permanent /projects/ui/accessibility/embedaccess.html http://www.mozilla.org/access/prefs-and-apis
+Redirect permanent /projects/ui/accessibility/accessible-hierarchy.html http://www.mozilla.org/projects/accessibility/images/accessible-hierarchy.jpg
+Redirect permanent /projects/ui/accessibility/unix/index.html http://www.mozilla.org/access/unix/
+Redirect permanent /projects/ui/accessibility/unix/faq.html http://www.mozilla.org/access/unix/faq
+Redirect permanent /projects/ui/accessibility/unix/introduction.html http://www.mozilla.org/access/unix/team/
+Redirect permanent /projects/ui/accessibility/unix/photos/index.html http://www.mozilla.org/access/unix/team/photos
+Redirect permanent /projects/ui/accessibility/unix/photos http://www.mozilla.org/access/unix/team
+Redirect permanent /projects/ui/accessibility/unix/architecture.html http://www.mozilla.org/access/unix/architecture
+Redirect permanent /projects/xbl/xbl.html http://developer.mozilla.org/en/XBL:XBL_1.0_Reference
+Redirect permanent /projects/xmlextras/ http://developer.mozilla.org/en/XML_Extras
+Redirect permanent /projects/xpcom/array-guide.html http://developer.mozilla.org/en/XPCOM_array_guide
+Redirect permanent /projects/xpcom/consoleservice.html http://developer.mozilla.org/en/Console_service
+Redirect permanent /projects/xpcom/file_locations.html http://developer.mozilla.org/en/Using_nsIDirectoryService
+Redirect permanent /projects/xpcom/generic-factory.html http://developer.mozilla.org/en/Generic_factory
+Redirect permanent /projects/xpcom/hashtable-guide.html http://developer.mozilla.org/en/XPCOM_hashtable_guide
+Redirect permanent /projects/xpcom/interface-rules.html http://developer.mozilla.org/en/IDL_interface_rules
+Redirect permanent /projects/xpcom/MemoryTools.html http://developer.mozilla.org/en/Debugging_memory_leaks
+Redirect permanent /projects/xpcom/mozIRegistry.html http://developer.mozilla.org/en/mozIRegistry
+Redirect permanent /projects/xpcom/nsCOMPtr.html http://developer.mozilla.org/en/Using_nsCOMPtr
+Redirect permanent /projects/xpcom/nsDirectoryService.html http://developer.mozilla.org/en/Using_nsIDirectoryService
+Redirect permanent /projects/xpcom/nsIClassInfo.html http://developer.mozilla.org/en/Using_nsIClassInfo
+Redirect permanent /projects/xpcom/nsString.html http://developer.mozilla.org/en/The_new_nsString_class_implementation_(1999)
+Redirect permanent /projects/xpcom/Ownership.html http://developer.mozilla.org/en/XPCOM_ownership_guidelines
+Redirect permanent /projects/xpcom/Proxies.html http://developer.mozilla.org/en/nsISupports_proxies
+Redirect permanent /projects/xpcom/QI.html http://developer.mozilla.org/en/Implementing_QueryInterface
+Redirect permanent /projects/xpcom/string-guide.html http://developer.mozilla.org/en/XPCOM_string_guide
+Redirect permanent /projects/xpcom/string-quickref.html http://developer.mozilla.org/en/String_Quick_Reference
+Redirect permanent /projects/xpcom/using-consoleservice.html http://developer.mozilla.org/en/Console_service
+Redirect permanent /projects/xpcom/weak_references.html http://developer.mozilla.org/en/Weak_reference
+Redirect permanent /projects/xpcom/xpcom-standalone.html http://developer.mozilla.org/en/Standalone_XPCOM
+Redirect permanent /projects/xpcom/XPCOM_plans.html http://developer.mozilla.org/en/XPCOM_plans
+Redirect permanent /projects/xpcom/XPCOM_tasks.html http://developer.mozilla.org/en/XPCOM_tasks
+Redirect permanent /projects/xpinstall/browser_install.html http://developer.mozilla.org/en/Learn_XPI_Installer_Scripting_by_Example:Installer_Script
+Redirect permanent /projects/xpinstall/browser_xpi.html http://developer.mozilla.org/en/Learn_XPI_Installer_Scripting_by_Example
+Redirect permanent /projects/xpinstall/win_xpi.html http://developer.mozilla.org/en/How_to_add_an_installer_module_to_the_Windows_installer
+Redirect permanent /projects/xpinstall/wizard/index.html http://developer.mozilla.org/en/Install_Wizards_%28aka:_Stub_Installers%29
+Redirect permanent /projects/xpinstall/wizard/mac/index.html http://developer.mozilla.org/en/Install_Wizards_%28aka:_Stub_Installers%29:Mac_stub_installer
+Redirect permanent /projects/xpinstall/wizard/unix/index.html http://developer.mozilla.org/en/Install_Wizards_%28aka:_Stub_Installers%29:Unix_stub_installer
+Redirect permanent /projects/xpinstall/wizard/windows/index.html http://developer.mozilla.org/en/Install_Wizards_%28aka:_Stub_Installers%29:Windows_stub_installer
+Redirect permanent /projects/xslt/js-interface.html http://developer.mozilla.org/en/Using_the_Mozilla_JavaScript_interface_to_XSL_Transformations
+Redirect permanent /projects/xslt/faq.html http://developer.mozilla.org/en/XSL_Transformations_in_Mozilla_FAQ
+Redirect permanent /projects/xslt/standalone.html http://developer.mozilla.org/en/Building_TransforMiiX_standalone
+Redirect permanent /projects/xul/joy-of-xul.html http://developer.mozilla.org/en/The_Joy_of_XUL
+Redirect permanent /projects/xul/xre.html http://developer.mozilla.org/en/XULRunner
+Redirect permanent /projects/xul/xreold.html http://developer.mozilla.org/en/XULRunner
+Redirect permanent /quality/browser/front-end/testcases/keyboard-nav/taf_acceptance.html http://www.mozilla.org/access/type-ahead/basic
+Redirect permanent /quality/browser/front-end/testcases/keyboard-nav/taf_functional.html http://www.mozilla.org/access/type-ahead/full
+Redirect permanent /quality/browser/front-end/testcases/keyboard-nav/typeaheadfind.html http://www.mozilla.org/access/type-ahead/testing
+Redirect permanent /quality/bug-writing-guidelines.html http://developer.mozilla.org/en/Bug_writing_guidelines
+Redirect permanent /quality/help/beginning-duplicate-finding.html http://developer.mozilla.org/en/Screening_duplicate_bugs
+Redirect permanent /quality/help/boilerplate.html http://www.mozilla.org/quality/browser/prescreening.html
+Redirect permanent /quality/help/bug-form.html https://bugzilla.mozilla.org/enter_bug.cgi?format=guided
+Redirect permanent /quality/help/bugzilla-helper.html https://bugzilla.mozilla.org/enter_bug.cgi?format=guided
+Redirect permanent /quality/help/bugzilla-privilege-guide.html http://developer.mozilla.org/en/What_to_do_and_what_not_to_do_in_Bugzilla
+Redirect permanent /quality/help/index-to-tests.html https://litmus.mozilla.org/run_tests.cgi
+Redirect permanent /quality/help/keywords.html http://www.mozilla.org/docs/end-user/keywords.html
+Redirect permanent /quality/help/performance.html http://quality.mozilla.org/projects/automation/talos
+Redirect permanent /quality/help/screening-duplicates.html http://developer.mozilla.org/en/Screening_duplicate_bugs
+Redirect permanent /quality/help/smoketest.html http://litmus.mozilla.org/
+Redirect permanent /quality/help/smoketests/ https://litmus.mozilla.org/
+Redirect permanent /quality/help/unconfirmed.html http://developer.mozilla.org/en/Confirming_unconfirmed_bugs
+Redirect permanent /quality/mailnews/mail-troubleshoot.html https://wiki.mozilla.org/MailNews:Logging
+Redirect permanent /quality/most-frequent-bugs/ https://bugzilla.mozilla.org/duplicates.cgi
+Redirect permanent /quality/networking/docs/aboutdata.html http://developer.mozilla.org/en/The_data_URL_scheme
+Redirect permanent /quality/networking/docs/aboutno_proxy_for.html http://developer.mozilla.org/en/No_Proxy_For_configuration
+Redirect permanent /quality/networking/docs/autodial.html http://developer.mozilla.org/en/Autodial_for_Windows_NT
+Redirect permanent /quality/networking/docs/netprefs.html http://developer.mozilla.org/en/Mozilla_Networking_Preferences
+Redirect permanent /quality/precheckin-tests.html http://developer.mozilla.org/en/Mozilla_automated_testing
+Redirect permanent /quality/qfa.html http://developer.mozilla.org/en/Crash_reporting
+Redirect permanent /quality/security/smoketest.html https://litmus.mozilla.org/
+Redirect permanent /quality/smoketests/ https://litmus.mozilla.org/
+Redirect permanent /quality/smoketests/faq.html http://quality.mozilla.org/howto/litmus/tutorial
+Redirect permanent /raptor/ http://developer.mozilla.org/en/Gecko
+Redirect permanent /README-cvs.html http://www.mozilla.org/contribute/writing/cvs
+Redirect permanent /README-style.html http://www.mozilla.org/contribute/writing/guidelines
+Redirect permanent /rdf/50-words.html http://developer.mozilla.org/en/RDF_in_Fifty_Words_or_Less
+Redirect permanent /rdf/doc/aggregate.html http://developer.mozilla.org/en/Aggregating_the_In-Memory_Datasource
+Redirect permanent /rdf/doc/faq.html http://developer.mozilla.org/en/RDF_in_Mozilla_FAQ
+Redirect permanent /releases/cvstags.html http://developer.mozilla.org/en/CVS_Tags
+Redirect permanent /releases/faq.html http://www.mozilla.org/projects/
+Redirect permanent /releases/index.html http://www.mozilla.org/projects/
+Redirect permanent /releases/mozilla1.8b http://www.mozilla.org/releases/mozilla1.8b1
+Redirect permanent /releases/stable.html http://www.mozilla.org/projects/
+Redirect permanent /report.html http://bugzilla.mozilla.org/enter_bug.cgi?format=guided
+Redirect permanent /rhino/shell.html https://developer.mozilla.org/en/Rhino_Shell
+Redirect permanent /roadmap.html https://wiki.mozilla.org/Roadmap_Scratchpad
+Redirect permanent /scriptable/agnostic.html http://wiki.mozilla.org/Roadmap_for_language_agnostic_scripting_support
+Redirect permanent /scriptable/avoiding-leaks.html http://developer.mozilla.org/en/Using_XPCOM_in_JavaScript_without_leaking
+Redirect permanent /scriptable/components_object.html http://developer.mozilla.org/en/Components_object
+Redirect permanent /scriptable/XPCShell.html https://developer.mozilla.org/en/XPCShell_Reference
+Redirect permanent /scriptable/xpjs-components.html http://developer.mozilla.org/en/XPJS_Components_Proposal
+Redirect permanent /scriptable/xptcall-faq.html http://developer.mozilla.org/en/xptcall_FAQ
+Redirect permanent /search.html http://www.mozilla.org/
+Redirect permanent /sitemap.html http://www.mozilla.org/
+Redirect permanent /source-code.html http://developer.mozilla.org/en/Download_Mozilla_Source_Code
+Redirect permanent /source.html http://developer.mozilla.org/en/Download_Mozilla_Source_Code
+Redirect permanent /status/minutes.html https://wiki.mozilla.org/WeeklyUpdates
+Redirect permanent /store https://store.mozilla.org
+Redirect permanent /tinderbox.html http://developer.mozilla.org/en/Tinderbox
+Redirect permanent /tools.html http://developer.mozilla.org/en/Mozilla_Development_Tools
+Redirect permanent /university/courses.html http://education.mozilla.org
+Redirect permanent /university/courses/appdev1/overview.html http://education.mozilla.org
+Redirect permanent /university/courses/appdev2/overview.html http://education.mozilla.org
+Redirect permanent /university/demos/xslt/demo_topic1.xml http://education.mozilla.org
+Redirect permanent /university/demos/xslt/demo_topic2.xml http://education.mozilla.org
+Redirect permanent /university/demos/xslt/demo_topic3.xml http://education.mozilla.org
+Redirect permanent /university/demos/xslt/demo_topic4.xml http://education.mozilla.org
+Redirect permanent /university/demos/xslt/demo_topic5.xml http://education.mozilla.org
+Redirect permanent /university/demos/xslt/demo.xsl http://education.mozilla.org
+Redirect permanent /university/HOF.html http://www.mozilla.org/projects/mozilla-based.html
+Redirect permanent /university/hof.xml http://www.mozilla.org/projects/mozilla-based.html
+Redirect permanent /university/resource_map.html http://education.mozilla.org
+Redirect permanent /university/scc_roadshow_outline.html http://education.mozilla.org
+Redirect permanent /unix/debugging-faq.html http://developer.mozilla.org/en/Debugging_Mozilla_on_Linux_FAQ
+Redirect permanent /unix/solaris-build.html http://developer.mozilla.org/en/Mozilla_Build_FAQ#Unix-specific_questions
+Redirect permanent /webtools https://developer.mozilla.org/en/Mozilla_Development_Tools
+Redirect permanent /xmlextras/index.html http://developer.mozilla.org/en/XML_Extras
+Redirect permanent /xmlextras/xmldataislands/example1.html http://developer.mozilla.org/@api/deki/files/2861/=example1.html
+Redirect permanent /xmlextras/xmldataislands/index.html http://developer.mozilla.org/en/Using_XML_Data_Islands_in_Mozilla
+Redirect permanent /xmlextras/xmldataislands/MXX_Info.html http://developer.mozilla.org/@api/deki/files/2863/=MXX_Info_(1).html
+Redirect permanent /xmlextras/xmldataislands/table.html http://developer.mozilla.org/@api/deki/files/2864/=table.html
+Redirect permanent /xpfe/goodcss.html http://developer.mozilla.org/en/Writing_Efficient_CSS
+Redirect permanent /xpfe/skins.html http://developer.mozilla.org/en/Writing_Skinnable_XUL_and_CSS
+Redirect permanent /xpfe/xptoolkit/contents.html http://www.mozilla.org/xpfe/xptoolkit/
+Redirect permanent /xpfe/xptoolkit/overlays.html http://developer.mozilla.org/en/XUL_Overlays
+Redirect permanent /xpfe/xptoolkit/xulintro.html http://developer.mozilla.org/en/Introduction_to_XUL
+Redirect permanent /xpfe/xulrdf.htm http://developer.mozilla.org/en/XUL_and_RDF:_The_Implementation_of_the_Application_Object_Model
+Redirect permanent /xpfe/xulref http://developer.mozilla.org/en/XUL_Reference
+Redirect permanent /xpfe/xulref-french http://developer.mozilla.org/fr/docs/R%C3%A9f%C3%A9rence_XUL
+
+#
+# These files have temporarily moved and will return a 302 status.
+#
+Redirect temp /products/firefox/all-beta http://www.mozilla.com/firefox/all.html
+Redirect temp /products/firefox/all-beta.html http://www.mozilla.com/firefox/all.html
+
+#
+# These matched files have permanently moved and will return a 301 status.
+#
+RedirectMatch permanent ^/(licensing|LICENSING) http://www.mozilla.org/foundation/licensing.html
+RedirectMatch permanent /js/language/js20(/.*)$ http://www.ecmascript-lang.org
+RedirectMatch permanent /js/language/es4(/.*)$ http://www.ecmascript-lang.org
+RedirectMatch permanent /parks(/.*)$ http://chelseanovak.wordpress.com/2011/07/08/looking-back-on-mozilla-parks/
+RedirectMatch permanent /projects/xpcom/book.* https://developer.mozilla.org/en/Creating_XPCOM_Components
+RedirectMatch permanent /projects/xpcom/doc.* https://developer.mozilla.org/en/XPCOM
+
+#
+# These matched files have temporarily moved and will return a 302 status.
+#
+RedirectMatch temp ^/projects/firefox/.*pre/whatsnew/ http://www.mozilla.org/contribute/
+
+#
+# These URLs are rewritten to point to their actual location.
+# The RewriteEngine was already turned on above.
+#
+RewriteRule ^about/manifesto(?:/(?:index.html)?)?$ http://www.mozilla.org/about/manifesto.en.html [R]
+RewriteRule ^about/staff(?:/(?:index.html)?)?$ http://www-archive.mozilla.org/about/staff.html [R]
+RewriteRule ^access/dhtml(?:/(?:index.html)?)?$ http://wiki.codetalks.org/wiki/index.php/Main_Page [R]
+RewriteRule ^access/unix/atspi-support(?:/(?:index.html)?)?$ http://developer.mozilla.org/En/Accessibility:AT-APIs [R]
+RewriteRule ^badges(?:/(?:index.html)?)?$ http://wiki.mozilla.org/Badges [R]
+RewriteRule ^betterinternet(?:/(?:index.html)?)?$ http://www.mozilla.org/causes/better.html [R]
+RewriteRule ^bugs(?:/(?:index.html)?)?$ http://developer.mozilla.org/en/Bug_writing_guidelines [R]
+RewriteRule ^build(?:/(?:index.html)?)?$ http://developer.mozilla.org/en/Build_Documentation [R]
+RewriteRule ^catalog/architecture/xul(?:/(?:index.html)?)?$ http://developer.mozilla.org/En/XUL [R]
+RewriteRule ^catalog/web-developer(?:/(?:index.html)?)?$ http://developer.mozilla.org/En/Web_Development [R]
+RewriteRule ^causes(?:/(?:index.html)?)?$ http://www.mozilla.org/about/mission.html [R]
+RewriteRule ^causes/onewebday(?:/(?:index.html)?)?$ http://commonspace.wordpress.com/2010/04/06/owddrumbeat/ [R]
+RewriteRule ^causes/onewebday/posters(?:/(?:index.html)?)?$ http://commonspace.wordpress.com/2010/04/06/owddrumbeat/ [R]
+RewriteRule ^causes/subtitles(?:/(?:index.html)?)?$ http://www.drumbeat.org/universal-subtitles/ [R]
+RewriteRule ^community/forums(?:/(?:index.html)?)?$ http://www.mozilla.org/about/forums/ [R]
+RewriteRule ^community/intl(?:/(?:index.html)?)?$ http://www.mozilla.org/community/directory.html [R]
+RewriteRule ^contribute/writing(?:/(?:index.html)?)?$ https://developer.mozilla.org/Project:en/How_to_Help [R]
+RewriteRule ^contribute/writing/cvs(?:/(?:index.html)?)?$ https://wiki.mozilla.org/Mozilla.org:How_to_Work_with_Site [R]
+RewriteRule ^contribute/writing/(guidelines|guidelines.html)(\/?)$ https://wiki.mozilla.org/Websites/Guides/Style [R]
+RewriteRule ^contribute/writing/how-to(?:/(?:index.html)?)?$ https://developer.mozilla.org/Project:en/How_to_document_Mozilla [R]
+RewriteRule ^contribute/writing/process(?:/(?:index.html)?)?$ https://developer.mozilla.org/Project:en/Getting_started [R]
+RewriteRule ^directory(?:/(?:index.html)?)?$ https://wiki.mozilla.org/Directory [R]
+RewriteRule ^docs(?:/(?:index.html)?)?$ https://developer.mozilla.org/ [R]
+RewriteRule ^docs/docshell(?:/(?:index.html)?)?$ http://developer.mozilla.org/en/DocShell [R]
+RewriteRule ^docs/dom(?:/(?:index.html)?)?$ http://developer.mozilla.org/en/About_the_Document_Object_Model [R]
+RewriteRule ^docs/dom/domref(?:/(?:index.html)?)?$ http://developer.mozilla.org/en/Gecko_DOM_Reference [R]
+RewriteRule ^docs/tutorials/tinderstatus(?:/(?:index.html)?)?$ http://developer.mozilla.org/en/Creating_a_Mozilla_Extension [R]
+RewriteRule ^docs/web-developer(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/Web_Development [R]
+RewriteRule ^docs/web-developer/js(?:/(?:index.html)?)?$ http://developer.mozilla.org/en/JavaScript [R]
+RewriteRule ^docs/web-developer/js/debugging(?:/(?:index.html)?)?$ http://developer.mozilla.org/en/Debugging_JavaScript [R]
+RewriteRule ^donate(?:/(?:index.html)?)?$ https://donate.mozilla.org/page/contribute/openwebfund [R]
+RewriteRule ^download http://www.mozilla.org/projects/ [R]
+RewriteRule ^firefox-live/blog(?:/(?:index.html)?)?$ http://firefoxlive.mozilla.org/blog [R]
+RewriteRule ^foundation/blog(?:/(?:index.html)?)?$ http://blog.mozillafoundation.org/ [R]
+RewriteRule ^foundation/donate(?:/(?:index.html)?)?$ https://donate.mozilla.org/page/contribute/openwebfund [R]
+RewriteRule ^foundation/grants(?:/(?:index.html)?)?$ http://www.mozilla.org/grants [R]
+RewriteRule ^foundation/openwebfund(?:/(?:index.html)?)?$ https://donate.mozilla.org/page/contribute/openwebfund [R]
+RewriteRule ^hacking(?:/(?:index.html)?)?$ https://developer.mozilla.org/En/Developer_Guide [R]
+RewriteRule ^hacking/patch-maker(?:/(?:index.html)?)?$ http://www.gerv.net/software/patch-maker/ [R]
+RewriteRule ^internethealth(?:/(?:index.html)?)?$ http://www.mozilla.org/causes/serviceweek/internethealth/ [R]
+RewriteRule ^js(?:/(?:index.html)?)?$ http://developer.mozilla.org/en/About_JavaScript [R]
+RewriteRule ^js/language(?:/(?:index.html)?)?$ http://developer.mozilla.org/en/JavaScript_Language_Resources [R]
+RewriteRule ^js/spidermonkey(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/SpiderMonkey [R]
+RewriteRule ^lightning(?:/(?:index.html)?)?$ http://www.mozilla.org/projects/calendar/ [R]
+RewriteRule ^mailnews(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/Thunderbird [R]
+RewriteRule ^mission(?:/(?:index.html)?)?$ http://www.mozilla.org/about/mission.html [R]
+RewriteRule ^onewebday(?:/(?:index.html)?)?$ http://commonspace.wordpress.com/2010/04/06/owddrumbeat/ [R]
+RewriteRule ^open(?:/(?:index.html)?)?$ http://www.mozilla.org/causes/open/ [R]
+RewriteRule ^openwebfund(?:/(?:index.html)?)?$ http://www.mozilla.org/foundation/openwebfund/ [R]
+RewriteRule ^parks/firefoxlive(?:/(?:index.html)?)?$ http://firefoxlive.mozilla.org/ [R]
+RewriteRule ^performance(?:/(?:index.html)?)?$ http://wiki.mozilla.org/Performance:Home_Page [R]
+RewriteRule ^policies(?:/(?:index.html)?)?$ http://www.mozilla.org/about/policies/ [R]
+RewriteRule ^ports/qtmozilla(?:/(?:index.html)?)?$ https://wiki.mozilla.org/Qt [R]
+RewriteRule ^poweredby(?:/(?:index.html)?)?$ http://www.mozilla.org/projects/powered-by.html [R]
+RewriteRule ^press/(?:/(?:index.html)?)?$ http://www.mozilla.com/press/ [R]
+RewriteRule ^press/awards(?:/(?:index.html)?)?$ http://www.mozilla.com/press/awards.html [R]
+RewriteRule ^press/images(?:/(?:index.html)?)?$ http://www.mozilla.com/press/images.html [R]
+RewriteRule ^press/testimonials(?:/(?:index.html)?)?$ http://www.mozilla.com/press/ [R]
+RewriteRule ^products(?:/(?:index.html)?)?$ http://www.mozilla.org/projects [R]
+RewriteRule ^products/firefox(?:/(?:index.html)?)?$ http://www.firefox.com [R]
+RewriteRule ^products/firefox/affiliates(?:/(?:index.html)?)?$ http://www.spreadfirefox.com/affiliates [R]
+RewriteRule ^products/firefox/buttons(?:/(?:index.html)?)?$ http://www.spreadfirefox.com/affiliates [R]
+RewriteRule ^products/mozilla1.x(?:/(?:index.html)?)?$ http://www.mozilla.org/projects/ [R]
+RewriteRule ^products/mozilla1.x/download(?:/(?:index.html)?)?$ http://www.mozilla.org/projects/ [R]
+RewriteRule ^products/thunderbird(?:/(?:index.html)?)?$ http://www.mozilla.org/thunderbird/ [R]
+RewriteRule ^products/thunderbird/why(?:/(?:index.html)?)?$ http://www.mozilla.org/thunderbird/features/ [R]
+RewriteRule ^projects/bonecho(?:/(?:index.html)?)?$ http://www.mozilla.com/firefox/channel/ [R]
+RewriteRule ^projects/bonsai(?:/(?:index.html)?)?$ https://wiki.mozilla.org/Bonsai [R]
+RewriteRule ^projects/camino(?:/(?:index.html)?)?$ http://caminobrowser.org/ [R]
+RewriteRule ^projects/cck(?:/(?:index.html)?)?$ https://wiki.mozilla.org/CCK [R]
+RewriteRule ^projects/chimera(?:/(?:index.html)?)?$ http://caminobrowser.org/ [R]
+RewriteRule ^projects/deerpark(?:/(?:index.html)?)?$ http://www.mozilla.com/firefox/channel/ [R]
+RewriteRule ^projects/devpreview(?:/(?:index.html)?)?$ http://www.mozilla.com/firefox/channel/ [R]
+RewriteRule ^projects/embedding(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/Embedding_Mozilla [R]
+RewriteRule ^projects/fennec(?:/(?:index.html)?)?$ https://wiki.mozilla.org/Fennec [R]
+RewriteRule ^projects/granparadiso(?:/(?:index.html)?)?$ http://www.mozilla.com/firefox/channel/ [R]
+RewriteRule ^projects/inspector(?:/(?:index.html)?)?$ https://developer.mozilla.org/En/DOM_Inspector [R]
+RewriteRule ^projects/javaconnect(?:/(?:index.html)?)?$ http://developer.mozilla.org/en/JavaXPCOM [R]
+RewriteRule ^projects/marketing(?:/(?:index.html)?)?$ http://contribute.mozilla.org/Marketing [R]
+RewriteRule ^projects/mathml(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/Mozilla_MathML_Project [R]
+RewriteRule ^projects/mathml/fonts(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/Mozilla_MathML_Project/Fonts [R]
+RewriteRule ^projects/mathml/screenshots(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/Mozilla_MathML_Project/Screenshots [R]
+RewriteRule ^projects/minefield(?:/(?:index.html)?)?$ http://www.mozilla.org/projects/firefox/prerelease.html [R]
+RewriteRule ^projects/minimo(?:/(?:index.html)?)?$ https://wiki.mozilla.org/Mobile [R]
+RewriteRule ^projects/namoroka(?:/(?:index.html)?)?$ http://www.mozilla.com/firefox/channel/ [R]
+RewriteRule ^projects/netlib(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/Necko [R]
+RewriteRule ^projects/plugins(?:/(?:index.html)?)?$ https://developer.mozilla.org/En/Plugins [R]
+RewriteRule ^projects/rt-messaging(?:/(?:index.html)?)?$ http://chatzilla.hacksrus.com/ [R]
+RewriteRule ^projects/rt-messaging/chatzilla(?:/(?:index.html)?)?$ http://chatzilla.hacksrus.com/ [R]
+RewriteRule ^projects/shiretoko(?:/(?:index.html)?)?$ http://www.mozilla.com/firefox/channel/ [R]
+RewriteRule ^projects/string(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/XPCOM_string_guide [R]
+RewriteRule ^projects/tech-evangelism(?:/(?:index.html)?)?$ https://wiki.mozilla.org/Evangelism [R]
+RewriteRule ^projects/venkman(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/Venkman [R]
+RewriteRule ^projects/webservices/examples/babelfish-wsdl(?:/(?:index.html)?)?$ http://developer.mozilla.org/En/XML_Web_Services [R]
+RewriteRule ^projects/xbl(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/XBL [R]
+RewriteRule ^projects/xforms(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/XForms [R]
+RewriteRule ^projects/xpcom(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/XPCOM [R]
+RewriteRule ^projects/xpinstall(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/XPInstall [R]
+RewriteRule ^projects/xslt(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/XSLT [R]
+RewriteRule ^projects/xul(?:/(?:index.html)?)?$ https://developer.mozilla.org/En/XUL [R]
+RewriteRule ^quality(?:/(?:index.html)?)?$ http://quality.mozilla.org/ [R]
+RewriteRule ^quality/help(?:/(?:index.html)?)?$ http://quality.mozilla.org/get-involved [R]
+RewriteRule ^releases(?:/(?:index.html)?)?$ http://www.mozilla.org/projects [R]
+RewriteRule ^roadmap(?:/(?:index.html)?)?$ https://wiki.mozilla.org/Roadmap_Scratchpad [R]
+RewriteRule ^school(?:/(?:index.html)?)?$ http://education.mozilla.org [R]
+RewriteRule ^scriptable(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/XPConnect [R]
+RewriteRule ^scriptable/xpidl(?:/(?:index.html)?)?$ https://developer.mozilla.org/en/XPIDL [R]
+RewriteRule ^serviceweek(?:/(?:index.html)?)?$ http://www.mozilla.org/causes/serviceweek/ [R]
+RewriteRule ^status(?:/(?:index.html)?)?$ https://wiki.mozilla.org/WeeklyUpdates [R]
+RewriteRule ^sunbird(?:/(?:index.html)?)?$ http://www.mozilla.org/projects/calendar/ [R]
+RewriteRule ^university(?:/(?:index.html)?)?$ http://education.mozilla.org [R]
+RewriteRule ^university/demos/xslt(?:/(?:index.html)?)?$ http://education.mozilla.org [R]
+RewriteRule ^xpfe(?:/(?:index.html)?)?$ http://developer.mozilla.org/En/Toolkit_API [R]
+
+##############################################################################
+#             PLEASE DO NOT ADD ANYTHING BELOW THE REWRITE RULES             #
+##############################################################################
+

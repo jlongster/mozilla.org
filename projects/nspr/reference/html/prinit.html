@@ -1,0 +1,1043 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;4 Process Initialization';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:04:42">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="prthrd.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prlock.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="15655"> </A><A NAME=""> </A><h2>
+Chapter&#32;4 
+&nbsp;
+
+
+
+<A NAME="15657"> </A><A NAME="Process Initialization"> </A>Process Initialization
+</h2>
+</center>
+<A NAME="15658"> </A>This chapter describes the NSPR API for versioning, process initialization, and 
+shutdown of NSPR.
+
+<P>
+
+<A NAME="15662"> </A><A HREF="prinit.html#15670"  >Identity and Versioning</A><br>
+<A HREF="prinit.html#15699"  >Initialization and Cleanup</A><br>
+<A HREF="prinit.html#15881"  >Module Initialization</A>
+
+<P>
+
+
+
+<A NAME="15670"> </A>
+<A NAME="Identity and Versioning"> </A>
+<h2>
+Identity and Versioning
+</h2>
+
+
+<A NAME="15671"> </A><A NAME="Name and Version Constants"> </A><h4>
+Name and Version Constants
+</h4>
+
+<BR>
+<A NAME="15672"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15673"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15674"></A>#define PR_NAME "NSPR"
+</PRE>
+<P>
+<PRE>
+<A NAME="15675"></A>#define PR_VERSION "2.1 yyyymmdd"
+</PRE>
+<P>
+<PRE>
+<A NAME="15676"></A>typedef PRBool (*PRVersionCheck)(const char*);
+</PRE>
+<P>
+<BR>
+<A NAME="15677"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="15678"> </A>The format of the version string is <I>MajorVersion.MinorVersion BuildDate</I>.
+
+<P>
+
+<A NAME="15679"> </A><A NAME="PR_VersionCheck"> </A><h4>
+PR_VersionCheck
+</h4>
+
+<A NAME="15680"> </A>Compares the version of NSPR assumed by the caller (the imported version) with 
+the version being offered by the runtime (the exported version).
+
+<P>
+
+<BR>
+<A NAME="15681"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15682"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15683"></A>PRBool PR_VersionCheck(const char *importedVersion);
+</PRE>
+<P>
+<BR>
+<A NAME="15684"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="15685"> </A><CODE>PR_VersionCheck</CODE> has one parameter:
+
+<P>
+
+<P>
+<A NAME="15691"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15688"></A><CODE>importedVersion</CODE>
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15690"> </A>The version of the shared library being imported.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="15692"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="15693"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="15694"> </A>If the version of the shared library is compatible with that expected by the 
+caller, <CODE>PR_TRUE</CODE>. 
+
+<P><B>  <li></B>
+<A NAME="15695"> </A>If the versions are not compatible, <CODE>PR_FALSE</CODE>.
+
+<P></ul>
+
+<BR>
+<A NAME="15696"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="15697"> </A><CODE>PR_VersionCheck</CODE> tests whether the version of the library being imported 
+(<CODE>importedVersion</CODE>) is compatible with the running version of the shared library. 
+This is a string comparison of sorts, though the details of the comparison will vary 
+over time. 
+
+<P>
+
+
+
+<A NAME="15699"> </A>
+<A NAME="Initialization and Cleanup"> </A>
+<h2>
+Initialization and Cleanup
+</h2>
+
+
+<A NAME="15700"> </A>NSPR detects whether the library has been initialized and performs implicit 
+initialization if it hasn't. Implicit initialization should suffice unless a program has 
+specific sequencing requirements or needs to characterize the primordial thread. 
+Explicit initialization is rarely necessary.
+
+<P>
+
+<A NAME="15701"> </A>Implicit initialization assumes that the initiator is the primordial thread and that 
+the thread is a user thread of normal priority.
+
+<P>
+
+<A NAME="15705"> </A><A HREF="prinit.html#15734"  ><CODE>PR_Init</CODE></A><CODE><br>
+</CODE><A HREF="prinit.html#15758"  ><CODE>PR_Initialize</CODE></A><CODE><br>
+</CODE><A HREF="prinit.html#15795"  ><CODE>PR_Initialized</CODE></A><CODE><br>
+</CODE><A HREF="prinit.html#15811"  ><CODE>PR_Cleanup</CODE></A><CODE><br>
+</CODE><A HREF="prinit.html#15824"  ><CODE>PR_DisableClockInterrupts</CODE></A><CODE><br>
+</CODE><A HREF="prinit.html#15830"  ><CODE>PR_BlockClockInterrupts</CODE></A><CODE><br>
+</CODE><A HREF="prinit.html#15836"  ><CODE>PR_UnblockClockInterrupts</CODE></A><CODE><br>
+</CODE><A HREF="prinit.html#15842"  ><CODE>PR_SetConcurrency</CODE></A><CODE><br>
+</CODE><A HREF="prinit.html#15859"  ><CODE>PR_ProcessExit</CODE></A><CODE><br>
+</CODE><A HREF="prinit.html#15873"  ><CODE>PR_Abort</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="15734"> </A><A NAME="PR_Init"> </A><h4>
+PR_Init
+</h4>
+
+<A NAME="15735"> </A>Initializes the runtime.
+
+<P>
+
+<BR>
+<A NAME="15736"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15737"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15738"></A>void PR_Init(<br>&nbsp;&nbsp;&nbsp;PRThreadType type, <br>&nbsp;&nbsp;&nbsp;PRThreadPriority priority, <br>&nbsp;&nbsp;&nbsp;PRUintn maxPTDs);
+</PRE>
+<P>
+<BR>
+<A NAME="15739"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="15740"> </A><CODE>PR_Init</CODE> has these parameters:
+
+<P>
+
+<P>
+<A NAME="15754"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15743"></A>type
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15745"> </A>This parameter is ignored.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15747"></A>priority
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15749"> </A>This parameter is ignored.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15751"></A>maxPTDs
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15753"> </A>This parameter is ignored.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="15755"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="15756"> </A>NSPR is now implicitly initialized, usually by the first
+NSPR function called by a program. <CODE>PR_Init</CODE> is necessary only if a program has specific initialization-sequencing 
+requirements.
+
+<P>
+
+Call <CODE>PR_Init</CODE> as follows:
+<PRE>
+    PR_Init(PR_USER_THREAD, PR_PRIORITY_NORMAL, 0);
+</PRE>
+
+<P>
+
+<A NAME="15758"> </A><A NAME="PR_Initialize"> </A><h4>
+PR_Initialize
+</h4>
+
+<A NAME="15759"> </A>Provides an alternate form of explicit initialization. In addition to establishing the 
+sequence of operations, <CODE>PR_Initialize</CODE> implicitly calls <CODE>PR_Cleanup</CODE> on exiting the 
+primordial function. 
+
+<P>
+
+<BR>
+<A NAME="15760"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15761"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15762"></A>PRIntn PR_Initialize(<br>&nbsp;&nbsp;&nbsp;PRPrimordialFn prmain, <br>&nbsp;&nbsp;&nbsp;PRIntn argc, <br>&nbsp;&nbsp;&nbsp;char **argv, <br>&nbsp;&nbsp;&nbsp;PRUintn maxPTDs);
+</PRE>
+<P>
+<BR>
+<A NAME="15763"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="15764"> </A><CODE>PR_Initialize</CODE> has these parameters:
+
+<P>
+
+<P>
+<A NAME="15782"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15767"></A>prmain
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15769"> </A>The function that becomes the primordial thread's root function. 
+Returning from <CODE>prmain</CODE> leads to termination of the process. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15771"></A>argc
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15773"> </A>The length of the argument vector, whether passed in from the host's 
+program-launching facility or fabricated by the actual <CODE>main</CODE> program. 
+This approach conforms to standard C programming practice. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15775"></A>argv
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15777"> </A>The base address of an array of strings that compromise the program's 
+argument vector. This approach conforms to standard C programming 
+practice.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15779"></A>maxPTDs
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15781"> </A>This parameter is ignored.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="15783"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="15784"> </A>The value returned from the root function, <CODE>prmain</CODE>.
+
+<P>
+
+<BR>
+<A NAME="15785"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="15786"> </A><CODE>PR_Initialize</CODE> initializes the NSPR runtime and places NSPR between the caller 
+and the runtime library. This allows <CODE>main</CODE> to be treated like any other function, 
+signaling its completion by returning and allowing the runtime to coordinate the 
+completion of the other threads of the runtime.
+
+<P>
+
+<A NAME="15787"> </A><CODE>PR_Initialize</CODE> does not return to its caller until all user threads have terminated. 
+
+<P>
+
+<A NAME="15788"> </A>The type for the root function is specified as follows:
+
+<P>
+
+<PRE>
+<A NAME="15789"></A>typedef PRIntn (PR_CALLBACK *PRPrimordialFn)(PRIntn argc, char **argv);
+</PRE>
+<P>
+<A NAME="15790"> </A>The priority of the main (or primordial) thread is <CODE>PR_PRIORITY_NORMAL</CODE>. The thread 
+may adjust its own priority by using <A HREF="prthrd.html#15330"  ><CODE>PR_SetThreadPriority</CODE></A>.
+
+<P>
+
+<A NAME="15795"> </A><A NAME="PR_Initialized"> </A><h4>
+PR_Initialized
+</h4>
+
+<A NAME="15796"> </A>Checks whether the runtime has been initialized.
+
+<P>
+
+<BR>
+<A NAME="15797"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15798"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15799"></A>PRBool PR_Initialized(void);
+</PRE>
+<P>
+<BR>
+<A NAME="15800"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="15801"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="15805"> </A>If <A HREF="prinit.html#15734"  ><CODE>PR_Init</CODE></A> has already been called, <CODE>PR_TRUE
+</CODE>
+<P><B>  <li></B>
+<A NAME="15809"> </A>If <A HREF="prinit.html#15734"  ><CODE>PR_Init</CODE></A> has not already been called, <CODE>PR_FALSE</CODE>.
+
+<P></ul>
+
+<A NAME="15811"> </A><A NAME="PR_Cleanup"> </A><h4>
+PR_Cleanup
+</h4>
+
+<A NAME="15812"> </A>Coordinates a graceful shutdown of NSPR.
+
+<P>
+
+<BR>
+<A NAME="15813"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15814"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15815"></A>PRStatus PR_Cleanup(void);
+</PRE>
+<P>
+<BR>
+<A NAME="15816"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="15817"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="15818"> </A>If NSPR has been shut down successfully, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="15819"> </A>If the calling thread of this function is not the primordial thread, <CODE>PR_FAILURE</CODE>.
+
+<P></ul>
+
+<BR>
+<A NAME="15820"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="15821"> </A><CODE>PR_Cleanup</CODE> must be called by the primordial thread near the end of the <CODE>main</CODE> 
+function.
+
+<P>
+
+<A NAME="15822"> </A><CODE>PR_Cleanup</CODE> attempts to synchronize the natural termination of the process. It does 
+so by blocking the caller, if and only if it is the primordial thread, until all user 
+threads have terminated. When the primordial thread returns from <CODE>main</CODE>, the 
+process immediately and silently exits. That is, the process (if necessary) forcibly 
+terminates any existing threads and exits without significant blocking and without 
+error messages or core files.
+
+<P>
+
+<A NAME="15824"> </A><A NAME="PR_DisableClockInterrupts"> </A><h4>
+PR_DisableClockInterrupts
+</h4>
+
+<A NAME="15825"> </A>Disables timer signals used for preemptive scheduling.
+
+<P>
+
+<BR>
+<A NAME="15826"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15827"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15828"></A>void PR_DisableClockInterrupts(void);
+</PRE>
+<P>
+<A NAME="15830"> </A><A NAME="PR_BlockClockInterrupts"> </A><h4>
+PR_BlockClockInterrupts
+</h4>
+
+<A NAME="15831"> </A>Blocks the timer signal used for preemptive scheduling.
+
+<P>
+
+<BR>
+<A NAME="15832"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15833"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15834"></A>void PR_BlockClockInterrupts(void);
+</PRE>
+<P>
+<A NAME="15836"> </A><A NAME="PR_UnblockClockInterrupts"> </A><h4>
+PR_UnblockClockInterrupts
+</h4>
+
+<A NAME="15837"> </A>Unblocks the timer signal used for preemptive scheduling.
+
+<P>
+
+<BR>
+<A NAME="15838"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15839"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15840"></A>void PR_UnblockClockInterrupts(void);
+</PRE>
+<P>
+<A NAME="15842"> </A><A NAME="PR_SetConcurrency"> </A><h4>
+PR_SetConcurrency
+</h4>
+
+<A NAME="15843"> </A>Creates extra virtual processor threads. Generally used with MP systems.
+
+<P>
+
+<BR>
+<A NAME="15844"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15845"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15846"></A>void PR_SetConcurrency(PRUintn numCPUs);
+</PRE>
+<P>
+<BR>
+<A NAME="15847"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="15848"> </A><CODE>PR_SetConcurrency</CODE><CODE> </CODE>has one parameter:
+
+<P>
+
+<P>
+<A NAME="15854"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15851"></A>numCPUs
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15853"> </A> The number of extra virtual processor threads to be created.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="15855"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="15856"> </A>Setting concurrency controls the number of virtual processors that NSPR uses to 
+implement its M x N threading model. The M x N model is not available on all host 
+systems. On those where it is not available, <CODE>PR_SetConcurrency</CODE> is ignored.
+
+<P>
+
+<A NAME="15857"> </A>Virtual processors are actually <I>global</I> threads, each of which is designed to support 
+an arbitrary number of <I>local</I> threads. Since global threads are scheduled by the host 
+operating system, this model is particularly applicable to multiprocessor 
+architectures, where true parallelism is possible. However, it may also prove 
+advantageous on uniprocessor systems to reduce the impact of having a locally 
+scheduled thread calling incidental blocking functions. In such cases, all the 
+threads being supported by the virtual processor will block, but those assigned to 
+another virtual processor will be unaffected. 
+
+<P>
+
+<A NAME="15859"> </A><A NAME="PR_ProcessExit"> </A><h4>
+PR_ProcessExit
+</h4>
+
+<A NAME="15860"> </A>Causes an immediate, nongraceful, forced termination of the process.
+
+<P>
+
+<BR>
+<A NAME="15861"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15862"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15863"></A>void PR_ProcessExit(PRIntn status);
+</PRE>
+<P>
+<BR>
+<A NAME="15864"> </A><A NAME="Parameter"> </A><h5>
+Parameter
+</h5>
+
+
+<A NAME="15865"> </A><CODE>PR_ProcessExit</CODE><CODE> </CODE>has one parameter:
+
+<P>
+
+<P>
+<A NAME="15871"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15868"></A>status
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15870"> </A> The exit status code of the process.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<A NAME="15873"> </A><A NAME="PR_Abort"> </A><h4>
+PR_Abort
+</h4>
+
+<A NAME="15874"> </A>Aborts the process in a nongraceful manner. 
+
+<P>
+
+<BR>
+<A NAME="15875"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15876"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15877"></A>void PR_Abort(void);
+</PRE>
+<P>
+<BR>
+<A NAME="15878"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="15879"> </A><CODE>PR_Abort</CODE> results in a core file and a call to the debugger or equivalent, in addition 
+to causing the entire process to stop.
+
+<P>
+
+
+
+<A NAME="15881"> </A>
+<A NAME="Module Initialization"> </A>
+<h2>
+Module Initialization
+</h2>
+
+
+<A NAME="15882"> </A>Initialization can be tricky in a threaded environment, especially initialization that 
+must happen exactly once. <CODE>PR_CallOnce</CODE> ensures that such initialization code is 
+called only once. This facility is recommended in situations where complicated 
+global initialization is required.
+
+<P>
+
+<A NAME="15886"> </A><A HREF="prinit.html#15894"  ><CODE>PRCallOnce</CODE></A><CODE><br>
+</CODE><A HREF="prinit.html#15918"  ><CODE>PRCallOnceFN</CODE></A><CODE><br>
+</CODE><A HREF="prinit.html#15926"  ><CODE>PR_CallOnce</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="15894"> </A><A NAME="PRCallOnce"> </A><h4>
+PRCallOnce
+</h4>
+
+<A NAME="15895"> </A>Structure for tracking initialization.
+
+<P>
+
+<BR>
+<A NAME="15896"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15897"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15898"></A>typedef struct PRCallOnceType {<br>&nbsp;&nbsp;&nbsp;PRIntn initialized;<br>&nbsp;&nbsp;&nbsp;PRInt32 inProgress;<br>&nbsp;&nbsp;&nbsp;PRStatus status;<br>} PRCallOnceType;
+</PRE>
+<P>
+<BR>
+<A NAME="15899"> </A><A NAME="Fields"> </A><h5>
+Fields
+</h5>
+
+
+<A NAME="15900"> </A>The structure has these fields:
+
+<P>
+
+<P>
+<A NAME="15914"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15903"></A>initialized
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15905"> </A>If not zero, the initialization process has been completed.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15907"></A>inProgress
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15909"> </A>If not zero, the initialization process is currently being executed. 
+Calling threads that observe this status block until <CODE>inProgress</CODE> is 
+zero.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15911"></A>status
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15913"> </A>An indication of the outcome of the initialization process.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="15915"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="15916"> </A>The client is responsible for initializing the <CODE>PRCallOnceType</CODE> structure to all zeros. 
+This initialization must be accomplished before any threading issues exist. 
+
+<P>
+
+<A NAME="15918"> </A><A NAME="PRCallOnceFN"> </A><h4>
+PRCallOnceFN
+</h4>
+
+<A NAME="15919"> </A>Defines the signature of the function a client must implement. 
+
+<P>
+
+<BR>
+<A NAME="15920"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15921"></A>#include &lt;prinit.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="15922"></A>typedef PRStatus (PR_CALLBACK *PRCallOnceFN)(void);
+</PRE>
+<P>
+<BR>
+<A NAME="15923"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="15924"> </A>The function is called to perform the initialization desired. The function is expected 
+to return a <CODE>PRStatus</CODE> indicating the outcome of the process.
+
+<P>
+
+<A NAME="15926"> </A><A NAME="PR_CallOnce"> </A><h4>
+PR_CallOnce
+</h4>
+
+<A NAME="15927"> </A>Ensures that subsystem initialization occurs only once. 
+
+<P>
+
+<BR>
+<A NAME="15928"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="15929"></A>PRStatus PR_CallOnce(<br>&nbsp;&nbsp;&nbsp;PRCallOnceType *once, <br>&nbsp;&nbsp;&nbsp;PRCallOnceFN func);
+</PRE>
+<P>
+<BR>
+<A NAME="15930"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="15931"> </A><CODE>PR_CallOnce</CODE> has these parameters:
+
+<P>
+
+<P>
+<A NAME="15941"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15934"></A>once
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15936"> </A> A pointer to an object of type <CODE>PRCallOnceType</CODE>. Initially (before 
+any threading issues exist), the object must be initialized to all zeros. 
+From that time on, the client should consider the object read-only (or 
+even opaque) and allow the runtime to manipulate its content 
+appropriately. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="15938"></A>func
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="15940"> </A>A pointer to the function the calling client has designed to perform 
+the subsystem initialization. The function will be called once, at 
+most, for each subsystem to be initialized. It should return a 
+<CODE>PRStatus</CODE> indicating the result of the initialization process.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="prthrd.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="prlock.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

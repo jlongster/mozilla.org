@@ -1,0 +1,170 @@
+<?php
+
+$html_title = 'A Vulnerability in SSL/TLS implementations of ciphersuites that use
+block ciphers';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="author" content="Terry Hayes">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<h2>A Vulnerability in SSL/TLS implementations of ciphersuites that use block
+ciphers</h2>
+Recently, Swiss researchers published <a
+ href="http://lasecwww.epfl.ch/memo_ssl.shtml">a memo</a> describing a way
+to gather information about the data transmitted over an SSL or TLS channel.&nbsp;
+In certain circumstances it is possible to use this method to decrypt some
+of the data in the messages (such as a password).&nbsp; This vulnerability
+is due to the way error handling is implemented in applications that use
+the CBC mode ciphers in SSL or TLS.&nbsp; The method works by measuring timing
+differences in the way an application reacts to new messages created by an
+attacker. At the current time, the implementation of SSL and TLS in NSS library
+is susceptible to this method.<br>
+ <br>
+ A patch for NSS has been developed that corrects this situation.
+<a href="../nss-3.4.3/nss-3.4.3-release-notes.html">NSS 3.4.3</a>,
+<a href="../nss-3.7.3/nss-3.7.3-release-notes.html">NSS 3.7.3</a>,
+and NSS 3.8 or later will contain the patch. Until
+updated libraries are available the following action is recommended:<br>
+ 
+<ul>
+  <li> Netscape/mozilla browser users do not need to take any action.&nbsp; 
+They could choose to disable TLS or disable CBC mode block ciphersuites as
+a precaution against vulnerable servers.</li>
+  <li>Administrators of servers that are based on NSS 2.8 or later and that
+enable TLS need to take action. They could disable TLS or disable CBC mode
+block cipher suites.<br>
+  </li>
+</ul>
+ Details<br>
+ <br>
+ There are several requirements that must be met in order for this vulnerability
+to be exploited:<br>
+ 
+<ol>
+  <li>The SSL/TLS connection must be using one of the block encryption ciphers
+that use CBC mode, such as DES or AES.&nbsp; Channels using stream ciphers
+such as RC4 are not subject to the flaw.&nbsp; A large proportion of SSL/TLS
+connections use RC4.</li>
+  <li>The vulnerability can only be exploited by someone that intercepts
+data on the SSL/TLS connection, and also actively sends new data on that
+connection.&nbsp; Exploiting the flaw causes the SSL/TLS connection to be
+terminated.&nbsp; The attacker must continue to monitor and use new connections
+until enough data is gathered to decrypt the message.<br>
+   </li>
+  <li>Since the connection is terminated each time, the SSL/TLS client must
+be willing to keep re-establishing the SSL/TLS channel long enough for the
+message to be decrypted.</li>
+  <li>The application must resend the same data on each SSL/TLS connection
+that it creates and the listener must be able to locate it in the data stream.&nbsp;
+Protocols like IMAP/SSL that have a fixed set of messages to login meet this
+requirement. General web browsing does not.</li>
+</ol>
+ In general, there is more risk when a SSL/TLS server (rather than client)
+is vulnerable.&nbsp; This is because data such as passwords and cookies are
+usually sent from the client to the server.&nbsp; If sensitive data is commonly
+sent from server to client (in a predictable way), then the client would
+also need to be updated.<br>
+ <br>
+ The SSL protocol (SSL3) is somewhat more immune to this flaw than is TLS.&nbsp;
+As best I can determine, it is theoretically possible (with enough effort)
+to decrypt all of the data on a TLS connection.&nbsp; However, it appears
+that only partial information can be determined about data on an SSL3 stream.
+(I think the best that can be determined is a range of possible values for
+one out of every eight bytes.)<br>
+ <br>
+ This flaw does not reveal either private keys (such as the server's RSA key)
+or session keys. It reveals only a selected portion of the data.<br>
+ <br>
+ There are several actions that can be taken to prevent this flaw, or detect
+that someone might be exploiting it.<br>
+ 
+<ol>
+  <li>Disable the CBC mode ciphers in&nbsp; SSL and TLS, leaving only the 
+RC4 stream cipher enabled.&nbsp; This change is only necessary on servers, 
+since both the server and the client must agree on a common ciphersuite.</li>
+  <li>Monitor the logs of SSL/TLS servers for an increase in the number of
+connections that are terminated because of errors decrypting or verifying
+data received on the channel.</li>
+  <li>Disable TLS and use only the SSL3 protocol.&nbsp; Again, this change 
+is only necessary on servers.&nbsp; This change is not necessary if the CBC 
+mode ciphers are disabled.<br>
+   </li>
+</ol>
+ Terry Hayes
+<hr width="100%" size="2">
+<h2>Follow-up: TLS block cipher vulnerability</h2>
+This note is a follow up to the note that I wrote yesterday evening.&nbsp;
+I'd like to describe specific circumstances where exposure the TLS vulnerability
+is the highest, and review the actions that can be taken to reduce or eliminate
+the risk.<br>
+ <br>
+ First, this vulnerability is primarily in applications that use TLS, rather
+than SSL version 3.<br>
+ <br>
+ In order to be vulnerable, the application using the TLS connection must
+retransmit the same data each time the channel is established. For example,
+a protocol that sends a password or cookie to a server each time it creates
+a new TLS connection might be at risk.&nbsp; It must be possible for someone
+to observe each of these TLS connections, and record the encrypted data that
+corresponds to the password or cookie.&nbsp; Finally, the application must
+re-establish the TLS connection (and resend the secret data) each time the
+channel is closed or on a regular schedule.<br>
+ <br>
+ Examples<br>
+ <br>
+ A good example of an application (and protocol) that meets these requirements
+is IMAP running over TLS.&nbsp; Each time a mail client establishes a TLS
+connection to the mail server, it sends and receives a predictable set of
+messages.&nbsp; One of these messages will be a LOGIN command, which provides
+the user name and password for the account.&nbsp; It is fairly easy to record
+the particular (encrypted) message that corresponds to the LOGIN command.&nbsp;
+Also, most mail clients can be configured to check for new mail every few
+minutes, so new connections will be created on a regular basis.<br>
+ <br>
+ A second example might be a web site which uses HTTP basic authentication
+over TLS, and is set up to automatically refresh the content of the page
+on a regular basis.&nbsp; The basic authentication password will generally
+be found at the same position in the HTTP request, so the encrypted value
+can be recorded by the observer.&nbsp; Again, the application will periodically
+recreate the TLS connection and resend the secret data in order to get the
+new page contents.<br>
+ <br>
+ If we assume that these clients check for new data every minute, in 24 hours
+1440 TLS connections will be made. Researchers have been able to recover
+password data in as little as 160 attempts (for badly chosen passwords).&nbsp;
+More difficult passwords take from 1200 to 4000 attempts on average.<br>
+ <br>
+ What to do<br>
+ <br>
+ Users of clients such as Netscape 7 or Mozilla do not need to do anything.&nbsp;
+Since passwords are generally sent from the client to the server, a flaw
+in the server is needed to expose the data. If they wish, users can disable
+TLS (but not SSL3) in the security preferences as additional protection for
+unfixed servers.<br>
+ <br>
+ Administrators of servers that use TLS for applications like those described
+above should disable TLS until a corrected version of the server is available.&nbsp;
+Servers that do not support TLS (such as servers based on versions of NSS
+earlier than 2.8) or do not provide a way to enable TLS do not need to take
+any action.&nbsp; All servers should leave SSL3 enabled.<br>
+ <br>
+ (Optional) There is still some (but greatly reduced) risk of this flaw when
+using the SSL v3 implementation in NSS version 2.7 and earlier.&nbsp; Administrators
+of servers that use these versions of the NSS library can disable the SSL3
+ciphersuites that use block ciphers. All the ciphersuites except those that
+use the RC4 streaming cipher should be disabled in this case.<br>
+ <br>
+ Terry Hayes
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

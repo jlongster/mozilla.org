@@ -1,0 +1,93 @@
+<?php
+
+$html_title = 'Obsolete: Building the Next Gen App Installer';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+    <h2>Obsolete: <STRIKE>Building the Next Gen App Installer</STRIKE></h2>
+    
+    <p><b>This document is obsolete.  It only applies to Firefox 0.8</b></p>
+
+    <p>This document describes how to build the next generation installer
+       for your next generation Mozilla application. </p>
+       
+    <p>The build scripts used to generate the installer are condensed 
+       versions of those used to build the Seamonkey installer. They
+       are broken down as follows:</p>
+
+    <p><code><a href="http://lxr.mozilla.org/mozilla/source/toolkit/mozapps/installer/windows/">toolkit/mozapps/installer/windows/</a></code>
+       <blockquote>Generation Scripts</blockquote>
+       <code><a href="http://lxr.mozilla.org/mozilla/source/browser/installer/windows/">browser/installer/windows/</a></code>
+       <blockquote>Firefox XPI Install Scripts, Wizard config.ini etc and 
+         Installer CFG. - known as the <strong>Configuration Path</strong>. 
+         This path is arbitrary and may vary depending on your source code
+         structure. 
+       </blockquote>
+       <code><a href="http://lxr.mozilla.org/mozilla/source/xpinstall/packager">xpinstall/packager/</a></code>
+       <blockquote>Common support scripts (for generating XPI install .js 
+         files, INI files, etc) shared with Seamonkey.
+       </blockquote>
+    </p>
+    
+    <p>&nbsp;</p>
+    
+    <p>To generate an installer for your next generation application
+       you must do the following:
+    </p>
+    
+    <ol>
+      <li>Identify the downloadable components you wish to have present
+          (e.g. browser, adt, langenus etc).</li>
+      <li>Next you create <strong>packages-static </strong>in the configuration
+          path for your product. This contains a section for each downloadable
+          component and the files it contains, in the form of packages-win,
+          packages-static-win etc from Seamonkey.
+      </li>
+      <li>Now you create the <strong>.jst template files</strong> for each
+          downloadable component that performs the appropriate file copying,
+          upgrading, registration, registry key tweaking etc.
+      </li>
+      <li>Edit the <strong>config.it</strong> and other <strong>.it 
+          files</strong> to identify install options and UI strings for the 
+          installer wizard.
+      </li>
+      <li>Create a new file, <strong>installer.cfg</strong> which contains
+          information that tells the scripts what type of file to generate, 
+          file names for the installer scripts (e.g. "FirefoxSetup.exe") 
+          etc. The format of the installer.cfg file can be found
+          <a href="http://lxr.mozilla.org/mozilla/source/browser/installer/windows/installer.cfg">here</a>.
+      </li>
+    </ol>
+
+    <p>Now go to toolkit/mozapps/installer/windows, make sure <b>ActivePerl</b>
+       is ahead of Cygwin Perl on your path, make sure MOZ_SRC is set
+       correctly and that your build is not using an objdir. Then run:
+    </p>
+    
+    <p><code>perl build_static.pl -config &lt;configuration_path&gt;</code></p>
+    
+    <p>e.g.:</p>
+    
+    <p><code>perl build_static.pl -config "C:/builds/installer/mozilla/browser/installer/windows"</code></p>
+    
+    <p>This picks up the package information from the config path you provide,
+       builds the XPIs from the .jst files, creates the wizard exe with the
+       parameters specified in the installer.cfg file with the UI resources
+       specified in config.ini.
+    </p>
+   
+    <p>
+      - <a href="mailto:ben@mozilla.org">Ben Goodger</a> (7/23/2004)
+    </p>
+
+  
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

@@ -1,0 +1,402 @@
+<?php
+
+$html_title = 'PKCS #11 Functions
+';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<FONT SIZE=-1><A HREF="index.html">Table of Contents</A> | <A HREF="sslkey.html">Previous</A>
+ | <A HREF="sslerr.html">Next</A>
+ | <A HREF="bklast.html">Index</A>
+</FONT><BR><BR>
+
+
+<BR>
+<HR>
+<A NAME="1031576">
+<P></A><CENTER><H2>Chapter 7<BR>
+<A NAME="1027946">
+PKCS #11 Functions</A></H2></CENTER>
+<A NAME="1034215">
+This chapter describes the core PKCS #11 functions that an application needs for communicating with cryptographic modules. In particular, these functions are used for obtaining certificates, keys, and passwords. </A></P>
+<A NAME="1035644">
+<A HREF="pkfnc.html#1035673"><CODE>PK11_FindCertFromNickname</CODE></A><br><A HREF="pkfnc.html#1026891"><CODE>PK11_FindKeyByAnyCert</CODE></A><br><A HREF="pkfnc.html#1030779"><CODE>PK11_GetSlotName</CODE></A><br><A HREF="pkfnc.html#1026964"><CODE>PK11_GetTokenName</CODE></A><br><A HREF="pkfnc.html#1026762"><CODE>PK11_IsHW</CODE></A><br><A HREF="pkfnc.html#1022948"><CODE>PK11_IsPresent</CODE></A><br><A HREF="pkfnc.html#1022991"><CODE>PK11_IsReadOnly</CODE></A><br><A HREF="pkfnc.html#1023128"><CODE>PK11_SetPasswordFunc</CODE></A></A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1035673">
+ PK11_FindCertFromNickname
+</A></H4>
+
+<A NAME="1026864">
+Finds a certificate from its nickname.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1026865">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1026866">#include &lt;pk11func.h&gt;<br>#include &lt;certt.h&gt;</A></PRE><PRE><A NAME="1026867">CERTCertificate *PK11_FindCertFromNickname(<br>&nbsp;&nbsp;&nbsp;char *nickname,<br>&nbsp;&nbsp;&nbsp;void *wincx);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1026870">
+ Parameters
+</A></H5>
+
+<A NAME="1026884">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1026873">nickname</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1034886">
+A pointer to the nickname in the certificate database or to the nickname in the token. </A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1026877">wincx</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1026879">
+A pointer to application data for the password callback function. This pointer is set with <A HREF="sslfnc.html#1088040"><CODE>SSL_SetPKCS11PinArg</CODE></A> during SSL configuration. To retrieve its current value, use <A HREF="sslfnc.html#1123385"><CODE>SSL_RevealPinArg</CODE></A>.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1026885">
+ Returns
+</A></H5>
+
+<A NAME="1026886">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1026887">
+If successful, a pointer to a certificate structure.</A></LI>
+<LI><A NAME="1026888">
+If unsuccessful, <CODE>NULL</CODE>.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1032008">
+ Description
+</A></H5>
+
+<A NAME="1032009">
+A nickname is an alias for a certificate subject. There may be multiple certificates with the same subject, and hence the same nickname. This function will return the newest certificate that matches the subject, based on the NotBefore / NotAfter fields of the certificate. When you are finished with the certificate structure returned by <CODE>PK11_FindCertFromNickname</CODE>, you must free it by calling <A HREF="sslcrt.html#1050532"><CODE>CERT_DestroyCertificate</CODE></A>.</A></P>
+<A NAME="1036272">
+The <CODE>PK11_FindCertFromNickname</CODE> function calls the password callback function set with <A HREF="pkfnc.html#1023128"><CODE>PK11_SetPasswordFunc</CODE></A> and passes it the pointer specified by the <CODE>wincx</CODE> parameter. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1026891">
+ PK11_FindKeyByAnyCert
+</A></H4>
+
+<A NAME="1026892">
+Finds the private key associated with a specified certificate in any available slot.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1026893">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1032437">#include &lt;pk11func.h&gt;<br>#include &lt;certt.h&gt;<br>#include &lt;keyt.h&gt;</A></PRE><PRE><A NAME="1028560">SECKEYPrivateKey *PK11_FindKeyByAnyCert(<br>&nbsp;&nbsp;&nbsp;CERTCertificate *cert,<br>&nbsp;&nbsp;&nbsp;void *wincx);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1026899">
+ Parameters
+</A></H5>
+
+<A NAME="1026917">
+This function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1026902">cert</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1030390">
+A pointer to a certificate structure in the certificate database. </A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1026906">wincx</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1030392">
+A pointer to application data for the password callback function. This pointer is set with <A HREF="sslfnc.html#1088040"><CODE>SSL_SetPKCS11PinArg</CODE></A> during SSL configuration. To retrieve its current value, use <A HREF="sslfnc.html#1123385"><CODE>SSL_RevealPinArg</CODE></A>.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1026918">
+ Returns
+</A></H5>
+
+<A NAME="1026919">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1026920">
+If successful, a pointer to a private key structure.</A></LI>
+<LI><A NAME="1026921">
+If unsuccessful, <CODE>NULL</CODE>.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1031834">
+ Description
+</A></H5>
+
+<A NAME="1035317">
+When you are finished with the private key structure returned by <CODE>PK11_FindKeyByAnyCert</CODE>, you must free it by calling <A HREF="sslkey.html#1051017"><CODE>SECKEY_DestroyPrivateKey</CODE></A>.</A></P>
+<A NAME="1036323">
+The <CODE>PK11_FindKeyByAnyCert</CODE> function calls the password callback function set with <A HREF="pkfnc.html#1023128"><CODE>PK11_SetPasswordFunc</CODE></A> and passes it the pointer specified by the <CODE>wincx</CODE> parameter. </A></P>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1030779">
+ PK11_GetSlotName
+</A></H4>
+
+<A NAME="1026930">
+Gets the name of a slot.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1026931">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1032606">#include &lt;pk11func.h&gt;</A></PRE><PRE><A NAME="1026933">char *PK11_GetSlotName(PK11SlotInfo *slot);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1026934">
+ Parameters
+</A></H5>
+
+<A NAME="1026956">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1026937">slot</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1026939">
+A pointer to a slot info structure.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1026957">
+ Returns
+</A></H5>
+
+<A NAME="1026958">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1026959">
+If successful, a pointer to the name of the slot (a string).</A></LI>
+<LI><A NAME="1026960">
+If unsuccessful, <CODE>NULL</CODE>.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1032175">
+ Description
+</A></H5>
+
+<A NAME="1032176">
+If the slot is freed, the string with the slot name may also be freed. If you want to 
+preserve it, copy the string before freeing the slot. Do not try to free the string yourself.
+</A>
+</BLOCKQUOTE>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1026964">
+ PK11_GetTokenName
+</A></H4>
+
+<A NAME="1029222">
+Gets the name of the token.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029223">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1029224">#include &lt;pk11func.h&gt;</A></PRE><PRE><A NAME="1029225">char *PK11_GetTokenName(PK11SlotInfo *slot);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1029226">
+ Parameters
+</A></H5>
+
+<A NAME="1029232">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1029229">slot</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1029231">
+A pointer to a slot info structure.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029233">
+ Returns
+</A></H5>
+
+<A NAME="1030468">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1030469">
+If successful, a pointer to the name of the token (a string).</A></LI>
+<LI><A NAME="1030470">
+If unsuccessful, <CODE>NULL</CODE>.
+</A></LI></ul><H5><A NAME="Head4;"></A>
+<A NAME="1035449">
+ Description
+</A></H5>
+
+<A NAME="1035450">
+If the slot is freed, the string with the token name may also be freed. If you 
+want to preserve it, copy the string before freeing the slot. Do not try to free the 
+string yourself.
+</A>
+</BLOCKQUOTE>
+
+<H4><A NAME="Head3;"></A>
+<A NAME="1026762">
+ PK11_IsHW
+</A></H4>
+
+<A NAME="1029354">
+Finds out whether a slot is implemented in hardware or software.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029355">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1032634">#include &lt;pk11func.h&gt;<br>#include &lt;prtypes.h&gt;</A></PRE><PRE><A NAME="1029357">PRBool PK11_IsHW(PK11SlotInfo *slot);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1029358">
+ Parameters
+</A></H5>
+
+<A NAME="1029364">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1029361">slot</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1029363">
+A pointer to a slot info structure.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1022918">
+ Returns
+</A></H5>
+
+<A NAME="1022919">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1035481">
+If the slot is implemented in hardware, <CODE>PR_TRUE</CODE>.</A></LI>
+<LI><A NAME="1022921">
+If the slot is implemented in software, <CODE>PR_FALSE</CODE>.
+</A></LI></ul>
+<H4><A NAME="Head3;"></A>
+<A NAME="1022948">
+ PK11_IsPresent
+</A></H4>
+
+<A NAME="1029667">
+Finds out whether the token for a slot is available.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029668">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1032711">#include &lt;pk11func.h&gt;<br>#include &lt;prtypes.h&gt;</A></PRE><PRE><A NAME="1029670">PRBool PK11_IsPresent(PK11SlotInfo *slot);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1029671">
+ Parameters
+</A></H5>
+
+<A NAME="1029677">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1029674">slot</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1029676">
+A pointer to a slot info structure.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029678">
+ Returns
+</A></H5>
+
+<A NAME="1029679">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1029680">
+If token is available, <CODE>PR_TRUE</CODE>.</A></LI>
+<P><LI><A NAME="1036451">
+If token is disabled or missing, <CODE>PR_FALSE</CODE>.</A></LI>
+</ul>
+<H4><A NAME="Head3;"></A>
+<A NAME="1022991">
+ PK11_IsReadOnly
+</A></H4>
+
+<A NAME="1029858">
+Finds out whether a slot is read-only.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029859">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1032779">#include &lt;pk11func.h&gt;<br>#include &lt;prtypes.h&gt;</A></PRE><PRE><A NAME="1029861">PRBool PK11_IsReadOnly(PK11SlotInfo *slot);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1029862">
+ Parameters
+</A></H5>
+
+<A NAME="1029868">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1029865">slot</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1029867">
+A pointer to a slot info structure.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029869">
+ Returns
+</A></H5>
+
+<A NAME="1029870">
+The function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1029871">
+If slot is read-only, <CODE>PR_TRUE</CODE>.</A></LI>
+<P><LI><A NAME="1029872">
+Otherwise, <CODE>PR_FALSE</CODE>.</A></LI>
+</ul>
+<H4><A NAME="Head3;"></A>
+<A NAME="1023128">
+ PK11_SetPasswordFunc
+</A></H4>
+
+<A NAME="1029908">
+Defines a callback function used by the NSS libraries whenever information protected by a password needs to be retrieved from the key or certificate databases.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1029909">
+ Syntax
+</A></H5>
+
+<PRE><A NAME="1036374">#include &lt;pk11func.h&gt;<br>#include &lt;prtypes.h&gt;</A></PRE><PRE><A NAME="1036408">void PK11_SetPasswordFunc(PK11PasswordFunc func);</A></PRE><H5><A NAME="Head4;"></A>
+<A NAME="1036409">
+ Parameter
+</A></H5>
+
+<A NAME="1036419">
+This function has the following parameter:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1036412">func</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1036414">
+A pointer to the callback function to set. </A></P></TD></TR>
+
+</TABLE>
+ </A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1031394">
+ Description
+</A></H5>
+
+<A NAME="1036231">
+During the course of an SSL operation, it may be necessary for the user to log in to a PKCS #11 token (either a smart card or soft token) to access protected information, such as a private key. Such information is protected with a password that can be retrieved by calling an application-supplied callback function. The callback function is identified in a call to <CODE>PK11_SetPasswordFunc</CODE> that takes place during NSS initialization. </A></P>
+<A NAME="1031395">
+The callback function set up by <CODE>PK11_SetPasswordFunc</CODE> has the following prototype:</A></P>
+<PRE><A NAME="1031396">typedef char *(*PK11PasswordFunc)(<br>&nbsp;&nbsp;&nbsp;PK11SlotInfo *slot,<br>&nbsp;&nbsp;&nbsp;PRBool retry,<br>&nbsp;&nbsp;&nbsp;void *arg);</A></PRE><A NAME="1031406">
+This callback function has the following parameters:<TABLE BORDER="0">
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1031399">slot</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1031401">
+A pointer to a slot info structure.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1031403">retry</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1031405">
+Set to <CODE>PR_TRUE</CODE> if this is a retry. This implies that the callback has previously returned the wrong password.</A></P></TD></TR>
+<TR><TD VALIGN=baseline ALIGN=left><PRE><A NAME="1031470">arg</A></PRE></TD><TD VALIGN=baseline ALIGN=left><P><A NAME="1032859">
+A pointer supplied by the application that can be used to pass state information. Can be <CODE>NULL</CODE>.</A></P></TD></TR>
+
+</TABLE>
+</A></P>
+<A NAME="997382">
+This callback function returns one of these values:</A></P>
+<ul><P><LI><A NAME="1036727">
+If successful, a pointer to the password. This memory must have been allocated with <A href="../../../../../nspr/reference/html/prmem2.html#21428"><CODE>PR_Malloc</A></CODE> or <A href="../../../../../nspr/reference/html/plstr.html#21753"><CODE>PL_strdup</A></CODE>. </A></LI>
+<P><LI><A NAME="1036732">
+If unsuccessful, returns <CODE>NULL</CODE>.</A></LI>
+</ul><A NAME="1031767">
+Many tokens keep track of the number of attempts to enter a password and do not allow further attempts after a certain point. Therefore, if the <CODE>retry</CODE> argument is <CODE>PR_TRUE</CODE>, indicating that the password was tried and is wrong, the callback function should return <CODE>NULL</CODE> to indicate that it is unsuccessful, rather than attempting to return the same password again. Failing to terminate when the <CODE>retry</CODE> argument is <CODE>PR_TRUE</CODE> can result in an endless loop.</A></P>
+<A NAME="1036508">
+Several functions in the NSS libraries use the password callback function to obtain the password before performing operations that involve the protected information. The third parameter to the password callback function is application-defined and can be used for any purpose. For example, Communicator uses the parameter to pass information about which window is associated with the modal dialog box requesting the password from the user. When NSS libraries call the password callback function, the value they pass in the third parameter is determined by <A HREF="sslfnc.html#1088040"><CODE>SSL_SetPKCS11PinArg</CODE></A>.</A></P>
+<H5><A NAME="Head4;"></A>
+<A NAME="1036515">
+ See Also
+</A></H5>
+
+<A NAME="1036523">
+For examples of password callback functions, see the samples in the <A HREF="../../../Samples/" TARGET="_top">Samples</A> directory.</A></P>
+
+<HR>
+
+<FONT SIZE=-1><A HREF="index.html">Table of Contents</A> | <A HREF="sslkey.html">Previous</A>
+ | <A HREF="sslerr.html">Next</A>
+ | <A HREF="bklast.html">Index</A>
+</FONT>
+<P ALIGN=right>
+<FONT SIZE=-2><I>Last Updated:  10/18/00  09:17:48</I></FONT>
+<P> 
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

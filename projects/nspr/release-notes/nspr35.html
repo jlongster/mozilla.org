@@ -1,0 +1,580 @@
+<?php
+
+$html_title = 'NSPR 3.5 Release';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="Author" content="Srinivas Lingutla">
+<meta name="GENERATOR" content="Mozilla/4.61 [en]C-NSCP  (WinNT; U) [Netscape]">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+&nbsp;
+<br>&nbsp;
+<center>
+<h2>
+NSPR 3.5 Release</h2></center>
+
+<center>Sep-17-1999</center>
+
+<p><br>
+<h2>
+Table of Contents</h2>
+
+<ol>
+<li>
+<a href="#Introduction">Introduction</a></li>
+
+<li>
+<a href="#What's">What's New</a></li>
+
+<li>
+<a href="#New Release naming">Library Version Specification</a></li>
+
+<li>
+<a href="#Platforms">Platforms</a></li>
+
+<li>
+<a href="#Compatibility">Compatibility</a></li>
+
+<li>
+<a href="#Release">Release Components</a></li>
+
+<li>
+<a href="#Test">Test Data</a></li>
+
+<li>
+<a href="#How to file bug">Reporting bugs</a></li>
+
+<li>
+<a href="#Building from">Building from source</a></li>
+
+<li>
+<a href="#Contact">Contact Info</a></li>
+</ol>
+
+<h3>
+1.&nbsp;<a NAME="Introduction"></a>Introduction</h3>
+The NSPR 3.5 release is available at /m/dist/nspr20/v3.5. This release
+is backward compatible with the 3.1 release of NSPR.
+<h3>
+2.&nbsp;<a NAME="What's"></a>What's New</h3>
+In addition to several bug fixes the following new features are available
+in this release, as compared to NSPR 3.1
+<h4>
+2.1 New functions and features</h4>
+1. Support for 64-bit features on Solaris 2.7 and AIX 4.3.2
+<blockquote>A new port of NSPR with 64-bit support is available for Solaris
+2.7 and AIX 4.3.2. This is in addition to a 32-bit library for AIX 4.3.2
+and Solaris 2.6.</blockquote>
+2.&nbsp; Inter-process Communication
+<blockquote>Shared memory (named and anonymous) and named semaphores for
+inter-process communication are available.
+<p>The new interfaces and test programs (for sample usage) for shared memory
+are found in:
+<p>Header files: prshm.h, prshma.h
+<br>Test programs: pr/tests/nameshm1.c, pr/tests/anonfm.c
+<p>For semaphores, the interface declarations and test cases are in
+<p>Header file: pripcsem.h
+<br>Test programs: pr/tests/sema.c, semaping.c and semapong.c</blockquote>
+3. A new function for sending parts of a file across a socket connection
+along with optional header and trailer data.
+<blockquote>A new function, PR_SendFile, is available to send a specified
+length of file data from an arbitrary offset, along with&nbsp; optional
+header and/or trailer data. This function is implemented using a native
+sendfile function on platforms with such a facility. The features of PR_SendFile
+are a superset of the existing PR_TransmitFile interface. However, PR_SendFile
+is not implemented as a method in the PRIOMethods table and it cannot be
+invoked on a
+<br>layered fd.
+<p>Header file: prio.h
+<br>Test program: pr/tests/socket.c</blockquote>
+4. Simultaneous support for IPv4 and IPv6
+<blockquote>Both IPv4 and IPv6 sockets can now be used in the same process.
+This feature is available, by default, on AIX 4.3.2, which is currently
+the only platform supporting IPv6 as a basic feature. For other platforms,
+a NSPR library with IPv4 and IPv6 support can be built by setting the environment
+variable USE_IPV6 to 1.
+<p>New functions:
+<p>&nbsp; PR_OpenTCPSocket
+<br>&nbsp; PR_OpenUDPSocket
+<br>&nbsp; PR_GetIPNodeByName
+<br>&nbsp; PR_SetNetAddr
+<br>&nbsp; PR_IsNetAddrType
+<br>&nbsp; PR_NetAddrFamily
+<br>&nbsp; PR_NetAddrInetPort
+<p>Header files: prio.h, prnetdb.h
+<br>Test programs: pr/tests/gethost.c, ipv6.c, socket.c</blockquote>
+5. Improved support for native threads on Windows NT
+<blockquote>For applications that use only global (native) threads on NT,
+an environment variable, NSPR_NATIVE_THREADS_ONLY, can be set at runtime
+for better support. In this mode, only Win32 threads (and no fibers) are
+created even when an application specifies local threads. This allows an
+application to make a blocking call from any thread without blocking the
+entire application. The performance of some functions is improved; the
+PRLock/Unlock interfaces, for example, directly call the native lock functions
+on NT. Currently, the multiwait interfaces in NSPR are not supported in
+this mode.</blockquote>
+6.&nbsp; Cancellation of IO requests on NT
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; A new function, PR_NT_CancelIO,
+is available to cancel outstanding IO operations on NT. Prior to the availability
+of
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this feature, an I/O operation
+that times out or is interrupted required the closing of the file descriptor.
+Now, the
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outstanding IO operation
+can be canceled with PR_NT_CancelIO and new IO requests issued for that
+file descriptor.
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Header file: private/pprio.h
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Test program: pr/tests/socket.c
+<p>7. Improved IO performance on Unix
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NSPR now implements multiple
+IO continuation threads for improved scalability, especially on MP systems.
+The IO
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; performance is also improved
+by optimized processing of multiple IO requests for the same file descriptor.
+<br>&nbsp;
+<h4>
+2.2 Bug fixes</h4>
+All of the bug fixes from NSPR releases <a href="nspr311.html">3.1.1</a>
+and <a href="nspr312.html">3.1.2</a>&nbsp; are present in the 3.5 release,
+in addition to the following fixes:
+<p>1.&nbsp; <a href="http://scopus.mcom.com/bugsplat/show_bug.cgi?id=361007">Bug
+361007 </a>-- Recording the internal name in NSPR shared libraries
+<br>2.&nbsp; <a href="http://scopus.mcom.com/bugsplat/show_bug.cgi?id=360959">Bug
+360959</a> -- message "Unrecognized NSPR_LOG_MODULE:..."
+<br>3.&nbsp; <a href="http://scopus.mcom.com/bugsplat/show_bug.cgi?id=345378">Bug
+345378</a> -- The default layered acceptread method (pl_DefAcceptread)
+is incorrect
+<br>4.&nbsp; <a href="http://scopus.mcom.com/bugsplat/show_bug.cgi?id=353121">Bug
+353121</a> -- Porting to DEC's IPv6 EAK Version X6.3
+<br>5.&nbsp; <a href="http://scopus.mcom.com/bugsplat/show_bug.cgi?id=346686">Bug
+346686</a> -- Improving error-code mapping functions
+<br>6.&nbsp; <a href="http://scopus/bugsplat/show_bug.cgi?id=361694">Bug
+361694</a> -- prmwait.c: Order of initialization in TimerInit for NT
+<br>7.&nbsp; <a href="http://scopus/bugsplat/show_bug.cgi?id=357769">Bug
+357769</a> -- NSPR init should not assume that stdin/out/err are valid
+file descriptors
+<br>8.&nbsp; <a href="http://scopus/bugsplat/show_bug.cgi?id=362221">Bug
+362221</a> -- PR_WaitProcess and PR_DetachProcess do not free the PRProcess
+structure on Unix
+<br>9.&nbsp; <a href="http://scopus/bugsplat/show_bug.cgi?id=362233">Bug
+362233</a> -- PR_VersionCheck is incorrect
+<br>10. <a href="http://scopus/bugsplat/show_bug.cgi?id=361686">Bug 361686</a>
+-- Blocking IO functions modify thread state without acquiring thread lock
+<br>11. <a href="http://scopus/bugsplat/show_bug.cgi?id=361659">Bug 361659</a>
+-- ntio.c: _PR_MD_CLOSE should check me->io_suspended
+<br>12. <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=5358">Bugzilla
+bug 5358</a> -- PR_StackPush and PR_StackPop are not implemented on Solaris/x86
+<br>13. <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=10201">Bugzilla
+bug 10201</a> -- HP-UX 10.20 nees x bit set on shared libraries
+<br>14. <a href="http://bugzilla.mozilla.org/show_bug.cgi?id=11455">Bugzilla
+bug 11455</a> -- -mno-486 added to PLATFORM_FLAGS
+<br>&nbsp;
+<h4>
+2.3 Obsolete interface</h4>
+The asynchronous resolver library (arlib or libares) is no longer part
+of the NSPR distribution (since the 3.1.1 release).
+<h3>
+3.&nbsp;<a NAME="New Release naming"></a>Library Name and Versioning</h3>
+The binaries for this release are named libnspr3 (nspr3 on Win 95); this
+release is backward compatible with 3.1 release.
+<p>The full release number of nspr library can be determined in several
+ways:
+<p>1. The nspr library exports a function, libVersionPoint, that can be
+called to retrieve the version of the library.&nbsp; The function and data
+prototypes are available for other libraries to provide similar version
+information.
+<br>2. On Win32 systems, the version number is embedded in the resource
+descriptor of the DLL and can be viewed using Windows Explorer. On Unix
+system, the "what" command of sccs or the "ident" command of rcs can be
+used to obtain the version information.
+<br>3. The PR_VersionCheck function can be called to check for compatibility;
+given a version number the function returns success condition if the version
+of the nspr library loaded into the application is compatible.
+<h3>
+4.&nbsp;<a NAME="Platforms"></a>Platforms</h3>
+The set of supported platforms is listed in the following table. For most
+platforms, a single release of the nspr library is used to support all
+the current releases of the OS.
+<br>&nbsp;
+<br>&nbsp;
+<table BORDER >
+<tr BGCOLOR="#000000">
+<td><b><font color="#FFFFFF">Platform</font></b></td>
+
+<td><b><font color="#FFFFFF">Build</font></b></td>
+
+<td><b><font color="#FFFFFF">Compiler</font></b>
+<br><b><font color="#FFFFFF">Req</font></b></td>
+
+<td><b><font color="#FFFFFF">Certify &amp;</font></b>
+<br><b><font color="#FFFFFF">Support&nbsp;</font></b></td>
+
+<td><b><font color="#FFFFFF">Thread Model&nbsp;</font></b></td>
+
+<td><b><font color="#FFFFFF">Build Name</font></b></td>
+
+<td><b><font color="#FFFFFF">Comments</font></b></td>
+</tr>
+
+<tr>
+<td><i>Solaris&nbsp;</i></td>
+
+<td><b>2.6</b></td>
+
+<td>SparcWorks C/C++ 4.2</td>
+
+<td><b>2.6</b>
+<br><b>2.7</b></td>
+
+<td>pthreads</td>
+
+<td>SunOS5.6_OPT.OBJ&nbsp;</td>
+
+<td></td>
+</tr>
+
+<tr>
+<td></td>
+
+<td><b>2.7/64-bit</b></td>
+
+<td>SparcWorks C/C++ 5.0</td>
+
+<td><b>2.7/64-bit</b></td>
+
+<td>pthreads</td>
+
+<td>SunOS5.7_64_OPT.OBJ</td>
+
+<td></td>
+</tr>
+
+<tr>
+<td><i>Windows</i></td>
+
+<td><b>95</b></td>
+
+<td>Visual C++ 6.0</td>
+
+<td><b>95</b>
+<br><b>98</b>
+<br><b>NT 4.0</b></td>
+
+<td>threads</td>
+
+<td>WIN954.0_OPT.OBJ</td>
+
+<td>MSVC 6.0 SP3</td>
+</tr>
+
+<tr>
+<td><i>Win NT</i></td>
+
+<td><b>4.0SP4</b></td>
+
+<td>Visual C++ 6.0</td>
+
+<td><b>4.0SP4</b>
+<br><b>4.0SP5</b></td>
+
+<td>threads &amp;
+<br>fibers</td>
+
+<td>WINNT4.0_OPT.OBJ</td>
+
+<td>MSVC 6.0 SP3</td>
+</tr>
+
+<tr>
+<td><i>AIX&nbsp;</i></td>
+
+<td><b>4.3.2</b></td>
+
+<td>C Set ++ for AIX 3.6.4 - xlC</td>
+
+<td><b>4.3.2</b></td>
+
+<td>pthreads</td>
+
+<td>AIX4.3_OPT.OBJ</td>
+
+<td>Required patch:
+<br>PTF U463956</td>
+</tr>
+
+<tr>
+<td></td>
+
+<td><b>4.3.2/64-bit</b></td>
+
+<td>C Set ++ for AIX 3.6.4 - xlC</td>
+
+<td><b>4.3.2/64-bit</b></td>
+
+<td>pthreads</td>
+
+<td>AIX4.3_64_OPT.OBJ</td>
+
+<td>Required patch:
+<br>PTF U463956</td>
+</tr>
+
+<tr>
+<td><i>Tru64 UNIX (the new name of Digital UNIX)</i></td>
+
+<td><b>4.0D</b></td>
+
+<td>Digital C++ v6.1-027
+<br>Digital CC v5.6-079</td>
+
+<td><b>4.0D</b>
+<br><b>4.0E</b></td>
+
+<td>pthreads</td>
+
+<td>OSF1V4.0D_OPT.OBJ</td>
+
+<td>Certification of NSPR on 4.0E is recommended but not required by Compaq</td>
+</tr>
+
+<tr>
+<td><i>HP-UX</i></td>
+
+<td><b>11.0</b></td>
+
+<td>aCC: A.03.13
+<br>cc: A.11.01.00</td>
+
+<td><b>11.0</b></td>
+
+<td>pthreads</td>
+
+<td>HP-UXB.11.00_OPT.OBJ</td>
+
+<td></td>
+</tr>
+
+<tr>
+<td></td>
+
+<td><b>11.0/64-bit</b></td>
+
+<td>aCC: A.03.04
+<br>cc: A.11.00.00</td>
+
+<td><b>11.0/64-bit</b></td>
+
+<td>pthreads</td>
+
+<td>HP-UXB.11.00_64_OPT.OBJ</td>
+
+<td></td>
+</tr>
+
+<tr>
+<td><i>Linux</i></td>
+
+<td><b>2.2 (Red Hat 6.0)</b></td>
+
+<td>egcs-1.1.2</td>
+
+<td><b>2.2</b></td>
+
+<td>pthreads</td>
+
+<td>Linux2.2_x86_glibc_PTH_OPT.OBJ</td>
+
+<td>glibc-2.1-x (x=0.990222 or later)&nbsp;</td>
+</tr>
+</table>
+
+<p>Important changes to note are:
+<p>1. Irix
+<blockquote>
+<dt>
+Irix binaries are not available in this release; Irix is no longer supported
+as a Tier-1 platform.</dt>
+</blockquote>
+2. Solaris
+<blockquote>Two binaries are supported for Solaris
+<p>1. A Solaris 2.6 binary is for 32-bit applications running on Solaris
+2.6 and 2.7.
+<br>2. A 64-bit Solaris 2.7 binary for 64-bit applications running on Solaris
+2.7
+<p>Solaris 2.5.1 is not supported.
+<p>To use purify on Solaris, libpthread should be explicitly specified
+in the list of libraries passed to the linker, ahead of other system libraries
+such as -lposix4, -lsocket, -ldl, etc.,.</blockquote>
+3. AIX
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Two versions are supported
+for AIX 4.3.2, one for 32-bit and another for 64-bit mode. AIX 4.2 is no
+longer supported.
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The AIX patch "PTF U463956"
+is required; this patch contains a fix for a bug in the send_file function
+that causes data
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; corruption. If the revision
+level of an AIX system is 4.3.2.8 or higher, the installation of this patch
+is implied. To use
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NSPR 3.5 on a system without
+this patch, the environment variable NSPR_AIX_SEND_FILE_USE_DISABLED should
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; be set to 1.
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The bug in send_file appears
+to be present in 64-bit mode even when this patch is installed. So, the
+environment variable
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NSPR_AIX_SEND_FILE_USE_DISABLED
+should be set to 1 when using the 64-bit build of NSPR.
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The type of the 'len' argument
+to the streambuf::setbuf() method changed from 'int' to 'long' in 64-bit
+AIX.&nbsp; This makes the
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; compiler think the setbuf
+method of the derived class PRfilebuf hides the same-named virtual function
+of the base class.
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; So libprstrms3.so is broken
+on 64-bit AIX.&nbsp; (Bugsplat <a href="http://scopus/bugsplat/show_bug.cgi?id=361776">bug#
+361776</a>.)
+<p>4. HP-UX
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The HP-UX 10.10 and 10.20
+releases are no longer supported.
+<p>5. Linux
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Linux is now supported only
+for kernel version of 2.2 on the Redhat 6.0 release. The binaries are built
+with the
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; egcs-1.1.2 compiler and
+glibc-2.1.x library.
+<p>6. Win NT and Win 95
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The NSPR libraries for both
+Windows platforms are built with VC 6.0 (SP3).
+<h3>
+5.&nbsp;<a NAME="Compatibility"></a>Compatibility</h3>
+The NSPR 3.5 release is backward compatible with NSPR 3.1.
+<p>For the nspr library, backward compatibility does not preclude the addition
+of new error codes to the set of <a href="http://www.mozilla.org/docs/refList/refNSPR/prerr.html#1027954">nspr
+error codes </a>already defined. An application should allow for nspr functions
+returning error codes not documented for the particular release with which
+it is linked. This helps to retain backward compatibility as new error
+codes are added upon discovery of new information about platform-specific
+error codes.
+<h3>
+6.&nbsp;<a NAME="Release"></a>Release Components</h3>
+The main components of this release are a set of shared libraries and header
+files for each platform. A debug build and a release (optimized) build
+of the libraries are made available for each platform.
+<h4>
+6.1 Platform Directory</h4>
+The platform-dependent name of the directory where the components are placed
+is of the form
+<p>&nbsp; &lt;os-name>&lt;os-version>[_&lt;compiler>][cpu-arch][_&lt;implementation
+strategy>][_&lt;addr-bits>]_&lt;DBG/OPT>.OBJ
+<p>&nbsp; For example,
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SunOS5.6_OPT.OBJ (optimized build)
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AIX4.3_64_DBG.OBJ (64-bit, debug build)
+<h4>
+6.2 Implementation Strategy</h4>
+For the implementation of nspr, different strategies
+are used on&nbsp; different platforms. On some platforms the nspr threads
+map directly to the native threads on the platform, while on others nspr
+supports both threads that are scheduled by nspr and the native threads.
+<p>&nbsp;The default implementation strategies in this release are:
+<br>&nbsp; - pthreads: all Unix platforms
+<br>&nbsp; - classic: Win NT (combined MxN model, with Windows threads
+and fibers)
+<br>&nbsp; - native threads: Win95
+<h4>
+6.3 Components</h4>
+Under each &lt;platform> directory, there are:
+<p>1. include directory, containing the header files
+<br>2. lib directory, containing the libraries. Three libraries are built
+on all platforms: nspr, plc, plds. One other
+<br>&nbsp;&nbsp;&nbsp; library is built on server platforms only:&nbsp;
+prstrms.&nbsp; Only shared (dynamic link) versions of the libraries are
+built.
+<p>The nspr library exports the core nspr functions.
+<p>The plc (Portable Library C) library is a separate library from&nbsp;
+the core nspr20.&nbsp; You do
+<br>not need to use plc if you just want to use the core nspr20 functions.&nbsp;
+The plc library currently
+<br>contains thread-safe string functions and functions for processing
+command-line options.
+<p>The plds (Portable Library Data Structures) library supports data structures
+such as arenas, hash tables, and event queues.&nbsp; It is important to
+note that services of&nbsp; plds are not thread-safe. To use these services
+in a multi-threaded environment, clients have to implement their own thread-safe
+access, by acquiring locks/monitors, for example.
+<p>For Solaris platforms with UltraSparc processors only, a platform-specific
+library, libultrasparc, is also supplied. This library implements optimized
+versions of atomic operations by using the features present in the UltraSparc
+(V9) processors, but not in the Sparc (V8) processors.&nbsp; This library
+is linked into libnspr, with the name libatomic, by use of the auxiliary
+filter mechanism of the Solaris linker. To use this library at runtime,
+on UltraSparc systems,&nbsp; libultrasparc21.so should be copied into a
+file named libatomic.so and the new file should be present in the path
+searched by the linker, set using LD_LIBRARY_PATH.
+<p>3. bin directory, containing a perl script, compile-et.pl, and a Java
+bundle, prerr.properties.
+<br>4. mdheader.jar, jar file for the header files.
+<br>5. mdbinary.jar,&nbsp; jar for the libraries, executable programs,
+and scripts.
+<h3>
+7.&nbsp;<a NAME="Test"></a>Test Data</h3>
+All the major functional areas of nspr were tested using the programs in
+the nspr test suite. Both functional and stress tests in the pr/tests directory
+were successfully run on multi-processor systems for most platforms, except
+for Win95/98.
+<h3>
+&nbsp;8.&nbsp;<a NAME="How to file bug"></a>Reporting bugs</h3>
+Bugs discovered should be reported by filing a report in <a href="http://scopus.mcom.com/bugsplat/enter_bug.cgi?bug_status=NEW&reporter=srinivas&product=NSPR&version=2.0&component=&target_fix_version=&rep_platform=All&op_sys=other&area=CODE&language=all&bug_severity=normal&priority=P2&webserver=&webbrowser=&dbase=&db_version=&assigned_to=srinivas&qa_assigned_to=srinivas&escalation_status=Eng%3A+Not+Looked+at+yet&escalation_engineer=&escalation_level=&escalation_approved=&build_id=&talkback=&cc=larryh%2Cwtc&bug_file_loc=&short_desc=&comment=&maketemplate=Remember+values+as+bookmarkable+template&form_name=enter_bug">Bugsplat</a>.
+The following information is required
+<ul>
+<li>
+platform (Solaris 2.6, HP-UX 11.0, etc.)</li>
+
+<li>
+number of cpus in the system</li>
+
+<li>
+a stack trace, in the event of a crash</li>
+
+<li>
+reproducibility of the problem</li>
+
+<li>
+location of core dump, if available, along with those for the libraries
+and executables</li>
+</ul>
+
+<h3>
+&nbsp;9.&nbsp;<a NAME="Building from"></a>Building from source</h3>
+This release is built from the source, at the CVS repository rooted at
+/m/src, with the CVS tag
+<br>NSPR20_RELEASE_3_5.&nbsp; You can check out the source from CVS by
+<br>&nbsp;&nbsp;&nbsp; cvs co -r NSPR20_RELEASE_3_5 ns/nspr20
+<p>To build, do
+<br>&nbsp;&nbsp;&nbsp; cd ns/nspr20
+<br>&nbsp;&nbsp;&nbsp; gmake export
+<h3>
+10.&nbsp;<a NAME="Contact"></a>Contact Info</h3>
+<a href="http://www.mozilla.org/docs/refList/refNSPR">http://www.mozilla.org/docs/refList/refNSPR</a>
+- NSPR documentation
+<br><a href="http://warp/hardcore/prj-nspr20/">http://warp/projects/hardcore/prj-nspr20</a>&nbsp;
+- nspr home page
+<br><a href="mailto:nsprgroup">nsprgroup</a>&nbsp;&nbsp; - the nspr team
+<br><a href="mailto:nspr20clients">nspr20clients</a> - mailing list for
+nspr clients
+<br><a href="news://news.mozilla.org/netscape.public.mozilla.nspr">netscape.public.mozilla.nspr</a>&nbsp;
+- nspr newsgroup at mozilla.org
+<br>&nbsp;
+<br>&nbsp;
+<blockquote>&nbsp;</blockquote>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

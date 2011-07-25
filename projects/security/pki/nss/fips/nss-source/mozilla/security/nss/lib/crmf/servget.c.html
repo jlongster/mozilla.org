@@ -1,0 +1,1027 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* -*- Mode: C; tab-width: 8 -*-*/
+<b><a name="2">    2</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="3">    3</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="4">    4</a></b>  *
+<b><a name="5">    5</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="6">    6</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="7">    7</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="8">    8</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="9">    9</a></b>  *
+<b><a name="10">   10</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="11">   11</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="12">   12</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="13">   13</a></b>  * License.
+<b><a name="14">   14</a></b>  *
+<b><a name="15">   15</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="16">   16</a></b>  *
+<b><a name="17">   17</a></b>  * The Initial Developer of the Original Code is
+<b><a name="18">   18</a></b>  * Netscape Communications Corporation.
+<b><a name="19">   19</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="20">   20</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="21">   21</a></b>  *
+<b><a name="22">   22</a></b>  * Contributor(s):
+<b><a name="23">   23</a></b>  *
+<b><a name="24">   24</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="25">   25</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="26">   26</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="27">   27</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="28">   28</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="29">   29</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="30">   30</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="31">   31</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="32">   32</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="33">   33</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="34">   34</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="35">   35</a></b>  *
+<b><a name="36">   36</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="37">   37</a></b> 
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> #include "cmmf.h"
+<b><a name="40">   40</a></b> #include "cmmfi.h"
+<b><a name="41">   41</a></b> #include "secitem.h"
+<b><a name="42">   42</a></b> #include "keyhi.h"
+<b><a name="43">   43</a></b> #include "secder.h"
+<b><a name="44">   44</a></b> 
+<b><a name="45">   45</a></b> <a href="../crmf/crmft.h.dep.html#CRMFEncryptedKeyChoice">CRMFEncryptedKeyChoice</a>
+<b><a name="46">   46</a></b> <a href="#46">CRMF_EncryptedKeyGetChoice</a>(<a href="../crmf/crmft.h.dep.html#CRMFEncryptedKey">CRMFEncryptedKey</a> *inEncrKey)
+<b><a name="47">   47</a></b> {
+<b><a name="48">   48</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inEncrKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="49">   49</a></b>     if (inEncrKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="50">   50</a></b>         return crmfNoEncryptedKeyChoice;
+<b><a name="51">   51</a></b>     }
+<b><a name="52">   52</a></b>     return inEncrKey-&gt;encKeyChoice;
+<b><a name="53">   53</a></b> }
+<b><a name="54">   54</a></b> 
+<b><a name="55">   55</a></b> <a href="../crmf/crmft.h.dep.html#CRMFEncryptedValue">CRMFEncryptedValue</a>*
+<b><a name="56">   56</a></b> <a href="#56">CRMF_EncryptedKeyGetEncryptedValue</a>(<a href="../crmf/crmft.h.dep.html#CRMFEncryptedKey">CRMFEncryptedKey</a> *inEncrKey)
+<b><a name="57">   57</a></b> {
+<b><a name="58">   58</a></b>     <a href="../crmf/crmft.h.dep.html#CRMFEncryptedValue">CRMFEncryptedValue</a> *newEncrValue = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="59">   59</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>           <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="60">   60</a></b> 
+<b><a name="61">   61</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inEncrKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="62">   62</a></b>     if (inEncrKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> ||
+<b><a name="63">   63</a></b>         <a href="../crmf/servget.c.dep.html#CRMF_EncryptedKeyGetChoice">CRMF_EncryptedKeyGetChoice</a>(inEncrKey) != crmfEncryptedValueChoice) {
+<b><a name="64">   64</a></b>         goto loser;
+<b><a name="65">   65</a></b>     }
+<b><a name="66">   66</a></b>     newEncrValue = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../crmf/crmft.h.dep.html#CRMFEncryptedValue">CRMFEncryptedValue</a>);
+<b><a name="67">   67</a></b>     if (newEncrValue == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="68">   68</a></b>         goto loser;
+<b><a name="69">   69</a></b>     }
+<b><a name="70">   70</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = crmf_copy_encrypted<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, &amp;inEncrKey-&gt;<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>.encryptedValue,
+<b><a name="71">   71</a></b>                                   newEncrValue);
+<b><a name="72">   72</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="73">   73</a></b>         goto loser;
+<b><a name="74">   74</a></b>     }
+<b><a name="75">   75</a></b>     return newEncrValue;
+<b><a name="76">   76</a></b>  loser:
+<b><a name="77">   77</a></b>     if (newEncrValue != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="78">   78</a></b>         <a href="../crmf/crmfcont.c.dep.html#CRMF_DestroyEncryptedValue">CRMF_DestroyEncryptedValue</a>(newEncrValue);
+<b><a name="79">   79</a></b>     }
+<b><a name="80">   80</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="81">   81</a></b> }
+<b><a name="82">   82</a></b> 
+<b><a name="83">   83</a></b> static <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*
+<b><a name="84">   84</a></b> <a href="#84">crmf_get_encvalue_bitstring</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *srcItem)
+<b><a name="85">   85</a></b> {
+<b><a name="86">   86</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>   *newItem = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="87">   87</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="88">   88</a></b>     
+<b><a name="89">   89</a></b>     if (srcItem-&gt;<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="90">   90</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="91">   91</a></b>     }
+<b><a name="92">   92</a></b>     newItem = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>);
+<b><a name="93">   93</a></b>     if (newItem == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="94">   94</a></b>         goto loser;
+<b><a name="95">   95</a></b>     }
+<b><a name="96">   96</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/crmfget.c.dep.html#crmf_make_bitstring_copy">crmf_make_bitstring_copy</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, newItem, srcItem);
+<b><a name="97">   97</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="98">   98</a></b>         goto loser;
+<b><a name="99">   99</a></b>     }
+<b><a name="100">  100</a></b>     return newItem;
+<b><a name="101">  101</a></b>  loser:
+<b><a name="102">  102</a></b>     if (newItem != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="103">  103</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(newItem, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="104">  104</a></b>     }
+<b><a name="105">  105</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="106">  106</a></b> }
+<b><a name="107">  107</a></b> 
+<b><a name="108">  108</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*
+<b><a name="109">  109</a></b> <a href="#109">CRMF_EncryptedValueGetEncSymmKey</a>(<a href="../crmf/crmft.h.dep.html#CRMFEncryptedValue">CRMFEncryptedValue</a> *inEncValue)
+<b><a name="110">  110</a></b> {
+<b><a name="111">  111</a></b>     if (inEncValue == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="112">  112</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="113">  113</a></b>     }
+<b><a name="114">  114</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_get_encvalue_bitstring">crmf_get_encvalue_bitstring</a>(&amp;inEncValue-&gt;encSymmKey);
+<b><a name="115">  115</a></b> }
+<b><a name="116">  116</a></b> 
+<b><a name="117">  117</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*
+<b><a name="118">  118</a></b> <a href="#118">CRMF_EncryptedValueGetEncValue</a>(<a href="../crmf/crmft.h.dep.html#CRMFEncryptedValue">CRMFEncryptedValue</a> *inEncrValue)
+<b><a name="119">  119</a></b> {
+<b><a name="120">  120</a></b>     if (inEncrValue == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> || inEncrValue-&gt;encValue.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="121">  121</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="122">  122</a></b>     }
+<b><a name="123">  123</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_get_encvalue_bitstring">crmf_get_encvalue_bitstring</a>(&amp;inEncrValue-&gt;encValue);
+<b><a name="124">  124</a></b> }
+<b><a name="125">  125</a></b> 
+<b><a name="126">  126</a></b> static <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>*
+<b><a name="127">  127</a></b> <a href="#127">crmf_get_encvalue_algid</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *srcAlg)
+<b><a name="128">  128</a></b> {
+<b><a name="129">  129</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>       <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="130">  130</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *newAlgID;
+<b><a name="131">  131</a></b>     
+<b><a name="132">  132</a></b>     if (srcAlg == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="133">  133</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="134">  134</a></b>     }
+<b><a name="135">  135</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/crmfcont.c.dep.html#crmf_copy_encryptedvalue_secalg">crmf_copy_encryptedvalue_secalg</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, srcAlg, &amp;newAlgID);
+<b><a name="136">  136</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="137">  137</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="138">  138</a></b>     }
+<b><a name="139">  139</a></b>     return newAlgID;
+<b><a name="140">  140</a></b> }
+<b><a name="141">  141</a></b> 
+<b><a name="142">  142</a></b> <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>*
+<b><a name="143">  143</a></b> <a href="#143">CRMF_EncryptedValueGetIntendedAlg</a>(<a href="../crmf/crmft.h.dep.html#CRMFEncryptedValue">CRMFEncryptedValue</a> *inEncValue)
+<b><a name="144">  144</a></b> {
+<b><a name="145">  145</a></b>     if (inEncValue == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="146">  146</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="147">  147</a></b>     }
+<b><a name="148">  148</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_get_encvalue_algid">crmf_get_encvalue_algid</a>(inEncValue-&gt;intendedAlg);
+<b><a name="149">  149</a></b> }
+<b><a name="150">  150</a></b> 
+<b><a name="151">  151</a></b> <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>*
+<b><a name="152">  152</a></b> <a href="#152">CRMF_EncryptedValueGetKeyAlg</a>(<a href="../crmf/crmft.h.dep.html#CRMFEncryptedValue">CRMFEncryptedValue</a> *inEncValue)
+<b><a name="153">  153</a></b> {
+<b><a name="154">  154</a></b>     if (inEncValue == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="155">  155</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="156">  156</a></b>     }
+<b><a name="157">  157</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_get_encvalue_algid">crmf_get_encvalue_algid</a>(inEncValue-&gt;keyAlg);
+<b><a name="158">  158</a></b> }
+<b><a name="159">  159</a></b> 
+<b><a name="160">  160</a></b> <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>*
+<b><a name="161">  161</a></b> <a href="#161">CRMF_EncryptedValueGetSymmAlg</a>(<a href="../crmf/crmft.h.dep.html#CRMFEncryptedValue">CRMFEncryptedValue</a> *inEncValue)
+<b><a name="162">  162</a></b> {
+<b><a name="163">  163</a></b>     if (inEncValue == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="164">  164</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="165">  165</a></b>     }
+<b><a name="166">  166</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_get_encvalue_algid">crmf_get_encvalue_algid</a>(inEncValue-&gt;symmAlg);
+<b><a name="167">  167</a></b> }
+<b><a name="168">  168</a></b> 
+<b><a name="169">  169</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*
+<b><a name="170">  170</a></b> <a href="#170">CRMF_EncryptedValueGetValueHint</a>(<a href="../crmf/crmft.h.dep.html#CRMFEncryptedValue">CRMFEncryptedValue</a> *inEncValue)
+<b><a name="171">  171</a></b> {
+<b><a name="172">  172</a></b>     if (inEncValue == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> || inEncValue-&gt;valueHint.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="173">  173</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="174">  174</a></b>     }
+<b><a name="175">  175</a></b>     return <a href="../util/secitem.c.dep.html#SECITEM_DupItem">SECITEM_DupItem</a>(&amp;inEncValue-&gt;valueHint);
+<b><a name="176">  176</a></b> }
+<b><a name="177">  177</a></b> 
+<b><a name="178">  178</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="179">  179</a></b> <a href="#179">CRMF_PKIArchiveOptionsGetArchiveRemGenPrivKey</a>(<a href="../crmf/crmft.h.dep.html#CRMFPKIArchiveOptions">CRMFPKIArchiveOptions</a> *inOpt, 
+<b><a name="180">  180</a></b>                                               <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PRBool">PRBool</a>                *destVal)
+<b><a name="181">  181</a></b> {
+<b><a name="182">  182</a></b>     if (inOpt == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> || destVal == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> ||
+<b><a name="183">  183</a></b>         <a href="../crmf/servget.c.dep.html#CRMF_PKIArchiveOptionsGetOptionType">CRMF_PKIArchiveOptionsGetOptionType</a>(inOpt) != crmfArchiveRemGenPrivKey){
+<b><a name="184">  184</a></b>         return SECFailure;
+<b><a name="185">  185</a></b>     }
+<b><a name="186">  186</a></b>     *destVal = (inOpt-&gt;option.archiveRemGenPrivKey.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a>[0] == <a href="../certdb/xbsconst.c.dep.html#hexFalse">hexFalse</a><a href="../crmf/crmfi.h.dep.html#hexFalse"><sup>[1]</sup></a><a href="../crmf/crmfreq.c.dep.html#hexFalse"><sup>[2]</sup></a>) 
+<b><a name="187">  187</a></b>                                                                  ? <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>:
+<b><a name="188">  188</a></b>                                                                    <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>;
+<b><a name="189">  189</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="190">  190</a></b> }
+<b><a name="191">  191</a></b>                              
+<b><a name="192">  192</a></b> <a href="../crmf/crmft.h.dep.html#CRMFEncryptedKey">CRMFEncryptedKey</a>*
+<b><a name="193">  193</a></b> <a href="#193">CRMF_PKIArchiveOptionsGetEncryptedPrivKey</a>(<a href="../crmf/crmft.h.dep.html#CRMFPKIArchiveOptions">CRMFPKIArchiveOptions</a> *inOpts)
+<b><a name="194">  194</a></b> {
+<b><a name="195">  195</a></b>     <a href="../crmf/crmft.h.dep.html#CRMFEncryptedKey">CRMFEncryptedKey</a> *newEncrKey = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="196">  196</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="197">  197</a></b> 
+<b><a name="198">  198</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inOpts != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="199">  199</a></b>     if (inOpts == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> ||
+<b><a name="200">  200</a></b>         <a href="../crmf/servget.c.dep.html#CRMF_PKIArchiveOptionsGetOptionType">CRMF_PKIArchiveOptionsGetOptionType</a>(inOpts) != crmfEncryptedPrivateKey){
+<b><a name="201">  201</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="202">  202</a></b>     }
+<b><a name="203">  203</a></b>     newEncrKey = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../crmf/crmft.h.dep.html#CRMFEncryptedKey">CRMFEncryptedKey</a>);
+<b><a name="204">  204</a></b>     if (newEncrKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="205">  205</a></b>         goto loser;
+<b><a name="206">  206</a></b>     }
+<b><a name="207">  207</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/crmfcont.c.dep.html#crmf_copy_encryptedkey">crmf_copy_encryptedkey</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, &amp;inOpts-&gt;option.encryptedKey,
+<b><a name="208">  208</a></b>                                 newEncrKey);
+<b><a name="209">  209</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="210">  210</a></b>         goto loser;
+<b><a name="211">  211</a></b>     }
+<b><a name="212">  212</a></b>     return newEncrKey;
+<b><a name="213">  213</a></b>  loser:
+<b><a name="214">  214</a></b>     if (newEncrKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="215">  215</a></b>         <a href="../crmf/crmfcont.c.dep.html#CRMF_DestroyEncryptedKey">CRMF_DestroyEncryptedKey</a>(newEncrKey);
+<b><a name="216">  216</a></b>     }
+<b><a name="217">  217</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="218">  218</a></b> }
+<b><a name="219">  219</a></b> 
+<b><a name="220">  220</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*
+<b><a name="221">  221</a></b> <a href="#221">CRMF_PKIArchiveOptionsGetKeyGenParameters</a>(<a href="../crmf/crmft.h.dep.html#CRMFPKIArchiveOptions">CRMFPKIArchiveOptions</a> *inOptions)
+<b><a name="222">  222</a></b> {
+<b><a name="223">  223</a></b>     if (inOptions == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> ||
+<b><a name="224">  224</a></b>         <a href="../crmf/servget.c.dep.html#CRMF_PKIArchiveOptionsGetOptionType">CRMF_PKIArchiveOptionsGetOptionType</a>(inOptions) != crmfKeyGenParameters ||
+<b><a name="225">  225</a></b>         inOptions-&gt;option.keyGenParameters.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="226">  226</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="227">  227</a></b>     }
+<b><a name="228">  228</a></b>     return <a href="../util/secitem.c.dep.html#SECITEM_DupItem">SECITEM_DupItem</a>(&amp;inOptions-&gt;option.keyGenParameters);
+<b><a name="229">  229</a></b> }
+<b><a name="230">  230</a></b> 
+<b><a name="231">  231</a></b> <a href="../crmf/crmft.h.dep.html#CRMFPKIArchiveOptionsType">CRMFPKIArchiveOptionsType</a>
+<b><a name="232">  232</a></b> <a href="#232">CRMF_PKIArchiveOptionsGetOptionType</a>(<a href="../crmf/crmft.h.dep.html#CRMFPKIArchiveOptions">CRMFPKIArchiveOptions</a> *inOptions)
+<b><a name="233">  233</a></b> {
+<b><a name="234">  234</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a> (inOptions != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="235">  235</a></b>     if (inOptions == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="236">  236</a></b>         return crmfNoArchiveOptions;
+<b><a name="237">  237</a></b>     }
+<b><a name="238">  238</a></b>     return inOptions-&gt;archOption;
+<b><a name="239">  239</a></b> }
+<b><a name="240">  240</a></b> 
+<b><a name="241">  241</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="242">  242</a></b> <a href="#242">crmf_extract_long_from_item</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *intItem, long *destLong)
+<b><a name="243">  243</a></b> {
+<b><a name="244">  244</a></b>     *destLong = <a href="../util/dersubr.c.dep.html#DER_GetInteger">DER_GetInteger</a>(intItem);
+<b><a name="245">  245</a></b>     return (*destLong == -1) ? SECFailure : <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="246">  246</a></b> }
+<b><a name="247">  247</a></b> 
+<b><a name="248">  248</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="249">  249</a></b> <a href="#249">CRMF_POPOPrivGetKeySubseqMess</a>(<a href="../crmf/crmft.h.dep.html#CRMFPOPOPrivKey">CRMFPOPOPrivKey</a>       *inKey,
+<b><a name="250">  250</a></b>                               <a href="../crmf/crmft.h.dep.html#CRMFSubseqMessOptions">CRMFSubseqMessOptions</a> *destOpt)
+<b><a name="251">  251</a></b> {
+<b><a name="252">  252</a></b>     long      <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>;
+<b><a name="253">  253</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="254">  254</a></b> 
+<b><a name="255">  255</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="256">  256</a></b>     if (inKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> ||
+<b><a name="257">  257</a></b>         inKey-&gt;messageChoice != crmfSubsequentMessage) {
+<b><a name="258">  258</a></b>         return SECFailure;
+<b><a name="259">  259</a></b>     }
+<b><a name="260">  260</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/se<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>get.c.dep.html#crmf_extract_long_from_item">crmf_extract_long_from_item</a>(&amp;inKey-&gt;<a href="../mozilla/nsprpub/pr/tests/forktest.c.dep.html#message">message</a>.subsequentMessage,&amp;<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>);
+<b><a name="261">  261</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="262">  262</a></b>         return SECFailure;
+<b><a name="263">  263</a></b>     }
+<b><a name="264">  264</a></b>     switch (<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>) {
+<b><a name="265">  265</a></b>     case 0:
+<b><a name="266">  266</a></b>         *destOpt = crmfEncrCert;
+<b><a name="267">  267</a></b>         break;
+<b><a name="268">  268</a></b>     case 1:
+<b><a name="269">  269</a></b>         *destOpt = crmfChallengeResp;
+<b><a name="270">  270</a></b>         break;
+<b><a name="271">  271</a></b>     default:
+<b><a name="272">  272</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="273">  273</a></b>     }
+<b><a name="274">  274</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="275">  275</a></b>         return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="276">  276</a></b>     }
+<b><a name="277">  277</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="278">  278</a></b> }
+<b><a name="279">  279</a></b> 
+<b><a name="280">  280</a></b> <a href="../crmf/crmft.h.dep.html#CRMFPOPOPrivKeyChoice">CRMFPOPOPrivKeyChoice</a>
+<b><a name="281">  281</a></b> <a href="#281">CRMF_POPOPrivKeyGetChoice</a>(<a href="../crmf/crmft.h.dep.html#CRMFPOPOPrivKey">CRMFPOPOPrivKey</a> *inPrivKey)
+<b><a name="282">  282</a></b> {
+<b><a name="283">  283</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inPrivKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="284">  284</a></b>     if (inPrivKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="285">  285</a></b>         return inPrivKey-&gt;messageChoice;
+<b><a name="286">  286</a></b>     }
+<b><a name="287">  287</a></b>     return crmfNoMessage;
+<b><a name="288">  288</a></b> }
+<b><a name="289">  289</a></b> 
+<b><a name="290">  290</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="291">  291</a></b> <a href="#291">CRMF_POPOPrivKeyGetDHMAC</a>(<a href="../crmf/crmft.h.dep.html#CRMFPOPOPrivKey">CRMFPOPOPrivKey</a> *inKey, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *destMAC)
+<b><a name="292">  292</a></b> {
+<b><a name="293">  293</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="294">  294</a></b>     if (inKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> || inKey-&gt;<a href="../mozilla/nsprpub/pr/tests/forktest.c.dep.html#message">message</a>.dhMAC.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="295">  295</a></b>         return SECFailure;
+<b><a name="296">  296</a></b>     }
+<b><a name="297">  297</a></b>     return <a href="../crmf/crmfget.c.dep.html#crmf_make_bitstring_copy">crmf_make_bitstring_copy</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, destMAC, &amp;inKey-&gt;<a href="../mozilla/nsprpub/pr/tests/forktest.c.dep.html#message">message</a>.dhMAC);
+<b><a name="298">  298</a></b> }
+<b><a name="299">  299</a></b> 
+<b><a name="300">  300</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="301">  301</a></b> <a href="#301">CRMF_POPOPrivKeyGetThisMessage</a>(<a href="../crmf/crmft.h.dep.html#CRMFPOPOPrivKey">CRMFPOPOPrivKey</a>  *inKey,
+<b><a name="302">  302</a></b>                                <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>          *destString)
+<b><a name="303">  303</a></b> {
+<b><a name="304">  304</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="305">  305</a></b>     if (inKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>           ||
+<b><a name="306">  306</a></b>         inKey-&gt;messageChoice != crmfThisMessage) {
+<b><a name="307">  307</a></b>         return SECFailure;
+<b><a name="308">  308</a></b>     }
+<b><a name="309">  309</a></b> 
+<b><a name="310">  310</a></b>     return <a href="../crmf/crmfget.c.dep.html#crmf_make_bitstring_copy">crmf_make_bitstring_copy</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, destString, 
+<b><a name="311">  311</a></b>                                     &amp;inKey-&gt;<a href="../mozilla/nsprpub/pr/tests/forktest.c.dep.html#message">message</a>.thisMessage);
+<b><a name="312">  312</a></b> }
+<b><a name="313">  313</a></b> 
+<b><a name="314">  314</a></b> <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>*
+<b><a name="315">  315</a></b> <a href="#315">CRMF_POPOSigningKeyGetAlgID</a>(<a href="../crmf/crmft.h.dep.html#CRMFPOPOSigningKey">CRMFPOPOSigningKey</a> *inSignKey)
+<b><a name="316">  316</a></b> {
+<b><a name="317">  317</a></b>     <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a> *newAlgId = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="318">  318</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>       <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="319">  319</a></b> 
+<b><a name="320">  320</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inSignKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="321">  321</a></b>     if (inSignKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="322">  322</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="323">  323</a></b>     }
+<b><a name="324">  324</a></b>     newAlgId = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>);
+<b><a name="325">  325</a></b>     if (newAlgId == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="326">  326</a></b>         goto loser;
+<b><a name="327">  327</a></b>     }
+<b><a name="328">  328</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secalgid.c.dep.html#SECOID_CopyAlgorithmID">SECOID_CopyAlgorithmID</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, newAlgId, 
+<b><a name="329">  329</a></b>                                 inSignKey-&gt;algorithmIdentifier);
+<b><a name="330">  330</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="331">  331</a></b>         goto loser;
+<b><a name="332">  332</a></b>     }
+<b><a name="333">  333</a></b>     return newAlgId;
+<b><a name="334">  334</a></b> 
+<b><a name="335">  335</a></b>  loser:
+<b><a name="336">  336</a></b>     if (newAlgId != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="337">  337</a></b>         <a href="../util/secalgid.c.dep.html#SECOID_DestroyAlgorithmID">SECOID_DestroyAlgorithmID</a>(newAlgId, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="338">  338</a></b>     }
+<b><a name="339">  339</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="340">  340</a></b> }
+<b><a name="341">  341</a></b> 
+<b><a name="342">  342</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*
+<b><a name="343">  343</a></b> <a href="#343">CRMF_POPOSigningKeyGetInput</a>(<a href="../crmf/crmft.h.dep.html#CRMFPOPOSigningKey">CRMFPOPOSigningKey</a> *inSignKey)
+<b><a name="344">  344</a></b> {
+<b><a name="345">  345</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inSignKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="346">  346</a></b>     if (inSignKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> || inSignKey-&gt;derInput.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="347">  347</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="348">  348</a></b>     }
+<b><a name="349">  349</a></b>     return <a href="../util/secitem.c.dep.html#SECITEM_DupItem">SECITEM_DupItem</a>(&amp;inSignKey-&gt;derInput);
+<b><a name="350">  350</a></b> }
+<b><a name="351">  351</a></b> 
+<b><a name="352">  352</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*
+<b><a name="353">  353</a></b> <a href="#353">CRMF_POPOSigningKeyGetSignature</a>(<a href="../crmf/crmft.h.dep.html#CRMFPOPOSigningKey">CRMFPOPOSigningKey</a> *inSignKey)
+<b><a name="354">  354</a></b> {
+<b><a name="355">  355</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>   *newSig = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="356">  356</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>  <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="357">  357</a></b> 
+<b><a name="358">  358</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inSignKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="359">  359</a></b>     if (inSignKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="360">  360</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="361">  361</a></b>     }
+<b><a name="362">  362</a></b>     newSig = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>);
+<b><a name="363">  363</a></b>     if (newSig == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="364">  364</a></b>         goto loser;
+<b><a name="365">  365</a></b>     }
+<b><a name="366">  366</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/crmfget.c.dep.html#crmf_make_bitstring_copy">crmf_make_bitstring_copy</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, newSig, &amp;inSignKey-&gt;signature);
+<b><a name="367">  367</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="368">  368</a></b>         goto loser;
+<b><a name="369">  369</a></b>     }
+<b><a name="370">  370</a></b>     return newSig;
+<b><a name="371">  371</a></b>  loser:
+<b><a name="372">  372</a></b>     if (newSig != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="373">  373</a></b>         <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(newSig, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_TRUE">PR_TRUE</a>);
+<b><a name="374">  374</a></b>     }
+<b><a name="375">  375</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="376">  376</a></b> }
+<b><a name="377">  377</a></b> 
+<b><a name="378">  378</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="379">  379</a></b> <a href="#379">crmf_copy_poposigningkey</a>(<a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>        *poolp, 
+<b><a name="380">  380</a></b>                          <a href="../crmf/crmft.h.dep.html#CRMFPOPOSigningKey">CRMFPOPOSigningKey</a> *inPopoSignKey,
+<b><a name="381">  381</a></b>                          <a href="../crmf/crmft.h.dep.html#CRMFPOPOSigningKey">CRMFPOPOSigningKey</a> *destPopoSignKey)
+<b><a name="382">  382</a></b> {
+<b><a name="383">  383</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="384">  384</a></b> 
+<b><a name="385">  385</a></b>     /* We don't support use of the POPOSigningKeyInput, so we'll only 
+<b><a name="386">  386</a></b>      * store away the DER encoding.
+<b><a name="387">  387</a></b>      */
+<b><a name="388">  388</a></b>     if (inPopoSignKey-&gt;derInput.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="389">  389</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secitem.c.dep.html#SECITEM_CopyItem">SECITEM_CopyItem</a>(poolp, &amp;destPopoSignKey-&gt;derInput, 
+<b><a name="390">  390</a></b>                               &amp;inPopoSignKey-&gt;derInput);
+<b><a name="391">  391</a></b>     }
+<b><a name="392">  392</a></b>     destPopoSignKey-&gt;algorithmIdentifier = (poolp == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) ? 
+<b><a name="393">  393</a></b>                                          <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>) :
+<b><a name="394">  394</a></b>                                          <a href="../util/secport.h.dep.html#PORT_ArenaZNew">PORT_ArenaZNew</a>(poolp, <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>);
+<b><a name="395">  395</a></b> 
+<b><a name="396">  396</a></b>     if (destPopoSignKey-&gt;algorithmIdentifier == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="397">  397</a></b>         goto loser;
+<b><a name="398">  398</a></b>     }
+<b><a name="399">  399</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secalgid.c.dep.html#SECOID_CopyAlgorithmID">SECOID_CopyAlgorithmID</a>(poolp, destPopoSignKey-&gt;algorithmIdentifier,
+<b><a name="400">  400</a></b>                                 inPopoSignKey-&gt;algorithmIdentifier);
+<b><a name="401">  401</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="402">  402</a></b>         goto loser;
+<b><a name="403">  403</a></b>     }
+<b><a name="404">  404</a></b>     
+<b><a name="405">  405</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/crmfget.c.dep.html#crmf_make_bitstring_copy">crmf_make_bitstring_copy</a>(poolp, &amp;destPopoSignKey-&gt;signature, 
+<b><a name="406">  406</a></b>                                   &amp;inPopoSignKey-&gt;signature);
+<b><a name="407">  407</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="408">  408</a></b>         goto loser;
+<b><a name="409">  409</a></b>     }
+<b><a name="410">  410</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="411">  411</a></b>  loser:
+<b><a name="412">  412</a></b>     if (poolp == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="413">  413</a></b>         <a href="../crmf/crmfget.c.dep.html#CRMF_DestroyPOPOSigningKey">CRMF_DestroyPOPOSigningKey</a>(destPopoSignKey);
+<b><a name="414">  414</a></b>     }
+<b><a name="415">  415</a></b>     return SECFailure;
+<b><a name="416">  416</a></b> }
+<b><a name="417">  417</a></b> 
+<b><a name="418">  418</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="419">  419</a></b> <a href="#419">crmf_copy_popoprivkey</a>(<a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>     *poolp,
+<b><a name="420">  420</a></b>                       <a href="../crmf/crmft.h.dep.html#CRMFPOPOPrivKey">CRMFPOPOPrivKey</a> *srcPrivKey,
+<b><a name="421">  421</a></b>                       <a href="../crmf/crmft.h.dep.html#CRMFPOPOPrivKey">CRMFPOPOPrivKey</a> *destPrivKey)
+<b><a name="422">  422</a></b> {
+<b><a name="423">  423</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>        <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="424">  424</a></b> 
+<b><a name="425">  425</a></b>     destPrivKey-&gt;messageChoice = srcPrivKey-&gt;messageChoice;
+<b><a name="426">  426</a></b>     switch (destPrivKey-&gt;messageChoice) {
+<b><a name="427">  427</a></b>     case crmfThisMessage:
+<b><a name="428">  428</a></b>     case crmfDHMAC:
+<b><a name="429">  429</a></b>         /* I've got a union, so taking the address of one, will also give
+<b><a name="430">  430</a></b>          * me a pointer to the other (eg, message.dhMAC)
+<b><a name="431">  431</a></b>          */
+<b><a name="432">  432</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/crmfget.c.dep.html#crmf_make_bitstring_copy">crmf_make_bitstring_copy</a>(poolp, &amp;destPrivKey-&gt;<a href="../mozilla/nsprpub/pr/tests/forktest.c.dep.html#message">message</a>.thisMessage,
+<b><a name="433">  433</a></b>                                       &amp;srcPrivKey-&gt;<a href="../mozilla/nsprpub/pr/tests/forktest.c.dep.html#message">message</a>.thisMessage);
+<b><a name="434">  434</a></b>         break;
+<b><a name="435">  435</a></b>     case crmfSubsequentMessage:
+<b><a name="436">  436</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secitem.c.dep.html#SECITEM_CopyItem">SECITEM_CopyItem</a>(poolp, &amp;destPrivKey-&gt;<a href="../mozilla/nsprpub/pr/tests/forktest.c.dep.html#message">message</a>.subsequentMessage,
+<b><a name="437">  437</a></b>                               &amp;srcPrivKey-&gt;<a href="../mozilla/nsprpub/pr/tests/forktest.c.dep.html#message">message</a>.subsequentMessage);
+<b><a name="438">  438</a></b>         break;
+<b><a name="439">  439</a></b>     default:
+<b><a name="440">  440</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="441">  441</a></b>     }
+<b><a name="442">  442</a></b> 
+<b><a name="443">  443</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a> &amp;&amp; poolp == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="444">  444</a></b>         <a href="../crmf/crmfget.c.dep.html#CRMF_DestroyPOPOPrivKey">CRMF_DestroyPOPOPrivKey</a>(destPrivKey);
+<b><a name="445">  445</a></b>     }
+<b><a name="446">  446</a></b>     return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="447">  447</a></b> }
+<b><a name="448">  448</a></b> 
+<b><a name="449">  449</a></b> static <a href="../crmf/crmft.h.dep.html#CRMFProofOfPossession">CRMFProofOfPossession</a>*
+<b><a name="450">  450</a></b> <a href="#450">crmf_copy_pop</a>(<a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *poolp, <a href="../crmf/crmft.h.dep.html#CRMFProofOfPossession">CRMFProofOfPossession</a> *srcPOP)
+<b><a name="451">  451</a></b> {
+<b><a name="452">  452</a></b>     <a href="../crmf/crmft.h.dep.html#CRMFProofOfPossession">CRMFProofOfPossession</a> *newPOP;
+<b><a name="453">  453</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>              <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="454">  454</a></b> 
+<b><a name="455">  455</a></b>     /* 
+<b><a name="456">  456</a></b>      * Proof Of Possession structures are always part of the Request
+<b><a name="457">  457</a></b>      * message, so there will always be an arena for allocating memory.
+<b><a name="458">  458</a></b>      */
+<b><a name="459">  459</a></b>     if (poolp == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="460">  460</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="461">  461</a></b>     }
+<b><a name="462">  462</a></b>     newPOP = <a href="../util/secport.h.dep.html#PORT_ArenaZNew">PORT_ArenaZNew</a>(poolp, <a href="../crmf/crmft.h.dep.html#CRMFProofOfPossession">CRMFProofOfPossession</a>);
+<b><a name="463">  463</a></b>     if (newPOP == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="464">  464</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="465">  465</a></b>     }
+<b><a name="466">  466</a></b>     switch (srcPOP-&gt;popUsed) {
+<b><a name="467">  467</a></b>     case crmfRAVerified:
+<b><a name="468">  468</a></b>         newPOP-&gt;popChoice.raVerified.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="469">  469</a></b>         newPOP-&gt;popChoice.raVerified.<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#len">len</a><a href="../mozilla/security/nss/cmd/modutil/lex.Pk11Install_yy.c.dep.html#len"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/adler32.c.dep.html#len"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/crc32.c.dep.html#len"><sup>[3]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/gzio.c.dep.html#len"><sup>[6]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#len"><sup>[9]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#len"><sup>[10]</sup></a></a></a><a href="../mozilla/security/nss/cmd/zlib/zutil.c.dep.html#len"><sup>[13]</sup></a></a></a>  = 0;
+<b><a name="470">  470</a></b>         break;
+<b><a name="471">  471</a></b>     case crmfSignature:
+<b><a name="472">  472</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/se<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>get.c.dep.html#crmf_copy_poposigningkey">crmf_copy_poposigningkey</a>(poolp, &amp;srcPOP-&gt;popChoice.signature,
+<b><a name="473">  473</a></b>                                       &amp;newPOP-&gt;popChoice.signature);
+<b><a name="474">  474</a></b>         if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="475">  475</a></b>             goto loser;
+<b><a name="476">  476</a></b>         }
+<b><a name="477">  477</a></b>         break;
+<b><a name="478">  478</a></b>     case crmfKeyEncipherment:
+<b><a name="479">  479</a></b>     case crmfKeyAgreement:
+<b><a name="480">  480</a></b>         /* We've got a union, so a pointer to one, is a pointer to the
+<b><a name="481">  481</a></b>          * other one.
+<b><a name="482">  482</a></b>          */
+<b><a name="483">  483</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/se<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>get.c.dep.html#crmf_copy_popoprivkey">crmf_copy_popoprivkey</a>(poolp, &amp;srcPOP-&gt;popChoice.keyEncipherment,
+<b><a name="484">  484</a></b>                                    &amp;newPOP-&gt;popChoice.keyEncipherment);
+<b><a name="485">  485</a></b>         if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="486">  486</a></b>             goto loser;
+<b><a name="487">  487</a></b>         }
+<b><a name="488">  488</a></b>         break;
+<b><a name="489">  489</a></b>     default:
+<b><a name="490">  490</a></b>         goto loser;
+<b><a name="491">  491</a></b>     }
+<b><a name="492">  492</a></b>     newPOP-&gt;popUsed = srcPOP-&gt;popUsed;
+<b><a name="493">  493</a></b>     return newPOP;
+<b><a name="494">  494</a></b> 
+<b><a name="495">  495</a></b>  loser:
+<b><a name="496">  496</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="497">  497</a></b> }
+<b><a name="498">  498</a></b> 
+<b><a name="499">  499</a></b> static <a href="../crmf/crmft.h.dep.html#CRMFCertReqMsg">CRMFCertReqMsg</a>*
+<b><a name="500">  500</a></b> <a href="#500">crmf_copy_cert_req_msg</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertReqMsg">CRMFCertReqMsg</a> *srcReqMsg)
+<b><a name="501">  501</a></b> {
+<b><a name="502">  502</a></b>     <a href="../crmf/crmft.h.dep.html#CRMFCertReqMsg">CRMFCertReqMsg</a> *newReqMsg;
+<b><a name="503">  503</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>    *poolp;
+<b><a name="504">  504</a></b> 
+<b><a name="505">  505</a></b>     poolp = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../crmf/crmfi.h.dep.html#CRMF_DEFAULT_ARENA_SIZE">CRMF_DEFAULT_ARENA_SIZE</a>);
+<b><a name="506">  506</a></b>     if (poolp == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="507">  507</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="508">  508</a></b>     }
+<b><a name="509">  509</a></b>     newReqMsg = <a href="../util/secport.h.dep.html#PORT_ArenaZNew">PORT_ArenaZNew</a>(poolp, <a href="../crmf/crmft.h.dep.html#CRMFCertReqMsg">CRMFCertReqMsg</a>);
+<b><a name="510">  510</a></b>     if (newReqMsg == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="511">  511</a></b>         goto loser;
+<b><a name="512">  512</a></b>     }
+<b><a name="513">  513</a></b> 
+<b><a name="514">  514</a></b>     newReqMsg-&gt;poolp = poolp;
+<b><a name="515">  515</a></b>     newReqMsg-&gt;certReq = <a href="../crmf/crmfget.c.dep.html#crmf_copy_cert_request">crmf_copy_cert_request</a>(poolp, srcReqMsg-&gt;certReq);
+<b><a name="516">  516</a></b>     if (newReqMsg-&gt;certReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="517">  517</a></b>         goto loser;
+<b><a name="518">  518</a></b>     }
+<b><a name="519">  519</a></b>     newReqMsg-&gt;pop = <a href="../crmf/servget.c.dep.html#crmf_copy_pop">crmf_copy_pop</a>(poolp, srcReqMsg-&gt;pop);
+<b><a name="520">  520</a></b>     if (newReqMsg-&gt;pop == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="521">  521</a></b>         goto loser;
+<b><a name="522">  522</a></b>     }
+<b><a name="523">  523</a></b>     /* None of my set/get routines operate on the regInfo field, so
+<b><a name="524">  524</a></b>      * for now, that won't get copied over.
+<b><a name="525">  525</a></b>      */
+<b><a name="526">  526</a></b>     return newReqMsg;
+<b><a name="527">  527</a></b> 
+<b><a name="528">  528</a></b>  loser:
+<b><a name="529">  529</a></b>     if (newReqMsg != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="530">  530</a></b>         <a href="../crmf/crmfreq.c.dep.html#CRMF_DestroyCertReqMsg">CRMF_DestroyCertReqMsg</a>(newReqMsg);
+<b><a name="531">  531</a></b>     }
+<b><a name="532">  532</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="533">  533</a></b> }
+<b><a name="534">  534</a></b> 
+<b><a name="535">  535</a></b> <a href="../crmf/crmft.h.dep.html#CRMFCertReqMsg">CRMFCertReqMsg</a>*
+<b><a name="536">  536</a></b> <a href="#536">CRMF_CertReqMessagesGetCertReqMsgAtIndex</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertReqMessages">CRMFCertReqMessages</a> *inReqMsgs,
+<b><a name="537">  537</a></b>                                          int                  <a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a>)
+<b><a name="538">  538</a></b> {
+<b><a name="539">  539</a></b>     int numMsgs;
+<b><a name="540">  540</a></b> 
+<b><a name="541">  541</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inReqMsgs != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> &amp;&amp; <a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a> &gt;= 0);
+<b><a name="542">  542</a></b>     if (inReqMsgs == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="543">  543</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="544">  544</a></b>     }
+<b><a name="545">  545</a></b>     numMsgs = <a href="../crmf/servget.c.dep.html#CRMF_CertReqMessagesGetNumMessages">CRMF_CertReqMessagesGetNumMessages</a>(inReqMsgs);
+<b><a name="546">  546</a></b>     if (<a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a> &lt; 0 || <a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a> &gt;= numMsgs) {
+<b><a name="547">  547</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="548">  548</a></b>     }
+<b><a name="549">  549</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_copy_cert_req_msg">crmf_copy_cert_req_msg</a>(inReqMsgs-&gt;messages[<a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a>]);
+<b><a name="550">  550</a></b> }
+<b><a name="551">  551</a></b> 
+<b><a name="552">  552</a></b> int
+<b><a name="553">  553</a></b> <a href="#553">CRMF_CertReqMessagesGetNumMessages</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertReqMessages">CRMFCertReqMessages</a> *inCertReqMsgs)
+<b><a name="554">  554</a></b> {
+<b><a name="555">  555</a></b>     int numMessages = 0;
+<b><a name="556">  556</a></b> 
+<b><a name="557">  557</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReqMsgs != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="558">  558</a></b>     if (inCertReqMsgs == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="559">  559</a></b>         return 0;
+<b><a name="560">  560</a></b>     }
+<b><a name="561">  561</a></b>     while (inCertReqMsgs-&gt;messages[numMessages] != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="562">  562</a></b>         numMessages++;
+<b><a name="563">  563</a></b>     }
+<b><a name="564">  564</a></b>     return numMessages;
+<b><a name="565">  565</a></b> }
+<b><a name="566">  566</a></b> 
+<b><a name="567">  567</a></b> <a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a>*
+<b><a name="568">  568</a></b> <a href="#568">CRMF_CertReqMsgGetCertRequest</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertReqMsg">CRMFCertReqMsg</a> *inCertReqMsg)
+<b><a name="569">  569</a></b> {
+<b><a name="570">  570</a></b>     <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a>     *poolp      = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="571">  571</a></b>     <a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a> *newCertReq = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="572">  572</a></b> 
+<b><a name="573">  573</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReqMsg != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="574">  574</a></b> 
+<b><a name="575">  575</a></b>     poolp = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../crmf/crmfi.h.dep.html#CRMF_DEFAULT_ARENA_SIZE">CRMF_DEFAULT_ARENA_SIZE</a>);
+<b><a name="576">  576</a></b>     if (poolp == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="577">  577</a></b>         goto loser;
+<b><a name="578">  578</a></b>     }
+<b><a name="579">  579</a></b>     newCertReq = <a href="../crmf/crmfget.c.dep.html#crmf_copy_cert_request">crmf_copy_cert_request</a>(poolp, inCertReqMsg-&gt;certReq);
+<b><a name="580">  580</a></b>     if (newCertReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="581">  581</a></b>         goto loser;
+<b><a name="582">  582</a></b>     }
+<b><a name="583">  583</a></b>     newCertReq-&gt;poolp = poolp;
+<b><a name="584">  584</a></b>     return newCertReq;
+<b><a name="585">  585</a></b>  loser:
+<b><a name="586">  586</a></b>     if (poolp != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="587">  587</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(poolp, <a href="../mozilla/nsprpub/pr/include/prtypes.h.dep.html#PR_FALSE">PR_FALSE</a>);
+<b><a name="588">  588</a></b>     }
+<b><a name="589">  589</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="590">  590</a></b> }
+<b><a name="591">  591</a></b> 
+<b><a name="592">  592</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="593">  593</a></b> <a href="#593">CRMF_CertReqMsgGetID</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertReqMsg">CRMFCertReqMsg</a> *inCertReqMsg, long *destID)
+<b><a name="594">  594</a></b> {
+<b><a name="595">  595</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReqMsg != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> &amp;&amp; destID != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="596">  596</a></b>     if (inCertReqMsg == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> || inCertReqMsg-&gt;certReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="597">  597</a></b>         return SECFailure;
+<b><a name="598">  598</a></b>     }
+<b><a name="599">  599</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_extract_long_from_item">crmf_extract_long_from_item</a>(&amp;inCertReqMsg-&gt;certReq-&gt;certReqId, 
+<b><a name="600">  600</a></b>                                        destID);
+<b><a name="601">  601</a></b> }
+<b><a name="602">  602</a></b> 
+<b><a name="603">  603</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="604">  604</a></b> <a href="#604">CRMF_CertReqMsgGetPOPKeyAgreement</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertReqMsg">CRMFCertReqMsg</a>   *inCertReqMsg,
+<b><a name="605">  605</a></b>                                   <a href="../crmf/crmft.h.dep.html#CRMFPOPOPrivKey">CRMFPOPOPrivKey</a> **destKey)
+<b><a name="606">  606</a></b> {
+<b><a name="607">  607</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReqMsg != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> &amp;&amp; destKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="608">  608</a></b>     if (inCertReqMsg == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> || destKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> ||
+<b><a name="609">  609</a></b>         <a href="../crmf/crmfget.c.dep.html#CRMF_CertReqMsgGetPOPType">CRMF_CertReqMsgGetPOPType</a>(inCertReqMsg) != crmfKeyAgreement) {
+<b><a name="610">  610</a></b>         return SECFailure;
+<b><a name="611">  611</a></b>     }
+<b><a name="612">  612</a></b>     *destKey = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../crmf/crmft.h.dep.html#CRMFPOPOPrivKey">CRMFPOPOPrivKey</a>);
+<b><a name="613">  613</a></b>     if (*destKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="614">  614</a></b>         return SECFailure;
+<b><a name="615">  615</a></b>     }
+<b><a name="616">  616</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_copy_popoprivkey">crmf_copy_popoprivkey</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>,
+<b><a name="617">  617</a></b>                                  &amp;inCertReqMsg-&gt;pop-&gt;popChoice.keyAgreement,
+<b><a name="618">  618</a></b>                                  *destKey);
+<b><a name="619">  619</a></b> }
+<b><a name="620">  620</a></b> 
+<b><a name="621">  621</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="622">  622</a></b> <a href="#622">CRMF_CertReqMsgGetPOPKeyEncipherment</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertReqMsg">CRMFCertReqMsg</a>   *inCertReqMsg,
+<b><a name="623">  623</a></b>                                      <a href="../crmf/crmft.h.dep.html#CRMFPOPOPrivKey">CRMFPOPOPrivKey</a> **destKey)
+<b><a name="624">  624</a></b> {
+<b><a name="625">  625</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReqMsg != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> &amp;&amp; destKey != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="626">  626</a></b>     if (inCertReqMsg == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> || destKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> ||
+<b><a name="627">  627</a></b>         <a href="../crmf/crmfget.c.dep.html#CRMF_CertReqMsgGetPOPType">CRMF_CertReqMsgGetPOPType</a>(inCertReqMsg) != crmfKeyEncipherment) {
+<b><a name="628">  628</a></b>         return SECFailure;
+<b><a name="629">  629</a></b>     }
+<b><a name="630">  630</a></b>     *destKey = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../crmf/crmft.h.dep.html#CRMFPOPOPrivKey">CRMFPOPOPrivKey</a>);
+<b><a name="631">  631</a></b>     if (destKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="632">  632</a></b>        return SECFailure;
+<b><a name="633">  633</a></b>     }
+<b><a name="634">  634</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_copy_popoprivkey">crmf_copy_popoprivkey</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>,
+<b><a name="635">  635</a></b>                                  &amp;inCertReqMsg-&gt;pop-&gt;popChoice.keyEncipherment,
+<b><a name="636">  636</a></b>                                  *destKey);
+<b><a name="637">  637</a></b> }
+<b><a name="638">  638</a></b> 
+<b><a name="639">  639</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="640">  640</a></b> <a href="#640">CRMF_CertReqMsgGetPOPOSigningKey</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertReqMsg">CRMFCertReqMsg</a>      *inCertReqMsg,
+<b><a name="641">  641</a></b>                                  <a href="../crmf/crmft.h.dep.html#CRMFPOPOSigningKey">CRMFPOPOSigningKey</a> **destKey)
+<b><a name="642">  642</a></b> {
+<b><a name="643">  643</a></b>     <a href="../crmf/crmft.h.dep.html#CRMFProofOfPossession">CRMFProofOfPossession</a> *pop;
+<b><a name="644">  644</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReqMsg != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="645">  645</a></b>     if (inCertReqMsg  == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="646">  646</a></b>         return SECFailure;
+<b><a name="647">  647</a></b>     }
+<b><a name="648">  648</a></b>     pop = inCertReqMsg-&gt;pop;;
+<b><a name="649">  649</a></b>     if (pop-&gt;popUsed != crmfSignature) {
+<b><a name="650">  650</a></b>         return SECFailure;
+<b><a name="651">  651</a></b>     }
+<b><a name="652">  652</a></b>     *destKey = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../crmf/crmft.h.dep.html#CRMFPOPOSigningKey">CRMFPOPOSigningKey</a>);
+<b><a name="653">  653</a></b>     if (*destKey == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="654">  654</a></b>         return SECFailure;
+<b><a name="655">  655</a></b>     }
+<b><a name="656">  656</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_copy_poposigningkey">crmf_copy_poposigningkey</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>,&amp;pop-&gt;popChoice.signature, *destKey);
+<b><a name="657">  657</a></b> }
+<b><a name="658">  658</a></b> 
+<b><a name="659">  659</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="660">  660</a></b> <a href="#660">crmf_copy_name</a>(<a href="../certdb/certt.h.dep.html#CERTName">CERTName</a> *destName, <a href="../certdb/certt.h.dep.html#CERTName">CERTName</a> *srcName)
+<b><a name="661">  661</a></b> {
+<b><a name="662">  662</a></b>   <a href="../mozilla/nsprpub/pr/include/obsolete/protypes.h.dep.html#PRArenaPool">PRArenaPool</a> *poolp = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="663">  663</a></b>   <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="664">  664</a></b> 
+<b><a name="665">  665</a></b>   if (destName-&gt;arena != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="666">  666</a></b>     poolp = destName-&gt;arena;
+<b><a name="667">  667</a></b>   } else {
+<b><a name="668">  668</a></b>     poolp = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../crmf/crmfi.h.dep.html#CRMF_DEFAULT_ARENA_SIZE">CRMF_DEFAULT_ARENA_SIZE</a>);
+<b><a name="669">  669</a></b>   }
+<b><a name="670">  670</a></b>   if (poolp == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="671">  671</a></b>     return SECFailure;
+<b><a name="672">  672</a></b>   }
+<b><a name="673">  673</a></b>   /* Need to do this so that CERT_CopyName doesn't free out
+<b><a name="674">  674</a></b>    * the arena from underneath us.
+<b><a name="675">  675</a></b>    */
+<b><a name="676">  676</a></b>   destName-&gt;arena = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="677">  677</a></b>   <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../certdb/secname.c.dep.html#CERT_CopyName">CERT_CopyName</a>(poolp, destName, srcName); 
+<b><a name="678">  678</a></b>   destName-&gt;arena = poolp;
+<b><a name="679">  679</a></b>   return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="680">  680</a></b> }
+<b><a name="681">  681</a></b> 
+<b><a name="682">  682</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="683">  683</a></b> <a href="#683">CRMF_CertRequestGetCertTemplateIssuer</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a> *inCertReq,
+<b><a name="684">  684</a></b>                                       <a href="../certdb/certt.h.dep.html#CERTName">CERTName</a>        *destIssuer)
+<b><a name="685">  685</a></b> {
+<b><a name="686">  686</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReq != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="687">  687</a></b>     if (inCertReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="688">  688</a></b>         return SECFailure;
+<b><a name="689">  689</a></b>     }
+<b><a name="690">  690</a></b>     if (<a href="../crmf/crmfreq.c.dep.html#CRMF_DoesRequestHaveField">CRMF_DoesRequestHaveField</a>(inCertReq, crmfIssuer)) {
+<b><a name="691">  691</a></b>         return <a href="../crmf/servget.c.dep.html#crmf_copy_name">crmf_copy_name</a>(destIssuer, 
+<b><a name="692">  692</a></b>                               inCertReq-&gt;certTemplate.issuer);
+<b><a name="693">  693</a></b>     }
+<b><a name="694">  694</a></b>     return SECFailure;
+<b><a name="695">  695</a></b> }
+<b><a name="696">  696</a></b> 
+<b><a name="697">  697</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="698">  698</a></b> <a href="#698">CRMF_CertRequestGetCertTemplateIssuerUID</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a> *inCertReq,
+<b><a name="699">  699</a></b>                                          <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>         *destIssuerUID)
+<b><a name="700">  700</a></b> {
+<b><a name="701">  701</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReq != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="702">  702</a></b>     if (inCertReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="703">  703</a></b>         return SECFailure;
+<b><a name="704">  704</a></b>     }
+<b><a name="705">  705</a></b>     if (<a href="../crmf/crmfreq.c.dep.html#CRMF_DoesRequestHaveField">CRMF_DoesRequestHaveField</a>(inCertReq, crmfIssuerUID)) {
+<b><a name="706">  706</a></b>         return <a href="../crmf/crmfget.c.dep.html#crmf_make_bitstring_copy">crmf_make_bitstring_copy</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, destIssuerUID,
+<b><a name="707">  707</a></b>                                         &amp;inCertReq-&gt;certTemplate.issuerUID);
+<b><a name="708">  708</a></b>     }
+<b><a name="709">  709</a></b>     return SECFailure;
+<b><a name="710">  710</a></b> }
+<b><a name="711">  711</a></b> 
+<b><a name="712">  712</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="713">  713</a></b> <a href="#713">CRMF_CertRequestGetCertTemplatePublicKey</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a>          *inCertReq,
+<b><a name="714">  714</a></b>                                        <a href="../certdb/certt.h.dep.html#CERTSubjectPublicKeyInfo">CERTSubjectPublicKeyInfo</a> *destPublicKey)
+<b><a name="715">  715</a></b> {
+<b><a name="716">  716</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a> (inCertReq != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="717">  717</a></b>     if (inCertReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="718">  718</a></b>         return SECFailure;
+<b><a name="719">  719</a></b>     }
+<b><a name="720">  720</a></b>     if (<a href="../crmf/crmfreq.c.dep.html#CRMF_DoesRequestHaveField">CRMF_DoesRequestHaveField</a>(inCertReq, crmfPublicKey)) {
+<b><a name="721">  721</a></b>         return <a href="../cryptohi/seckey.c.dep.html#SECKEY_CopySubjectPublicKeyInfo">SECKEY_CopySubjectPublicKeyInfo</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, destPublicKey,
+<b><a name="722">  722</a></b>                                         inCertReq-&gt;certTemplate.publicKey);
+<b><a name="723">  723</a></b>     }
+<b><a name="724">  724</a></b>     return SECFailure;
+<b><a name="725">  725</a></b> }
+<b><a name="726">  726</a></b> 
+<b><a name="727">  727</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="728">  728</a></b> <a href="#728">CRMF_CertRequestGetCertTemplateSerialNumber</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a> *inCertReq,
+<b><a name="729">  729</a></b>                                             long            *serialNumber)
+<b><a name="730">  730</a></b> {
+<b><a name="731">  731</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReq != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="732">  732</a></b>     if (inCertReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="733">  733</a></b>         return SECFailure;
+<b><a name="734">  734</a></b>     }
+<b><a name="735">  735</a></b>     if (<a href="../crmf/crmfreq.c.dep.html#CRMF_DoesRequestHaveField">CRMF_DoesRequestHaveField</a>(inCertReq, crmfSerialNumber)) {
+<b><a name="736">  736</a></b>         return 
+<b><a name="737">  737</a></b>           <a href="../crmf/servget.c.dep.html#crmf_extract_long_from_item">crmf_extract_long_from_item</a>(&amp;inCertReq-&gt;certTemplate.serialNumber,
+<b><a name="738">  738</a></b>                                       serialNumber);
+<b><a name="739">  739</a></b>     }
+<b><a name="740">  740</a></b>     return SECFailure;
+<b><a name="741">  741</a></b> }
+<b><a name="742">  742</a></b> 
+<b><a name="743">  743</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="744">  744</a></b> <a href="#744">CRMF_CertRequestGetCertTemplateSigningAlg</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a> *inCertReq,
+<b><a name="745">  745</a></b>                                           <a href="../util/secoidt.h.dep.html#SECAlgorithmID">SECAlgorithmID</a>  *destAlg)
+<b><a name="746">  746</a></b> {
+<b><a name="747">  747</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReq != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="748">  748</a></b>     if (inCertReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="749">  749</a></b>         return SECFailure;
+<b><a name="750">  750</a></b>     }
+<b><a name="751">  751</a></b>     if (<a href="../crmf/crmfreq.c.dep.html#CRMF_DoesRequestHaveField">CRMF_DoesRequestHaveField</a>(inCertReq, crmfSigningAlg)) {
+<b><a name="752">  752</a></b>         return <a href="../util/secalgid.c.dep.html#SECOID_CopyAlgorithmID">SECOID_CopyAlgorithmID</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, destAlg, 
+<b><a name="753">  753</a></b>                                       inCertReq-&gt;certTemplate.signingAlg);
+<b><a name="754">  754</a></b>     }
+<b><a name="755">  755</a></b>     return SECFailure;
+<b><a name="756">  756</a></b> }
+<b><a name="757">  757</a></b> 
+<b><a name="758">  758</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="759">  759</a></b> <a href="#759">CRMF_CertRequestGetCertTemplateSubject</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a> *inCertReq,
+<b><a name="760">  760</a></b>                                        <a href="../certdb/certt.h.dep.html#CERTName">CERTName</a>        *destSubject)
+<b><a name="761">  761</a></b> {
+<b><a name="762">  762</a></b>   <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReq != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="763">  763</a></b>   if (inCertReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="764">  764</a></b>       return SECFailure;
+<b><a name="765">  765</a></b>   }
+<b><a name="766">  766</a></b>   if (<a href="../crmf/crmfreq.c.dep.html#CRMF_DoesRequestHaveField">CRMF_DoesRequestHaveField</a>(inCertReq, crmfSubject)) {
+<b><a name="767">  767</a></b>       return <a href="../crmf/servget.c.dep.html#crmf_copy_name">crmf_copy_name</a>(destSubject, inCertReq-&gt;certTemplate.subject);
+<b><a name="768">  768</a></b>   }
+<b><a name="769">  769</a></b>   return SECFailure;
+<b><a name="770">  770</a></b> }
+<b><a name="771">  771</a></b> 
+<b><a name="772">  772</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="773">  773</a></b> <a href="#773">CRMF_CertRequestGetCertTemplateSubjectUID</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a> *inCertReq,
+<b><a name="774">  774</a></b>                                           <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>         *destSubjectUID)
+<b><a name="775">  775</a></b> {
+<b><a name="776">  776</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReq != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="777">  777</a></b>     if (inCertReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="778">  778</a></b>         return SECFailure;
+<b><a name="779">  779</a></b>     }
+<b><a name="780">  780</a></b>     if (<a href="../crmf/crmfreq.c.dep.html#CRMF_DoesRequestHaveField">CRMF_DoesRequestHaveField</a>(inCertReq, crmfSubjectUID)) {
+<b><a name="781">  781</a></b>         return <a href="../crmf/crmfget.c.dep.html#crmf_make_bitstring_copy">crmf_make_bitstring_copy</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, destSubjectUID, 
+<b><a name="782">  782</a></b>                                         &amp;inCertReq-&gt;certTemplate.subjectUID);
+<b><a name="783">  783</a></b>     }
+<b><a name="784">  784</a></b>     return SECFailure;
+<b><a name="785">  785</a></b> }
+<b><a name="786">  786</a></b> 
+<b><a name="787">  787</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="788">  788</a></b> <a href="#788">CRMF_CertRequestGetCertTemplateVersion</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a> *inCertReq, 
+<b><a name="789">  789</a></b>                                        long            *<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>)
+<b><a name="790">  790</a></b> {
+<b><a name="791">  791</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a> (inCertReq != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="792">  792</a></b>     if (inCertReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="793">  793</a></b>         return SECFailure;
+<b><a name="794">  794</a></b>     }
+<b><a name="795">  795</a></b>     if (<a href="../crmf/crmfreq.c.dep.html#CRMF_DoesRequestHaveField">CRMF_DoesRequestHaveField</a>(inCertReq, crmfVersion)) {
+<b><a name="796">  796</a></b>         return <a href="../crmf/servget.c.dep.html#crmf_extract_long_from_item">crmf_extract_long_from_item</a>(&amp;inCertReq-&gt;certTemplate.<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>,
+<b><a name="797">  797</a></b>                                            <a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#version">version</a></a><a href="../mozilla/security/nss/cmd/zlib/infback.c.dep.html#version"><sup>[2]</sup></a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#version"><sup>[3]</sup></a></a>);
+<b><a name="798">  798</a></b>     } 
+<b><a name="799">  799</a></b>     return SECFailure;
+<b><a name="800">  800</a></b> }
+<b><a name="801">  801</a></b> 
+<b><a name="802">  802</a></b> static <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>
+<b><a name="803">  803</a></b> <a href="#803">crmf_copy_validity</a>(<a href="../crmf/crmft.h.dep.html#CRMFGetValidity">CRMFGetValidity</a>      *destValidity,
+<b><a name="804">  804</a></b>                    <a href="../crmf/crmft.h.dep.html#CRMFOptionalValidity">CRMFOptionalValidity</a> *<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>)
+<b><a name="805">  805</a></b> {
+<b><a name="806">  806</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="807">  807</a></b>     
+<b><a name="808">  808</a></b>     destValidity-&gt;<a href="../mozilla/security/nss/cmd/crmftest/testcrmf.c.dep.html#notBefore">notBefore</a> = destValidity-&gt;notAfter = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="809">  809</a></b>     if (<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/cmd/crmftest/testcrmf.c.dep.html#notBefore">notBefore</a>.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="810">  810</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/respcmn.c.dep.html#crmf_create_prtime">crmf_create_prtime</a>(&amp;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;<a href="../mozilla/security/nss/cmd/crmftest/testcrmf.c.dep.html#notBefore">notBefore</a>, 
+<b><a name="811">  811</a></b>                                 &amp;destValidity-&gt;<a href="../mozilla/security/nss/cmd/crmftest/testcrmf.c.dep.html#notBefore">notBefore</a>);
+<b><a name="812">  812</a></b>         if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="813">  813</a></b>             return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="814">  814</a></b>         }
+<b><a name="815">  815</a></b>     }
+<b><a name="816">  816</a></b>     if (<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;notAfter.<a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.c.dep.html#data">data</a></a><a href="../mozilla/security/nss/tests/pkcs11/netscape/suites/security/ssl/ssls.h.dep.html#data"><sup>[2]</sup></a> != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="817">  817</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/respcmn.c.dep.html#crmf_create_prtime">crmf_create_prtime</a>(&amp;<a href="../mozilla/security/nss/cmd/crlutil/crlgen_lex.c.dep.html#src">src</a>-&gt;notAfter,
+<b><a name="818">  818</a></b>                                 &amp;destValidity-&gt;notAfter);
+<b><a name="819">  819</a></b>         if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="820">  820</a></b>             return <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="821">  821</a></b>         }
+<b><a name="822">  822</a></b>     }
+<b><a name="823">  823</a></b>     return <a href="../mozilla/security/nss/cmd/selfserv/selfserv.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="824">  824</a></b> }
+<b><a name="825">  825</a></b> 
+<b><a name="826">  826</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="827">  827</a></b> <a href="#827">CRMF_CertRequestGetCertTemplateValidity</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a> *inCertReq,
+<b><a name="828">  828</a></b>                                         <a href="../crmf/crmft.h.dep.html#CRMFGetValidity">CRMFGetValidity</a> *destValidity)
+<b><a name="829">  829</a></b> {
+<b><a name="830">  830</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReq != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="831">  831</a></b>     if (inCertReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="832">  832</a></b>         return SECFailure;
+<b><a name="833">  833</a></b>     }
+<b><a name="834">  834</a></b>     if (<a href="../crmf/crmfreq.c.dep.html#CRMF_DoesRequestHaveField">CRMF_DoesRequestHaveField</a>(inCertReq, crmfValidity)) {
+<b><a name="835">  835</a></b>         return <a href="../crmf/servget.c.dep.html#crmf_copy_validity">crmf_copy_validity</a>(destValidity, 
+<b><a name="836">  836</a></b>                                   inCertReq-&gt;certTemplate.validity);
+<b><a name="837">  837</a></b>     }
+<b><a name="838">  838</a></b>     return SECFailure;
+<b><a name="839">  839</a></b> }
+<b><a name="840">  840</a></b> 
+<b><a name="841">  841</a></b> <a href="../crmf/crmft.h.dep.html#CRMFControl">CRMFControl</a>*
+<b><a name="842">  842</a></b> <a href="#842">CRMF_CertRequestGetControlAtIndex</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a> *inCertReq, int <a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a>)
+<b><a name="843">  843</a></b> {
+<b><a name="844">  844</a></b>     <a href="../crmf/crmft.h.dep.html#CRMFControl">CRMFControl</a> *newControl, *srcControl;
+<b><a name="845">  845</a></b>     int          numControls;
+<b><a name="846">  846</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a>    <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="847">  847</a></b> 
+<b><a name="848">  848</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReq != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="849">  849</a></b>     if (inCertReq == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="850">  850</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="851">  851</a></b>     }
+<b><a name="852">  852</a></b>     numControls = <a href="../crmf/crmfget.c.dep.html#CRMF_CertRequestGetNumControls">CRMF_CertRequestGetNumControls</a>(inCertReq);
+<b><a name="853">  853</a></b>     if (<a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a> &gt;= numControls || <a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a> &lt; 0) {
+<b><a name="854">  854</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="855">  855</a></b>     }
+<b><a name="856">  856</a></b>     newControl = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../crmf/crmft.h.dep.html#CRMFControl">CRMFControl</a>);
+<b><a name="857">  857</a></b>     if (newControl == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="858">  858</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="859">  859</a></b>     }
+<b><a name="860">  860</a></b>     srcControl = inCertReq-&gt;controls[<a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a>];
+<b><a name="861">  861</a></b>     newControl-&gt;<a href="../mozilla/nsprpub/pr/tests/system.c.dep.html#tag">tag</a> = srcControl-&gt;<a href="../mozilla/nsprpub/pr/tests/system.c.dep.html#tag">tag</a>;
+<b><a name="862">  862</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secitem.c.dep.html#SECITEM_CopyItem">SECITEM_CopyItem</a> (<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, &amp;newControl-&gt;derTag, &amp;srcControl-&gt;derTag);
+<b><a name="863">  863</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="864">  864</a></b>         goto loser;
+<b><a name="865">  865</a></b>     }
+<b><a name="866">  866</a></b> 
+<b><a name="867">  867</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../util/secitem.c.dep.html#SECITEM_CopyItem">SECITEM_CopyItem</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, &amp;newControl-&gt;derValue, 
+<b><a name="868">  868</a></b>                           &amp;srcControl-&gt;derValue);
+<b><a name="869">  869</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="870">  870</a></b>         goto loser;
+<b><a name="871">  871</a></b>     }
+<b><a name="872">  872</a></b>     /* Copy over the PKIArchiveOptions stuff */
+<b><a name="873">  873</a></b>     switch (srcControl-&gt;<a href="../mozilla/nsprpub/pr/tests/system.c.dep.html#tag">tag</a>) {
+<b><a name="874">  874</a></b>     case SEC_OID_PKIX_REGCTRL_REGTOKEN:
+<b><a name="875">  875</a></b>     case SEC_OID_PKIX_REGCTRL_AUTHENTICATOR:
+<b><a name="876">  876</a></b>         /* No further processing necessary for these types. */
+<b><a name="877">  877</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="878">  878</a></b>         break;
+<b><a name="879">  879</a></b>     case SEC_OID_PKIX_REGCTRL_OLD_CERT_ID:
+<b><a name="880">  880</a></b>     case SEC_OID_PKIX_REGCTRL_PKIPUBINFO:
+<b><a name="881">  881</a></b>     case SEC_OID_PKIX_REGCTRL_PROTOCOL_ENC_KEY:
+<b><a name="882">  882</a></b>         /* These aren't supported yet, so no post-processing will
+<b><a name="883">  883</a></b>          * be done at this time.  But we don't want to fail in case
+<b><a name="884">  884</a></b>          * we read in DER that has one of these options.
+<b><a name="885">  885</a></b>          */
+<b><a name="886">  886</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>;
+<b><a name="887">  887</a></b>         break;
+<b><a name="888">  888</a></b>     case SEC_OID_PKIX_REGCTRL_PKI_ARCH_OPTIONS:
+<b><a name="889">  889</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/crmfcont.c.dep.html#crmf_copy_pkiarchiveoptions">crmf_copy_pkiarchiveoptions</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 
+<b><a name="890">  890</a></b>                                          &amp;newControl-&gt;<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>.archiveOptions,
+<b><a name="891">  891</a></b>                                          &amp;srcControl-&gt;<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>.archiveOptions);
+<b><a name="892">  892</a></b>         break;
+<b><a name="893">  893</a></b>     default:
+<b><a name="894">  894</a></b>         <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = SECFailure;
+<b><a name="895">  895</a></b>     }
+<b><a name="896">  896</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="897">  897</a></b>         goto loser;
+<b><a name="898">  898</a></b>     }
+<b><a name="899">  899</a></b>     return newControl;
+<b><a name="900">  900</a></b>  loser:
+<b><a name="901">  901</a></b>     if (newControl != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="902">  902</a></b>         <a href="../crmf/crmfcont.c.dep.html#CRMF_DestroyControl">CRMF_DestroyControl</a>(newControl);
+<b><a name="903">  903</a></b>     }
+<b><a name="904">  904</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="905">  905</a></b> }
+<b><a name="906">  906</a></b> 
+<b><a name="907">  907</a></b> static <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*
+<b><a name="908">  908</a></b> <a href="#908">crmf_copy_control_value</a>(<a href="../crmf/crmft.h.dep.html#CRMFControl">CRMFControl</a> *inControl)
+<b><a name="909">  909</a></b> {
+<b><a name="910">  910</a></b>     return <a href="../util/secitem.c.dep.html#SECITEM_DupItem">SECITEM_DupItem</a>(&amp;inControl-&gt;derValue);
+<b><a name="911">  911</a></b> }
+<b><a name="912">  912</a></b> 
+<b><a name="913">  913</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*
+<b><a name="914">  914</a></b> <a href="#914">CRMF_ControlGetAuthenticatorControlValue</a>(<a href="../crmf/crmft.h.dep.html#CRMFControl">CRMFControl</a> *inControl)
+<b><a name="915">  915</a></b> {
+<b><a name="916">  916</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a> (inControl!= <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="917">  917</a></b>     if (inControl == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> ||
+<b><a name="918">  918</a></b>         <a href="../crmf/servget.c.dep.html#CRMF_ControlGetControlType">CRMF_ControlGetControlType</a>(inControl) != crmfAuthenticatorControl) {
+<b><a name="919">  919</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="920">  920</a></b>     }
+<b><a name="921">  921</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_copy_control_value">crmf_copy_control_value</a>(inControl);
+<b><a name="922">  922</a></b> }
+<b><a name="923">  923</a></b> 
+<b><a name="924">  924</a></b> <a href="../crmf/crmft.h.dep.html#CRMFControlType">CRMFControlType</a>
+<b><a name="925">  925</a></b> <a href="#925">CRMF_ControlGetControlType</a>(<a href="../crmf/crmft.h.dep.html#CRMFControl">CRMFControl</a> *inControl)
+<b><a name="926">  926</a></b> {
+<b><a name="927">  927</a></b>     <a href="../crmf/crmft.h.dep.html#CRMFControlType">CRMFControlType</a> retType;
+<b><a name="928">  928</a></b> 
+<b><a name="929">  929</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inControl != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="930">  930</a></b>     switch (inControl-&gt;<a href="../mozilla/nsprpub/pr/tests/system.c.dep.html#tag">tag</a>) {
+<b><a name="931">  931</a></b>     case SEC_OID_PKIX_REGCTRL_REGTOKEN:
+<b><a name="932">  932</a></b>         retType = crmfRegTokenControl;
+<b><a name="933">  933</a></b>         break;
+<b><a name="934">  934</a></b>     case SEC_OID_PKIX_REGCTRL_AUTHENTICATOR:
+<b><a name="935">  935</a></b>         retType = crmfAuthenticatorControl;
+<b><a name="936">  936</a></b>         break;
+<b><a name="937">  937</a></b>     case SEC_OID_PKIX_REGCTRL_PKIPUBINFO:
+<b><a name="938">  938</a></b>         retType = crmfPKIPublicationInfoControl;
+<b><a name="939">  939</a></b>         break;
+<b><a name="940">  940</a></b>     case SEC_OID_PKIX_REGCTRL_PKI_ARCH_OPTIONS:
+<b><a name="941">  941</a></b>         retType = crmfPKIArchiveOptionsControl;
+<b><a name="942">  942</a></b>         break;
+<b><a name="943">  943</a></b>     case SEC_OID_PKIX_REGCTRL_OLD_CERT_ID:
+<b><a name="944">  944</a></b>         retType = crmfOldCertIDControl;
+<b><a name="945">  945</a></b>         break;
+<b><a name="946">  946</a></b>     case SEC_OID_PKIX_REGCTRL_PROTOCOL_ENC_KEY:
+<b><a name="947">  947</a></b>         retType = crmfProtocolEncrKeyControl;
+<b><a name="948">  948</a></b>         break;
+<b><a name="949">  949</a></b>     default:
+<b><a name="950">  950</a></b>         retType = crmfNoControl;
+<b><a name="951">  951</a></b>     }
+<b><a name="952">  952</a></b>     return retType;
+<b><a name="953">  953</a></b> }
+<b><a name="954">  954</a></b> 
+<b><a name="955">  955</a></b> <a href="../crmf/crmft.h.dep.html#CRMFPKIArchiveOptions">CRMFPKIArchiveOptions</a>*
+<b><a name="956">  956</a></b> <a href="#956">CRMF_ControlGetPKIArchiveOptions</a>(<a href="../crmf/crmft.h.dep.html#CRMFControl">CRMFControl</a> *inControl)
+<b><a name="957">  957</a></b> {
+<b><a name="958">  958</a></b>     <a href="../crmf/crmft.h.dep.html#CRMFPKIArchiveOptions">CRMFPKIArchiveOptions</a> *newOpt = <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="959">  959</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>;
+<b><a name="960">  960</a></b> 
+<b><a name="961">  961</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inControl != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="962">  962</a></b>     if (inControl == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> ||
+<b><a name="963">  963</a></b>         <a href="../crmf/servget.c.dep.html#CRMF_ControlGetControlType">CRMF_ControlGetControlType</a>(inControl) != crmfPKIArchiveOptionsControl){
+<b><a name="964">  964</a></b>         goto loser;
+<b><a name="965">  965</a></b>     }
+<b><a name="966">  966</a></b>     newOpt = <a href="../util/secport.h.dep.html#PORT_ZNew">PORT_ZNew</a>(<a href="../crmf/crmft.h.dep.html#CRMFPKIArchiveOptions">CRMFPKIArchiveOptions</a>);
+<b><a name="967">  967</a></b>     if (newOpt == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="968">  968</a></b>         goto loser;
+<b><a name="969">  969</a></b>     }
+<b><a name="970">  970</a></b>     <a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> = <a href="../crmf/crmfcont.c.dep.html#crmf_copy_pkiarchiveoptions">crmf_copy_pkiarchiveoptions</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, newOpt, 
+<b><a name="971">  971</a></b>                                      &amp;inControl-&gt;<a href="../mozilla/security/nss/cmd/zlib/deflate.c.dep.html#value">value</a><a href="../mozilla/security/nss/cmd/zlib/inflate.c.dep.html#value"><sup>[1]</sup></a><a href="../mozilla/security/nss/cmd/zlib/trees.c.dep.html#value"><sup>[2]</sup></a>.archiveOptions);
+<b><a name="972">  972</a></b>     if (<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a> != <a href="../mozilla/security/nss/cmd/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>/selfse<a href="../mozilla/nsprpub/pr/tests/accept.c.dep.html#rv">rv</a><a href="../mozilla/nsprpub/pr/tests/sleep.c.dep.html#rv"><sup>[1]</sup></a>.c.dep.html#SECSuccess">SECSuccess</a>) {
+<b><a name="973">  973</a></b>         goto loser;
+<b><a name="974">  974</a></b>     }
+<b><a name="975">  975</a></b> 
+<b><a name="976">  976</a></b>  loser:
+<b><a name="977">  977</a></b>     if (newOpt != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>) {
+<b><a name="978">  978</a></b>         <a href="../crmf/crmfcont.c.dep.html#CRMF_DestroyPKIArchiveOptions">CRMF_DestroyPKIArchiveOptions</a>(newOpt);
+<b><a name="979">  979</a></b>     }
+<b><a name="980">  980</a></b>     return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="981">  981</a></b> }
+<b><a name="982">  982</a></b> 
+<b><a name="983">  983</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>*
+<b><a name="984">  984</a></b> <a href="#984">CRMF_ControlGetRegTokenControlValue</a>(<a href="../crmf/crmft.h.dep.html#CRMFControl">CRMFControl</a> *inControl)
+<b><a name="985">  985</a></b> {
+<b><a name="986">  986</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inControl != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="987">  987</a></b>     if (inControl == <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a> ||
+<b><a name="988">  988</a></b>         <a href="../crmf/servget.c.dep.html#CRMF_ControlGetControlType">CRMF_ControlGetControlType</a>(inControl) != crmfRegTokenControl) {
+<b><a name="989">  989</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="990">  990</a></b>     }
+<b><a name="991">  991</a></b>     return <a href="../crmf/servget.c.dep.html#crmf_copy_control_value">crmf_copy_control_value</a>(inControl);;
+<b><a name="992">  992</a></b> }
+<b><a name="993">  993</a></b> 
+<b><a name="994">  994</a></b> <a href="../crmf/crmft.h.dep.html#CRMFCertExtension">CRMFCertExtension</a>*
+<b><a name="995">  995</a></b> <a href="#995">CRMF_CertRequestGetExtensionAtIndex</a>(<a href="../crmf/crmft.h.dep.html#CRMFCertRequest">CRMFCertRequest</a> *inCertReq,
+<b><a name="996">  996</a></b>                                     int              <a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a>)
+<b><a name="997">  997</a></b> {
+<b><a name="998">  998</a></b>     int numExtensions;
+<b><a name="999">  999</a></b> 
+<b><a name="1000"> 1000</a></b>     <a href="../util/secport.h.dep.html#PORT_Assert">PORT_Assert</a><a href="../util/utf8.c.dep.html#PORT_Assert"><sup>[1]</sup></a></a>(inCertReq != <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>);
+<b><a name="1001"> 1001</a></b>     numExtensions = <a href="../crmf/crmfget.c.dep.html#CRMF_CertRequestGetNumberOfExtensions">CRMF_CertRequestGetNumberOfExtensions</a>(inCertReq);
+<b><a name="1002"> 1002</a></b>     if (<a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a> &gt;= numExtensions || <a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a> &lt; 0) {
+<b><a name="1003"> 1003</a></b>         return <a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>;
+<b><a name="1004"> 1004</a></b>     }
+<b><a name="1005"> 1005</a></b>     return 
+<b><a name="1006"> 1006</a></b>       <a href="../crmf/respcmn.c.dep.html#crmf_copy_cert_extension">crmf_copy_cert_extension</a>(<a href="../mozilla/dbm/include/ncompat.h.dep.html#NULL">NULL</a>, 
+<b><a name="1007"> 1007</a></b>                                inCertReq-&gt;certTemplate.<a href="../mozilla/security/nss/cmd/signtool/signtool.c.dep.html#extensions">extensions</a><a href="../mozilla/security/nss/cmd/signtool/signtool.h.dep.html#extensions"><sup>[1]</sup></a>[<a href="../mozilla/dbm/include/ncompat.h.dep.html#index">index</a>]);
+<b><a name="1008"> 1008</a></b> }
+<b><a name="1009"> 1009</a></b> 
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

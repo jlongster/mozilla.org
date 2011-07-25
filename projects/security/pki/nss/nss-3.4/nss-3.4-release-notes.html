@@ -1,0 +1,443 @@
+<?php
+
+$html_title = 'NSS 3.4 Release Notes';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<meta name="GENERATOR"
+content="Mozilla/4.76 [en] (X11; U; SunOS 5.7 sun4u) [Netscape]">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>      
+<h2> NSS 3.4 Release Notes</h2>
+     </center>
+            
+<center>      
+<h3> 6 May 2002</h3>
+     </center>
+            
+<center><i><font size="-1">Newsgroup: <a
+ href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a></font></i></center>
+            
+<p> </p>
+         
+<hr>      
+<h3> Contents</h3>
+            
+<ul>
+      <li> <a href="#Introduction">Introduction</a></li>
+       <li> <a href="#distribution">Distribution Information</a></li>
+       <li> <a href="#bugsfixed">Bugs Fixed</a></li>
+       <li> <a href="#docs">Documentation</a></li>
+       <li> <a href="#changes">Changes Since NSS 3.3.2</a></li>
+       <li> <a href="#platforms">Platform Information</a></li>
+       <li> <a href="#issues">Known Bugs and Issues</a></li>
+       <li> <a href="#compatibility">Compatibility</a></li>
+       <li> <a href="#feedback">Feedback</a></li>
+           
+</ul>
+            
+<hr><a name="Introduction"></a>      
+<h3> Introduction</h3>
+      Network Security Services (NSS) 3.4 is a minor release with the following 
+  new features:<br>
+         
+<ul>
+       <li>A new function <tt>SSL_GetChannelInfo()</tt> that returns more 
+information  on an SSL channel than the <tt>SSL_SecurityStatus()</tt> function.</li>
+       <li>A new multi-process SSL server session cache implemented in shared 
+ memory.</li>
+       <li>AES ciphersuites for TLS.<br>
+       </li>
+       <li>PKCS #11 library database format.<br>
+       </li>
+         
+</ul>
+     In addition, NSS 3.4 contains a partial implementation of the core NSS 
+ 4.0 functions.  &nbsp;These new NSS 4.0 functions are not exposed but rather 
+ the current  NSS functions are emulated on top of them.<br>
+         
+<ul>
+             
+</ul>
+     NSS 3.4 is dual-licensed under the MPL and the GPL.      
+<p> </p>
+         
+<hr><a name="distribution"></a>      
+<h3> Distribution Information</h3>
+      The CVS tag for the NSS 3.4 release is <tt>NSS_3_4_RTM</tt>. &nbsp;It 
+ has  been certified with both NSPR 4.1.2 and NSPR 4.2.      
+<p>At the time of this writing, NSS 3.4.1 has been released, therefore we 
+ do not provide  the source tarball and binary distributions of NSS 3.4 on 
+ our ftp site. &nbsp;Please  refer to the <a
+ href="../nss-3.4.1/nss-3.4.1-release-notes.html">NSS 3.4.1 release notes</a> 
+ for the NSS 3.4.1 distribution information.</p>
+           
+<p> </p>
+         
+<hr><a name="bugsfixed"></a>      
+<h3> Bugs Fixed</h3>
+      For a list of all bugs that have been fixed in the NSS 3.4 release, 
+<a
+ href="http://bugzilla.mozilla.org/buglist.cgi?resolution=FIXED&amp;product=NSS&amp;target_milestone=3.4">click
+   here</a>.      
+<p> </p>
+         
+<hr><a name="docs"></a>      
+<h3> Documentation</h3>
+      For a list of the primary NSS documentation pages on mozilla.org, see 
+ <a href="../index.html#Documentation">NSS Documentation</a>. New and revised 
+ documents  available since the release of NSS 3.3 include the following: 
+     
+<ul>
+      <li> <a href="../nss-3.4.1/nss-3.4.1-build.html">Build Instructions 
+for  NSS  3.4.1</a> describe the new NSS 3.4.1 CVS tag and other minor changes 
+ since  NSS 3.3.2.</li>
+       <li> <a href="nss-3.4-functions.html">NSS 3.4 Public Functions</a> 
+summarizes   the APIs exported by the new shared libraries. These APIs are 
+guaranteed  to work with future versions of NSS shared libraries.</li>
+       <li> <a href="nss-3.4-algorithms.html">Encryption Technologies in
+NSS   3.4</a> summarizes the cryptographic algorithms implemented in NSS
+3.3.</li>
+           
+</ul>
+      Source may be viewed with a browser (via the LXR tool) at <a
+ href="http://lxr.mozilla.org/mozilla/source/security/nss/">http://lxr.mozilla.org/mozilla/source/security/nss/</a>
+       
+<p>The following tools are supported in this release: </p>
+         
+<ul>
+       <tt>certutil</tt> <br>
+       <tt>cmsutil</tt> <br>
+       <tt>modutil</tt> <br>
+       <tt>pk12util</tt> <br>
+       <tt>signtool</tt> <br>
+       <tt>signver</tt> <br>
+       <tt>ssltap</tt>     
+</ul>
+      For documentation and other information about these tools, see <a
+ href="../tools/">NSS Tools</a>.      
+<p> </p>
+         
+<hr><a name="changes"></a>      
+<h3> Changes Since NSS 3.3.2</h3>
+      For a list of changes introduced in NSS 3.3.2, see <a
+ href="../release_notes_332.html">NSS 3.3.2 Release Notes</a>.      
+<p>The sections that follow discuss specific changes since NSS 3.3.2 in more 
+  detail. </p>
+         
+<p> </p>
+         
+<h4>New NSS shared library</h4>
+ In previous NSS releases, the<i> softoken</i> was part of the NSS base shared 
+library (<tt>nss3</tt>). &nbsp;In NSS 3.4, the softoken becomes a separate 
+shared library (<tt>softokn3</tt>) that the NSS base shared library depends 
+on.<br>
+ <br>
+ The softoken shared library does not export any functions that NSS clients 
+call directly. Therefore, on most platforms NSS clients don't need to link
+with the softoken shared library explicitly.  They only need to link with
+the NSS base shared library (<tt>nss3</tt>) as before and the runtime loader
+will load the softoken shared library (an implicity dependency of <tt>nss3</tt>)
+automatically.  Special linker options may be required on some platforms.
+For example, on Linux the <tt>-rpath-link</tt> option for <tt>ld</tt> needs
+to be used.<br>
+ <br>
+ The name of the softoken shared library is<br>
+ 
+<ul>
+   <li><tt>libsoftokn3.so</tt> on Unix (except HP-UX);</li>
+   <li><tt>libsoftokn3.sl</tt> on HP-UX;</li>
+   <li><tt>softokn3.dll</tt> on Windows.<br>
+   </li>
+ 
+</ul>
+ 
+<h4>Obsolete NSS header files</h4>
+The following NSS header files are not exported in NSS 3.4.<br>
+<ul>
+  <li><tt>keydbt.h</tt>, <tt>keylow.h</tt>, <tt>keytboth.h</tt>, and <tt>keytlow.h</tt>:
+No NSS clients should depend on the contents of these header files. &nbsp;In
+NSS 3.4, the contents of these header files are only used by the softoken,
+so there is no point to export these headers, not even for other parts of
+NSS.</li>
+  <li><tt>nssckp.h</tt> and <tt>nsscku.h</tt>: The <tt>nssck*.h</tt> headers
+that used to include these two headers are now simply including the corresponding
+    <tt>pkcs11*.h</tt> headers, which are using <tt>pkcs11p.h</tt> and <tt>pkcs11u.h</tt>.
+So these two headers have been removed.</li>
+  <li><tt>secrngt.h</tt>: This header was empty.</li>
+</ul>
+<h4>New NSS header files</h4>
+NSS 3.4 has three new exported header files. In general NSS clients do not
+need to include these new headers directly.<br>
+<ul>
+  <li><tt>nssilckt.h</tt>: This file was split out from <tt>nssilock.h</tt>.
+    <tt>nssilock.h</tt> includes <tt>nssilckt.h</tt>.</li>
+  <li><tt>pkcs11n.h</tt>: This file was split out from <tt>pkcs11t.h</tt>
+for the NSS extensions to Cryptoki. <tt>pkcs11t.h</tt> includes <tt>pkcs11n.h</tt>.</li>
+  <li><tt>sslt.h</tt>: This file was split out from <tt>ssl.h</tt>. <tt>ssl.h</tt>
+includes <tt>sslt.h</tt>.<br>
+  </li>
+</ul>
+<h4> New NSS public functions</h4>
+      The new public functions exported by NSS 3.4 are described here.<br>
+   
+<ul>
+    <li><tt>SSL_GetChannelInfo()</tt>: returns assorted security state information
+ about the SSL connection, including the ciphersuite negotiated and information
+ about the keys used. This function is intended to supersede <tt>SSL_SecurityStatus()</tt>.</li>
+    <li><tt>SSL_GetCipherSuiteInfo()</tt>: returns detailed information about
+ the specified SSL/TLS ciphersuite.</li>
+    <li><tt>SSL_LocalCertificate()</tt>: returns a reference (that is, a
+reference-counted  pointer) to the <tt>CERTCertificate</tt> structure for
+the leaf certificate  that was sent to the peer during the last full handshake
+with the peer on  this SSL socket. &nbsp;To avoid leaks, the caller of this
+function should  destroy the reference by calling <tt>CERT_DestroyCertificate()</tt>
+when it is done with the reference.</li>
+    <li><tt>SSL_GetMaxServerCacheLocks()</tt> and <tt>SSL_SetMaxServerCacheLocks()</tt>:
+ these functions allow an SSL server to tune the number of locks used in
+the  SSL server session cache. &nbsp;Note that the implementation of these
+locks  is system dependent. &nbsp;On some systems, these locks are scarce
+resources.  &nbsp;The <tt>SSL_SetMaxServerCacheLocks()</tt> function is only
+useful prior  to the call that initializes the SSL server session cache,
+for example, <tt>SSL_ConfigServerSessionIDCache()</tt>  or <tt>SSL_ConfigMPServerSIDCache()</tt>.<br>
+    </li>
+   
+</ul>
+            
+<h4>New SSL Server Session Cache</h4>
+  The SSL server session cache has been reimplemented to use shared memory.
+ &nbsp;It is no longer necessary for a server to allocate a number of SSL
+server session cache entries that is many times bigger than the number of
+SSL sessions anticipated in a 24-hour period.<br>
+   
+<h4>New AES TLS ciphersuites supported</h4>
+      In NSS 3.4, the ciphersuites known formally as<br>
+   
+<ul>
+    <li><tt>TLS_DHE_DSS_WITH_AES_128_CBC_SHA</tt></li>
+    <li><tt>TLS_DHE_DSS_WITH_AES_256_CBC_SHA</tt></li>
+    <li><tt>TLS_DHE_RSA_WITH_AES_128_CBC_SHA</tt></li>
+    <li><tt>TLS_DHE_RSA_WITH_AES_256_CBC_SHA</tt></li>
+    <li><tt>TLS_RSA_WITH_AES_128_CBC_SHA</tt></li>
+    <li><tt>TLS_RSA_WITH_AES_256_CBC_SHA</tt></li>
+   
+</ul>
+  are now supported. To ensure that older programs do not use these new cipher
+ suites inadvertently,  these new cipher suites are NOT enabled by default.
+ Note that the DHE ciphersuites work only on the client side (there is no
+server-side implementation yet). Therefore, server products should not enable
+the DHE ciphersuites.  
+<p>To use these new cipher suites, an application must enable them explicitly
+   by a call to <tt>SSL_CipherPrefSetDefault</tt> or <tt>SSL_CipherPrefSet</tt>.
+   The new cipher suites are properly handled by the policy functions <tt>NSS_SetDomesticPolicy</tt>,
+   <tt>NSS_SetExportPolicy</tt>, and <tt>NSS_SetFrancePolicy</tt>.<font
+ color="#000000"> Applications that call <tt>SSL_CipherPolicySet</tt> instead 
+  of one of these three policy functions must also call <tt>SSL_CipherPolicySet</tt> 
+  for these new cipher suites if they wish to use these new cipher suites.</font>
+   </p>
+         
+<hr><a name="platforms"></a>      
+<h3> Platform Information</h3>
+     NSS is maintained on the platforms listed in the table. "Build" means
+ the   NSS team has built NSS on a machine with the specified OS. "Certified"
+  means the NSS team has run QA tests for NSS on a machine with the  specified 
+ OS.<br>
+       
+<table border="1">
+     <caption><br>
+      </caption><tbody>
+                 
+  </tbody>  <tbody>
+        <tr>
+     <td valign="CENTER"><b>Platform</b></td>
+      <td valign="CENTER"><b>Build</b></td>
+      <td valign="CENTER"><b>Certify</b></td>
+      <td valign="CENTER"><b>Compiler(s)</b></td>
+     </tr>
+      <tr>
+     <td valign="CENTER" rowspan="2" height="43">AIX</td>
+      <td valign="CENTER" height="43">4.3.3 (32 bit)</td>
+      <td valign="CENTER" height="43">4.3.3 <br>
+    4.3.3</td>
+      <td valign="CENTER" height="43">xlC/C++ 3.6.6</td>
+     </tr>
+      <tr>
+     <td valign="CENTER" height="9">4.3.3 (64 bit)</td>
+      <td valign="CENTER" height="9">4.3.3</td>
+      <td valign="CENTER" height="9">xlC/C++ 3.6.6</td>
+     </tr>
+      <tr>
+     <td valign="CENTER" height="61">Compaq Tru64</td>
+      <td valign="CENTER" height="61">5.0A</td>
+      <td valign="CENTER" height="61">5.0A&nbsp; <br>
+    5.1</td>
+      <td valign="CENTER" height="61">Compaq C V6.1-019</td>
+     </tr>
+      <tr>
+     <td valign="CENTER" rowspan="2" height="58">HP-UX</td>
+      <td valign="CENTER" height="58">11.0 (32 bit)</td>
+      <td valign="CENTER" height="58">11.0</td>
+      <td valign="CENTER" height="58">C compiler: A.11.01.00</td>
+     </tr>
+      <tr>
+     <td valign="CENTER" height="9">11.0 (64 bit)</td>
+      <td valign="CENTER" height="9">11.0</td>
+      <td valign="CENTER" height="9">C compiler A.11.01.00</td>
+     </tr>
+      <tr>
+     <td valign="CENTER">Linux 2.2</td>
+      <td valign="CENTER">Red Hat 6.0</td>
+      <td valign="CENTER">Red Hat 6.2</td>
+      <td valign="CENTER">egcs-1.1.2 <br>
+    GNU ld version 2.9.5 (with libbfd-2.9.5.0.22.so)</td>
+     </tr>
+      <tr>
+     <td>Linux 2.4</td>
+      <td>Red Hat 7.1</td>
+      <td>Red Hat 7.1</td>
+      <td>gcc version 2.96 20000731 (Red Hat Linux 7.1 2.96-81)</td>
+     </tr>
+      <tr>
+     <td valign="CENTER">NT</td>
+      <td valign="CENTER">NT 4.0 w/ SP 6a</td>
+      <td valign="CENTER">NT 4.0 w/ SP 6a&nbsp; <br>
+    Win2000 w/ SP 2</td>
+      <td valign="CENTER">VC++ 6.0 Service Pack 4</td>
+     </tr>
+      <tr>
+     <td>Windows</td>
+      <td>NT 4.0 w/ SP 6a</td>
+      <td>NT 4.0 w/ SP 6a&nbsp; <br>
+    Win2000 w/ SP 2                             
+      <p>Win95 OSR2 *&nbsp; <br>
+    Win98 SE *&nbsp; <br>
+    Win Me *</p>
+          </td>
+      <td>VC++ 6.0 Service Pack 4</td>
+     </tr>
+      <tr>
+     <td valign="CENTER" rowspan="3" height="66">Solaris SPARC</td>
+      <td valign="CENTER" height="66">2.6</td>
+      <td valign="CENTER" height="66">2.6</td>
+      <td valign="CENTER" height="66">WorkShop Compilers&nbsp; <br>
+    C/C++ version 5.0</td>
+     </tr>
+      <tr>
+     <td valign="CENTER" height="12">8 (32 bit)</td>
+      <td valign="CENTER" height="12">8 (32 bit) <br>
+    8 (64 bit) <br>
+    9</td>
+      <td valign="CENTER" height="12">Forte 6 update 2</td>
+     </tr>
+      <tr>
+     <td valign="CENTER" height="12">8 (64 bit)</td>
+      <td valign="CENTER" height="12">8 <br>
+    9</td>
+      <td valign="CENTER" height="12">Forte 6 update 2</td>
+     </tr>
+      <tr>
+     <td>Solaris x86</td>
+      <td>8</td>
+      <td>8 <br>
+    9</td>
+      <td>Forte 6 update 2</td>
+     </tr>
+      <tr>
+     <td>Mac OS</td>
+      <td>9</td>
+      <td>8.5 *&nbsp; <br>
+    8.6 *&nbsp; <br>
+    9 *</td>
+      <td>Metrowerks CodeWarrior Pro 5</td>
+     </tr>
+                 
+  </tbody>    
+</table>
+          
+<p>* Full QA certification will not be done on these platforms. We will only
+  verify that <a
+ href="http://www.mozilla.org/projects/security/pki/psm/">PSM</a>   built
+with NSS 3.3 works on these platforms. </p>
+       
+<p>** Optional. </p>
+       
+<p>NSS has not yet been formally tested or certified on any other platforms.
+   If you have successfully run NSS on other platforms, or if you are interested
+   in taking responsibility for testing and maintaining NSS on a particular
+  platform that's not listed above, post a message to <a
+ href="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</a>.
+   </p>
+         
+<p><b>Note about Windows NT builds:</b> The build listed in the left column
+   above as the "Windows NT" build runs on Windows NT (including Windows
+2000)    only and hence can potentially take advantage of some Win32 functions
+that    are only implemented on Windows NT, such as fibers and I/O completion
+ports.    The build listed above as the "Windows" build runs on all Windows
+flavors    -- 95, 98, Me, NT, and 2000. </p>
+         
+<p>Only NSPR makes use of this Windows NT vs. Windows distinction and provides
+   different Windows NT and Windows builds. Many Netscape products, including
+   NSS, have Windows NT and Windows builds that are essentially the same
+except    one difference: one is linked with the Windows NT version of NSPR
+and the    other is linked with the Windows version of NSPR. </p>
+         
+<p><b>Note to Macintosh Developers:</b> Due to a lack of resources, our team 
+  was unable to build and test NSS for the Macintosh platform. We are looking 
+  for help from any interested parties to test NSS 3.3 on Macintosh. For contact
+  information, please see the <a href="#feedback">Feedback</a> section. </p>
+         
+<p> </p>
+         
+<hr><a name="issues"></a>      
+<h3> Known Bugs and Issues</h3>
+      1. NSS 3.4 uses mozilla/dbm, which is based on Berkeley DB 1.85. Berkeley
+   DB 1.85 is released under the original BSD license, whose "advertising
+clause"  is incompatible with the GNU GPL.      
+<p>In a letter dated July 22, 1999, UC Berkeley announced that the advertising
+   clause is deleted from all the BSD Unix files (of any version of BSD)
+containing    the clause. (The announcement is available at <a
+ href="ftp://ftp.cs.berkeley.edu/ucb/4bsd/README.Impt.License.Change">ftp.cs.berkeley.edu/ucb/4bsd/README.Impt.License.Change.)</a>
+   The final (AT&amp;T proprietary) 4.4BSD release contained version 1.6
+of   Berkeley DB. The 4.4BSD-Lite2 release contained version 1.74 of Berkeley
+ DB. Since Berkeley DB 1.85 is not technically in any version of BSD (although
+  it is derived from the Berkeley DB files in 4.4BSD and 4.4BSD-Lite2), it
+ is not clear whether the Berkeley announcement means that the advertising
+ clause has been deleted from Berkeley DB 1.85. </p>
+         
+<p>2. For a list of reported bugs that have not been fixed in NSS 3.4, <a
+ href="http://bugzilla.mozilla.org/buglist.cgi?bug_status=UNCONFIRMED&amp;bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;chfieldto=Now&amp;product=NSS&amp;cmdtype=doit&amp;namedcmd=all+open+NSS+bugs&amp;newqueryname=&amp;order=Bug+Number">click
+   here.</a> (Note that not all of these bugs have been confirmed. Even some
+   bugs in the "new" state are unconfirmed.) <br>
+      </p>
+         
+<hr><a name="compatibility"></a>      
+<h3> Compatibility</h3>
+      NSS 3.4 shared libraries are backward compatible with NSS 3.2.x and 
+NSS   3.3.x shared libraries. A program linked with NSS 3.2.x or 3.3.x shared 
+libraries  will work with NSS 3.4 shared libraries without recompiling or 
+relinking.&nbsp;  Furthermore, applications that restrict their use of NSS 
+APIs to the functions  listed in <a href="nss-3.4-functions.html">NSS 3.4 
+Public Functions</a> will remain compatible with future versions of the NSS 
+shared libraries.      
+<p> </p>
+         
+<hr><a name="feedback"></a>      
+<h3> Feedback</h3>
+      Bugs discovered should be reported by filing a bug report with <a
+ href="http://bugzilla.mozilla.org/">bugzilla</a> (product NSS).      
+<p>You can also give feedback directly to the developers on the IRC channel
+   <tt>#mozcrypto</tt> on the server <tt>irc.mozilla.org</tt>. </p>
+         
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

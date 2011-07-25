@@ -1,0 +1,260 @@
+<?php
+
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<pre>
+<b><a name="1">    1</a></b> /* ***** BEGIN LICENSE BLOCK *****
+<b><a name="2">    2</a></b>  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+<b><a name="3">    3</a></b>  *
+<b><a name="4">    4</a></b>  * The contents of this file are subject to the Mozilla Public License Version
+<b><a name="5">    5</a></b>  * 1.1 (the "License"); you may not use this file except in compliance with
+<b><a name="6">    6</a></b>  * the License. You may obtain a copy of the License at
+<b><a name="7">    7</a></b>  * http://www.mozilla.org/MPL/
+<b><a name="8">    8</a></b>  *
+<b><a name="9">    9</a></b>  * Software distributed under the License is distributed on an "AS IS" basis,
+<b><a name="10">   10</a></b>  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+<b><a name="11">   11</a></b>  * for the specific language governing rights and limitations under the
+<b><a name="12">   12</a></b>  * License.
+<b><a name="13">   13</a></b>  *
+<b><a name="14">   14</a></b>  * The Original Code is the Netscape security libraries.
+<b><a name="15">   15</a></b>  *
+<b><a name="16">   16</a></b>  * The Initial Developer of the Original Code is
+<b><a name="17">   17</a></b>  * Netscape Communications Corporation.
+<b><a name="18">   18</a></b>  * Portions created by the Initial Developer are Copyright (C) 1994-2000
+<b><a name="19">   19</a></b>  * the Initial Developer. All Rights Reserved.
+<b><a name="20">   20</a></b>  *
+<b><a name="21">   21</a></b>  * Contributor(s):
+<b><a name="22">   22</a></b>  *
+<b><a name="23">   23</a></b>  * Alternatively, the contents of this file may be used under the terms of
+<b><a name="24">   24</a></b>  * either the GNU General Public License Version 2 or later (the "GPL"), or
+<b><a name="25">   25</a></b>  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+<b><a name="26">   26</a></b>  * in which case the provisions of the GPL or the LGPL are applicable instead
+<b><a name="27">   27</a></b>  * of those above. If you wish to allow use of your version of this file only
+<b><a name="28">   28</a></b>  * under the terms of either the GPL or the LGPL, and not to allow others to
+<b><a name="29">   29</a></b>  * use your version of this file under the terms of the MPL, indicate your
+<b><a name="30">   30</a></b>  * decision by deleting the provisions above and replace them with the notice
+<b><a name="31">   31</a></b>  * and other provisions required by the GPL or the LGPL. If you do not delete
+<b><a name="32">   32</a></b>  * the provisions above, a recipient may use your version of this file under
+<b><a name="33">   33</a></b>  * the terms of any one of the MPL, the GPL or the LGPL.
+<b><a name="34">   34</a></b>  *
+<b><a name="35">   35</a></b>  * ***** END LICENSE BLOCK ***** */
+<b><a name="36">   36</a></b> /* $Id$ */
+<b><a name="37">   37</a></b> #include "secdig.h"
+<b><a name="38">   38</a></b> 
+<b><a name="39">   39</a></b> #include "secoid.h"
+<b><a name="40">   40</a></b> #include "secasn1.h" 
+<b><a name="41">   41</a></b> #include "secerr.h"
+<b><a name="42">   42</a></b> 
+<b><a name="43">   43</a></b> /*
+<b><a name="44">   44</a></b>  * XXX OLD Template.  Once all uses have been switched over to new one,
+<b><a name="45">   45</a></b>  * remove this.
+<b><a name="46">   46</a></b>  */
+<b><a name="47">   47</a></b> <a href="../util/secdert.h.dep.html#DERTemplate">DERTemplate</a> <a href="#47">SGNDigestInfoTemplate</a>[] = {
+<b><a name="48">   48</a></b>     { <a href="../util/secdert.h.dep.html#DER_SEQUENCE">DER_SEQUENCE</a>,
+<b><a name="49">   49</a></b>           0, NULL, sizeof(<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>) },
+<b><a name="50">   50</a></b>     { <a href="../util/secdert.h.dep.html#DER_INLINE">DER_INLINE</a>,
+<b><a name="51">   51</a></b>           offsetof(<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>,digestAlgorithm),
+<b><a name="52">   52</a></b>           <a href="../util/secalgid.c.dep.html#SECAlgorithmIDTemplate">SECAlgorithmIDTemplate</a><a href="../util/secdert.h.dep.html#SECAlgorithmIDTemplate"><sup>[1]</sup></a>, },
+<b><a name="53">   53</a></b>     { <a href="../util/secdert.h.dep.html#DER_OCTET_STRING">DER_OCTET_STRING</a>,
+<b><a name="54">   54</a></b>           offsetof(<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>,digest), },
+<b><a name="55">   55</a></b>     { 0, }
+<b><a name="56">   56</a></b> };
+<b><a name="57">   57</a></b> 
+<b><a name="58">   58</a></b> /* XXX See comment below about SGN_DecodeDigestInfo -- keep this static! */
+<b><a name="59">   59</a></b> /* XXX Changed from static -- need to change name? */
+<b><a name="60">   60</a></b> const <a href="../util/secasn1t.h.dep.html#SEC_ASN1Template">SEC_ASN1Template</a> <a href="#60">sgn_DigestInfoTemplate</a>[] = {
+<b><a name="61">   61</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_SEQUENCE">SEC_ASN1_SEQUENCE</a>,
+<b><a name="62">   62</a></b>           0, NULL, sizeof(<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>) },
+<b><a name="63">   63</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_INLINE">SEC_ASN1_INLINE</a>,
+<b><a name="64">   64</a></b>           offsetof(<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>,digestAlgorithm),
+<b><a name="65">   65</a></b>           <a href="../util/secalgid.c.dep.html#SECOID_AlgorithmIDTemplate">SECOID_AlgorithmIDTemplate</a><a href="../util/secoid.h.dep.html#SECOID_AlgorithmIDTemplate"><sup>[1]</sup></a> },
+<b><a name="66">   66</a></b>     { <a href="../util/secasn1t.h.dep.html#SEC_ASN1_OCTET_STRING">SEC_ASN1_OCTET_STRING</a>,
+<b><a name="67">   67</a></b>           offsetof(<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>,digest) },
+<b><a name="68">   68</a></b>     { 0 }
+<b><a name="69">   69</a></b> };
+<b><a name="70">   70</a></b> 
+<b><a name="71">   71</a></b> <a href="../util/secasn1t.h.dep.html#SEC_ASN1_CHOOSER_IMPLEMENT">SEC_ASN1_CHOOSER_IMPLEMENT</a>(<a href="../util/secdig.c.dep.html#sgn_DigestInfoTemplate">sgn_DigestInfoTemplate</a><a href="../util/secdig.h.dep.html#sgn_DigestInfoTemplate"><sup>[1]</sup></a>)
+<b><a name="72">   72</a></b> 
+<b><a name="73">   73</a></b> /*
+<b><a name="74">   74</a></b>  * XXX Want to have a SGN_DecodeDigestInfo, like:
+<b><a name="75">   75</a></b>  *        SGNDigestInfo *SGN_DecodeDigestInfo(SECItem *didata);
+<b><a name="76">   76</a></b>  * that creates a pool and allocates from it and decodes didata into
+<b><a name="77">   77</a></b>  * the newly allocated DigestInfo structure.  Then fix secvfy.c (it
+<b><a name="78">   78</a></b>  * will no longer need an arena itself) to call this and then call
+<b><a name="79">   79</a></b>  * DestroyDigestInfo when it is done, then can remove the old template
+<b><a name="80">   80</a></b>  * above and keep our new template static and "hidden".
+<b><a name="81">   81</a></b>  */
+<b><a name="82">   82</a></b> 
+<b><a name="83">   83</a></b> /*
+<b><a name="84">   84</a></b>  * XXX It might be nice to combine the following two functions (create
+<b><a name="85">   85</a></b>  * and encode).  I think that is all anybody ever wants to do anyway.
+<b><a name="86">   86</a></b>  */
+<b><a name="87">   87</a></b> 
+<b><a name="88">   88</a></b> <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *
+<b><a name="89">   89</a></b> <a href="#89">SGN_EncodeDigestInfo</a>(PRArenaPool *poolp, <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *dest, <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *diginfo)
+<b><a name="90">   90</a></b> {
+<b><a name="91">   91</a></b>     return <a href="../util/secasn1e.c.dep.html#SEC_ASN1EncodeItem">SEC_ASN1EncodeItem</a> (poolp, dest, diginfo, <a href="../util/secdig.c.dep.html#sgn_DigestInfoTemplate">sgn_DigestInfoTemplate</a><a href="../util/secdig.h.dep.html#sgn_DigestInfoTemplate"><sup>[1]</sup></a>);
+<b><a name="92">   92</a></b> }
+<b><a name="93">   93</a></b> 
+<b><a name="94">   94</a></b> <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *
+<b><a name="95">   95</a></b> <a href="#95">SGN_CreateDigestInfo</a>(<a href="../util/secoidt.h.dep.html#SECOidTag">SECOidTag</a> algorithm, unsigned char *sig, unsigned len)
+<b><a name="96">   96</a></b> {
+<b><a name="97">   97</a></b>     <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *di;
+<b><a name="98">   98</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv;
+<b><a name="99">   99</a></b>     PRArenaPool *arena;
+<b><a name="100">  100</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *null_param;
+<b><a name="101">  101</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> dummy_value;
+<b><a name="102">  102</a></b> 
+<b><a name="103">  103</a></b>     switch (algorithm) {
+<b><a name="104">  104</a></b>       case SEC_OID_MD2:
+<b><a name="105">  105</a></b>       case SEC_OID_MD5:
+<b><a name="106">  106</a></b>       case SEC_OID_SHA1:
+<b><a name="107">  107</a></b>       case SEC_OID_SHA256:
+<b><a name="108">  108</a></b>       case SEC_OID_SHA384:
+<b><a name="109">  109</a></b>       case SEC_OID_SHA512:
+<b><a name="110">  110</a></b>         break;
+<b><a name="111">  111</a></b>       default:
+<b><a name="112">  112</a></b>         <a href="../util/secport.c.dep.html#PORT_SetError">PORT_SetError</a>(SEC_ERROR_INVALID_ALGORITHM);
+<b><a name="113">  113</a></b>         return NULL;
+<b><a name="114">  114</a></b>     }
+<b><a name="115">  115</a></b> 
+<b><a name="116">  116</a></b>     arena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../util/secdert.h.dep.html#DER_DEFAULT_CHUNKSIZE">DER_DEFAULT_CHUNKSIZE</a>);
+<b><a name="117">  117</a></b>     if (arena == NULL) {
+<b><a name="118">  118</a></b>         return NULL;
+<b><a name="119">  119</a></b>     }
+<b><a name="120">  120</a></b> 
+<b><a name="121">  121</a></b>     di = (<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *) <a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, sizeof(<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>));
+<b><a name="122">  122</a></b>     if (di == NULL) {
+<b><a name="123">  123</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(arena, PR_FALSE);
+<b><a name="124">  124</a></b>         return NULL;
+<b><a name="125">  125</a></b>     }
+<b><a name="126">  126</a></b> 
+<b><a name="127">  127</a></b>     di-&gt;arena = arena;
+<b><a name="128">  128</a></b> 
+<b><a name="129">  129</a></b>     /*
+<b><a name="130">  130</a></b>      * PKCS #1 specifies that the AlgorithmID must have a NULL parameter
+<b><a name="131">  131</a></b>      * (as opposed to no parameter at all).
+<b><a name="132">  132</a></b>      */
+<b><a name="133">  133</a></b>     dummy_value.data = NULL;
+<b><a name="134">  134</a></b>     dummy_value.len = 0;
+<b><a name="135">  135</a></b>     null_param = <a href="../util/secasn1e.c.dep.html#SEC_ASN1EncodeItem">SEC_ASN1EncodeItem</a>(NULL, NULL, &amp;dummy_value, <a href="../util/secasn1.h.dep.html#SEC_NullTemplate">SEC_NullTemplate</a><a href="../util/secasn1d.c.dep.html#SEC_NullTemplate"><sup>[1]</sup></a>);
+<b><a name="136">  136</a></b>     if (null_param == NULL) {
+<b><a name="137">  137</a></b>         goto loser;
+<b><a name="138">  138</a></b>     }
+<b><a name="139">  139</a></b> 
+<b><a name="140">  140</a></b>     rv = <a href="../util/secalgid.c.dep.html#SECOID_SetAlgorithmID">SECOID_SetAlgorithmID</a>(arena, &amp;di-&gt;digestAlgorithm, algorithm,
+<b><a name="141">  141</a></b>                                null_param);
+<b><a name="142">  142</a></b> 
+<b><a name="143">  143</a></b>     <a href="../util/secitem.c.dep.html#SECITEM_FreeItem">SECITEM_FreeItem</a>(null_param, PR_TRUE);
+<b><a name="144">  144</a></b> 
+<b><a name="145">  145</a></b>     if (rv != SECSuccess) {
+<b><a name="146">  146</a></b>         goto loser;
+<b><a name="147">  147</a></b>     }
+<b><a name="148">  148</a></b> 
+<b><a name="149">  149</a></b>     di-&gt;digest.data = (unsigned char *) <a href="../util/secport.c.dep.html#PORT_ArenaAlloc">PORT_ArenaAlloc</a>(arena, len);
+<b><a name="150">  150</a></b>     if (di-&gt;digest.data == NULL) {
+<b><a name="151">  151</a></b>         goto loser;
+<b><a name="152">  152</a></b>     }
+<b><a name="153">  153</a></b> 
+<b><a name="154">  154</a></b>     di-&gt;digest.len = len;
+<b><a name="155">  155</a></b>     <a href="../util/secport.h.dep.html#PORT_Memcpy">PORT_Memcpy</a>(di-&gt;digest.data, sig, len);
+<b><a name="156">  156</a></b>     return di;
+<b><a name="157">  157</a></b> 
+<b><a name="158">  158</a></b>   loser:
+<b><a name="159">  159</a></b>     <a href="../util/secdig.c.dep.html#SGN_DestroyDigestInfo">SGN_DestroyDigestInfo</a>(di);
+<b><a name="160">  160</a></b>     return NULL;
+<b><a name="161">  161</a></b> }
+<b><a name="162">  162</a></b> 
+<b><a name="163">  163</a></b> <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *
+<b><a name="164">  164</a></b> <a href="#164">SGN_DecodeDigestInfo</a>(<a href="../util/seccomon.h.dep.html#SECItem">SECItem</a> *didata)
+<b><a name="165">  165</a></b> {
+<b><a name="166">  166</a></b>     PRArenaPool *arena;
+<b><a name="167">  167</a></b>     <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *di;
+<b><a name="168">  168</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv = SECFailure;
+<b><a name="169">  169</a></b>     <a href="../util/seccomon.h.dep.html#SECItem">SECItem</a>      diCopy   = {siBuffer, NULL, 0};
+<b><a name="170">  170</a></b> 
+<b><a name="171">  171</a></b>     arena = <a href="../util/secport.c.dep.html#PORT_NewArena">PORT_NewArena</a>(<a href="../util/secasn1t.h.dep.html#SEC_ASN1_DEFAULT_ARENA_SIZE">SEC_ASN1_DEFAULT_ARENA_SIZE</a>);
+<b><a name="172">  172</a></b>     if(arena == NULL)
+<b><a name="173">  173</a></b>         return NULL;
+<b><a name="174">  174</a></b> 
+<b><a name="175">  175</a></b>     rv = <a href="../util/secitem.c.dep.html#SECITEM_CopyItem">SECITEM_CopyItem</a>(arena, &amp;diCopy, didata);
+<b><a name="176">  176</a></b>     if (rv != SECSuccess) {
+<b><a name="177">  177</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(arena, PR_FALSE);
+<b><a name="178">  178</a></b>             return NULL;
+<b><a name="179">  179</a></b>     }
+<b><a name="180">  180</a></b> 
+<b><a name="181">  181</a></b>     di = (<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *)<a href="../util/secport.c.dep.html#PORT_ArenaZAlloc">PORT_ArenaZAlloc</a>(arena, sizeof(<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a>));
+<b><a name="182">  182</a></b>     if (di != NULL) {
+<b><a name="183">  183</a></b>         di-&gt;arena = arena;
+<b><a name="184">  184</a></b>         rv = <a href="../util/quickder.c.dep.html#SEC_QuickDERDecodeItem">SEC_QuickDERDecodeItem</a>(arena, di, <a href="../util/secdig.c.dep.html#sgn_DigestInfoTemplate">sgn_DigestInfoTemplate</a><a href="../util/secdig.h.dep.html#sgn_DigestInfoTemplate"><sup>[1]</sup></a>, &amp;diCopy);
+<b><a name="185">  185</a></b>     }
+<b><a name="186">  186</a></b>         
+<b><a name="187">  187</a></b>     if ((di == NULL) || (rv != SECSuccess)) {
+<b><a name="188">  188</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(arena, PR_FALSE);
+<b><a name="189">  189</a></b>         di = NULL;
+<b><a name="190">  190</a></b>     }
+<b><a name="191">  191</a></b> 
+<b><a name="192">  192</a></b>     return di;
+<b><a name="193">  193</a></b> }
+<b><a name="194">  194</a></b> 
+<b><a name="195">  195</a></b> void
+<b><a name="196">  196</a></b> <a href="#196">SGN_DestroyDigestInfo</a>(<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *di)
+<b><a name="197">  197</a></b> {
+<b><a name="198">  198</a></b>     if (di &amp;&amp; di-&gt;arena) {
+<b><a name="199">  199</a></b>         <a href="../util/secport.c.dep.html#PORT_FreeArena">PORT_FreeArena</a>(di-&gt;arena, PR_FALSE);
+<b><a name="200">  200</a></b>     }
+<b><a name="201">  201</a></b> 
+<b><a name="202">  202</a></b>     return;
+<b><a name="203">  203</a></b> }
+<b><a name="204">  204</a></b> 
+<b><a name="205">  205</a></b> <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> 
+<b><a name="206">  206</a></b> <a href="#206">SGN_CopyDigestInfo</a>(PRArenaPool *poolp, <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *a, <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *b)
+<b><a name="207">  207</a></b> {
+<b><a name="208">  208</a></b>     <a href="../util/seccomon.h.dep.html#SECStatus">SECStatus</a> rv;
+<b><a name="209">  209</a></b>     void *mark;
+<b><a name="210">  210</a></b> 
+<b><a name="211">  211</a></b>     if((poolp == NULL) || (a == NULL) || (b == NULL))
+<b><a name="212">  212</a></b>         return SECFailure;
+<b><a name="213">  213</a></b> 
+<b><a name="214">  214</a></b>     mark = <a href="../util/secport.c.dep.html#PORT_ArenaMark">PORT_ArenaMark</a>(poolp);
+<b><a name="215">  215</a></b>     a-&gt;arena = poolp;
+<b><a name="216">  216</a></b>     rv = <a href="../util/secalgid.c.dep.html#SECOID_CopyAlgorithmID">SECOID_CopyAlgorithmID</a>(poolp, &amp;a-&gt;digestAlgorithm, 
+<b><a name="217">  217</a></b>         &amp;b-&gt;digestAlgorithm);
+<b><a name="218">  218</a></b>     if (rv == SECSuccess)
+<b><a name="219">  219</a></b>         rv = <a href="../util/secitem.c.dep.html#SECITEM_CopyItem">SECITEM_CopyItem</a>(poolp, &amp;a-&gt;digest, &amp;b-&gt;digest);
+<b><a name="220">  220</a></b> 
+<b><a name="221">  221</a></b>     if (rv != SECSuccess) {
+<b><a name="222">  222</a></b>         <a href="../util/secport.c.dep.html#PORT_ArenaRelease">PORT_ArenaRelease</a>(poolp, mark);
+<b><a name="223">  223</a></b>     } else {
+<b><a name="224">  224</a></b>         <a href="../util/secport.c.dep.html#PORT_ArenaUnmark">PORT_ArenaUnmark</a>(poolp, mark);
+<b><a name="225">  225</a></b>     }
+<b><a name="226">  226</a></b> 
+<b><a name="227">  227</a></b>     return rv;
+<b><a name="228">  228</a></b> }
+<b><a name="229">  229</a></b> 
+<b><a name="230">  230</a></b> <a href="../util/seccomon.h.dep.html#SECComparison">SECComparison</a>
+<b><a name="231">  231</a></b> <a href="#231">SGN_CompareDigestInfo</a>(<a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *a, <a href="../util/secdigt.h.dep.html#SGNDigestInfo">SGNDigestInfo</a> *b)
+<b><a name="232">  232</a></b> {
+<b><a name="233">  233</a></b>     <a href="../util/seccomon.h.dep.html#SECComparison">SECComparison</a> rv;
+<b><a name="234">  234</a></b> 
+<b><a name="235">  235</a></b>     /* Check signature algorithm's */
+<b><a name="236">  236</a></b>     rv = <a href="../util/secalgid.c.dep.html#SECOID_CompareAlgorithmID">SECOID_CompareAlgorithmID</a>(&amp;a-&gt;digestAlgorithm, &amp;b-&gt;digestAlgorithm);
+<b><a name="237">  237</a></b>     if (rv) return rv;
+<b><a name="238">  238</a></b> 
+<b><a name="239">  239</a></b>     /* Compare signature block length's */
+<b><a name="240">  240</a></b>     rv = <a href="../util/secitem.c.dep.html#SECITEM_CompareItem">SECITEM_CompareItem</a>(&amp;a-&gt;digest, &amp;b-&gt;digest);
+<b><a name="241">  241</a></b>     return rv;
+<b><a name="242">  242</a></b> }
+</pre>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

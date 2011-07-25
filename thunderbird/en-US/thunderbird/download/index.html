@@ -1,0 +1,196 @@
+<?php
+    // The $body_* variables are for compatibility with pre-existing css
+    $page_title = 'Mozilla Download';
+    $body_id    = 'download';
+    $body_class = '';
+    $extra_headers = <<<EXTRA_HEADERS
+    <link rel="stylesheet" type="text/css" href="{$config['static_prefix']}/style/download-page.css" media="screen" />
+EXTRA_HEADERS;
+    @include_once "{$config['file_root']}/{$lang}/includes/header.inc.php";
+    
+function defaultDownloadBlock($detailsObject) {
+	echo "<div id=\"main-feature\">
+			  <h2>Thanks for choosing <span>Thunderbird</span> </h2>
+		  </div>
+		  <div id=\"content\">
+		  	<h3>Download Thunderbird (English)</h3>
+		  	"	. $detailsObject->getDownloadBlockForLocale('en-US', array('include_js'	=> false, 'download_product' => '')) . "
+		  </div> <!--	end	#content  -->";
+}
+
+echo '<div id="download-message">';
+
+if (!isset($_GET['os'])	|| !isset($_GET['product'])	|| !isset($_GET['lang'])) {
+	defaultDownloadBlock($thunderbirdDetails);
+}
+else {
+	echo '<noscript	id="download-noscript">';
+	defaultDownloadBlock($thunderbirdDetails);
+	echo '</noscript>';
+}
+?>
+
+<script type="text/javascript" src="<?=$config['static_prefix']?>/js/download.js"></script>
+<script type="text/javascript">// <![CDATA[
+var download_parent_override = 'content';
+if (false && ('function' == typeof window.replaceDownloadLinksForId)) {
+replaceDownloadLinksForId(download_parent_override);
+}
+if ('function' == typeof window.offerBestDownloadLink) {
+offerBestDownloadLink(download_parent_override);
+}
+// ]]></script> 
+<script type="text/javascript">// <![CDATA[
+	function parseGETVars()
+	{
+		var qs = location.search.substring(1);
+		if (qs.match(/[^-&=a-zA-Z0-9\.]/))
+			return false;
+
+		var nv = qs.split('&');
+		var url = {};
+		for(i = 0; i < nv.length; i++) {
+			var eq = nv[i].indexOf('=');
+			url[nv[i].substring(0,eq).toLowerCase()] = unescape(nv[i].substring(eq + 1));
+		}
+
+		return url;
+	}
+
+	var download_url = '';
+
+	function initDownload()
+	{
+		// 1. Grab vars from URL (PRODUCT, OS, and LANG)
+		var get = parseGETVars();
+
+		var product = (get['product']) ? get['product'] : null;
+		var os      = (get['os'])      ? get['os']      : null;
+		var lang    = (get['lang'])    ? get['lang']    : null;
+
+		var div = document.getElementById('download-message');
+
+		if (!product || !os || !lang) {
+			// Not all vars were specified, just return and don't modify any content.
+			return;
+		}
+
+		var product_split = product.split('-');
+		var product_name = product_split[0];
+		var product_version = product_split[1];
+		var product_title = 'Thunderbird';
+		var promotion_msg = '';
+
+		switch (product_name) {
+			case 'thunderbird' :
+				product_title = 'Thunderbird';
+				switch (os) {
+					case 'win' :
+						promotion_msg = '<ol class="install-steps">' +
+							'<li class="one">' +
+							'<img src="/thunderbird/img/tb5/download/one_win.png" alt="Step 1" height="182" width="263" />' +
+							'<div class="column1">' +
+							'<p>Start the process by clicking Run.</p>' +
+							'<p>Windows 7 users, if prompted with the User Account Control alert, select \'Yes\' or \'Continue\'.</p>' +
+							'<p class="note">Depending on your connection speed, the download may take up to a few minutes. Thanks for your patience… it’ll be worth the wait!</p>' +
+							'</div>' +
+							'</li>' +
+							'<li class="two">' +
+							'<img src="/thunderbird/img/tb5/download/two_win.png" alt="Step 2" height="212" width="270" />' +
+							'<div class="column1">' +
+							'<p>Click Run to launch the Thunderbird setup wizard.</p>' +
+							'<p class="note">Then, just follow the steps (we’ve made the process as painless as possible).</p>' +
+							'</div>' +
+							'</li>' +
+							'<li class="three">' +
+							'<img src="/thunderbird/img/tb5/download/three_win.png" alt="Step 3" height="203" width="268" />' +
+							'<div class="column1">' +
+							'<p>Double-click on the Thunderbird icon whenever you want!</p>' +
+							'</div>' +
+							'</li>' +
+							'</ol>';
+					break;
+					case 'osx' :
+						promotion_msg = '<ol class="install-steps">' +
+							'<li class="one">' +
+							'<img src="/thunderbird/img/tb5/download/one_osx.png" alt="Step 1" height="164" width="268" />' +
+							'<p>Your file should begin downloading automatically in a few seconds.</p>' +
+							'<p class="note">Depending on your connection speed, the download may take up to a few minutes. Thanks for your patience… it’ll be worth the wait!</p>' +
+							'</li>' +
+							'<li class="two">' +
+							'<img src="/thunderbird/img/tb5/download/two_osx.png" alt="Step 2" height="215" width="267" />' +
+							'<p>When prompted, drag the Thunderbird icon into your Applications folder.</p>' +
+							'</li>' +
+							'<li class="three">' +
+							'<img src="/thunderbird/img/tb5/download/three_osx.png" alt="Step 3" height="197" width="249" />' +
+							'<p>Drag the Thunderbird icon from the Applications folder into the dock.</p>' +
+							'<p class="note">then, just click on the Thunderbird icon whenever you want.</p>' +
+							'</li>' +
+							'</ol>';
+					break;
+				default:
+					promotion_msg = '';
+				}
+			default:
+				product_title = 'Thunderbird';
+		}
+
+		// 2. Build download.mozilla.org URL out of those vars.
+		download_url = "http://download.mozilla.org/?product=";
+		download_url += product + '&os=' + os + '&lang=' + lang;
+
+		// 3. display the download URL as a manual fall-back link
+		var msg = '<div id="main-feature" class="main-feature-' + product_name + '">';
+		msg += '<h2>Thanks for choosing <span style="display:inline">' + product_title + '!</span></h2>';
+		msg += '<p class="manual-download">Your download should automatically begin in a few seconds, but if not, ';
+		var link_text = 'click here';
+		msg += '<a href="' + download_url + '">' + link_text + '</a>.'
+		msg += '</div>';
+		msg += '<div id="content">';
+		msg += promotion_msg;
+		msg += '</div>';
+
+		div.innerHTML = msg;
+	}
+
+	initDownload();
+	
+    function downloadURL() {
+        // Only start the download if we're not in IE.
+        if (download_url.length != 0 && navigator.appVersion.indexOf('MSIE') == -1) {
+            // 5. automatically start the download of the file at the constructed download.mozilla.org URL
+            window.location = download_url;
+        }
+    }
+	
+    // If we're in Safari, call via setTimeout() otherwise use onload.
+    if ( navigator.appVersion.indexOf('Safari') != -1 ) {
+        window.setTimeout(downloadURL, 2500);
+    } else {
+        window.onload = downloadURL;
+    }
+
+// ]]></script>
+
+</div> <!-- end #download_message -->
+<hr>
+<div id="bottom-content">
+    <div class="column2">
+    <h3> Need <span>Download Help?</span></h3>
+    <p>Our help page has plenty of answers.</p>
+    <a href="http://support.mozillamessaging.com">Visit Thunderbird Help</a>
+    </div>
+    <div class="column3">
+    <h3> Explore <span>Features?</span></h3>
+    <p>Explore all the coolest and most helpful features of Thunderbird.</p>
+    <a href="/<?=$lang?>/thunderbird/features/">Learn more</a>
+    </div>
+    <div class="column4">
+    <h3> About <span>Thunderbird?</span></h3>
+    <p>Thunderbird is made by Mozilla, a public benefit organization.</p>
+    <a href="http://www.mozilla.org/about/">What is Mozilla?</a>
+    </div>
+</div>
+<?php
+    @include_once "{$config['file_root']}/{$lang}/includes/footer.inc.php";
+?>

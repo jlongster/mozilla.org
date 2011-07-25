@@ -1,0 +1,1379 @@
+<?php
+
+$html_title = 'Replacer Specification';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>Replacer Tool Specification</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Technical contact: 
+<A HREF="mailto:relyea@netscape.com?subject=Replacer Spec Feedback">Bob Relyea</A><BR>
+
+Yell at the manager: 
+<A HREF="mailto:lord@netscape.com?subject=Replacer Spec Feedback">Bob Lord</A></FONT></i>
+</center>
+
+<H1>
+
+<HR WIDTH="100%"></H1>
+
+<H6>
+(Last updated: 6/30/98)</H6>
+<B><FONT SIZE=+2>Contents:</FONT></B>
+<UL>
+<LI>
+<A HREF="#Overview">Overview</A></LI>
+
+
+<LI>
+<A HREF="#Command Line Interface">Command Line Interface</A></LI>
+
+<LI>
+<A HREF="#Single Source Mode">Single Source Testing</A></LI>
+
+<LI>
+<A HREF="#Replacer Specfication File">Replacer Specfile</A></LI>
+
+<UL>
+<LI>
+<A HREF="#General Header">General Header</A></LI>
+
+<LI>
+<A HREF="#Variable Header">Variable Header</A></LI>
+
+<LI>
+<A HREF="#Rules Header">Rule Header</A></LI>
+</UL>
+
+<LI>
+<A HREF="#Replacer In Java Mode">Java Mode</A></LI>
+
+<LI>
+<A HREF="#Rules">Rules</A></LI>
+
+<LI>
+<A HREF="#template spec">Template File Specifications</A></LI>
+
+<LI>
+<A HREF="#Special Meta-Variables">Special Meta-Variables</A></LI>
+
+<UL>
+<LI>
+<A HREF="#single source meta-variable example">Example for setting meta-variable
+for single source mode</A></LI>
+</UL>
+
+<LI>
+<A HREF="#example">Examples</A></LI>
+
+<UL>
+<LI>
+<A HREF="#example">Example 1 (multiple source/ C Mode)</A></LI>
+
+<LI>
+<A HREF="#Example 2">Example 2 (single source/ Java Mode)</A></LI>
+</UL>
+</UL>
+
+<HR WIDTH="100%">
+<BR><A NAME="Overview"></A>
+<H2>
+Overview of replacer (Replacer Test Tool)</H2>
+Replacer is a general-purpose program to produce a large number of programs
+that are nearly identical, differing by only a few variables. This program
+is ideal for creating regression test suites on APIs or programs that have
+large numbers of variables.
+
+<P>This diagram outlines the overall process that a test suite should go
+through with replacer. The replacer takes in three input files: a source
+code template file (could be any language), a template makefile, and a
+replacer specfile. It outputs many source code files, a makefile and a
+regress specfile. The source code files are then built with the makefile,
+and the executables are run through regress to generate the regress report.
+This is html readable.
+<CENTER><IMG SRC="replacer.jpg" HEIGHT=887 WIDTH=576 ALIGN=TEXTTOP></CENTER>
+
+
+<P>This specification is still currently under review and open to change.
+<H2>
+
+<HR WIDTH="100%"></H2>
+
+<H2>
+<A NAME="Code and Executables"></A></H2>
+
+<H2>
+
+<HR WIDTH="100%"></H2>
+
+<H2>
+<A NAME="Single Source Mode"></A></H2>
+
+<H2>
+Single source testing method</H2>
+In order to have ability to use single source and single executable to
+test wide range of cases some modifications are required to current versions
+of replacer and regress.&nbsp; Simple way to achieve this flexibility is
+to inject all tested data in a form of following structures.
+
+<P>&nbsp;&nbsp;&nbsp; data_type variable[] = {
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; data-1,
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ... ,
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; data-n
+<BR>&nbsp;&nbsp;&nbsp; }
+
+<P>Here, each <TT>data-&lt;x></TT> in the table represent one of many possible
+combinations of a specific variable.
+<BR>These tables can be constructed and injected by replacer from the data
+collected from its template file. This way we can use single executable
+to test all required cases.
+
+<P>Regress has to run each test with test ID as a parameter, the test executable
+will extract the appropriate set of combinations based on the TestID.&nbsp;
+Test ID encoding and decoding can be done many ways.&nbsp; A simply method
+is to use multiplication and division.&nbsp; Let do simple example to illustrate
+this method.&nbsp; Lets assume that we are testing n variables. Each of
+them are assigned a particular value by replacer's combo generator: M1,
+M2, M3, ... ,Mn.&nbsp;&nbsp;&nbsp;&nbsp; These values M1 .. Mn are stored
+in the injected data tables with indices of V1, V2,..., Vn. respectively.&nbsp;&nbsp;
+Then testId is simply generated from a mathematical combination of these
+index values and the combination values as follows:
+
+<P><TT>&nbsp;&nbsp;&nbsp; testId = (…((Vn*Mn-1 + Vn-1)*Mn-2 + Vn-2)*Mn-3
++ …)*M1 + V1;</TT>
+
+<P><TT>The executable at runtime can figure out which set of combinations
+to extract based on calculations using testID (as follows):</TT>
+
+<P><TT>&nbsp;&nbsp;&nbsp; V1 = testId % M1;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; V2 = (testId / M1) % M2;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; V3 = ((testId / M1) / M2) % M3;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; ... ;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; Vn = (…((testId / M1) / M2)…) % Mn;</TT>
+
+<P>Since testID is passed as the first argument to the executable, a single
+executable can test all test combinations by just executing it again and
+again but each time
+<BR>with a different testID.&nbsp;&nbsp;&nbsp;&nbsp; This also means, that
+replacer has to lookup $[VARIABLEn] with corresponding <TT>variable-n-data_table[(…((testId/M1)/M2)…)%Mn]</TT>
+instead of specific data combinations as before.
+
+<P>Regress template file produced by replacer has to have test IDs in each
+test section.&nbsp;&nbsp; However regress specfile will no longer require
+a program field in each section, but rather just one field program in the
+general header.&nbsp;&nbsp;&nbsp;&nbsp; (see <A HREF="#Replacer Specfication File">replacer
+specfile</A>)
+<H2>
+<FONT SIZE=+0>see also: <A HREF="changes.html">regress and replacer modifications:
+single source mode</A></FONT></H2>
+
+<H2>
+
+<HR WIDTH="100%"></H2>
+
+<H2>
+<A NAME="Command Line Interface"></A></H2>
+
+<H2>
+Command line interface</H2>
+<TT>replacer specfile=filename [singleSource] [debug] [lang=java|c] [jvm=&lt;path
+to Java Interpreter>]</TT>
+<BR><TT>[classpath=&lt;java CLASSPATH setting>]</TT>
+<BR>&nbsp;
+
+<P><B><FONT SIZE=+2>Replacer Return Codes</FONT></B>
+<BR>&nbsp;
+<TABLE BORDER >
+<TR>
+<TD><B>Error Codes</B></TD>
+
+<TD><B>Description</B></TD>
+</TR>
+
+<TR>
+<TD><B>0</B></TD>
+
+<TD>No error</TD>
+</TR>
+
+<TR>
+<TD><B>1</B></TD>
+
+<TD>Did not include specfile= directive on command line</TD>
+</TR>
+
+<TR>
+<TD><B>2</B></TD>
+
+<TD>Specfile is malformed or does not exist</TD>
+</TR>
+
+<TR>
+<TD><B>3</B></TD>
+
+<TD>No [General] header in specfile</TD>
+</TR>
+
+<TR>
+<TD><B>4</B></TD>
+
+<TD>No cTemplate= in [General] section.</TD>
+</TR>
+
+<TR>
+<TD><B>5</B></TD>
+
+<TD>No makeTemplate= in [General] section.</TD>
+</TR>
+
+<TR>
+<TD><B>6</B></TD>
+
+<TD>No path= in [General] section.</TD>
+</TR>
+
+<TR>
+<TD><B>7</B></TD>
+
+<TD>No regressSpecfile= in [General] section.</TD>
+</TR>
+
+<TR>
+<TD><B>8</B></TD>
+
+<TD>No regressOutput= in [General] section.</TD>
+</TR>
+
+<TR>
+<TD><B>9</B></TD>
+
+<TD>No mut= in [General] section.</TD>
+</TR>
+
+<TR>
+<TD><B>10</B></TD>
+
+<TD>No mutversion= in [General] section.</TD>
+</TR>
+</TABLE>
+
+<HR WIDTH="100%">
+
+<P><A NAME="Replacer Specfication File"></A>
+<BR><B><FONT SIZE=+2>Replacer Specification File</FONT></B>
+
+<P>The following is a specification of the replacer tools Test Case Specification
+file.<B> The current convention is for these specfiles to have an extension
+.rep (this is not enforced by any means, but this is purely for readability's
+sake).</B> You can see the list of current filename conventions <A HREF="convention.html">here</A>.
+Please look at the conventions if you don't know them by heart for other
+people's sake...
+
+<P>[Note: this specification may be difficult to understand so be sure
+to check out the <A HREF="#example">example</A> that follows this carefully]:
+
+<P><A NAME="General Header"></A>
+<BR><B><FONT SIZE=+2>General Header</FONT></B>
+<BR>&nbsp;
+<TABLE BORDER >
+<TR>
+<TD BGCOLOR="#FFCC00"><B>Specification File Element</B></TD>
+
+<TD BGCOLOR="#FFCC00"><B>Description of Element</B></TD>
+</TR>
+
+<TR>
+<TD>[<B>General]</B></TD>
+
+<TD>Starts the General information block that describes basic settings
+for the suite of tests. This must be the first block.</TD>
+</TR>
+
+<TR>
+<TD><B>mut = &lt;string></B></TD>
+
+<TD>Defines the Module under test. (what module you are using this specfile
+to test -- pretty much a "title" field)</TD>
+</TR>
+
+<TR>
+<TD><B>mutversion = &lt;string of numbers></B></TD>
+
+<TD>Defines the version of the module under test.</TD>
+</TR>
+
+<TR>
+<TD><B>cTemplate=&lt;template filename></B></TD>
+
+<TD>Defines a file that is read in as a C Template file. See definition
+of Template file <A HREF="#template spec">below</A>.</TD>
+</TR>
+
+<TR>
+<TD><B>makeTemplate=&lt;template filename></B></TD>
+
+<TD>Defines a file that is read in as a Makefile Template file. See definition
+of Template file <A HREF="#template spec">below</A>. This template file
+is different in that $[CSOURCES] is the only variable, and all the .c files
+that are generated by the replacer will be stored there.</TD>
+</TR>
+
+<TR>
+<TD><B>path=&lt;path></B></TD>
+
+<TD>Defines the directory that all the generated C files, Makefile, and
+regressSpecfile are put<B>.</B> If the file is prefixed by /, the path
+is absolute, otherwise the filename is relative to the present working
+directory. The program will generate that directory if it doesn't exist
+already.&nbsp;
+
+<P><FONT COLOR="#000000">The path will be parsed such that on Windows machines,
+the slashes will be replaced with backslashes. The same goes vice versa
+for Unix machines.</FONT>&nbsp;
+
+<P><FONT COLOR="#000000">This header is optional. The path will be default
+to "." if it is not set.</FONT></TD>
+</TR>
+
+<TR>
+<TD><B><FONT COLOR="#000000">testPrefix=&lt;string></FONT></B></TD>
+
+<TD><FONT COLOR="#000000">Defines the first few characters of the output
+code. All the tests will be these strings concatenated:&nbsp;&nbsp;</FONT>&nbsp;
+
+<P><FONT COLOR="#000000">&lt;prefix>&lt;testnumber>&lt;suffix>&nbsp;&nbsp;</FONT>&nbsp;
+
+<P><FONT COLOR="#000000">Ex. prefix=test&nbsp;&nbsp;</FONT>&nbsp;
+<BR><FONT COLOR="#000000">suffix=.c&nbsp;&nbsp;</FONT>&nbsp;
+
+<P><FONT COLOR="#000000">The tests will be:&nbsp;&nbsp;</FONT>&nbsp;
+<BR><FONT COLOR="#000000">test0.c, test1.c, test2.c .....&nbsp;&nbsp;</FONT>&nbsp;
+
+<P><FONT COLOR="#000000">Note: <B>this header is optional</B>. If the testPrefix
+is not defined, the replacer will assume a "t" as the prefix. All generated
+output source files will be prefixed with <B>path</B>/</FONT></TD>
+</TR>
+
+<TR>
+<TD><B><FONT COLOR="#000000">testSuffix=&lt;string></FONT></B></TD>
+
+<TD><FONT COLOR="#000000">Defines the last few characters of the output
+code. See definition above. The executables are assumed to have &lt;testPrifix>&lt;testNumber>
+and the source are assumed to be &lt;testPrefix>&lt;testNumber>&lt;testSuffix></FONT>&nbsp;
+
+<P><FONT COLOR="#000000">Note:<B> this header is optional</B>. If the testSuffix
+is not defined, the replacer will assume a ".c" as the suffix.</FONT></TD>
+</TR>
+
+<TR>
+<TD><B><FONT COLOR="#000000">timeout=&lt;number></FONT></B></TD>
+
+<TD><FONT COLOR="#000000">Defines the maximum time in seconds any test
+can run. This is for all tests.</FONT>&nbsp;
+
+<P><FONT COLOR="#000000"><B>This header is optional.</B> If the timeout
+is not defined, the timeout will be the same value as the regress default
+timeout (10 seconds).</FONT></TD>
+</TR>
+
+<TR>
+<TD><B>regressSpecfile=&lt;filename></B></TD>
+
+<TD>Defines the filename of the generated <A HREF="regress.html">regress
+specfile</A>. The specfile will be prefixed with <B>path/</B>.If the file
+already exists, it will be overwritten.</TD>
+</TR>
+
+<TR>
+<TD><B>regressOutput=&lt;filename></B></TD>
+
+<TD>Defines the htmlout field inside the <A HREF="regress.html">regress
+specfile</A> header. This is the html file that gets generated by the regress
+tool to report the test results. If it already exists, it will be overwritten.</TD>
+</TR>
+
+<TR>
+<TD><B>reporterOutput=&lt;filename></B></TD>
+
+<TD>Defines the reporterSpec= field inside the generated <A HREF="regress.html">regress
+specfile</A> header. This is the specfile that gets generated by the regress
+tool and is input to the reporter.</TD>
+</TR>
+
+<TR>
+<TD><B><FONT COLOR="#000000">randomSeed=&lt;number></FONT></B></TD>
+
+<TD><FONT COLOR="#000000">This specifies a seed for the random part of
+the test generation (so you can have the same tests generated every time).
+<B>This header is optional</B>. If you don't specify a seed, an automatic
+seed of 0 is set.</FONT></TD>
+</TR>
+
+<TR>
+<TD><B><FONT COLOR="#000000">globalArgument=&lt;string></FONT></B></TD>
+
+<TD>This defines the globalArgument field inside the <A HREF="regress.html">regress
+specfile</A> header.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>singleSource = &lt;TRUE|FALSE></B></TD>
+
+<TD>Defined to use single source testing method. If singleSource is specified,
+there is no need to set makeTemplate. Make file template won’t be modified.</TD>
+</TR>
+
+<TR>
+<TD><B>firstExitCode = <FONT COLOR="#000000">&lt;number></FONT></B></TD>
+
+<TD>This defines first exit code number used by replacer to substitute
+meta-variable $[EXIT-CODE].&nbsp; This field is copied to the resulting
+regress specfile (General section) as <B>firstErrorCode=&lt;number></B></TD>
+</TR>
+
+<TR>
+<TD><B>firstKnownFailure = <FONT COLOR="#000000">&lt;number></FONT></B></TD>
+
+<TD>This defines first code number for known failure and is used by replacer
+to substitute meta-variable $[KNOWN-FAILURE]. Assuming that number of known
+failures is small, firstExitCode is treated as the upper limit for known
+failures, which means, that firstKnownFailure should be smaller than firstExitCode.</TD>
+</TR>
+
+<TR>
+<TD><B>maxOfCombinations = <FONT COLOR="#000000">&lt;number></FONT></B></TD>
+
+<TD>This defines maximum number of combinations (default 500,000).</TD>
+</TR>
+
+<TR>
+<TD COLSPAN="2" BGCOLOR="#FFCC00"><B>JAVA MODE SPECIFIC FIELDS</B></TD>
+</TR>
+
+<TR>
+<TD><B>language</B>=[c|java]</TD>
+
+<TD>This tells replacer whether the source template is C or Java.&nbsp;&nbsp;&nbsp;&nbsp;
+Setting language=java places replacer in JAVA_MODE which exhibits behavior
+slightly different from the default C_MODE, see Replacer in <A HREF="#Replacer In Java Mode">Java
+Mode</A> in the next section for more details</TD>
+</TR>
+
+<TR>
+<TD><B>mainClassName</B>=&lt;name of Class containing main()></TD>
+
+<TD>Absolutely required in Java mode.&nbsp; This field is required by replacer
+to qualify variable names correctly in single Source mode.&nbsp; Also,
+replacer needs to know the class name in order to generate the correct
+regress spec file so that regress knows the name of the class file its
+running.&nbsp; This field is directly copied to the generated regress specfile.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>jvm</B>=&lt;full path of the Java interpreter></TD>
+
+<TD>Required if the produced regress specfile is to know which Java interpreter
+to use to run each test.&nbsp;&nbsp; By default, <B><TT>jvm=java</TT></B>.&nbsp;&nbsp;
+As a warning however, most systems will not be able to find 'java' unless
+you specify the jdk in your $path (or $PATH).&nbsp;&nbsp; This field is
+directly copied to the auto-generated regress specfile.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>packageName</B>=&lt;name of the package, the class is enclosed in></TD>
+
+<TD>Required if you have a package declaration in your code.&nbsp; This
+field is directory copied to the generated regress specfile, so that regress
+can piece together what executable it is suppose to run.&nbsp; (May be
+left out if there are no package declarations in the source template, or
+if you don't want replacer to create a directory tree for you).&nbsp;&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><B>classpath</B>=&lt;your CLASSPATH setting></TD>
+
+<TD>This field is copied to the generated regress specfile, so that regress
+knows what to set the CLASSPATH to when running your testsuites.&nbsp;&nbsp;
+If classpath is specified at the command line, it will override the classpath
+set in the specfile.</TD>
+</TR>
+
+<TR>
+<TD>When in Single Source Mode [optional]&nbsp;
+<BR><B>makefile</B>=&lt;makefile template name>&nbsp;
+<BR><B>makefileOutput</B>=&lt;outputted makefile's name></TD>
+
+<TD>In JAVA_MODE and single source mode, if a makefile and makefileOutput
+is specified, then replacer will substitute the metavariable $[CSOURCES]
+with&nbsp;
+<BR>the name of the source file created and create a makefile based on
+the makefile template.&nbsp; If these fields are not specified, replacer
+will behave just as it does in C_MODE (that is create no makefiles).</TD>
+</TR>
+
+<TR>
+<TD><B>createDirs</B>=[TRUE|FALSE]</TD>
+
+<TD>If set to true, replacer will create the proper directory tree in which
+to house your Java source code.&nbsp; For example had you specified packageName=com.Netscape
+, replacer will create the directory &lt;path>/com/Netscape/ and place
+the source code in that directory.&nbsp;&nbsp; By default, replacer will
+write the test suite source code in the current directory or where &lt;path>
+was specified.</TD>
+</TR>
+</TABLE>
+
+
+<P><A NAME="Variable Header"></A>
+<BR><B><FONT SIZE=+2>Variable Header</FONT></B>
+<BR>&nbsp;
+<TABLE BORDER COLS=2 WIDTH="100%" >
+<TR>
+<TD WIDTH="25%" BGCOLOR="#FFCC00"><B>Specfile Element</B></TD>
+
+<TD WIDTH="60%" BGCOLOR="#FFCC00"><B>Description</B></TD>
+</TR>
+
+<TR>
+<TD><B>[Some-Variable-Name]</B></TD>
+
+<TD>This defines a variable that will be varied under all the combinations
+possible. The following elements are under this header.</TD>
+</TR>
+
+<TR>
+<TD><B>IMPORTANCE=HIGH</B>&nbsp;
+<BR><B>IMPORTANCE=LOW</B></TD>
+
+<TD>This determines the importance of varying this variable. If this header
+does not exist, this is automatically default to "importance=high". If
+"importance=high", the combination generator will make sure that every
+combination of this variable gets varied for every combination of the other
+high importance variable. Otherwise, for every cycle a random value will
+be chosen for the output program. This header MUST be before the DEPENDENCY
+header and any other header.</TD>
+</TR>
+
+<TR>
+<TD><FONT COLOR="#000000"><B>DEPENDENCY=$[Variable-Name]==Value ||</B>&nbsp;</FONT>&nbsp;
+<BR><FONT COLOR="#000000"><B>$[Variable-Name-2] ==Value-2 ||</B>&nbsp;</FONT>&nbsp;
+<BR><FONT COLOR="#000000"><B>$[Variable-Name-3] !=Value-3 &amp;&amp;</B>&nbsp;</FONT>&nbsp;
+<BR><FONT COLOR="#000000"><B>$[Variable-Name-2] == $[VariableName-4] ||</B>&nbsp;</FONT>&nbsp;
+<BR><B><FONT COLOR="#000000">...</FONT></B></TD>
+
+<TD>This defines a dependancy in the template file. If this variable is
+of "high importance," it is highly advisable that it not depend on "low
+importance" variables. The replacer may not function reliably in that case.
+Future versions of replacer will check this.&nbsp;
+
+<P><FONT COLOR="#000000">Whenever there is a DEPENDENCY header, the variable
+will be run through and be varied if and only if the expression holds.
+All the variables evaluated in the dependency must be declared before the
+current variable. Also, the expression must be in sum of products form
+(no parentheses).&nbsp;</FONT>&nbsp;
+
+<P><FONT COLOR="#000000">For example the following statement:</FONT>&nbsp;
+<BR><TT><FONT COLOR="#000000">a == b || b &lt;&lt; c &amp;&amp; d >= g
+&amp;&amp; h == 1</FONT></TT>&nbsp;
+<BR><FONT COLOR="#000000">is evaluated as:</FONT>&nbsp;
+<BR><FONT COLOR="#000000"><TT>(a == b) || ((b &lt;&lt; c) &amp;&amp; (d
+>= g) &amp;&amp; (h == 1))</TT>&nbsp;</FONT>&nbsp;
+
+<P><FONT COLOR="#000000">The boolean parser first parses and separates
+the expression on the basis of ||s.&nbsp;&nbsp; Then for each sub expression
+the boolean parser splits on the basis of &amp;&amp;s.&nbsp;&nbsp; After
+the splitting by ||s and &amp;&amp;s, the expression should be consist
+entirely of relations.&nbsp; i.e. comparisons using ==(equals), != equals,
+&lt;&lt; less than, >= greater than or equal to, >> greater than, and &lt;=
+less than or equal to.</FONT>&nbsp;
+
+<P><FONT COLOR="#000000">The evaluator will perform the &lt;&lt; and >>
+and == and != functions by substituting the variables with the values and
+then performing a <B>strcmp</B> between them, so alphabetical comparison
+and numerical comparison will be supported.</FONT>&nbsp;
+
+<P><FONT COLOR="#000000">This boolean evaluator will not support parentheses.
+However in the future, the evaluator can easily be taken out and replaced
+by a better one, if demand is there. The evaluator is located in ns/ttools/lib/src/ttools.c</FONT></TD>
+</TR>
+
+<TR>
+<TD><B>TYPE =&lt;data_type></B></TD>
+
+<TD>Each tested variable has to have specified type in its information
+block for the single source testing method.&nbsp; Types suppose to be defined
+<B>after</B> IMPORTANCE and DEPENDENCY but <B>before</B> NULL_VALUE and
+VALUES.</TD>
+</TR>
+
+<TR>
+<TD><B>NULL_VALUE =&lt;value></B></TD>
+
+<TD>This defines a null value for single source dependencies.&nbsp; NULL_VALUE
+suppose to be defined after TYPE and before VALUES only if DEPENDENCY is
+defined and only in a single source mode.</TD>
+</TR>
+
+<TR>
+<TD><B>&lt;comment>=&lt;value1></B>&nbsp;
+<BR><B>&lt;comment>=&lt;value2></B>&nbsp;
+<BR><B>&lt;comment>=&lt;value3></B></TD>
+
+<TD>This tells us what values the variable should be varied as. The comment
+is used to help comment the regress specfile so you can tell which test
+is being run. All the comments of all the variables and values used during
+the test will be concatenated and put in as the name of the test. These
+must be AFTER the IMPORTANCE and DEPENDENCY headers.</TD>
+</TR>
+</TABLE>
+<A NAME="Rules Header"></A>
+<BR><B><FONT SIZE=+2>Rules Header</FONT></B>
+<BR>&nbsp;
+<TABLE BORDER COLS=2 WIDTH="100%" >
+<TR>
+<TD WIDTH="25%" BGCOLOR="#FFCC00"><B>Specification File Element</B></TD>
+
+<TD BGCOLOR="#FFCC00"><B>Explanation</B></TD>
+</TR>
+
+<TR>
+<TD><B>[rule-&lt;label>]</B></TD>
+
+<TD>A rule definition section must have a header that contains&nbsp;
+<BR>"rule-", the number that follows is up to the user.&nbsp; Replacer
+assigns rule priority in the order which those rules appear, and NOT based
+on the number associated with the rule.</TD>
+</TR>
+
+<TR>
+<TD><B>bug=&lt;bug number></B></TD>
+
+<TD>bug should be defined if this rule is designed to filter out a known
+bug.&nbsp;&nbsp; The bug number is extracted by replacer and copied to
+the bug field of the [Test-n] block of the regress specfile, which corresponds
+to the combination that satisfied this rule.</TD>
+</TR>
+
+<TR>
+<TD><B>ignore=[TRUE|FALSE]</B></TD>
+
+<TD>This is an optional field.&nbsp;&nbsp; If the bug field is not specified
+under this rule, <B>ignore</B> is set by default to FALSE.&nbsp; If ignore
+is set to TRUE, then replacer will not run any tests that satisfy this
+test.&nbsp;&nbsp; If neither ignore nor bug is specified, then this rule
+will not have any effect on the tests.</TD>
+</TR>
+
+<TR>
+<TD><B>&lt;comment-1>=&lt;boolean expression defining a (sub)rule></B>&nbsp;
+<BR><B>&lt;comment-2>=&lt;boolean expression defining a (sub)rule></B>&nbsp;
+<BR><B>&lt;comment-3>=&lt;boolean expression defining a (sub)rule></B>&nbsp;
+<BR><B>...</B>&nbsp;
+<BR><B>&lt;comment-n>=&lt;boolean expression defining a (sub)rule></B></TD>
+
+<TD>Comment can be anything <B>except</B> 'bug', or 'ignore' or any phrase
+with a '=' in it.&nbsp;&nbsp;&nbsp; The comment is just there for the user's
+own reference purposes Replacer simply ignores it.&nbsp;
+
+<P>The boolean expression that follows specifies a sub-condition in which
+a test combination must satisfy inorder to satisfy the entire rule.&nbsp;
+
+<P>You may define more than one comment=&lt;bool exp> in a rule&nbsp; block.&nbsp;
+However, when evaluating the rule, replacer simply treats multiple subrules
+as&nbsp;
+<BR><TT>&nbsp; rule1 &amp;&amp; rule2 &amp;&amp; rule3....&amp;&amp; rule
+n</TT>.&nbsp;
+<BR>The entire rule block is considered to be satisfied iff each one of
+the sub rules are satisfied.&nbsp;
+
+<P>Each sub-rule boolean expression must be in sum of products form same
+as that for DEPENDENCY statements.&nbsp;&nbsp; The implementation of the
+boolean evaluation uses the TTOOL's library functions.&nbsp;&nbsp; Hence
+the supported tokens will be:&nbsp;
+<BR>==(equals), !=(not equals), &amp;&amp;(logic and), || (logic Or), >>(greater
+than), &lt;&lt; (less than), >=(greater than or equal to), &lt;=(less than
+or equal to).&nbsp;
+
+<P>Variables in these boolean expressions should be wrapped:&nbsp;
+<BR>i.e. $[Variable-n]&nbsp;
+
+<P>An example rule definition would be:&nbsp;
+
+<P><TT>[rule-yourMoneyOrYourLife]</TT>&nbsp;
+<BR><TT>This is a comment = $[MONEY] || $[LIFE] == $[BOTH]&nbsp;&nbsp;</TT>&nbsp;
+<BR><TT>filter a specific combo=$[YEAR]==2000 &amp;&amp; $[MONTH]==1&amp;&amp;$[DAY]==1</TT>&nbsp;
+<BR><TT>ignore=TRUE</TT>&nbsp;
+<BR>&nbsp;</TD>
+</TR>
+</TABLE>
+
+<HR SIZE=3 WIDTH="100%">
+<BR><A NAME="Replacer In Java Mode"></A>
+<BR>&nbsp;
+
+<P><B><FONT SIZE=+2>Replacer In Java Mode</FONT></B>
+
+<P><B><FONT COLOR="#000000"><FONT SIZE=+1>Overview:</FONT></FONT></B>
+
+<P><FONT COLOR="#000000">In order to make replacer compatible with Java
+source files, changes were made to:</FONT>
+<UL>
+<LI>
+<FONT COLOR="#000000">Syntax of data tables and variables injected or replaced
+(in Single Source Mode).</FONT></LI>
+
+<LI>
+<FONT COLOR="#000000">Replacer Specfile Fields</FONT></LI>
+
+<LI>
+<FONT COLOR="#000000">File Naming and source file storage location</FONT></LI>
+</UL>
+<FONT COLOR="#000000">No major changes were required to make replacer work
+under multiple source mode with the exception of simple filename specific
+modifications (e.g. all produced files have as default .java as its suffix
+instead of .c in C/C++ mode)</FONT>
+
+<P><B><FONT COLOR="#000000"><FONT SIZE=+1>Syntactic Changes</FONT></FONT></B>
+
+<P><FONT COLOR="#000000"><I>Array Initializer Changes in Single File Mode</I>:</FONT>
+<BR><FONT COLOR="#000000">In single source mode, replacer injects data
+tables containing all the values a variable may take on into the generated
+source code.&nbsp;&nbsp;&nbsp; Array initializers in C/C++ vs Java vary&nbsp;
+in the placement of '[ ]' in the declarations.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+The fix simply&nbsp; injects</FONT>
+<BR><FONT COLOR="#000000">&nbsp;&nbsp;&nbsp; "<TT>dataType[ ] variableName
+= { data-1...data-n }</TT>"</FONT>
+<BR><FONT COLOR="#000000">when under Java mode but</FONT>
+<BR><FONT COLOR="#000000">&nbsp;&nbsp;&nbsp; "<TT>dataType variableName[
+] = { data-1....data-n }</TT>"</FONT>
+<BR><FONT COLOR="#000000">when in C mode.</FONT>
+
+<P><I><FONT COLOR="#000000">Variable Name Qualification:</FONT></I>
+<BR><FONT COLOR="#000000">In order to have the above mentioned data tables
+be visible to the entire class as well as possibly other classes in the
+package, the data tables/arrays are declared as "public static".&nbsp;&nbsp;&nbsp;
+During combination substitution replacer replaces <TT>$[VARIABLEn]</TT>
+in the source template with <TT>&lt;mainClassName>.&lt;variableName>[(...((mainClassName.testId/M1)/M2)...)%Mn]</TT>,
+which is the fully qualified name for that table entry.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+The variable <TT>testId</TT> is also qualified by the mainClassName and
+like the data tables is declared as a public static field in the main class.</FONT>
+
+<P><I><FONT COLOR="#000000">TestId retrieval:</FONT></I>
+<BR><FONT COLOR="#000000">While operating under Single Source mode, <TT>testId
+</TT>is taken as the first argument to the test executable.&nbsp;&nbsp;
+Under C/C++ mode,&nbsp; "<TT>testId = atoi( argv[1])</TT>" would do to
+retrieve and initialize the testId from the command line args.&nbsp;&nbsp;
+Whereas under Java mode <TT>testId</TT> is initialized by "<TT>&lt;mainClassName>.testId
+= Integer.parseInt(argv[0]);</TT>".</FONT>
+
+<P><FONT COLOR="#000000"><FONT SIZE=+1><B>Replacer Specfile Changes:</B>&nbsp;
+</FONT>( all field addition should go under the [General] header.)</FONT>
+
+<P><FONT COLOR="#000000">In order to differentiate Java mode from C/C++
+mode, an additional field "<B>language</B>" must be added to the Replacer
+specfile.&nbsp;&nbsp;&nbsp; Currently, setting "<B>language</B>=java" (all
+lower case) will place the replacer in JAVA_MODE.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Similarly, the user can set to replacer to Java mode by specifying at the
+command line the extra option "<B><TT>lang=java</TT></B>".&nbsp; (Note
+in the future the substring 'java' can be replaced by 'javaScript' or 'Lisp'
+or other languages we wish replacer to support.)</FONT>
+<BR><FONT COLOR="#000000">Specifying lang=java at command line will override
+the language setting set in the replacer spec file.</FONT>
+
+<P><FONT COLOR="#000000">In JAVA_MODE, the field "<B>mainClassName=</B>"
+must appear in the [General] section.&nbsp; Replacer uses the value given
+for mainClassName to qualify all the variable names in Single source mode
+(see above section on variable name qualification).&nbsp;&nbsp; If mainClassName
+is not specified, Replacer will throw the error REPLACER_NOCLASSNAME on
+exit.</FONT>
+
+<P><FONT COLOR="#000000">The user should add the field "<B>jvm=</B>" in
+the [General] section.&nbsp;&nbsp;&nbsp; The value should be the full path
+of the Java Interpreter the user wishes to use to run their tests with
+(e.g. <B>jvm</B>=/tools/ns/bin/java).&nbsp;&nbsp;&nbsp; If the <B>jvm</B>
+field is missing, replacer will used 'java' as a default.&nbsp;&nbsp; However
+on most machines, 'java' will not work since the environment in which the
+test programs runs may not have the java interpreter in its $path.&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+
+<P><FONT COLOR="#000000">The <B>classpath</B> attribute is also important
+if the user wishes to tell regress to use a CLASSPATH other than the one
+specified in their environment.&nbsp; This attribute can be set in the
+[General] section of the replacer specfile or at the command line.&nbsp;
+In either case, the name and value pair is copied directly to the generated
+regress specfile.&nbsp; (The command line setting overrides any settings
+of classpath in the specfile.)</FONT>
+
+<P><FONT COLOR="#000000">Additionally in JAVA_MODE, if the source file
+contains a package declaration, the user should specify the name of the
+package under the heading "<B>packageName</B>=&lt;package name>".&nbsp;
+For example, if "package foo.bar;" appears in the template source code,
+then user needs to specify <TT><B>packageName</B>=foo.bar</TT>&nbsp; in
+the replacer specfile.&nbsp;&nbsp;&nbsp;&nbsp; This field is optional,
+and only required if the user has a package declaration.&nbsp;&nbsp; Note:
+replacer will construct the appropriate directory structures to store the
+resulting <TT>.java</TT> test source files based on the value set under
+<B><TT>packageName</TT></B>.</FONT>
+
+<P><B><FONT COLOR="#000000"><FONT SIZE=+1>Output Regress specfile Changes:</FONT></FONT></B>
+
+<P><FONT COLOR="#000000">While under JAVA_MODE, (either Single Source or
+Multiple Source mode) replacer generates a regress specfile which has the
+following fields added to the [General] section:</FONT>
+
+<P><TT><FONT COLOR="#000000"><B>&nbsp;&nbsp;&nbsp; language</B>=JAVA</FONT></TT>
+<BR><TT><FONT COLOR="#000000"><B>&nbsp;&nbsp;&nbsp; jvm</B>=&lt;your jvm
+[default='java']></FONT></TT>
+<BR><TT><FONT COLOR="#000000"><B>&nbsp;&nbsp;&nbsp; mainClassName</B>=&lt;your
+main class name></FONT></TT>
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<TT> <B>classpath</B>=&lt;your
+CLASSPATH setting></TT>
+<BR><TT><FONT COLOR="#000000"><B>&nbsp;&nbsp;&nbsp; packageName</B>=&lt;your
+package name></FONT></TT>
+
+<P>The last field packageName is optionally added depending on whether
+or not the user specified a <B><TT>packageName</TT></B> in the original
+replacer specfile. (The same also applies for the classpath field.)&nbsp;&nbsp;
+These 5 fields are necessary in providing regress with the pertinent information
+to find and run the tests in JAVA_MODE.
+
+<P>Under Single Source mode, replacer in C_MODE would set the <B><TT>program</TT></B>
+field (under the [General] header) to
+<BR>&nbsp;&nbsp;&nbsp; [General]
+<BR>&nbsp;&nbsp;&nbsp; ...
+<BR>&nbsp;&nbsp;&nbsp; program=&lt;executable>
+<BR>&nbsp;&nbsp;&nbsp; ....
+<BR>but under JAVA_MODE, the <B><TT>program</TT></B> field is no longer
+necessary.&nbsp; Regress will simply construct the program to run by combining
+jvm, mainClassName and packageName fields in the following format:
+
+<P>&lt;jvm> &lt;packageName>.&lt;mainClassName> [args]
+
+<P>Under Multiple Source mode, the replacer in C_MODE would set each <B><TT>program</TT></B>
+field under each [Test-n] header as:
+<BR>&nbsp;&nbsp;&nbsp; [Test-n]
+<BR>&nbsp;&nbsp;&nbsp; .....
+<BR>&nbsp;&nbsp;&nbsp; program=&lt;executable>
+<BR>&nbsp;&nbsp;&nbsp; .....
+<BR><FONT COLOR="#000000">Under JAVA_MODE, these program fields are set
+to</FONT>
+<BR><FONT COLOR="#000000">&nbsp;&nbsp;&nbsp; [Test-n]</FONT>
+<BR><FONT COLOR="#000000">&nbsp;&nbsp;&nbsp; ....</FONT>
+<BR><FONT COLOR="#000000">&nbsp;&nbsp;&nbsp; program=&lt;test directory
+name></FONT>
+<BR><FONT COLOR="#000000">&nbsp;&nbsp;&nbsp; ....</FONT>
+<BR><FONT COLOR="#000000">"test directory name" is the name of the directory
+generated by replacer when it is producing source code for [Test-n].&nbsp;
+The idea is that for each test case, we create a separate directory for
+that test case.&nbsp;&nbsp;&nbsp; The name of that directory will be based
+on the test source code filename minus its suffix. (e.g. <TT>t1.java</TT>
+is place under the directory <TT>t1</TT>)&nbsp;&nbsp;&nbsp; These separate
+directories are required, because when javac compiles each <TT>.java</TT>
+source file, <TT>.class</TT> files of the same name will be produced.&nbsp;&nbsp;
+Putting the source in separate directories prevents filename clobbering.</FONT>
+
+<P><FONT COLOR="#000000">Furthermore, if the user specifies a <B>packageName</B>
+in the replacer specfile and sets <B>createDirs=TRUE</B>, replacer will
+create a directory tree based on that packageName.&nbsp;&nbsp;&nbsp;&nbsp;
+For example if the user specified in the replacer specfile [General] section:&nbsp;
+<TT><B>packageName</B>=foo.bar</TT> then replacer will create starting
+from the testing directory the directory foo/bar/.&nbsp;&nbsp; The produced
+source code file will reside at the tip of that directory tree ( Hence
+if <TT>t0.java</TT> is the file, it's full path now will be <TT>t0/foo/bar/t0.java
+</TT>).&nbsp; If this feature is not desired, one can simply specify <B>createDirs</B>=FALSE
+(or not specify the createDirs field at all).&nbsp; In which case, the
+generated source file will be placed in user's current directory or in
+the directory specified by the user's <B>path=</B> attribute.</FONT>
+
+<P><A NAME="makefile"></A>
+<BR><B><FONT COLOR="#000000"><FONT SIZE=+1>Output Makefile Changes:</FONT></FONT></B>
+
+<P><FONT COLOR="#000000">If the meta-variable $[CSOURCES] is specified
+in your makefile template, replacer will substitute that meta variable
+with the names (with path) of all the test source files.&nbsp;&nbsp; The
+$[CSOURCES] metavariable is the place holder (put inside the user's makefile
+template) that tells replacer where in the makefile template to insert
+the list of all the test source filenames.&nbsp;&nbsp; The behavior of
+this replacement is basically the same in JAVA vs C MODE in multiple source
+mode.&nbsp;&nbsp; However, in JAVA_MODE, the inserted filenames has in
+addition, the entire path of the file.&nbsp;&nbsp; For example, if replacer
+generated source code and placed them in <TT>t0/foo/bar/t0.java</TT>,&nbsp;
+the entire path, and not just <TT>t0.java</TT> will appear the the final
+Makefile.</FONT>
+
+<P><FONT COLOR="#000000">While in JAVA_MODE and Single Source mode, the
+user may still specify an makefile template name "makefile=&lt;makefile
+name>" and a makefile output filename "makefileOutput=&lt;makefile output
+name>" in the specfile.&nbsp;&nbsp;&nbsp; In this case replacer will create
+a makefile that has $[CSOURCES] replaced with the name (with path) of the
+single file generated.&nbsp;&nbsp; This may be a convenient feature for
+Java Classes with very long package names.</FONT>
+<H3>
+
+<HR WIDTH="100%"><A NAME="Rules"></A></H3>
+<B><FONT SIZE=+2>Rules</FONT></B>
+
+<P>See also <A HREF="#Rules Header">Rules Header</A> (Under Replacer Specfile)
+
+<P>When replacer generates hundreds and sometimes thousands of test sources,
+running all of them can be time consuming and resource intensive.&nbsp;&nbsp;
+In many cases, some subset of tests are known to fail or are associated
+with known bugs.&nbsp;&nbsp;&nbsp; And in other cases certain combinations
+of inputs simply are not necessary or will not occur.&nbsp; (Processing
+these combinations are simply a waste of time)&nbsp;&nbsp; For example,
+if a module written is guaranteed to only get input of numbers less than
+N, then those tests with inputs greater than N should be thrown out or
+simply ignored.
+
+<P>Rules defined in a replacer specfile constitute a mechanism by which
+to filter out certain test input combinations.&nbsp;&nbsp; Based these
+user defined 'filtering rules', Replacer will identify which test combinations
+are known bugs (and mark them in the regress specfile), and which ones
+should be simply ignored.
+
+<P>To define a rule simply add a section in your specfile called [rules-&lt;label>].&nbsp;&nbsp;&nbsp;&nbsp;
+Even though the label associated with the rule is completely ignored by
+the parser, it is good to have it as a way of distinguishing different
+rules.&nbsp;&nbsp;&nbsp; The following are some examples of&nbsp; rule
+definition:
+
+<P># this rule tells replacer to mark ignored for all combinations
+<BR># that have INPUT > 5 and INPUT &lt; 0
+<BR>[rule-N]
+<BR>gets rid of inputs greater than 5= $[INPUT] >> 5
+<BR>and get rid of inputs less than 0=$[INPUT] &lt;&lt; 0
+<BR>ignore=TRUE
+
+<P># this rule tell replacer to mark all sources that have combinations
+<BR># that fit the following rule with the bugNumber specified in the bug
+field.
+<BR>[rule-Y2Kbug]
+<BR>mark y2k bug=$[YEAR] >> 1999 &amp;&amp; $[DAY] >> 31 &amp;&amp; $[MONTH]
+>> 12
+<BR>bug=2001
+
+<P>The <B>order</B> in which these rules are defined in the replacer specfile
+define the order in which they are evaluated (hence their precedence).&nbsp;&nbsp;&nbsp;&nbsp;
+For example consider the case that both [rule-N] and [rule-Y2Kbug]&nbsp;
+satisfy the input combination X1, X2, X3, X4.&nbsp;&nbsp; However since
+rule-Y2Kbug came after rule-N in the file, what ever action taken for rule-1
+is taken (in which case the combinations are ignored).
+
+<P>Also, because rules are parsed differently from variables, rule definitions
+can go any where in the specfile after the [General] block.
+<H3>
+
+<HR WIDTH="100%"></H3>
+
+<H3>
+<A NAME="template spec"></A></H3>
+
+<H3>
+<FONT SIZE=+2>Template file specification</FONT></H3>
+Template files are simple ascii text files that have a few variables in
+them. The variables are denoted as $[variable-name]. These variables will
+be replaced by the values in the replacer specfile.
+
+<P>Another feature of the specfile is that you can add #replacer-if, #replacer-else,
+#replacer-endif statements. Here are examples:
+
+<P>NOTE: there was a slight modification here at July 16th, 1997, so read
+this extra carefully if you used a alpha version of replacer:
+
+<P><FONT COLOR="#000000">#replacer-if $[variable-name]==value</FONT>
+<BR><FONT COLOR="#000000">.. some code ..</FONT>
+<BR><FONT COLOR="#000000">#replacer-else</FONT>
+<BR><FONT COLOR="#000000">.. some other code..</FONT>
+<BR><FONT COLOR="#000000">#replacer-endif</FONT>
+
+<P><FONT COLOR="#000000">Or you can do</FONT>
+
+<P><FONT COLOR="#000000">#replacer-if $[variable-name]!=$[variable-name2]
+&amp;&amp; $[variable-name3] >> some-value || $[variable-name4] == some-value</FONT>
+<BR><FONT COLOR="#000000">.. some code ..</FONT>
+<BR><FONT COLOR="#000000">#replacer-else</FONT>
+<BR><FONT COLOR="#000000">.. some other code..</FONT>
+<BR><FONT COLOR="#000000">#replacer-endif</FONT>
+
+<P>The replacer will evaluate the expression and execute the code segments
+accordingly.
+
+<P>Nesting is supported for up to 50 nested ifs (if you want more for some
+insane reason, you can modify a define in the source code). The #replacer-&lt;command>
+must be at the beginning of the line.
+
+<P>Some other features include the #replacer-define and #replacer-undef.
+These are exactly the same as the cpp #define, except for three things.&nbsp;
+The first thing is you must specify a value to the define. The other thing
+is that something can be redefined and there will be no error. The last
+thing is that you are allowed a maximum number of 64 extra variables defined.
+(this can also be easily changed in source code). See example:
+
+<P>#replacer-define THREE 3
+<BR>&nbsp;&nbsp;&nbsp; if ($[THREE] == 3)
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("This is how you
+use the #replacer-define, %d\n", $[THREE]);
+<BR>#replacer-if THREE==4
+<BR>&nbsp;&nbsp;&nbsp; printf("Of course 3 does not equal 4, you fool.\n");
+<BR>#replacer-endif
+<BR>#replacer-undef THREE
+<BR>&nbsp;
+<BR>which will output:
+
+<P>This is how you use the #replacer-define, 3
+<BR>Of course 3 does not equal 4, you fool.
+
+<P><FONT COLOR="#000000">However, use of #replacer-undef is strongly discouraged.
+</FONT><FONT COLOR="#006600">Currently there is a chance for a small memory
+leak to occur when playing around with #replacer-undefs.</FONT> It is better
+just to re- #replacer-define something to something else rather than #replacer-undefing
+something.
+
+<P>The #replacer-&lt;command> is not working with single source testing
+method, because tested values are set at the run time.
+<H3>
+
+<HR WIDTH="100%"></H3>
+<A NAME="Special Meta-Variables"></A>
+<H3>
+<FONT SIZE=+2>Special Meta-Variables</FONT></H3>
+
+<TABLE BORDER COLS=2 WIDTH="100%" >
+<TR>
+<TD BGCOLOR="#FFCC00"><B>Meta-Variable</B></TD>
+
+<TD BGCOLOR="#FFCC00"><B>Explanation</B></TD>
+</TR>
+
+<TR>
+<TD>$[LINE-NUMBER]</TD>
+
+<TD><FONT COLOR="#000000">For all runs of replacer, a special variable
+called $[LINE-NUMBER] will be always defined. This will correspond to the
+line number in your generated source file, which may be helpful for debugging.</FONT>&nbsp;</TD>
+</TR>
+
+<TR>
+<TD><FONT COLOR="#000000">$[TEMPLATE-LINE-NUMBER]</FONT></TD>
+
+<TD><FONT COLOR="#000000">Corresponds to the line number in your source
+template file that generated the code</FONT></TD>
+</TR>
+
+<TR>
+<TD>$[EXIT-CODE]</TD>
+
+<TD>Meta-variable $[EXIT-CODE] is dedicated to manage test exit codes.&nbsp;
+Replacer assigns consecutive numbers to every occurrence of $[EXIT-CODE]
+in a C-template starting from 1 or the number define by firstExitCode in
+general section of the replacer specfile.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD>$[KNOWN-FAILURE]</TD>
+
+<TD>Meta-variable&nbsp; $[KNOWN-FAILURE] is dedicated to manage test exit
+codes designated for known failures.&nbsp; Replacer assigns consecutive
+numbers to every occurrence of $[ KNOWN-FAILURE] in a source template starting
+from the number define by firstKnownFailure in general section of the replacer
+specfile.&nbsp; Codes for known failures are limited from the top by firstExitCode
+defined also in general section of the replacer specfile.&nbsp;</TD>
+</TR>
+</TABLE>
+<B>Additional meta-variables for single source testing method</B>
+<BR>&nbsp;
+<TABLE BORDER COLS=2 WIDTH="100%" >
+<TR>
+<TD BGCOLOR="#FFCC00"><B>Meta-Variable</B></TD>
+
+<TD BGCOLOR="#FFCC00"><B>Explanation</B></TD>
+</TR>
+
+<TR>
+<TD>$[DATA-TO-TEST]</TD>
+
+<TD>Tells replacer where to inject all data used by test. All types required
+by this data, have to define above it.&nbsp;</TD>
+</TR>
+
+<TR>
+<TD>$[SET-TEST-ID]</TD>
+
+<TD>placed at the beginning of the test main function to set testID from
+command line argv[]</TD>
+</TR>
+
+<TR>
+<TD>$[TEST-ID]</TD>
+
+<TD>Variable containing test ID value</TD>
+</TR>
+</TABLE>
+&nbsp;
+
+<P><A NAME="single source meta-variable example"></A>
+<BR><B><FONT COLOR="#000066"><FONT SIZE=+1>Where to put $[DATA-TO-SET]
+and $[SET-TEST-ID]</FONT></FONT></B>
+
+<P><B>C Mode Example:</B>
+<BLOCKQUOTE><TT>$[DATA-TO-SET]&nbsp; /* replaced by injected data arrays
+*/</TT>
+
+<P><TT>int main (char** argv, int argc) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; $[SET-TEST-ID]&nbsp;&nbsp; /* replaced by testId
+= atoi(argv[0]) */</TT>
+<BR><TT>&nbsp;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; ...Code....</TT>
+
+<P><TT>}</TT></BLOCKQUOTE>
+<B>Java Mode Example:</B>
+
+<P><FONT COLOR="#000000">$[DATA-TO-SET] tells replacer where to inject
+the public static data tables (declarations) and testId declaration when
+in Single Source mode.&nbsp;&nbsp; $[SET-TEST-ID] tells the replacer where
+to place "<TT>&lt;mainClassName>.testId = parseInt(argv[1])</TT>"&nbsp;
+inside main().&nbsp;&nbsp;&nbsp; The example below shows the proper locations
+for $[DATA-TO-SET], and $[SET-TEST-ID]:</FONT>
+<BLOCKQUOTE><TT><FONT COLOR="#000000">class Example {</FONT></TT>
+
+<P><TT><FONT COLOR="#000000">&nbsp;&nbsp;&nbsp; $[DATA-TO-SET]</FONT></TT>
+
+<P><TT><FONT COLOR="#000000">&nbsp;&nbsp;&nbsp; public static void main(String
+argv[]) {</FONT></TT>
+<BR><TT><FONT COLOR="#000000">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+$[SET-TEST-ID]</FONT></TT>
+<BR><TT><FONT COLOR="#000000">&nbsp;&nbsp;&nbsp; ...Code...</FONT></TT>
+
+<P><TT><FONT COLOR="#000000">&nbsp;&nbsp;&nbsp; }</FONT></TT>
+<BR><TT><FONT COLOR="#000000">}</FONT></TT></BLOCKQUOTE>
+
+<HR WIDTH="100%">
+<H3>
+<A NAME="example"></A></H3>
+
+<H3>
+<FONT SIZE=+2>Examples</FONT></H3>
+
+<H3>
+Example 1</H3>
+This is a sample specfile snippet and the combinations that are output:
+
+<P>[food]
+<BR>IMPORTANCE=HIGH
+<BR>Pizza=p
+<BR>Chicken=c
+<BR>Dogfood=d
+
+<P>[toppings]
+<BR>IMPORTANCE=HIGH
+<BR>DEPENDENCY=food == p
+<BR>pepporoni=p
+<BR>mushrooms=m
+<BR>onions=o
+<BR>oregeno=xx
+
+<P>This would result in 6 .c files.&nbsp; And as templates are evaluated,
+they are evaluated with the following variable substitutions:
+
+<P>food=p&nbsp;&nbsp; toppings=p
+<BR>food=p&nbsp;&nbsp; toppings=m
+<BR>food=p&nbsp; toppings=o
+<BR>food=p&nbsp; toppings=xx
+<BR>food=c
+<BR>food=d
+<BR>&nbsp;
+
+<P>The following is a different example of the replacer tool in action.
+<B>Note: This test was just updated as of July 25 5:11 pm.</B>
+
+<P>A brief description of this sample is it tries to simulate a chain of
+objects being varied. This chain has a maximum length of 3. So all three
+objects in the chain are varied (upper-case or lower case). However, when
+you have a chain of length 2, you don't want to vary the 3rd object in
+the chain (you don't want to create spurious .c files that are duplicates
+of each other). So you put in a dependency header.
+
+<P>Input to replacer:
+
+<P><A HREF="sample/testspec.rep">testspec.rep</A> (replacer Specfile)
+<BR><A HREF="sample/testemp.ctp">testemp.ctp</A> (C template file)
+<BR><A HREF="sample/testmake.mtp">testmake.mtp</A> (Makefile template file)
+
+<P>Output (all in workarea/ )
+
+<P><A HREF="sample/Makefile">Makefile</A>
+<BR><A HREF="sample/testspec.reg">testspec.reg</A>
+
+<P><A HREF="sample/t0.c">t0.c</A> <A HREF="sample/t1.c">t1.c</A> <A HREF="sample/t2.c">t2.c</A>
+<BR><A HREF="sample/t3.c">t3.c</A> <A HREF="sample/t4.c">t4.c</A> <A HREF="sample/t5.c">t5.c</A>
+<A HREF="sample/t6.c">t6.c</A>
+<BR><A HREF="sample/t7.c">t7.c</A> <A HREF="sample/t8.c">t8.c</A> <A HREF="sample/t9.c">t9.c</A>
+<A HREF="sample/t10.c">t10.c</A>
+<BR><A HREF="sample/t11.c">t11.c</A> <A HREF="sample/t12.c">t12.c</A> <A HREF="sample/t13.c">t13.c</A>
+<A HREF="sample/t14.c">t14.c</A>
+<BR><A HREF="sample/t15.c">t15.c</A> <A HREF="sample/t16.c">t16.c</A> <A HREF="sample/t17.c">t17.c</A>
+<A HREF="sample/t18.c">t18.c</A>
+<BR><A HREF="sample/t19.c">t19.c</A> <A HREF="sample/t20.c">t20.c </A><A HREF="sample/t21.c">t21.c</A>
+<A HREF="sample/t22.c">t22.c</A>
+<BR><A HREF="sample/t23.c">t23.c</A> <A HREF="sample/t24.c">t24.c</A> <A HREF="sample/t25.c">t25.c</A>
+<A HREF="sample/t26.c">t26.c</A>
+<BR><A HREF="sample/t27.c">t27.c</A> <A HREF="sample/t28.c">t28.c</A> <A HREF="sample/t29.c">t29.c</A>
+<A HREF="sample/t30.c">t30.c</A>
+<BR><A HREF="sample/t31.c">t31.c</A> <A HREF="sample/t32.c">t32.c</A> <A HREF="sample/t33.c">t33.c</A>
+<A HREF="sample/t34.c">t34.c</A>
+<BR><A HREF="sample/t35.c">t35.c</A> <A HREF="sample/t36.c">t36.c</A> <A HREF="sample/t37.c">t37.c</A>
+<A HREF="sample/t38.c">t38.c</A>
+<BR><A HREF="sample/t39.c">t39.c</A> <A HREF="sample/t40.c">t40.c</A> <A HREF="sample/t41.c">t41.c</A>
+
+<P><A NAME="Example 2"></A><B><FONT SIZE=+1>Example 2</FONT></B>
+
+<P>This example demonstrates the Java support features and rule definitions
+for single Source mode.
+
+<P>The Java Template file looks like the following:
+
+<P><TT>package TestTools.Replacer;</TT>
+
+<P><TT>class Test {</TT>
+<BLOCKQUOTE><TT>/* below lies the injected datatables */</TT>
+
+<P><TT>$[DATA-TO-TEST]</TT>
+<BR><TT>&nbsp;</TT>
+<BR><TT>/* following array is part of</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp; template */</TT>
+
+<P><TT>public static int myMatrix[][] = {</TT>
+<BR><TT>&nbsp; { 0, 0, 0, 0, 0 },</TT>
+<BR><TT>&nbsp; { 1, 0, 0, 0, 0 },</TT>
+<BR><TT>&nbsp; { 1, 2, 0, 0, 0 },</TT>
+<BR><TT>&nbsp; { 1, 2, 3, 0, 0 },</TT>
+<BR><TT>&nbsp; { 51, 2, 3, 4, 0 } };</TT></BLOCKQUOTE>
+
+<BLOCKQUOTE><TT>public static void main(String argv[]) {</TT>
+<BR><TT>&nbsp;</TT>
+<BR><TT>&nbsp; $[SET-TEST-ID];</TT>
+<BR><TT>&nbsp;</TT>
+<BR><TT>&nbsp; System.out.println("User is " + $[STRING]);</TT>
+<BR><TT>&nbsp; System.out.print("is now accessing Matrix element Row: ");</TT>
+<BR><TT>&nbsp; System.out.print($[ROW]);</TT>
+<BR><TT>&nbsp; System.out.print(" Col: ");</TT>
+<BR><TT>&nbsp; System.out.println($[COL]);</TT>
+<BR><TT>&nbsp;</TT>
+<BR><TT>&nbsp; int exitValue = myMatrix[ $[ROW] ][ $[COL] ];</TT>
+<BR><TT>&nbsp; System.out.println("The exit value is: " + exitValue);</TT>
+<BR><TT>&nbsp; System.exit( exitValue );</TT>
+
+<P><TT>} // end of main</TT></BLOCKQUOTE>
+<TT>} // end of Test</TT>
+
+<P>Basically this program goes through all the possible row and column
+index combinations, and exit with a
+<BR>return code specified in&nbsp; myMatrix[ROW][COL].&nbsp;&nbsp;&nbsp;
+If this template is ran will out 'rule' restrictions, all tests that have
+row and column coordinates in the lower left
+<BR>triangle (of the matrix) will FAIL. (Because they all have non-zero
+exit codes)&nbsp;&nbsp; However if the following rules were applied.
+
+<P>[rule-2]
+<BR>ignore lower triangle=$[COL] &lt;&lt; $[ROW]
+<BR>ignore=TRUE
+
+<P>[rule-1]
+<BR>password=$[STRING]=="Robert Fulghum"
+<BR>bug=1234
+
+<P>Note: The rule label is arbitrary here.&nbsp; Rule-2 will be evaluated
+before rule-1 simply because it came first.
+
+<P>Because of rule-2 all the tests with ROW &amp; COL combinations that
+are in the lower left triangle of myMatrix will be ignored.
+<BR>After which rule-1 is applied to those ROW &amp; COL combos where rule-2
+did not apply.&nbsp;&nbsp;&nbsp; The results after running regress are
+here in&nbsp; <A HREF="sample/java/single/javatest.html">javatest.html</A>
+
+<P>Because Replacer is in single source mode, the following single t.java
+source file is produced:
+
+<P><TT>package TestTools.Replacer;</TT>
+
+<P><TT>class Test {</TT>
+<BR><TT>&nbsp; /* below lies the injected datatables */</TT>
+<BLOCKQUOTE><TT>public static int testId = 0;</TT>
+
+<P><TT>public static int[] ROW = {</TT>
+<BR><TT>&nbsp;0,</TT>
+<BR><TT>&nbsp;1,</TT>
+<BR><TT>&nbsp;2,</TT>
+<BR><TT>&nbsp;3,</TT>
+<BR><TT>&nbsp;4</TT>
+<BR><TT>};</TT>
+
+<P><TT>public static int[] COL = {</TT>
+<BR><TT>&nbsp;0,</TT>
+<BR><TT>&nbsp;1,</TT>
+<BR><TT>&nbsp;2,</TT>
+<BR><TT>&nbsp;3,</TT>
+<BR><TT>&nbsp;4</TT>
+<BR><TT>};</TT></BLOCKQUOTE>
+
+<BLOCKQUOTE><TT>public static String[] STRING = {</TT>
+<BR><TT>&nbsp;"Dave Barry",</TT>
+<BR><TT>&nbsp;"Robert Fulghum"</TT>
+<BR><TT>};</TT></BLOCKQUOTE>
+<TT>&nbsp; /* following array is part of</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp; template */</TT>
+<BLOCKQUOTE><TT>public static int myMatrix[][] = {</TT>
+<BR><TT>&nbsp; { 0, 0, 0, 0, 0 },</TT>
+<BR><TT>&nbsp; { 1, 0, 0, 0, 0 },</TT>
+<BR><TT>&nbsp; { 1, 2, 0, 0, 0 },</TT>
+<BR><TT>&nbsp; { 1, 2, 3, 0, 0 },</TT>
+<BR><TT>&nbsp; { 51, 2, 3, 4, 0 } };</TT></BLOCKQUOTE>
+
+<BLOCKQUOTE><TT>public static void main(String argv[]) {</TT>
+<BR><TT>&nbsp;</TT>
+<BR><TT>&nbsp; Test.testId = Integer.parseInt(argv[0]);;</TT>
+<BR><TT>&nbsp;</TT>
+<BR><TT>&nbsp; System.out.println("User is " + Test.STRING[Test.testId/5/5%2]);</TT>
+<BR><TT>&nbsp; System.out.print("is now accessing Matrix element Row: ");</TT>
+<BR><TT>&nbsp; System.out.print(Test.ROW[Test.testId%5]);</TT>
+<BR><TT>&nbsp; System.out.print(" Col: ");</TT>
+<BR><TT>&nbsp; System.out.println(Test.COL[Test.testId/5%5]);</TT>
+<BR><TT>&nbsp;</TT>
+<BR><TT>&nbsp; int exitValue = myMatrix[ Test.ROW[Test.testId%5] ][ Test.COL[Test.testId/5%5]
+];</TT>
+<BR><TT>&nbsp; System.out.println("The exit value is: " + exitValue);</TT>
+<BR><TT>&nbsp; System.exit( exitValue );</TT>
+<BR><TT>} //end of main</TT></BLOCKQUOTE>
+<TT>} //end of Test</TT>
+
+<P><B>Files for example 2</B>
+
+<P><B>Input to replacer</B>
+
+<P><A HREF="sample/java/javatest_single.rep">javatest_single.rep</A> (replacer
+Specfile)
+<BR><A HREF="sample/java/javatest_single.javatmp">javatest_single.javatmp</A>
+(java template file)
+<BR><A HREF="sample/java/javatest.mtp">javatest.mtp</A> (Makefile template)
+
+<P><B>Output</B>
+
+<P><A HREF="sample/java/single/t.java">t.java</A>
+<BR><A HREF="sample/java/single/javatest.reg">javatest.reg</A>
+<BR><A HREF="sample/java/single/javatest.mk">javatest.mk</A>
+<BR><A HREF="sample/java/single/javatest.rpt">javatest.rpt</A>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

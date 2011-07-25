@@ -1,0 +1,70 @@
+<?php
+
+$html_title = 'Troubleshooting NSS and JSS Builds';
+
+$menu = array(
+    'id' => 'default',
+);
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<center>
+<h2>Troubleshooting NSS and JSS Builds</h2>
+<i><FONT SIZE="-1">
+
+Newsgroup: 
+<A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A><BR>
+
+Technical contacts: 
+<A HREF="mailto:sonmi@netscape.com?subject=troubleshooting feedback">Sonja Mirtitsch</A><BR>
+
+Manager: 
+<A HREF="mailto:wtc@netscape.com?subject=troubleshooting feedback">Wan-Teh Chang</A></FONT></i>
+</center>
+
+
+<p>This page summarizes information on troubleshooting the NSS and JSS build and test systems, including known problems and configuration suggestions.
+
+<p>If you have suggestions for this page, please post them to <A HREF="news://news.mozilla.org/mozilla.dev.tech.crypto">mozilla.dev.tech.crypto</A>.
+
+<h3><hr width="100%">Building NSS</h3><ul><li>Having <tt>/usr/ucb/bin</tt> in the path before <tt>/usr/ccs/bin</tt> breaks the build on 64-bit Solaris.</li>
+        <li>The Solaris compiler needs to be workshop-5.0 or greater.</li>
+        <li>The 64-bit builds don't support <tt>gcc</tt>.
+	  <li>If the build fails early on the <tt>gmake</tt> in coreconf try updating your cvs tree with <tt>-P</tt>: 
+<BR><BR><tt>cd mozilla<BR>
+cvs update -P</tt>
+</ul>
+
+
+
+<h3><hr width="100%">Testing NSS</h3>
+      <ul>
+        <li>The SSL stress test opens 2,048 TCP connections in quick succession. Kernel
+data structures may remain allocated for these connections for up to two minutes.
+Some systems may not be configured to allow this many simultaneous connections
+by default; if the stress tests fail, try increasing the number of simultaneous
+sockets supported.</li>
+      </ul>
+<h3><hr width="100%">Building JSS</h3>
+
+<ul><li><b>Windows Only:</b> The shell invoked by <tt>gmake</tt>, <code>shmsdos.exe</code>,
+is likely to crash when invoking some Java tools on Windows. The current
+workaround is to use some other shell in place of <code>shmsdos</code>, such
+as <code>sh.exe</code>, which should be distributed with the
+<a href="http://sourceware.cygnus.com/cygwin/download.html">Cygnus toolkit</a>
+you installed to build NSS. The change is unfortunately rather drastic:
+to trick <tt>gmake</tt>, you rename the shell program.
+
+          <blockquote><tt>
+cd c:/Programs/cygnus/bin</tt><i>(or wherever your GNU tools are installed)</i><br><tt>cp shmsdos.exe shmsdos.bak</tt><i>(backup shmsdos)</i><br><tt>cp sh.exe shmsdos.exe</tt><i>(substitute alternative shell)</i></blockquote>
+ Making this change will probably break other builds you are&nbsp; making on the
+same machine. You may need to switch the shell back and forthdepending on
+which product you are building. We will try to provide a moreconvenient solution
+in the future. If you have the MKS toolkit installed,&nbsp; the <tt>sh.exe</tt> that comes with this toolkit can be used as well.</li></ul><p><br></p><p></p>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

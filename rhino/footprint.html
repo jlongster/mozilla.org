@@ -1,0 +1,125 @@
+<?php
+
+$html_title = 'Small Footprint';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<!-- ***** BEGIN LICENSE BLOCK *****
+- Version: MPL 1.1/GPL 2.0
+-
+- The contents of this file are subject to the Mozilla Public License Version
+- 1.1 (the "License"); you may not use this file except in compliance with
+- the License. You may obtain a copy of the License at
+- http://www.mozilla.org/MPL/
+-
+- Software distributed under the License is distributed on an "AS IS" basis,
+- WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+- for the specific language governing rights and limitations under the
+- License.
+-
+- The Original Code is Rhino code, released May 6, 1999.
+-
+- The Initial Developer of the Original Code is
+- Netscape Communications Corporation.
+- Portions created by the Initial Developer are Copyright (C) 1997-1999
+- the Initial Developer. All Rights Reserved.
+-
+- Contributor(s):
+-
+- Alternatively, the contents of this file may be used under the terms of
+- the GNU General Public License Version 2 or later (the "GPL"), in which
+- case the provisions of the GPL are applicable instead of those above. If
+- you wish to allow use of your version of this file only under the terms of
+- the GPL and not to allow others to use your version of this file under the
+- MPL, indicate your decision by deleting the provisions above and replacing
+- them with the notice and other provisions required by the GPL. If you do
+- not delete the provisions above, a recipient may use your version of this
+- file under either the MPL or the GPL.
+-
+- ***** END LICENSE BLOCK ***** -->
+<meta http-equiv="Content-Language" content="en">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta name="Author" content="Norris Boyd">
+<link rel="up" href="./" title="Rhino project page">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<p class="crumbs"><em>You are here:</em> <a href="./">Rhino project page</a> &gt; <strong>Small Footprint</strong></p>
+
+<h1 style="text-align: center;">Small Footprint</h1>
+
+<p>A few changes can be made to reduce the footprint of Rhino for 
+embeddings where space is at a premium. On a recent build, the 
+length of js.jar was 603,127 bytes corresponding to 1,171,708 
+bytes of all uncompressed Rhino classes with debug information 
+included. With various changes js.jar size can be reduced to 
+204,689 bytes corresponding to 424,774 bytes of uncompressed 
+classes.</p>
+
+<h2>Tools</h2>
+
+<p>Most embeddings won't need any of the classes in 
+<code>org.mozilla.javascript.tools</code> or any of its sub-packages.</p>
+
+<h2>Optimizer</h2>
+
+<p>It is possible to run Rhino with interpreter mode only, allowing 
+you to remove code for classfile generation that include all 
+the classes from <tt>org.mozilla.javascript.optimizer</tt> package.</p>
+
+<h2>JavaAdapter</h2>
+
+<p>Implementing the JavaAdapter functionality requires the ability to 
+generate classes on the fly. Removing 
+<code>org.mozilla.javascript.JavaAdapter</code> will disable this 
+functionality, but Rhino will otherwise run correctly.</p>
+
+<h2>Class generation library</h2>
+
+<p>If you do not include Optimizer or JavaAdapter, nor do you use 
+PolicySecurityController then you do not need Rhino library for class 
+file generation and you can remove all the classes from in 
+<code>org.mozilla.classfile</code> package.</p>
+
+<h2>Regular Expressions</h2>
+
+<p>The package <code>org.mozilla.javascript.regexp</code> can be 
+removed. Rhino will continue to run, although it will not be able to 
+execute any regular expression matches. This change saves 47,984 
+bytes of class files.</p>
+
+<h2>Debug information</h2>
+
+<p>Debug information in Rhino classes consumes about 25% of code 
+size and if you can live without that, you can recompile Rhino to 
+remove it.</p>
+
+<h2>smalljs.jar</h2>
+
+<p>Ant build script in Rhino supports smalljar target that will generate
+smalljs.jar that does not include Tools, Optimizer, JavaAdapter and 
+Class generation library, Regular Expressions, E4X implementataion and 
+deprecated files. To build such minimalist jar without debug information, 
+run the following command from the top directory of Rhino distribution:</p>
+
+<pre class="code">
+ant clean
+ant -Ddebug=off -Dno-regexp=true -Dno-e4x=true smalljar
+</pre>
+
+<p>If you omit <code>-Dno-regexp=true</code>, then the resulting 
+smalljs.jar will include Regular Expression support. Similarly 
+omitting <code>-Dno-e4x=true</code> results in smalljs.jar 
+that includes runtime support for E4X.</p>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

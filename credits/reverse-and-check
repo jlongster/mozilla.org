@@ -1,0 +1,50 @@
+#!/usr/bin/perl -w
+
+use Text::Unaccent;
+
+usage() if !$ARGV[0];
+
+open(my $CANDIDATES, '<:encoding(utf8)', $ARGV[0]);
+open(my $NAMES, '<:encoding(utf8)', "names.txt") || die "Can't open names.txt";
+
+binmode(STDOUT, ":utf8");
+
+my %names;
+while (<$NAMES>) {
+    chomp;
+    $names{lc(unac_string('utf-8', $_))} = 1;
+}
+
+while (<$CANDIDATES>) {
+    my ($first, $last);
+    
+    chomp;
+    if ($_ =~ /^(.*),(.*)$/) {
+        $first = $2,
+        $last = $1,
+    }
+    elsif ($_ =~ / /) {
+        $_ =~ m/^(.*) ([^ ]+)$/;
+        $first = $1;
+        $last = $2;
+    }
+    else {
+        $first = "";
+        $last = $_;
+    }
+    
+    my $reversed = $last . "," . $first;
+    if ($names{lc(unac_string('utf-8', $reversed))}) {
+        print $reversed . " is a duplicate\n";
+    }
+    else {
+        print $reversed . "\n";
+    }
+}
+
+exit;
+
+sub usage {
+    print "Usage: reverse <file-of-names.txt>\n";
+    exit;
+}

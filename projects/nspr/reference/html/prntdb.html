@@ -1,0 +1,1444 @@
+<?php
+
+$html_title = ' NSPR Reference: Chapter&#32;11 Network Addresses';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<META NAME="keywords" CONTENT="electronic commerce, ecommerce, ebusiness, e-business, e-commerce, enterprise software, net economy, Netscape, Sun Microsystems, Sun-Netscape Alliance, iPlanet, internet software">
+<META NAME="description" CONTENT="The Sun-Netscape Alliance, a strategic alliance formed by America Online and Sun Microsystems, Inc., is delivering iPlanet e-commerce software and enterprise solutions that enable companies to compete successfully in the Net Economy">
+<META NAME="TEMPLATEBASE" CONTENT="Authored in FrameMaker. Converted to HTML in WebWorks Publisher 2000. manual wdt 1.5">
+<META NAME="LASTUPDATED" CONTENT="05/18/01 16:05:19">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<MAINCONTENT>
+
+<NAVIGATIONCONTENT>
+   <TABLE WIDTH="100%" BORDER="0" CELLSPACING="4">
+      <TR>
+         <TD VALIGN="TOP">
+        
+           
+           <FONT SIZE="+1"><B>
+             NSPR Reference</B></FONT><BR><FONT>  
+<FONT SIZE="-1"><b><a href="priofnc.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="pratom.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;</FONT>
+         </TD>
+     </TR>
+
+     
+   </TABLE>
+   <BR>
+</NAVIGATIONCONTENT>
+
+<BOOKCONTENT>
+<HR>
+      <center>
+<A NAME="20282"> </A><A NAME=""> </A><h2>
+Chapter&#32;11 
+&nbsp;
+
+
+
+<A NAME="20283"> </A><A NAME="Network Addresses"> </A>Network Addresses
+</h2>
+</center>
+<A NAME="20284"> </A>This chapter describes the NSPR types and functions used to manipulate network 
+addresses.
+
+<P>
+
+<A NAME="20288"> </A><A HREF="prntdb.html#20298"  >Network Address Types and Constants</A><br>
+<A HREF="prntdb.html#20404"  >Network Address Functions</A>
+
+<P>
+
+<A NAME="20292"> </A>The API described in this chapter recognizes the emergence of Internet Protocol 
+Version 6 (IPv6). To facilitate the transition to IPv6, it is recommended that clients 
+treat all structures containing network addresses as transparent objects and use the 
+functions documented here to manipulate the information.
+
+<P>
+
+<A NAME="20293"> </A>If used consistently, this API also eliminates the need to deal with the byte 
+ordering of network addresses. Typically, the only numeric declarations required 
+are the well-known port numbers that are part of the <A HREF="priotyp.html#17138"  ><CODE>PRNetAddr</CODE></A> structure. 
+
+<P>
+
+
+
+<A NAME="20298"> </A>
+<A NAME="Network Address Types and Constants"> </A>
+<h2>
+Network Address Types and Constants
+</h2>
+
+
+<A NAME="20302"> </A><A HREF="prntdb.html#20310"  ><CODE>PRHostEnt</CODE></A><CODE><br>
+</CODE><A HREF="prntdb.html#20358"  ><CODE>PRProtoEnt</CODE></A><CODE><br>
+</CODE><A HREF="prntdb.html#20386"  ><CODE>PR_NETDB_BUF_SIZE</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="20310"> </A><A NAME="PRHostEnt"> </A><h4>
+PRHostEnt
+</h4>
+
+<A NAME="20311"> </A>A structure that defines a list of network addresses. This structure is output from 
+<A HREF="prntdb.html#20553"  ><CODE>PR_GetHostByName</CODE></A> and <A HREF="prntdb.html#20589"  ><CODE>PR_GetHostByAddr</CODE></A> and passed to <A HREF="prntdb.html#20630"  ><CODE>PR_EnumerateHostEnt</CODE></A>. 
+Clients should avoid directly accessing any of the structure's fields.
+
+<P>
+
+<BR>
+<A NAME="20321"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="20322"></A>#include &lt;prnetdb.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="20323"></A>typedef struct PRHostEnt {<br>&nbsp;&nbsp;&nbsp;char *h_name;<br>&nbsp;&nbsp;&nbsp;char **h_aliases;<br>#if defined(_WIN32)<br>&nbsp;&nbsp;&nbsp;PRInt16 h_addrtype;<br>&nbsp;&nbsp;&nbsp;PRInt16 h_length;<br>#else<br>&nbsp;&nbsp;&nbsp;PRInt32 h_addrtype;<br>&nbsp;&nbsp;&nbsp;PRInt32 h_length;<br>#endif<br>&nbsp;&nbsp;&nbsp;char **h_addr_list;<br>} PRHostEnt;
+</PRE>
+<P>
+<BR>
+<A NAME="20324"> </A><A NAME="Fields"> </A><h5>
+Fields
+</h5>
+
+
+<A NAME="20325"> </A>The structure has the following fields:
+
+<P>
+
+<P>
+<A NAME="20347"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20328"></A><CODE>h_name</CODE>
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20330"> </A>Pointer to the official name of host.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20332"></A>h_aliases
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20334"> </A>Pointer to a pointer to list of aliases. The list is terminated with 
+a <CODE>NULL</CODE> entry.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20336"></A>h_addrtype
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20338"> </A>Host address type. For valid NSPR usage, this field must have 
+a value indicating either an IPv4 or an IPv6 address.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20340"></A>h_length
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20342"> </A>Length of internal representation of the address in bytes. All of 
+the addresses in the list are of the same type and therefore of 
+the same length.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20344"></A>h_addr_list
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20346"> </A>Pointer to a pointer to a list of addresses from name server. The 
+list is terminated with a <CODE>NULL</CODE> entry. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="20348"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="20349"> </A>This structure is used by many of the network address functions. All addresses are 
+passed in host order and returned in network order (suitable for use in system 
+calls).
+
+<P>
+
+<A NAME="20350"> </A>Use the network address functions to manipulate the <CODE>PRHostEnt</CODE> structure. To 
+make the transition to IP version 6 easier, it's best to treat <CODE>PRHostEnt</CODE> as an opaque 
+structure.
+
+<P>
+
+<P>
+<A NAME="20356"> </A>
+
+<BR>
+<HR SIZE="1">
+<TABLE BORDER="0" CELLPADDING="5" WIDTH="75%">
+  <TR>
+    <TD VALIGN=TOP>
+<A NAME="20353"> </A>
+<B>
+Note
+</B>
+
+</TD>
+    <TD VALIGN=TOP>
+<A NAME="20355"> </A><CODE>WINSOCK.H</CODE> defines <CODE>h_addrtype</CODE> and <CODE>h_length</CODE> as a 16-bit field, 
+whereas other platforms treat it as a 32-bit field. The <CODE>#ifdef</CODE> in the 
+structure allows direct assignment of the <CODE>PRHostEnt</CODE> structure.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+<HR SIZE="1">
+<BR>
+
+<P>
+
+
+<A NAME="20358"> </A><A NAME="PRProtoEnt"> </A><h4>
+PRProtoEnt
+</h4>
+
+<A NAME="20362"> </A>Protocol entry returned by <A HREF="prntdb.html#20694"  ><CODE>PR_GetProtoByName</CODE></A> and <A HREF="prntdb.html#20730"  ><CODE>PR_GetProtoByNumber</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="20366"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="20367"></A>#include &lt;prnetdb.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="20368"></A>typedef struct PRProtoEnt {<br>&nbsp;&nbsp;&nbsp;char *p_name; <br>&nbsp;&nbsp;&nbsp;char **p_aliases;<br>#if defined(_WIN32)<br>&nbsp;&nbsp;&nbsp;PRInt16 p_num;<br>#else<br>&nbsp;&nbsp;&nbsp;PRInt32 p_num;<br>#endif<br>} PRProtoEnt;
+</PRE>
+<P>
+<BR>
+<A NAME="20369"> </A><A NAME="Fields"> </A><h5>
+Fields
+</h5>
+
+
+<A NAME="20370"> </A>The structure has the following fields: 
+
+<P>
+
+<P>
+<A NAME="20384"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20373"></A>p_name
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20375"> </A>Pointer to official protocol name.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20377"></A>p_aliases
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20379"> </A>Pointer to a pointer to a list of aliases. The list is terminated with a 
+<CODE>NULL</CODE> entry. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20381"></A>p_num
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20383"> </A>Protocol number.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<A NAME="20386"> </A><A NAME="PR_NETDB_BUF_SIZE"> </A><h4>
+PR_NETDB_BUF_SIZE
+</h4>
+
+<A NAME="20387"> </A>Recommended size to use when specifying a scratch buffer for <A HREF="prntdb.html#20553"  ><CODE>PR_GetHostByName</CODE></A>, 
+<A HREF="prntdb.html#20589"  ><CODE>PR_GetHostByAddr</CODE></A>, <A HREF="prntdb.html#20694"  ><CODE>PR_GetProtoByName</CODE></A>, or <A HREF="prntdb.html#20730"  ><CODE>PR_GetProtoByNumber</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="20400"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="20401"></A>#include &lt;prnetdb.h&gt;
+</PRE>
+<P>
+<PRE>
+<A NAME="20402"></A>#if defined(AIX) || defined(OSF1)<br>&nbsp;&nbsp;&nbsp;#define PR_NETDB_BUF_SIZE sizeof(struct protoent_data)<br>#else<br>&nbsp;&nbsp;&nbsp;#define PR_NETDB_BUF_SIZE 1024<br>#endif
+</PRE>
+<P>
+
+
+<A NAME="20404"> </A>
+<A NAME="Network Address Functions"> </A>
+<h2>
+Network Address Functions
+</h2>
+
+
+<A NAME="20408"> </A><A HREF="prntdb.html#20422"  >Initializing a Network Address</A><br>
+<A HREF="prntdb.html#20483"  >Converting Between a String and a Network Address</A><br>
+<A HREF="prntdb.html#20541"  >Getting Host Names and Addresses</A><br>
+<A HREF="prntdb.html#20692"  >Getting Protocol Entries</A><br>
+
+<P>
+
+
+<A NAME="20422"> </A>
+<A NAME="Initializing a Network Address"> </A>
+<h3>
+Initializing a Network Address
+</h3>
+
+
+
+
+<A NAME="20429"> </A><A HREF="prntdb.html#20432"  ><CODE>PR_InitializeNetAddr</CODE></A> facilitates the use of <A HREF="priotyp.html#17138"  ><CODE>PRNetAddr</CODE></A>, the basic network 
+address structure, in a polymorphic manner. By using these functions with other 
+network address functions, clients can support either version 4 or version 6 of the 
+Internet Protocol transparently. 
+
+<P>
+
+<A NAME="20430"> </A>All NSPR functions that require <CODE>PRNetAddr</CODE> as an argument accept either an IPv4 or 
+IPv6 version of the address.
+
+<P>
+
+<A NAME="20432"> </A><A NAME="PR_InitializeNetAddr"> </A><h4>
+PR_InitializeNetAddr
+</h4>
+
+<A NAME="20433"> </A>Initializes or reinitializes a network address. The storage for the network address 
+structure is allocated by, and remains the responsibility of, the calling client.
+
+<P>
+
+<BR>
+<A NAME="20434"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="20435"></A>#include &lt;prnetdb.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="20436"></A>PRStatus PR_InitializeNetAddr(<br>&nbsp;&nbsp;&nbsp;PRNetAddrValue val, <br>&nbsp;&nbsp;&nbsp;PRUint16 port, <br>&nbsp;&nbsp;&nbsp;PRNetAddr *addr);
+</PRE>
+<P>
+<BR>
+<A NAME="20437"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="20438"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="20455"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20441"></A>val
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20443"> </A>The value to be assigned to the IP Address portion of the network address. 
+This must be <CODE>PR_IpAddrNull</CODE>, <CODE>PR_IpAddrAny</CODE>, or 
+<CODE>PR_IpAddrLoopback</CODE>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20445"></A>port
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20447"> </A>The port number to be assigned in the network address structure. The 
+value is specified in host byte order.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20449"></A>addr
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20454"> </A>A pointer to the <A HREF="priotyp.html#17138"  ><CODE>PRNetAddr</CODE></A> structure to be manipulated. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="20456"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="20457"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="20458"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="20459"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>. This may occur, for example, if the value of <CODE>val</CODE> is 
+not within the ranges defined by <CODE>PRNetAddrValue</CODE>. You can retrieve the reason 
+for the failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P></ul>
+
+<BR>
+<A NAME="20463"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="20464"> </A><CODE>PR_InitializeNetAddr</CODE> allows the assignment of special network address values 
+and the port number, while also setting the state that indicates the version of the 
+address being used. 
+
+<P>
+
+<A NAME="20465"> </A>The special network address values are identified by the enum <CODE>PRNetAddrValue</CODE>:
+
+<P>
+
+<PRE>
+<A NAME="20466"></A>typedef enum PRNetAddrValue{<br>&nbsp;&nbsp;&nbsp;PR_IpAddrNull,<br>&nbsp;&nbsp;&nbsp;PR_IpAddrAny,<br>&nbsp;&nbsp;&nbsp;PR_IpAddrLoopback<br>} PRNetAddrValue;
+</PRE>
+<P>
+<A NAME="20467"> </A>The enum has the following enumerators: 
+
+<P>
+
+<P>
+<A NAME="20481"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20470"></A>PR_IpAddrNull
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20472"> </A>Do not overwrite the IP address. This allows the caller to 
+change the network address' port number assignment without 
+affecting the host address.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20474"></A>PR_IpAddrAny
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20476"> </A>Assign logical <CODE>PR_INADDR_ANY</CODE> to IP address. This wildcard value 
+is typically used to establish a socket on which to listen for 
+incoming connection requests.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20478"></A>PR_IpAddrLoopback
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20480"> </A>Assign logical <CODE>PR_INADDR_LOOPBACK</CODE>. A client can use this value 
+to connect to itself without knowing the host's network 
+address.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+
+<A NAME="20483"> </A>
+<A NAME="Converting Between a String and a Network Address"> </A>
+<h3>
+Converting Between a String and a Network Address
+</h3>
+
+
+
+
+<A NAME="20484"> </A><A NAME="PR_StringToNetAddr"> </A><h4>
+PR_StringToNetAddr
+</h4>
+
+<A NAME="20485"> </A>Converts a character string to a network address.
+
+<P>
+
+<BR>
+<A NAME="20486"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="20487"></A>#include &lt;prnetdb.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="20488"></A>PRStatus PR_StringToNetAddr(<br>&nbsp;&nbsp;&nbsp;const char *string,<br>&nbsp;&nbsp;&nbsp;PRNetAddr *addr);
+</PRE>
+<P>
+<BR>
+<A NAME="20489"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="20490"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="20500"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20493"></A>string
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20495"> </A>The string to be converted.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20497"></A>addr
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20499"> </A>On output, the equivalent network address. 
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="20501"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="20502"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="20503"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="20504"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>. You can retrieve the reason for the failure by 
+calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P></ul>
+
+<BR>
+<A NAME="20508"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="20509"> </A>For IPv4 addresses, the input string represents numbers in the Internet standard 
+"<CODE>.</CODE>" notation. IPv6 addresses are indicated as strings using "<CODE>:</CODE>" characters separating 
+octets, with numerous caveats for shortcutting (see RFC #1884). If the NSPR library 
+and the host are configured to support IPv6, both formats are supported. 
+Otherwise, use of anything other than IPv4 dotted notation results in an error. 
+
+<P>
+
+<A NAME="20510"> </A><A NAME="PR_NetAddrToString"> </A><h4>
+PR_NetAddrToString
+</h4>
+
+<A NAME="20511"> </A>Converts a network address to a character string.
+
+<P>
+
+<BR>
+<A NAME="20512"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="20513"></A>#include &lt;prnetdb.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="20514"></A>PRStatus PR_NetAddrToString(<br>&nbsp;&nbsp;&nbsp;const PRNetAddr *addr, <br>&nbsp;&nbsp;&nbsp;char *string, <br>&nbsp;&nbsp;&nbsp;PRUint32 size);
+</PRE>
+<P>
+<BR>
+<A NAME="20515"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="20516"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="20530"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20519"></A>addr
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20521"> </A>A pointer to the network address to be converted.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20523"></A>string
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20525"> </A>A buffer that will hold the converted string on output.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20527"></A>size
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20529"> </A>The size of the result buffer (<CODE>string</CODE>).
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="20531"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="20532"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="20533"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="20534"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>. You can retrieve the reason for the failure by 
+calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P></ul>
+
+<BR>
+<A NAME="20538"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="20539"> </A>The network address to be converted (<CODE>addr</CODE>) may be either an IPv4 or IPv6 address 
+structure, assuming that the NSPR library and the host system are both configured 
+to utilize IPv6 addressing.  If <CODE>addr</CODE> is an IPv4 address,
+<CODE>size</CODE> needs to be at least 16.  If <CODE>addr</CODE> is an
+IPv6 address, <CODE>size</CODE> needs to be at least 46.
+
+<P>
+
+
+<A NAME="20541"> </A>
+<A NAME="Getting Host Names and Addresses"> </A>
+<h3>
+Getting Host Names and Addresses
+</h3>
+
+
+
+
+<A NAME="20545"> </A><A HREF="prntdb.html#20553"  ><CODE>PR_GetHostByName</CODE></A><CODE><br>
+</CODE><A HREF="prntdb.html#20589"  ><CODE>PR_GetHostByAddr</CODE></A><CODE><br>
+</CODE><A HREF="prntdb.html#20630"  ><CODE>PR_EnumerateHostEnt</CODE></A><CODE>
+</CODE>
+<P>
+
+<A NAME="20553"> </A><A NAME="PR_GetHostByName"> </A><h4>
+PR_GetHostByName
+</h4>
+
+<A NAME="20554"> </A>Looks up a host by name.
+
+<P>
+
+<BR>
+<A NAME="20555"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="20556"></A>#include &lt;prnetdb.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="20557"></A>PRStatus PR_GetHostByName(<br>&nbsp;&nbsp;&nbsp;const char *hostname, <br>&nbsp;&nbsp;&nbsp;char *buf, <br>&nbsp;&nbsp;&nbsp;PRIntn bufsize, <br>&nbsp;&nbsp;&nbsp;PRHostEnt *hostentry);
+</PRE>
+<P>
+<BR>
+<A NAME="20558"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="20559"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="20580"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20562"></A>hostname
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20564"> </A>The character string defining the host name of interest.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20566"></A>buf
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20568"> </A>A pointer to a buffer, allocated by the caller, that is filled in 
+with host data on output. All of the pointers in the <CODE>hostentry</CODE> 
+structure point to data saved in this buffer. This buffer is 
+referenced by the runtime during a call to 
+<A HREF="prntdb.html#20630"  ><CODE>PR_EnumerateHostEnt</CODE></A>. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20573"></A>bufsize
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20575"> </A>Number of bytes in the <CODE>buf</CODE> parameter. The buffer must be at 
+least <CODE>PR_NETDB_BUF_SIZE</CODE> bytes.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20577"></A>hostentry
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20579"> </A>This structure is allocated by the caller. On output, this 
+structure is filled in by the runtime if the function returns 
+<CODE>PR_SUCCESS</CODE>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="20581"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="20582"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="20583"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="20584"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>. You can retrieve the reason for the failure by 
+calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P></ul>
+
+<A NAME="20589"> </A><A NAME="PR_GetHostByAddr"> </A><h4>
+PR_GetHostByAddr
+</h4>
+
+<A NAME="20590"> </A>Looks up a host entry by its network address.
+
+<P>
+
+<BR>
+<A NAME="20591"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="20592"></A>#include &lt;prnetdb.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="20593"></A>PRStatus PR_GetHostByAddr(<br>&nbsp;&nbsp;&nbsp;const PRNetAddr *hostaddr, <br>&nbsp;&nbsp;&nbsp;char *buf, <br>&nbsp;&nbsp;&nbsp;PRIntn bufsize, <br>&nbsp;&nbsp;&nbsp;PRHostEnt *hostentry);
+</PRE>
+<P>
+<BR>
+<A NAME="20594"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="20595"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="20616"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20598"></A>hostaddr
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20600"> </A>A pointer to the IP address of host in question.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20602"></A>buf
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20604"> </A>A pointer to a buffer, allocated by the caller, that is filled in 
+with host data on output. All of the pointers in the <CODE>hostentry</CODE> 
+structure point to data saved in this buffer. This buffer is 
+referenced by the runtime during a call to 
+<A HREF="prntdb.html#20630"  ><CODE>PR_EnumerateHostEnt</CODE></A>. 
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20609"></A>bufsize
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20611"> </A>Number of bytes in the <CODE>buf</CODE> parameter. The buffer must be at 
+least <CODE>PR_NETDB_BUF_SIZE</CODE> bytes.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20613"></A>hostentry
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20615"> </A>This structure is allocated by the caller. On output, this 
+structure is filled in by the runtime if the function returns 
+<CODE>PR_SUCCESS</CODE>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="20617"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="20618"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="20619"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="20620"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>. You can retrieve the reason for the failure by 
+calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P></ul>
+
+<BR>
+<A NAME="20624"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="20625"> </A><CODE>PR_GetHostByAddr</CODE> is used to perform reverse lookups of network addresses. That 
+is, given a valid network address (of type <A HREF="priotyp.html#17138"  ><CODE>PRNetAddr</CODE></A>), <CODE>PR_GetHostByAddr</CODE> 
+discovers the address' primary name, any aliases, and any other network addresses 
+for the same host.
+
+<P>
+
+<A NAME="20630"> </A><A NAME="PR_EnumerateHostEnt"> </A><h4>
+PR_EnumerateHostEnt
+</h4>
+
+<A NAME="20634"> </A>Evaluates each of the possible addresses of a <A HREF="prntdb.html#20310"  ><CODE>PRHostEnt</CODE></A> structure, acquired from 
+<A HREF="prntdb.html#20553"  ><CODE>PR_GetHostByName</CODE></A> or <A HREF="prntdb.html#20589"  ><CODE>PR_GetHostByAddr</CODE></A>.
+
+<P>
+
+<BR>
+<A NAME="20641"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="20642"></A>#include &lt;prnetdb.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="20643"></A>PRIntn PR_EnumerateHostEnt(<br>&nbsp;&nbsp;&nbsp;PRIntn enumIndex, <br>&nbsp;&nbsp;&nbsp;const PRHostEnt *hostEnt, <br>&nbsp;&nbsp;&nbsp;PRUint16 port, <br>&nbsp;&nbsp;&nbsp;PRNetAddr *address);
+</PRE>
+<P>
+<BR>
+<A NAME="20644"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="20645"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="20678"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20648"></A>enumIndex
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20650"> </A>The index of the enumeration. To begin an enumeration, this 
+argument is set to zero. To continue an enumeration (thereby 
+getting successive addresses from the host entry structure), the 
+value should be set to the function's last returned value. The 
+enumeration is complete when a value of zero is returned.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20652"></A>hostEnt
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20657"> </A>A pointer to a <A HREF="prntdb.html#20310"  ><CODE>PRHostEnt</CODE></A> structure obtained from 
+<A HREF="prntdb.html#20553"  ><CODE>PR_GetHostByName</CODE></A> or <A HREF="prntdb.html#20589"  ><CODE>PR_GetHostByAddr</CODE></A>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20665"></A>port
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20667"> </A>The port number to be assigned as part of the <A HREF="priotyp.html#17138"  ><CODE>PRNetAddr</CODE></A><CODE> 
+</CODE>structure. This parameter is not checked for validity.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20672"></A>address
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20677"> </A>On input, a pointer to a <A HREF="priotyp.html#17138"  ><CODE>PRNetAddr</CODE></A> structure. On output, this 
+structure is filled in by the runtime if the result of the call is greater 
+than 0.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="20679"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="20680"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="20681"> </A>If successful, the function returns the value you should specify in the 
+<CODE>enumIndex</CODE> parameter for the next call of the enumerator. If the function 
+returns 0, the enumeration is ended.
+
+<P><B>  <li></B>
+<A NAME="20682"> </A>If unsuccessful, the function returns -1. You can retrieve the reason for the 
+failure by calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P></ul>
+
+<BR>
+<A NAME="20686"> </A><A NAME="Description"> </A><h5>
+Description
+</h5>
+
+
+<A NAME="20687"> </A><CODE>PR_EnumerateHostEnt</CODE> is a stateless enumerator. The principle input, the 
+<A HREF="prntdb.html#20310"  ><CODE>PRHostEnt</CODE></A> structure, is not modified. 
+
+<P>
+
+
+<A NAME="20692"> </A>
+<A NAME="Getting Protocol Entries"> </A>
+<h3>
+Getting Protocol Entries
+</h3>
+
+
+
+
+<A NAME="20694"> </A><A NAME="PR_GetProtoByName"> </A><h4>
+PR_GetProtoByName
+</h4>
+
+<A NAME="20695"> </A>Looks up a protocol entry based on the protocol's name.
+
+<P>
+
+<BR>
+<A NAME="20696"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="20697"></A>#include &lt;prnetdb.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="20698"></A>PRStatus PR_GetProtoByName(<br>&nbsp;&nbsp;&nbsp;const char* protocolname, <br>&nbsp;&nbsp;&nbsp;char* buffer, <br>&nbsp;&nbsp;&nbsp;PRInt32 bufsize, <br>&nbsp;&nbsp;&nbsp;PRProtoEnt* result);
+</PRE>
+<P>
+<BR>
+<A NAME="20699"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="20700"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="20721"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20703"></A>protocolname
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20705"> </A>A pointer to the character string of the protocol's name.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20707"></A>buffer
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20709"> </A>A pointer to a scratch buffer for the runtime to return result.This 
+buffer is allocated by the caller.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20711"></A>bufsize
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20713"> </A>Number of bytes in the <CODE>buffer</CODE> parameter. The buffer must 
+be at least <CODE>PR_NETDB_BUF_SIZE</CODE> bytes.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20715"></A>result
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20720"> </A>On input, a pointer to a <A HREF="prntdb.html#20358"  ><CODE>PRProtoEnt</CODE></A> structure. On output, this 
+structure is filled in by the runtime if the function returns 
+<CODE>PR_SUCCESS</CODE>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="20722"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="20723"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="20724"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="20725"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>. You can retrieve the reason for the failure by 
+calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P></ul>
+
+<A NAME="20730"> </A><A NAME="PR_GetProtoByNumber"> </A><h4>
+PR_GetProtoByNumber
+</h4>
+
+<A NAME="20731"> </A>Looks up a protocol entry based on protocol's number.
+
+<P>
+
+<BR>
+<A NAME="20732"> </A><A NAME="Syntax"> </A><h5>
+Syntax
+</h5>
+
+
+<PRE>
+<A NAME="20733"></A>#include &lt;prnetdb.h&gt; 
+</PRE>
+<P>
+<PRE>
+<A NAME="20734"></A>PRStatus PR_GetProtoByNumber(<br>&nbsp;&nbsp;&nbsp;PRInt32 protocolnumber, <br>&nbsp;&nbsp;&nbsp;char* buffer, <br>&nbsp;&nbsp;&nbsp;PRInt32 bufsize, <br>&nbsp;&nbsp;&nbsp;PRProtoEnt* result);
+</PRE>
+<P>
+<BR>
+<A NAME="20735"> </A><A NAME="Parameters"> </A><h5>
+Parameters
+</h5>
+
+
+<A NAME="20736"> </A>The function has the following parameters:
+
+<P>
+
+<P>
+<A NAME="20757"> </A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="4">
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20739"></A>protocolnumber
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20741"> </A>The number assigned to the protocol.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20743"></A>buffer
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20745"> </A>A pointer to a scratch buffer for a temporary work area. This 
+buffer is allocated by the caller.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20747"></A>bufsize
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20749"> </A>Number of bytes in the buffer parameter. You should specify 
+<CODE>PR_NETDB_BUF_SIZE</CODE>.
+
+<P>
+</TD>
+  </TR>
+  <TR>
+    <TD VALIGN=TOP>
+<PRE>
+<A NAME="20751"></A>result
+</PRE>
+<P></TD>
+    <TD VALIGN=TOP>
+<A NAME="20756"> </A>On input, a pointer to a <A HREF="priotyp.html#17138"  ><CODE>PRNetAddr</CODE></A> structure. On output, this 
+structure is filled in by the runtime if the function returns 
+<CODE>PR_SUCCESS</CODE>.
+
+<P>
+</TD>
+  </TR>
+</TABLE>
+
+
+<P>
+
+
+<BR>
+<A NAME="20758"> </A><A NAME="Returns"> </A><h5>
+Returns
+</h5>
+
+
+<A NAME="20759"> </A>The function returns one of the following values:
+
+<P>
+<ul>
+<B>  <li></B>
+<A NAME="20760"> </A>If successful, <CODE>PR_SUCCESS</CODE>.
+
+<P><B>  <li></B>
+<A NAME="20761"> </A>If unsuccessful, <CODE>PR_FAILURE</CODE>. You can retrieve the reason for the failure by 
+calling <A HREF="prerr.html#26127"  ><CODE>PR_GetError</CODE></A>.
+
+<P></ul>
+
+
+<HR>
+</BOOKCONTENT>
+
+<FOOTERCONTENT>
+
+
+            <b><a href="priofnc.html">
+<FONT SIZE="2">Previous</a></FONT>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+<a href="index.html">
+<b><FONT SIZE="2">Contents</a></FONT></b>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="pratom.html">
+<b>
+<FONT SIZE="2">
+Next
+</a>
+</FONT>
+</b>&nbsp;&nbsp;&nbsp;&nbsp;
+ 
+
+   <FONT SIZE="-2">
+   <P ALIGN="RIGHT">Last Updated <B>May 18, 2001</B>
+   </FONT>
+   <BR>
+
+</FOOTERCONTENT>
+
+</MAINCONTENT>
+
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>

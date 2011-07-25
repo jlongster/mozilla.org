@@ -1,0 +1,568 @@
+<?php
+
+$html_title = 'NSPR Reference: Hash Tables (Chapter 33)';
+
+$menu = array(
+    'id' => 'default',
+);
+
+$extra_headers = '
+<link rel="prev" href="./prrng.html">
+<link rel="contents" href="./">
+<link rel="next" href="./prerr.html">
+';
+
+require_once "{$config['file_root']}/includes/header.inc.php"
+
+?>
+
+<h1><abbr>NSPR</abbr> Reference</h1>
+<ul class="snav">
+  <li><a href="./prrng.html">Previous</a>
+  <li><a href="./">Contents</a>
+  <li><a href="./prerr.html">Next</a>
+</ul>
+<h1>Hash Tables (Chapter 33)</h1>
+<p>This chapter describes the hash table functions in the <code>plds</code> 
+ (portable library &mdash; data structures) library of <abbr>NSPR</abbr>. The
+ hash table library  functions are declared in the header file
+ <code>plhash.h</code>.</p>
+<p><strong>Warning:</strong> The <abbr>NSPR</abbr> hash table library functions
+ are not thread safe.</p>
+<p>A hash table lookup may change the internal organization of the hash table
+ (to speed up future lookups).</p>
+<ul class="toc">
+  <li><a href="#types-and-constants">Hash Table Types and Constants</a>
+  <li><a href="#functions">Hash Table Functions</a>
+</ul>
+<div class="section">
+  <h2 id="types-and-constants">Hash Table Types and Constants</h2>
+  <ul>
+    <li><a href="#PLHashEntry"><code>PLHashEntry</code></a>
+    <li><a href="#PLHashTable"><code>PLHashTable</code></a>
+    <li><a href="#PLHashNumber"><code>PLHashNumber</code></a>
+    <li><a href="#PLHashFunction"><code>PLHashFunction</code></a>
+    <li><a href="#PLHashComparator"><code>PLHashComparator</code></a>
+    <li><a href="#PLHashEnumerator"><code>PLHashEnumerator</code></a>
+    <li><a href="#PLHashAllocOps"><code>PLHashAllocOps</code></a>
+  </ul>
+  <div class="section">
+    <h4 id="PLHashEntry">PLHashEntry</h4>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+typedef struct PLHashEntry PLHashEntry;</pre>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p><code>PLHashEntry</code> is a structure that represents an entry in the
+       hash table. An entry has a key and a value, represented by the following
+       fields in the <code>PLHashEntry</code> structure.</p>
+      <pre class="code">   const void *key;
+   void *value;</pre>
+      <p>The <code>key</code> field is a pointer to an opaque key. The
+       <code>value</code> field is a pointer to an opaque value. If the key of
+       an entry is an integral value that can fit into a <code>void *</code>
+       pointer, you can just cast the key itself to <code>void *</code> and
+       store it in the key field. Similarly, if the value of an entry is an
+       integral value that can fit into a <code>void *</code> pointer, you can
+       cast the value itself to <code>void *</code> and store it in the value
+       field.</p>
+      <p><strong>Warning:</strong> There are other fields in the
+       <code>PLHashEntry</code> structure besides key and value. These fields
+       are for use by the hash table library functions and the user should not
+       tamper with them.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PLHashTable">PLHashTable</h4>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+typedef struct PLHashTable PLHashTable;</pre>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p>The opaque <code>PLHashTable</code> structure represents a hash table.
+       Entries in the table have the type <code>PLHashEntry</code> and are
+       organized into buckets. The number of buckets in a hash table may be
+       changed by the library functions during the lifetime of the table to
+       optimize speed and space.</p>
+      <p>A new hash table is created by the PL_NewHashTable function, and
+       destroyed by the PL_HashTableDestroy function.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PLHashNumber">PLHashNumber</h4>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+typedef PRUint32 PLHashNumber;
+
+#define PL_HASH_BITS 32</pre>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p><code>PLHashNumber</code> is an unsigned 32-bit integer.
+       <code>PLHashNumber</code> is the data type of the return value of a hash
+       function. A hash function maps a key to a hash number, which is then used
+       to compute the index of the bucket.</p>
+      <p>The macro <code>PL_HASH_BITS</code> is the size (in bits) of the
+       <code>PLHashNumber</code> data type and has the value of 32.</p>
+    </div>
+    <div class="section">
+      <h5>See Also</h5>
+      <p><a href="#PLHashFunction"><code>PLHashFunction</code></a>.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PLHashFunction">PLHashFunction</h4>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+typedef PLHashNumber (PR_CALLBACK *PLHashFunction)(const void *key);</pre>
+ </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p><code>PLHashNumber</code> is a function type that maps the key of a
+       hash table entry to a hash number.</p>
+    </div>
+    <div class="section">
+      <h5>See Also</h5>
+      <p><a href="#PL_HashString"><code>PL_HashString</code></a>.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PLHashComparator">PLHashComparator</h4>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+typedef PRIntn (PR_CALLBACK *PLHashComparator)(
+   const void *v1,
+   const void *v2);</pre>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p><code>PLHashComparator</code> is a function type that compares two
+       values of an unspecified type. It returns a nonzero value if the two
+       values are equal, and 0 if the two values are not equal.
+       <code>PLHashComparator</code> defines the meaning of equality for the
+       unspecified type.</p>
+      <p>For convenience, two comparator functions are provided.
+       <code>PL_CompareStrings</code> compare two character strings using
+       <code>strcmp</code>. <code>PL_CompareValues</code> compares the values of
+       the arguments <code>v1</code> and <code>v2</code> numerically.</p>
+    </div>
+    <div class="section">
+      <h5>Remark</h5>
+      <p>The return value of <code>PLHashComparator</code> functions should be
+       of type <code>PRBool</code>.</p>
+    </div>
+    <div class="section">
+      <h5>See Also</h5>
+      <p><a href="#PL_CompareStrings"><code>PL_CompareStrings</code></a>,
+       <a href="#PL_CompareValues"><code>PL_CompareValues</code></a>.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PLHashEnumerator">PLHashEnumerator</h4>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+typedef PRIntn (PR_CALLBACK *PLHashEnumerator)(PLHashEntry *he, PRIntn index, void *arg);
+
+/* Return value */
+#define HT_ENUMERATE_NEXT                        0   /* continue enumerating entries */
+#define HT_ENUMERATE_STOP                        1   /* stop enumerating entries */
+#define HT_ENUMERATE_REMOVE                        2   /* remove and free the current entry */
+#define HT_ENUMERATE_UNHASH   4                        /* just unhash the current entry */</pre>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p><code>PLHashEnumerator</code> is a function type used in the
+       enumerating a hash table. When all the table entries are enumerated, each
+       entry is passed to a user-specified function of type
+       <code>PLHashEnumerator</code> with the hash table entry, an integer
+       index, and an arbitrary piece of user data as argument.</p>
+    </div>
+    <div class="section">
+      <h5>Remark</h5>
+      <p>The meaning of <code>HT_ENUMERATE_UNHASH</code> is not clear. In the
+       current implementation, it will leave the hash table in an inconsistent
+       state. The entries are unlinked from the table, they are not freed, but
+       the entry count (the <code>nentries</code> field of the 
+       <code>PLHashTable</code> structure) is not decremented.</p>
+    </div>
+    <div class="section">
+      <h5>See Also</h5>
+      <p><a href="#PL_HashTableEnumerateEntries"><code>PL_HashTableEnumerateEntries</code></a>.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PLHashAllocOps">PLHashAllocOps</h4>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+typedef struct PLHashAllocOps {
+   void *(PR_CALLBACK *allocTable)(void *pool, PRSize size);
+   void (PR_CALLBACK *freeTable)(void *pool, void *item);
+   PLHashEntry *(PR_CALLBACK *allocEntry)(void *pool, const void *key);
+   void (PR_CALLBACK *freeEntry)(void *pool, PLHashEntry *he, PRUintn flag);
+} PLHashAllocOps;
+
+#define HT_FREE_VALUE 0 /* just free the entry's value */
+#define HT_FREE_ENTRY 1 /* free value and entire entry */</pre>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p>Users of the hash table functions can provide their own memory
+       allocation functions. A pair of functions is used to allocate and tree
+       the table, and another pair of functions is used to allocate and free the
+       table entries.</p>
+      <p>The first argument, pool, for all four functions is a void * pointer
+       that is a piece of data for the memory allocator. Typically pool points
+       to a memory pool used by the memory allocator.</p>
+      <p>The <code>freeEntry</code> function does not need to free the value of
+       the entry. If flag is <code>HT_FREE_ENTRY</code>, the function frees the
+       entry.</p>
+    </div>
+    <div class="section">
+      <h5>Remark</h5>
+      <p>The <code>key</code> argument for the <code>allocEntry</code> function
+       does not seem to be useful. It is unused in the default
+       <code>allocEntry</code> function.</p>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <h2 id="functions">Hash Table Functions</h2>
+  <ul>
+    <li><a href="#PL_NewHashTable"><code>PL_NewHashTable</code></a>
+    <li><a href="#PL_HashTableDestroy"><code>PL_HashTableDestroy</code></a>
+    <li><a href="#PL_HashTableAdd"><code>PL_HashTableAdd</code></a>
+    <li><a href="#PL_HashTableRemove"><code>PL_HashTableRemove</code></a>
+    <li><a href="#PL_HashTableLookup"><code>PL_HashTableLookup</code></a>
+    <li><a href="#PL_HashTableEnumerateEntries"><code>PL_HashTableEnumerateEntries</code></a>
+    <li><a href="#PL_HashString"><code>PL_HashString</code></a>
+    <li><a href="#PL_CompareStrings"><code>PL_CompareStrings</code></a>
+    <li><a href="#PL_CompareValues"><code>PL_CompareValues</code></a>
+  </ul>
+  <div class="section">
+    <h4 id="PL_NewHashTable">PL_NewHashTable</h4>
+    <p>Create a new hash table.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+PLHashTable *PL_NewHashTable(
+   PRUint32 numBuckets,
+   PLHashFunction keyHash,
+   PLHashComparator keyCompare,
+   PLHashComparator valueCompare,
+   const PLHashAllocOps *allocOps,
+   void *allocPriv
+);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameters:</p>
+      <dl>
+        <dt><code>numBuckets</code>
+          <dd>The number of buckets in the hash table.
+        <dt><code>keyHash</code>
+          <dd>Hash function.
+        <dt><code>keyCompare</code>
+          <dd>Function used to compare keys of entries.
+        <dt><code>valueCompare</code>
+          <dd>Function used to compare keys of entries.
+        <dt><code>allocOps</code>
+          <dd>A pointer to a
+           <a href="#PLHashAllocOps"><code>PLHashAllocOps</code></a> structure
+           that must exist throughout the lifetime of the new hash table.
+        <dt><code>allocPriv</code>
+          <dd>Passed as the first argument (pool).
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p>The new hash table.</p>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p><code>PL_NewHashTable</code> creates a new hash table. The table has at
+       least 16 buckets. You can pass a value of 0 as <code>numBuckets</code> to
+       create the default number of buckets in the new table.The arguments
+       <code>keyCompare</code> and <code>valueCompare</code> are functions of
+       type <code>PLHashComparator</code> that the hash table library functions
+       use to compare the keys and the values of entries.</p>
+      <p>The argument <code>allocOps</code> points to a 
+       <code>PLHashAllocOps</code> structure that must exist throughout the
+       lifetime of the new hash table. The hash table library functions do not
+       make a copy of this structure. When the allocation functions in
+       <code>allocOps</code> are invoked, the allocation private data
+       <code>allocPriv</code> is passed as the first argument (pool). You can
+       specify a <code>NULL</code> value for <code>allocOps</code> to use the
+       default allocation functions. If <code>allocOps</code> is
+       <code>NULL</code>, <code>allocPriv</code> is ignored. Note that the
+       default <code>freeEntry</code> function does not free the value of the
+       entry.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PL_HashTableDestroy">PL_HashTableDestroy</h4>
+    <p>Frees the table and all the entries.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+void PL_HashTableDestroy(PLHashTable *ht);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameters:</p>
+      <dl>
+        <dt><code>ht</code>
+          <dd>A pointer to the hash table to be destroyed.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p><code>PL_HashTableDestroy</code> frees all the entries in the table and
+       the table itself. The entries are freed by the <code>freeEntry</code>
+       function (with the <code>HT_FREE_ENTRY</code> flag) in the
+       <code>allocOps</code> structure supplied when the table was created.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PL_HashTableAdd">PL_HashTableAdd</h4>
+    <p>Add a new entry with the specified key and value to the hash table.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+PLHashEntry *PL_HashTableAdd(
+   PLHashTable *ht, 
+   const void *key, 
+   void *value);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameters:</p>
+      <dl>
+        <dt><code>ht</code>
+          <dd>A pointer to the the hash table to which to add the entry.
+        <dt><code>key</code>
+          <dd>A pointer to the key for the entry to be added.
+        <dt><code>value</code>
+          <dd>A pointer to the value for the entry to be added.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p>A pointer to the new entry.</p>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p>Add a new entry with the specified key and value to the hash table.</p>
+      <p>If an entry with the same key already exists in the table, the
+       <code>freeEntry</code> function is invoked with the
+       <code>HT_FREE_VALUE</code> flag. You can write your
+       <code>freeEntry</code> function to free the value of the specified entry
+       if the old value should be freed. The default <code>freeEntry</code>
+       function does not free the value of the entry.</p>
+      <p><code>PL_HashTableAdd</code> returns <code>NULL</code> if there is not
+       enough memory to create a new entry. It doubles the number of buckets if
+       the table is overloaded.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PL_HashTableRemove">PL_HashTableRemove</h4>
+    <p>Removes the entry with the specified key from the hash table.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+PRBool PL_HashTableRemove(
+   PLHashTable *ht, 
+   const void *key);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameters:</p>
+      <dl>
+        <dt><code>ht</code>
+          <dd>A pointer to the hash table from which to remove the entry.
+        <dt><code>key</code>
+          <dd>A pointer to the key for the entry to be removed.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p>If there is no entry in the table with the specified key,
+       <code>PL_HashTableRemove</code> returns <code>PR_FALSE</code>. If the
+       entry exists, <code>PL_HashTableRemove</code> removes the entry from the
+       table, invokes <code>freeEntry</code> with the <code>HT_FREE_ENTRY</code>
+       flag to frees the entry, and returns <code>PR_TRUE</code>.</p>
+      <p>If the table is underloaded, <code>PL_HashTableRemove</code> also
+       shrinks the number of buckets by half.</p>
+    </div>
+    <div class="section">
+      <h5>Remark</h5>
+      <p>This function should return <code>PRStatus</code>.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PL_HashTableLookup">PL_HashTableLookup</h4>
+    <p>Looks up the entry with the specified key and return its value.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+void *PL_HashTableLookup(
+   PLHashTable *ht, 
+   const void *key);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameters:</p>
+      <dl>
+        <dt><code>ht</code>
+          <dd>A pointer to the hash table in which to look up the entry
+           specified by <code>key</code>.
+        <dt><code>key</code>
+          <dd>A pointer to the key for the entry to look up.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p>The value of the entry with the specified key, or <code>NULL</code> if
+       there is no such entry.</p>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p>If there is no entry with the specified key, 
+       <code>PL_HashTableLookup</code> returns <code>NULL</code>. This means
+       that one cannot tell whether a <code>NULL</code> return value means the
+       entry does not exist or the value of the entry is <code>NULL</code>. Keep
+       this ambiguity in mind if you want to store <code>NULL</code> values in a
+       hash table.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PL_HashTableEnumerateEntries">PL_HashTableEnumerateEntries</h4>
+    <p>Enumerates all the entries in the hash table, invoking a specified
+     function on each entry.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+PRIntn PL_HashTableEnumerateEntries(
+   PLHashTable *ht, 
+   PLHashEnumerator f, 
+   void *arg);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameters:</p>
+      <dl>
+        <dt><code>ht</code>
+          <dd>A pointer to the hash table whose entries are to be enumerated.
+        <dt><code>f</code>
+          <dd>Function to be applied to each entry..
+        <dt><code>arg</code>
+          <dd>Argument for function <code>f</code>.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p>The number of entries enumerated.</p>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p>The entries are enumerated in an unspecified order. For each entry, the
+       enumerator function is invoked with the entry, the index (in the sequence
+       of enumeration, starting from 0) of the entry, and <code>arg</code> as
+       arguments.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PL_HashString">PL_HashString</h4>
+    <p>A general-purpose hash function for character strings.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+PLHashNumber PL_HashString(const void *key);</pre>
+    </div>
+    <div class="section">
+      <h5>Parameters</h5>
+      <p>The function has the following parameters:</p>
+      <dl>
+        <dt><code>key</code>
+          <dd>A pointer to a character string.
+      </dl>
+    </div>
+    <div class="section">
+      <h5>Returns</h5>
+      <p>The hash number for the specified key.</p>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p><code>PL_HashString</code> can be used as the key hash function for a
+       hash table if the key is a character string.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PL_CompareStrings">PL_CompareStrings</h4>
+    <p>Compares two character strings.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+PRIntn PL_CompareStrings(
+   const void *v1,
+   const void *v2);</pre>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p><code>PL_CompareStrings</code> compares <code>v1</code> and
+       <code>v2</code> as character strings using <code>strcmp</code>. If the
+       two strings are equal, it returns 1. If the two strings are not equal,
+       it returns 0.</p>
+      <p><code>PL_CompareStrings</code> can be used as the comparator function
+       for string-valued key or entry value.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h4 id="PL_CompareValues">PL_CompareValues</h4>
+    <p>Compares two <code>void *</code> values numerically.</p>
+    <div class="section">
+      <h5>Syntax</h5>
+      <pre class="code">#include &lt;plhash.h&gt;
+
+PRIntn PL_CompareValues(const
+   void *v1,
+   const void *v2);</pre>
+    </div>
+    <div class="section">
+      <h5>Description</h5>
+      <p><code>PL_CompareValues</code> compares the two <code>void *</code>
+       values <code>v1</code> and <code>v2</code> numerically, i.e., it returns
+       the value of the expression <code>v1 == v2</code>.</p>
+      <p><code>PL_CompareValues</code> can be used as the comparator function
+       for integer or pointer-valued key or entry value.</p>
+    </div>
+  </div>
+</div>
+
+
+<?
+require_once "{$config['file_root']}/includes/footer.inc.php"
+?>
