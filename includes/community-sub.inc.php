@@ -8,7 +8,7 @@
     <p><label for="get-involved-interest">Area of interest</label>
       <select id="get-involved-interest" name="area">
         <option selected="selected" disabled="disabled" value="">Area of interest?</option>
-        <option value="Support">Helping users</option>
+        <option value="Support">Helping Users</option>
         <option value="Localization">Localization</option>
         <option value="QA">Testing and QA</option>
         <option value="Coding">Coding</option>
@@ -19,7 +19,7 @@
         <option value="Thunderbird">Thunderbird</option>
         <option value="Accessibility">Accessibility</option>
         <option value="Firefox Suggestions">Firefox Suggestions</option>
-        <option value=" ">Something else</option>
+        <option value=" ">Other</option>
       </select>
     </p>
     <p class="comments"><label for="get-involved-comments">Comments</label><textarea id="get-involved-comments" name="comments" class="filled" rows="4" cols="12">Hi! I'm interested in...</textarea></p>
