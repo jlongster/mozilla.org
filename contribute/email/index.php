@@ -57,6 +57,9 @@ if ($_POST["cmd"] === "sendemail"):
     case "Thunderbird":
       $headers .= "\r\nCc: <tb-kb" . "@" . "mozilla.com>";
       break;
+    case "Students":
+      $headers .= "\r\nCc: <studentreps" . "@" . "mozilla.com>";
+      break;
     case "Research":
       $headers .= "\r\nCc: <diane+contribute" . "@" . "mozilla.com>";
       break;
