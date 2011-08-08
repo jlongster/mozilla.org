@@ -141,26 +141,6 @@ if ($lang == null || !in_array($lang, $full_languages)) {
 // A lot of the migrated scripts depend on the language being in LANG
 define ('LANG', $lang);
 
-    /***   TEMPORARY CODE   ***/
-    /* Our time constraints have forced us to have a CheesyHack(TM) in here.  If
-     * someone picks a new language from the footer, we're sending them to another
-     * server (after checking if the file exists locally).  In the future we'll be 
-     * hosting these pages locally (and our code
-     * supports that currently), but for now we have to send them to the associated
-     * sites.  This temporary code will do that. (Also, it will only forward them on
-     * if $_GET['flang'] is set, to prevent it from conflicting with downloads) -- clouserw
-     */
-     if (array_key_exists($lang, $language_url_map) 
-         && !file_exists("{$config['file_root']}/{$lang}{$_SERVER['REDIRECT_URL']}")
-         && array_key_exists('flang', $_GET)) {
-         header('Vary: Accept-Language');
-         header("Location: {$language_url_map[$lang]}");
-         exit;
-     }
-     // If the language isn't in the map, fall through to the default (locally
-     // hosted) pages.
-
-    /*** END TEMPORARY CODE ***/
     if ($lang == 'ja') {
         $redir = str_replace('/ja', '', $_SERVER['REQUEST_URI']);
         $redir = "Location: http://mozilla.jp" . $redir;
