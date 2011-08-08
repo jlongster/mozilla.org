@@ -1,7 +1,7 @@
 <?php
-require_once '../../../../includes/config.inc.php';
-require_once '../../../../includes/functions.inc.php';
-require_once '../../../../includes/lightning.inc.php';
+require_once '{$config['file_root']}/includes/config.inc.php';
+require_once '{$config['file_root']}/includes/functions.inc.php';
+require_once '{$config['file_root']}/includes/lightning.inc.php';
 
 $release_version = '3.1.11';
 
@@ -36,7 +36,7 @@ $lightningUrl = lightningURL($supportedPlatform);
   body {
     margin: 0;
     padding: 0;
-    background: #fff url(<?php echo data_url('../../../../img/thunderbird/start/bg-header-small.jpg','image/jpeg'); ?>) repeat-x;
+    background: #fff url(<?php echo data_url('{$config['file_root']}/img/thunderbird/start/bg-header-small.jpg','image/jpeg'); ?>) repeat-x;
     color: #3C475B;
     font-family: "segoe ui", tahoma, sans-serif;
     font-size: small;
@@ -46,7 +46,7 @@ $lightningUrl = lightningURL($supportedPlatform);
   
   @font-face {
 	font-family: 'MetaWebPro-Bold';
-	src: local('☺'), url('../../../../img/fonts/metawebpro.woff') format('woff');
+	src: local('☺'), url('{$config['file_root']}/img/fonts/metawebpro.woff') format('woff');
 	font-style: normal;
   }
 
@@ -58,7 +58,7 @@ $lightningUrl = lightningURL($supportedPlatform);
   #contents {
     margin: 0;
     padding: 1em 250px 1em 2em;
-    background: url(<?php echo data_url('../../../../img/thunderbird/start/main-feature.jpg','image/jpeg'); ?>) top right no-repeat;
+    background: url(<?php echo data_url('{$config['file_root']}/img/thunderbird/start/main-feature.jpg','image/jpeg'); ?>) top right no-repeat;
   }
 
   #header h1 {
