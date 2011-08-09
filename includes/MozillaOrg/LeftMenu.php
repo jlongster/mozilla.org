@@ -130,6 +130,10 @@ class MozillaOrg_LeftMenu
                     'title' => 'Download Buttons',
                     'link'  => '/contribute/buttons/',
                 ),
+                array(
+                    'title' => 'Contributor Newsletter',
+                    'link'  => 'http://www.mozilla.com/en-US/newsletter/about_mozilla/',
+                ),
               ),
           ),
         ),
