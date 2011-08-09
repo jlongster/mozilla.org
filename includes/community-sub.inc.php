@@ -15,6 +15,7 @@
         <option value="Add-ons">Add-ons</option>
         <option value="Marketing">Marketing</option>
         <option value="Students">Student Reps</option>
+        <option value="Documentation">Developer Documentation</option>
         <option value="Research">User Research</option>
         <option value="Thunderbird">Thunderbird</option>
         <option value="Accessibility">Accessibility</option>
