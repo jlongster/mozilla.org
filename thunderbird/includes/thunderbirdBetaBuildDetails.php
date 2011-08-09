@@ -4,7 +4,7 @@
      */
     require_once dirname(__FILE__).'/product-details/productDetails.class.php';
 
-    define('LATEST_THUNDERBIRD_BETA_VERSION', '6.0b3');
+    define('LATEST_THUNDERBIRD_BETA_VERSION', '6.0b2');
 
     class thunderbirdBetaBuildDetails extends productDetails {
 
