@@ -4,7 +4,7 @@
      */
     require_once dirname(__FILE__).'/product-details/productDetails.class.php';
 
-    define('LATEST_THUNDERBIRD_BETA_VERSION', '6.0b2');
+    define('LATEST_THUNDERBIRD_BETA_VERSION', '6.0b3');
 
     class thunderbirdBetaBuildDetails extends productDetails {
 
@@ -24,7 +24,7 @@
             'es-ES' => array(LATEST_THUNDERBIRD_BETA_VERSION  => array('Windows' => array('filesize'  => 13.6), 'OS X' => array('filesize' => 31.1), 'Linux' => array('filesize' => 15.4))),
             'et' => array(LATEST_THUNDERBIRD_BETA_VERSION  => array('Windows' => array('filesize'  => 13.6), 'OS X' => array('filesize' => 31.2), 'Linux' => array('filesize' => 15.4))),
             'eu' => array(LATEST_THUNDERBIRD_BETA_VERSION  => array('Windows' => array('filesize'  => 13.6), 'OS X' => array('filesize' => 31.1), 'Linux' => array('filesize' => 15.4))),
-            'fi' => array(LATEST_THUNDERBIRD_BETA_VERSION  => array('Windows' => array('filesize'  => 13.6), 'OS X' => array('filesize' => 31.2), 'Linux' => array('filesize' => 15.4))),
+            'fi' => array(LATEST_THUNDERBIRD_BETA_VERSION  => array('OS X' => array('filesize' => 31.2), 'Linux' => array('filesize' => 15.4))),
             'fr' => array(LATEST_THUNDERBIRD_BETA_VERSION  => array('Windows' => array('filesize'  => 13.9), 'OS X' => array('filesize' => 31.5), 'Linux' => array('filesize' => 15.8))),
             'fy-NL' => array(LATEST_THUNDERBIRD_BETA_VERSION  => array('Windows' => array('filesize'  => 13.6), 'OS X' => array('filesize' => 31.2), 'Linux' => array('filesize' => 15.4))),
             'ga-IE' => array(LATEST_THUNDERBIRD_BETA_VERSION  => array('Windows' => array('filesize'  => 13.6), 'OS X' => array('filesize' => 31.2), 'Linux' => array('filesize' => 15.5))),
