@@ -187,7 +187,7 @@
     </tr>
     <xsl:if test="inclusion/@date != ''">
       <tr>
-        <td>Inclusion Date</td>
+        <td>Included In</td>
         <td>
           <xsl:value-of select="inclusion/@date"/>
         </td>
