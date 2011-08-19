@@ -149,10 +149,6 @@ class MozillaOrg_LeftMenu
                     'link'  => '/projects/#applications',
                 ),
                 array(
-                    'title' => 'Mozilla Drumbeat Projects',
-                    'link'  => '/projects/#drumbeat',
-                ),
-                array(
                     'title' => 'Mozilla Labs Experiments',
                     'link'  => '/projects/#labs',
                 ),
