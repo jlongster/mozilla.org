@@ -49,8 +49,8 @@ $current_year = date('Y');
     /* MetaWebPro font family licensed from fontshop.com. WOFF-FTW! */
     @font-face {
         font-family: 'MetaBold';
-        src: url('//www.mozilla.com/img/fonts/MetaWebPro-Bold.eot');
-        src: local('☺'), url('//www.mozilla.com/img/fonts/MetaWebPro-Bold.woff') format('woff');
+        src: url('//www.mozilla.org/img/fonts/MetaWebPro-Bold.eot');
+        src: local('☺'), url('//www.mozilla.org/img/fonts/MetaWebPro-Bold.woff') format('woff');
         font-weight: bold;
     }
     </style>
