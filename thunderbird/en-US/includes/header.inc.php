@@ -22,7 +22,11 @@
                                 'Other Systems and Languages' => array(
                                     'id'      => 'submenu_thunderbird_other',
 			                        'href'    => "/{$lang}/thunderbird/all.html",
-                                )
+                                ),
+                                'Future Releases' => array(
+                                    'id'      => 'submenu_thunderbird_channels',
+			                        'href'    => "/{$lang}/thunderbird/channels/",
+                                ),
                             )
                         )
                     ),

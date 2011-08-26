@@ -86,7 +86,9 @@ HTML_RETURN;
             $options['product'] = array_key_exists('product', $options) ?
             $options['product'] : 'thunderbird';
             # Used on the sidebar only
-            $options['download_title'] = ___('Free Download');
+            if (!isset($options['download_title'])) {
+                $options['download_title'] = ___('Free Download');
+            }
 
 			if (array_key_exists('tb_funnelcake', $config) && !empty($config['tb_funnelcake']['suffix']) && in_array($locale, $config['tb_funnelcake']['lang'])) {
 		        $options['tweaks'] = array('/thunderbird-'.LATEST_THUNDERBIRD_VERSION.'([^"]*)' . $locale . '/' => 'thunderbird-'.LATEST_THUNDERBIRD_VERSION.$config['tb_funnelcake']['suffix'].'$1' . $locale);

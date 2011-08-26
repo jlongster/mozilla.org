@@ -36,6 +36,7 @@ ed file
          */
         function thunderbirdBetaDetails() {
             parent::thunderbirdBetaBuildDetails();
+            $this->download_base_url_transition = '/thunderbird/download/';
         }
 
         /**
