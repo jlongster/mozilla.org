@@ -1,5 +1,12 @@
 <?php
-
+    // This crap is here to work around requiring firefoxDetails.class.php because it causes a collision if our latest beta version is 
+    define('LATEST_FIREFOX_VERSION', '0.0');
+    define('LATEST_FIREFOX_RELEASED_VERSION', '0.0');
+    define('LATEST_FIREFOX_DEVEL_VERSION', '0.0');
+    define('LATEST_FIREFOX_RELEASED_DEVEL_VERSION', '0.0');
+    define('LATEST_FIREFOX_OLDER_VERSION', '0.0');
+    define('FIREFOX_AURORA', '0.0');
+    
     require_once dirname(__FILE__).'/product-details/thunderbirdBuildDetails.php';
 
     /**

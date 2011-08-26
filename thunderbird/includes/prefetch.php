@@ -15,7 +15,6 @@ require dirname(__FILE__).'/langconfig.inc.php';
 
 // Load the product details classes
 require dirname(__FILE__).'/thunderbirdDetails.class.php';
-require dirname(__FILE__).'/product-details/firefoxDetails.class.php';
 
 // Load our migrated over functions
 require dirname(__FILE__).'/functions.inc.php';
