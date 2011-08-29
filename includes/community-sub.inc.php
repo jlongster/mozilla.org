@@ -32,7 +32,7 @@
       <input type="hidden" name="cmd" value="sendemail">
       <button type="submit" class="submit">Submit</button>
     </p>
-    <p><a href="http://www-stage.mozilla.org/about/policies/privacy-policy.html">Mozilla Privacy Policy</a></p>
+    <p><a href="/about/policies/privacy-policy.html">Mozilla Privacy Policy</a></p>
   </form>
 </div>
 <script type="text/javascript" src="/script/1.0/mozilla-input-placeholder.js"></script>
