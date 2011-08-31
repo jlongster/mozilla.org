@@ -25,7 +25,7 @@
                                 ),
                                 'Future Releases' => array(
                                     'id'      => 'submenu_thunderbird_channels',
-			                        'href'    => "/{$lang}/thunderbird/channels/",
+			                        'href'    => "/{$lang}/thunderbird/channel/",
                                 ),
                             )
                         )
