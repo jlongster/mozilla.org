@@ -17,6 +17,12 @@ $(document).ready(function() {
 		return 'placeholder' in i;
 	}
 
+	function isTextareaPlaceholderSupported()
+	{
+		var i = document.createElement('textarea');
+		return 'placeholder' in i;
+	}
+
 	function Placeholder(el)
 	{
 		this.el          = el;
@@ -127,9 +133,16 @@ $(document).ready(function() {
 			if (!this.el.getAttribute('name')) {
 
 				// we want the same el with an name attribute added
-				var outerHtml = this.el.outerHTML.replace(
-					/^<input /i,
-					'<input name=' + this.elName + ' ');
+				var outerHtml = '';
+				if (this.el.nodeName == 'INPUT') {
+					outerHtml = this.el.outerHTML.replace(
+						/^<input /i,
+						'<input name=' + this.elName + ' ');
+				} else if (this.el.nodeName == 'TEXTAREA') {
+					outerHtml = this.el.outerHTML.replace(
+						/^<textarea /i,
+						'<textarea name=' + this.elName + ' ');
+				}
 
 				var oldEl = this.el;
 				this.el = document.createElement(outerHtml);
@@ -177,6 +190,12 @@ $(document).ready(function() {
 	// initialize placeholders on the page
 	if (!isPlaceholderSupported()) {
 		$('input[placeholder]').each(function() {
+			$(this).data('placeholder', new Placeholder(this))
+		});
+	}
+
+	if (!isTextareaPlaceholderSupported()) {
+		$('textarea[placeholder]').each(function() {
 			$(this).data('placeholder', new Placeholder(this))
 		});
 	}
