@@ -20,7 +20,7 @@
 body {
   margin: 0;
   padding: 0;
-  background: #fff url(/img/thunderbird/start/feature-background-promo.jpg) top center no-repeat;
+  background: #fff url(/thunderbird/img/thunderbird/start/feature-background-promo.jpg) top center no-repeat;
   color: #333;
   font-family: georgia, serif;
   font-size: small;
@@ -79,7 +79,7 @@ ul {
 }
 
 ul li {
-  background-image: url(<?php echo data_url('../img/content/bullet.png','image/png'); ?>);
+  background-image: url(<?php echo data_url("{$config['file_root']}/img/content/bullet.png",'image/png'); ?>);
   background-position: 0 12px;
   background-repeat: no-repeat;
   list-style-type: none;
