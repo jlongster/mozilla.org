@@ -15,7 +15,6 @@ class MozillaOrg_LeftMenu
      *
      * @var array
      */
-     
     protected static $data = array(
         // {{{ about
         'about' => array(
@@ -171,6 +170,7 @@ class MozillaOrg_LeftMenu
               ),
             ),
         ),
+        // }}}
         // {{{ default
         'default' => array(
             array(
