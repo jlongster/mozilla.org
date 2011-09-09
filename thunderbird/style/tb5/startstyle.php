@@ -21,7 +21,8 @@ body {
     font-size: 14px;
     color: #222;
 }
-#tblogo {
+#tblogo,
+.tblogo {
     position: absolute;
     left: 670px;
     top: 45px;
