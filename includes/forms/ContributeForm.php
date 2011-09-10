@@ -285,6 +285,24 @@ class ContributeForm
     protected function getAutoResponseMessage($area, $subarea = '')
     {
         switch ($area) {
+        case 'Support':
+            // {{{ Support
+            return <<<TEXT
+Thanks for your interest in helping people with support questions and welcome to the Mozilla community.
+
+A great way to get started with helping users is to use our Army of Awesome page to quickly respond to questions people have about Firefox. You can find it at:
+
+http://support.mozilla.com/army-of-awesome
+
+If you're interested in finding about other ways to get involved with our support community, the following page has some useful information:
+
+https://support.mozilla.com/kb/superheroes-wanted
+
+If you have any questions about this, feel free to write me back.
+
+Jay
+TEXT;
+            // }}}
         case 'Add-ons':
             // {{{ Add-ons
             return <<<TEXT
