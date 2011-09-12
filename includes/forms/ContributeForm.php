@@ -338,6 +338,25 @@ Jorge Villalobos
 Add-ons Developer Relations Lead
 TEXT;
             // }}}
+        case 'Documentation':
+            // {{{ Documentation
+            return <<<TEXT
+Hello! Thanks for your interest in helping with Mozilla's documentation. There are several ways you can help:
+
+Write Firefox Knowledge Base articles
+http://support.mozilla.com/en-US/kb/improve-knowledge-base
+
+Write Thunderbird Knowledge Base articles
+http://support.mozillamessaging.com/en-US/kb/improve-knowledge-base
+
+Help with Mozilla Developer Network docs
+http://developer.mozilla.org/Project:en/How_to_Help 
+
+Thanks again for your interest, and welcome to the Mozilla Contributor Community.
+
+Jay
+TEXT;
+            // }}}
         case ' ':
             // {{{ Other
             return <<<TEXT
