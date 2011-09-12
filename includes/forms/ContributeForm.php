@@ -357,6 +357,22 @@ Thanks again for your interest, and welcome to the Mozilla Contributor Community
 Jay
 TEXT;
             // }}}
+        case 'Firefox Suggestions':
+            // {{{ Firefox Suggestions
+            return <<<TEXT
+Thanks for your interest in providing feedback about Firefox.
+
+I'd recommend trying out a preview release of the next version of Firefox to see the latest features we've been working on. You can download that at
+
+http://www.mozilla.com/firefox/channel/
+
+After trying that out, you can share your thoughts at
+
+http://input.mozilla.com/release/feedback
+
+Jay
+TEXT;
+            // }}}
         case ' ':
             // {{{ Other
             return <<<TEXT
