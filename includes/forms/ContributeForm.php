@@ -248,7 +248,7 @@ class ContributeForm
             return 'fiotakis' . '@' . 'otenet.gr';
 
         case 'QA':
-            return 'jbecerra' . '@' . 'mozilla.com';
+            return 'qa-contribute' . '@' . 'mozilla.com';
 
         case 'Add-ons':
             return 'jorge' . '@' . 'mozilla.com';
@@ -301,6 +301,31 @@ https://support.mozilla.com/kb/superheroes-wanted
 If you have any questions about this, feel free to write me back.
 
 Jay
+TEXT;
+            // }}}
+        case 'QA':
+            // {{{ QA
+            return <<<TEXT
+Hi!
+
+We're happy to hear of your interest in the project. The simplest way
+to get involved is by downloading and trying out one of our
+development builds like the Aurora or Beta version of Firefox. You can
+download them from https://www.mozilla.com/firefox/channel/
+
+If you find any problems while using those versions, let us know! Just
+reply to this email, and we'll get back to you.
+
+You can find us online every day on IRC in the QA channel
+http://chat.mibbit.com/?server=irc.mozilla.org&channel=#qa Stop by any
+time and we'll answer any of your questions. You'll find we are most
+active between 9am and 5pm PDT on Monday through Friday.
+
+We hope to see you there!
+
+Juan Becerra
+Mozilla QA
+http://quality.mozilla.org/
 TEXT;
             // }}}
         case 'Add-ons':
