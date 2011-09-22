@@ -160,7 +160,6 @@ class ContributeForm
         $map = array(
             'QA'             => 'qanoreply'        . '@' . 'mozilla.com',
             'Thunderbird'    => 'tb-kb'            . '@' . 'mozilla.com',
-	    'Release Engineering' => 'lsblakk'	   . '@' . 'mozilla.com',
             'Students'       => 'studentreps'      . '@' . 'mozilla.com',
             'Research'       => 'diane+contribute' . '@' . 'mozilla.com',
             'Design'         => 'creative'         . '@' . 'mozilla.com',

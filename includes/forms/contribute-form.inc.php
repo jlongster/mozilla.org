@@ -56,7 +56,6 @@
                         'Students'            => 'Student Reps',
                         'Documentation'       => 'Developer Documentation',
                         'Research'            => 'User Research',
-			'Release Engineering' => 'Release Engineering'
                         'Thunderbird'         => 'Thunderbird',
                         'Accessibility'       => 'Accessibility',
                         'Firefox Suggestions' => 'Firefox Suggestions',
