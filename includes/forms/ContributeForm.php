@@ -167,6 +167,7 @@ class ContributeForm
             'Docs'           => 'eshepherd'        . '@' . 'mozilla.com',
             'Drumbeat'       => 'drumbeat'         . '@' . 'mozilla.com',
             'Browser Choice' => 'isandu'           . '@' . 'mozilla.com',
+	    'Release Engineering' => 'lsblakk'     . '@' . 'mozilla.com',
         );
 
         $headers  = "From: <contribute-form" . "@" . "mozilla.org>";
