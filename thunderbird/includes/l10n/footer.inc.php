@@ -1,6 +1,6 @@
 <?php
 
-$feature_langs = array('cs', 'de', 'en-GB', 'es-AR', 'es-ES', 'et', 'eu', 'fr', 'gl', 'is', 'it', 'lt', 'nl', 'nb-NO', 'pl', 'pt-PT', 'rm', 'ru', 'si', 'sl', 'sq', 'zh-TW');
+$feature_langs = array('ar', 'bg', 'br', 'ca', 'cs', 'da', 'de', 'en-GB', 'el', 'es-AR', 'es-ES', 'et', 'eu', 'fi', 'fr', 'fy-NL', 'gd', 'gl', 'hu', 'is', 'it', 'lt', 'nl', 'nb-NO', 'pl', 'pt-PT', 'rm', 'ru', 'si', 'sk', 'sl', 'sq', 'uk', 'zh-TW');
 $feature_link = '';
 $feature_string = 'Thunderbird';
 
