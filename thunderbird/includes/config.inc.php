@@ -110,9 +110,9 @@ $config['gmap_api_key'] = 'ABQIAAAAJxF9iCN32uVbCYVf9GYBZRR4RvuhIVMVAVGkTLProETI9
 /**
  * Earlybird download urls.
 */
-$config['earlybird']['win'] = 'http://ftp.mozilla.org/pub/mozilla.org/thunderbird/nightly/latest-earlybird/thunderbird-8.0a2.en-US.win32.installer.exe';
-$config['earlybird']['linux'] = 'http://ftp.mozilla.org/pub/mozilla.org/thunderbird/nightly/latest-earlybird/thunderbird-8.0a2.en-US.linux-i686.tar.bz2';
-$config['earlybird']['osx'] = 'http://ftp.mozilla.org/pub/mozilla.org/thunderbird/nightly/latest-earlybird/thunderbird-8.0a2.en-US.mac.dmg';
+$config['earlybird']['win'] = 'http://ftp.mozilla.org/pub/mozilla.org/thunderbird/nightly/latest-earlybird/thunderbird-9.0a2.en-US.win32.installer.exe';
+$config['earlybird']['linux'] = 'http://ftp.mozilla.org/pub/mozilla.org/thunderbird/nightly/latest-earlybird/thunderbird-9.0a2.en-US.linux-i686.tar.bz2';
+$config['earlybird']['osx'] = 'http://ftp.mozilla.org/pub/mozilla.org/thunderbird/nightly/latest-earlybird/thunderbird-9.0a2.en-US.mac.dmg';
 
 
 ?>
