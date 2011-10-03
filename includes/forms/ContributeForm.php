@@ -395,7 +395,6 @@ Global numbers: http://mzl.la/o02P2Y  
 You can also watch the meeting live in Open Video at http://air.mozilla.com/marketing, and connect online with the #marketing (irc://irc.mozilla.org/marketing) and the #studentreps (irc://irc.mozilla.org/studentreps) IRC channels. For help with IRC, visit http://irc.mozilla.org.
 
 Thanks again--we look forward to being in touch.
-Jason
 TEXT;
             // }}}
         case 'Documentation':
