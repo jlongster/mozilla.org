@@ -365,6 +365,37 @@ Jorge Villalobos
 Add-ons Developer Relations Lead
 TEXT;
             // }}}
+        case 'Students':
+            // {{{ Students
+            return <<<TEXT
+Thank you for your inquiry about getting involved with Mozilla's student contributor projects.
+
+To get started, please visit the Mozilla Student Reps website and sign-up for the newsletter to receive updates: 
+
+http://www.mozilla.org/en-US/newsletter/studentreps.
+
+We are currently restructuring the Student Reps program and will be re-launching with new projects and opportunities in the coming months. During this time, we will be updating resources and asking you for feedback in order to improve the program. Please be sure to fill out the participation survey so we can include you in this process.
+
+http://www.surveygizmo.com/s3/655089/Students-Reps-Registration-Survey
+
+Until we re-launch the Student Reps program, please explore different ways to get involved and stay involved in your regional community and beyond.
+
+http://www.mozilla.org/contribute/
+
+To join the Mozilla Marketing Community, subscribe to the Mailing List here:
+
+https://lists.mozilla.org/listinfo/marketing.
+
+We also have a public Bi-Weekly Community Marketing Call scheduled every other Wednesday at 17:00 UTC.
+
+Audio Dial-in info: 1-800-503-2899 or 1-303-2480-8177 Access Code: 9638865 (followed by #) Global numbers: http://mzl.la/o02P2Y  
+
+You can also watch the meeting live in Open Video at http://air.mozilla.com/marketing, and connect online with the #marketing (irc://irc.mozilla.org/marketing) and the #studentreps (irc://irc.mozilla.org/studentreps) IRC channels. For help with IRC, visit http://irc.mozilla.org.
+
+Thanks again--we look forward to being in touch.
+Jason
+TEXT;
+            // }}}
         case 'Documentation':
             // {{{ Documentation
             return <<<TEXT
