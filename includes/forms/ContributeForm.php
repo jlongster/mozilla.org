@@ -388,9 +388,9 @@ https://lists.mozilla.org/listinfo/marketing
 
 We also have a public Bi-Weekly Community Marketing Call scheduled every other Wednesday at 17:00 UTC.
 
-Audio Dial-in info: 1-800-503-2899 or 1-303-2480-8177â
-Access Code: 9638865 (followed by #)â
-Global numbers: http://mzl.la/o02P2Y â€¨
+Audio Dial-in info: 1-800-503-2899 or 1-303-2480-8177
+Access Code: 9638865 (followed by #)
+Global numbers: http://mzl.la/o02P2Y
 
 You can also watch the meeting live in Open Video at http://air.mozilla.com/marketing, and connect online with the #marketing (irc://irc.mozilla.org/marketing) and the #studentreps (irc://irc.mozilla.org/studentreps) IRC channels. For help with IRC, visit http://irc.mozilla.org.
 
