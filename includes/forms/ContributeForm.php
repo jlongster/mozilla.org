@@ -308,22 +308,21 @@ TEXT;
         case 'QA':
             // {{{ QA
             return <<<TEXT
-Hi!
+Thanks for your interest in helping with testing.
 
-We're happy to hear of your interest in the project. The simplest way
-to get involved is by downloading and trying out one of our
-development builds like the Aurora or Beta version of Firefox. You can
-download them from https://www.mozilla.com/firefox/channel/
+To get started, download a development build of Firefox and then
+join us for the next Test Day.
 
-If you find any problems while using those versions, let us know! Just
-reply to this email, and we'll get back to you.
+You can download development builds at
 
-You can find us online every day on IRC in the QA channel
-http://chat.mibbit.com/?server=irc.mozilla.org&channel=#qa Stop by any
-time and we'll answer any of your questions. You'll find we are most
-active between 9am and 5pm PDT on Monday through Friday.
+https://www.mozilla.com/firefox/channel/
 
-We hope to see you there!
+We hold Test Days every Friday online from 9am to 5pm PDT.  You
+can join by clicking on this link.
+
+http://chat.mibbit.com/?server=irc.mozilla.org&channel=#qa
+
+We look forward to talking with you more soon.
 
 Juan Becerra
 Mozilla QA
