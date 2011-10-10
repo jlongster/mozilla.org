@@ -84,7 +84,7 @@ class MozillaOrg_LeftMenu
                 ),
                 array(
                     'title' => 'Annual Report',
-                    'link'  => '/foundation/annualreport/2009/',
+                    'link'  => '/foundation/annualreport/2010/',
                 ),
                 array(
                     'title' => 'Careers',
