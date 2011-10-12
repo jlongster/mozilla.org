@@ -320,7 +320,7 @@ https://www.mozilla.com/firefox/channel/
 We hold Test Days every Friday online from 9am to 5pm PDT.  You
 can join by clicking on this link.
 
-http://chat.mibbit.com/?server=irc.mozilla.org&channel=#qa
+http://chat.mibbit.com/?server=irc.mozilla.org&channel=#testday
 
 We look forward to talking with you more soon.
 
