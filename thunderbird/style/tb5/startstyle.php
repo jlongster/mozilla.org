@@ -24,7 +24,7 @@ body {
 #tblogo,
 .tblogo {
     position: absolute;
-    left: 670px;
+    left: 520px;
     top: 45px;
     z-index: 1
 }
@@ -52,7 +52,7 @@ a:hover {
 }
 
 .column1 {
-    width: 180px;
+    width: 30px;
     height: 286px;
     padding: 0 10px;
 }
@@ -83,7 +83,7 @@ h2 {
 }
 
 #header {
-    margin: 20px 0 0 180px;
+    margin: 20px 0 0 30px;
     padding: 40px 20px 20px;
     width: 540px;
     background-color: #fff;
