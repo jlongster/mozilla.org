@@ -433,7 +433,7 @@ class MozillaOrg_LeftMenu
 	// {{{ security
         'security' => array(
           array(
-            'title' => 'Security',
+            'title' => 'Security Center',
             'link'  => '/security/',
             'items' => array(
 		array(
