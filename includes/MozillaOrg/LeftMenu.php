@@ -430,6 +430,32 @@ class MozillaOrg_LeftMenu
             ),
         ),
         // }}}
+	// {{{ security
+        'security' => array(
+          array(
+            'title' => 'Security',
+            'link'  => '/security/',
+            'items' => array(
+		array(
+		    'title' => 'Security Advisories',
+		    'link' => '/security/announce',
+		),
+		array(
+		    'title' => 'Known Vulnerabilities',
+		    'link'  => '/security/known-vulnerabilities',
+		),
+		array(
+		    'title' => 'Bug Bounty',
+		    'link'  => '/security/bug-bounty.html',
+		),
+		array(
+		    'title' => 'Security Blog',
+		    'link'  => 'http://blog.mozilla.com/security/',
+		),
+              ),
+            ),
+        ),
+	//}}}
     );
 
     /**
