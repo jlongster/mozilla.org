@@ -54,6 +54,7 @@
                         'Add-ons'             => 'Add-ons',
                         'Marketing'           => 'Marketing',
                         'Students'            => 'Student Reps',
+                        'Webdev'              => 'Web Development',
                         'Documentation'       => 'Developer Documentation',
                         'IT'                  => 'Systems Administration',
 			'Automation' 	      => 'Build Automation',
