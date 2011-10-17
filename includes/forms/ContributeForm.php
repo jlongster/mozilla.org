@@ -170,6 +170,7 @@ class ContributeForm
 	    'Automation'     => 'lsblakk'          . '@' . 'mozilla.com',
 	    'IT'     	     => 'cshields'         . '@' . 'mozilla.com',
 	    'Webdev'         => 'lcrouch'          . '@' . 'mozilla.com',
+	    'Marketing'      => 'cnovak'           . '@' . 'mozilla.com',
         );
 
         $headers  = "From: <contribute-form" . "@" . "mozilla.org>";
@@ -257,7 +258,7 @@ class ContributeForm
             return 'jorge' . '@' . 'mozilla.com';
 
         case 'Marketing':
-            return 'mary' . '@' . 'mozilla.com';
+            return 'cnovak' . '@' . 'mozilla.com';
 
         case 'Students':
             return 'jhaas' . '@' . 'mozilla.com';
@@ -363,6 +364,26 @@ Regards,
 
 Jorge Villalobos
 Add-ons Developer Relations Lead
+TEXT;
+            // }}}
+        case 'Marketing':
+            // {{{ Marketing
+            return <<<TEXT
+Thank you for your interest in getting involved with Mozilla. For marketing projects, there are a few good places to get started:
+
+*There is a Community Marketing Guide at: http://guides.mozilla.org/Marketing
+
+*The Mozilla marketing group is also a good place to find out what others are talking about and talk about your ideas:http://groups.google.com/group/mozilla.marketing/topics
+
+*Every two weeks we also have an open marketing call. If you subscribe to the marketing list you'll see the call details and agenda. This is a good way to ask questions and meet fellow marketeers.
+
+*Follow @firefox on Twitter or friend on Facebook - you can get a sense of what we're up to there and see if you want to learn more - http://www.mozilla.org/en-US/firefox/connect/
+
+*Sign up for Mozilla & You http://www.mozilla.org/en-US/newsletter/ and monthly news!
+
+If you have any questions about any of this, let me know.
+
+Chelsea
 TEXT;
             // }}}
         case 'Students':
