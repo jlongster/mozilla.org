@@ -373,7 +373,7 @@ Thank you for your interest in getting involved with Mozilla. For marketing proj
 
 *There is a Community Marketing Guide at: http://guides.mozilla.org/Marketing
 
-*The Mozilla marketing group is also a good place to find out what others are talking about and talk about your ideas:http://groups.google.com/group/mozilla.marketing/topics
+*The Mozilla marketing group is also a good place to find out what others are talking about and talk about your ideas: http://groups.google.com/group/mozilla.marketing/topics
 
 *Every two weeks we also have an open marketing call. If you subscribe to the marketing list you'll see the call details and agenda. This is a good way to ask questions and meet fellow marketeers.
 
