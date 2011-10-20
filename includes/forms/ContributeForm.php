@@ -465,7 +465,7 @@ Thank you for your interest in getting involved with Mozilla.
 
 A great way to get started is to spread the word about Firefox. Grab a button and put it on your site, blog, Facebook or wherever.
 
-http://www.mozilla.org/contribute/buttons/firefox.html
+https://affiliates.mozilla.org/
 
 If you'd like to learn more about other ways to help out, take a look at
 
