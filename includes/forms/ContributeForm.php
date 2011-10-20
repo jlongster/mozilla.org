@@ -370,6 +370,8 @@ TEXT;
             return <<<TEXT
 Thank you for your interest in getting involved with Mozilla. For marketing projects, there are a few good places to get started:
 
+*Become a Firefox Affiliate (http://affiliates.mozilla.org). Add an affiliate button to your website or blog and tell the world about Firefox. 
+
 *There is a Community Marketing Guide at: http://guides.mozilla.org/Marketing
 
 *The Mozilla marketing group is also a good place to find out what others are talking about and talk about your ideas: http://groups.google.com/group/mozilla.marketing/topics
