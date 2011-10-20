@@ -127,7 +127,7 @@ class MozillaOrg_LeftMenu
                 ),
                 array(
                     'title' => 'Download Buttons',
-                    'link'  => '/contribute/buttons/',
+                    'link'  => 'https://affiliates.mozilla.org/',
                 ),
                 array(
                     'title' => 'Contributor Newsletter',
