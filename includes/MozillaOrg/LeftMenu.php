@@ -126,10 +126,6 @@ class MozillaOrg_LeftMenu
                     'link'  => '/contribute/local/',
                 ),
                 array(
-                    'title' => 'Download Buttons',
-                    'link'  => 'https://affiliates.mozilla.org/',
-                ),
-                array(
                     'title' => 'Contributor Newsletter',
                     'link'  => 'http://www.mozilla.com/en-US/newsletter/about_mozilla/',
                 ),
