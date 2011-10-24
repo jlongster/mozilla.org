@@ -83,7 +83,7 @@ $extra_footers = empty($extra_footers) ? '' : $extra_footers;
 <!-- Version: 8.6.2 -->
 <!-- Tag Builder Version: 3.0  -->
 <!-- Created: 5/10/2010 6:56:34 PM -->
-<script src="/script/webtrends.js" type="text/javascript"></script>
+<script src="/js/webtrends.js" type="text/javascript"></script>
 <!-- Warning: The two script blocks below must remain inline. Moving them to an external -->
 <!-- JavaScript include file can cause serious problems with cross-domain tracking.      -->
 <script type="text/javascript">
