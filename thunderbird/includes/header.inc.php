@@ -16,6 +16,7 @@ $dynamic_header = <<<DYNAMIC_HEADER
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 	<title>{$page_title}</title>
 	<script type="text/javascript" src="{$config['static_prefix']}/js/util.js"></script>
+        <link rel="shortcut icon" type="image/ico" href="/thunderbird/img/favicon.ico" />
 	<link rel="stylesheet" type="text/css" href="{$config['static_prefix']}/style/tb5/template.css" media="screen" />
 	<link rel="stylesheet" type="text/css" href="{$config['static_prefix']}/style/tb5/content.css" media="screen" />
     {$extra_headers}
