@@ -37,7 +37,7 @@ $current_year = date('Y');
 
     <title><?=$html_title?></title>
 
-    <link rel="shortcut icon" type="image/ico" href="/favicon.ico" />
+    <link rel="shortcut icon" type="image/ico" href="/org/favicon.ico" />
 
     <link href="<?=$config['style_prefix']?>/style/screen.css?date=2010-11-05" rel="stylesheet" media="screen, projection">
 
