@@ -388,33 +388,25 @@ TEXT;
         case 'Students':
             // {{{ Students
             return <<<TEXT
-Thank you for your inquiry about getting involved with Mozilla's student contributor projects.
+Hi there,
+
+Thank you for your inquiry about getting involved with the Mozilla Student Reps program.
 
 To get started, please visit the Mozilla Student Reps website and sign-up for the newsletter to receive updates: 
 
-http://www.mozilla.org/en-US/newsletter/studentreps
+http://www.mozilla.com/newsletter/studentreps
 
-We are currently restructuring the Student Reps program and will be re-launching with new projects and opportunities in the coming months. During this time, we will be updating resources and asking you for feedback in order to improve the program. Please be sure to fill out the participation survey so we can include you in this process.
+We are currently restructuring the Student Reps program and will be re-launching with new projects and opportunities in the coming months. During this time, we will be updating resources and notifying you via email of different ways to spread Firefox and stay involved with Mozilla.
 
-http://www.surveygizmo.com/s3/655089/Students-Reps-Registration-Survey
+Want to spread Firefox now and compete for fun prizes? Check out the Firefox Affiliates program: https://affiliates.mozilla.org
 
-Until we re-launch the Student Reps program, please explore different ways to get involved and stay involved in your regional community and beyond.
+If you are interested in getting involved in a particular functional area in the Mozilla Project, please visit: http://www.mozilla.org/contribute/areas.html. You can also learn more about volunteer projects near your area here: http://www.mozilla.org/contribute/local
 
-http://www.mozilla.org/contribute/
+Join the Community Marketing email listserv to tell us about a project you're interested in leading, or hear about ways other contributors are forwarding Mozilla's mission around the world: https://lists.mozilla.org/listinfo/marketing
 
-To join the Mozilla Marketing Community, subscribe to the Mailing List here:
+Please let me know if you need anything else.
 
-https://lists.mozilla.org/listinfo/marketing
-
-We also have a public Bi-Weekly Community Marketing Call scheduled every other Wednesday at 17:00 UTC.
-
-Audio Dial-in info: 1-800-503-2899 or 1-303-2480-8177
-Access Code: 9638865 (followed by #)
-Global numbers: http://mzl.la/o02P2Y
-
-You can also watch the meeting live in Open Video at http://air.mozilla.com/marketing, and connect online with the #marketing (irc://irc.mozilla.org/marketing) and the #studentreps (irc://irc.mozilla.org/studentreps) IRC channels. For help with IRC, visit http://irc.mozilla.org.
-
-Thanks again--we look forward to being in touch.
+Cheers,
 
 Jason Haas
 Community Manager (Students)
