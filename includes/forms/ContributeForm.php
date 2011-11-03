@@ -368,21 +368,16 @@ TEXT;
         case 'Marketing':
             // {{{ Marketing
             return <<<TEXT
-Thank you for your interest in getting involved with Mozilla. For marketing projects, there are a few good places to get started:
+Thanks for your interest in getting involved with Mozilla.
 
-* There is a Community Marketing Guide at: http://guides.mozilla.org/Marketing 
+Help us spread the word about Firefox by grabbing a Firefox button and put it on your site, blog, Facebook or wherever.
 
-* The Mozilla marketing group is also a good place to find out what others are talking about and talk about your ideas: http://groups.google.com/group/mozilla.marketing/topics 
+http://affiliates.mozilla.org
 
-* Every two weeks we also have an open marketing call. If you subscribe to the marketing list you'll see the call details and agenda. This is a good way to ask questions and meet fellow marketeers. 
+If you'd like to learn more about other ways to help us with marketing, please feel free to write me back.
 
-* Become a Firefox Affiliate (http://affiliates.mozilla.org). Add an affiliate button to your website or blog and tell the world about Firefox. 
-
-* Follow @firefox on Twitter or friend on Facebook - you can get a sense of what we're up to there and see if you want to learn more - http://www.mozilla.org/en-US/firefox/connect/ 
-
-* Sign up for Mozilla & You http://www.mozilla.org/en-US/newsletter/ and monthly news! 
-
-If you have any questions about any of this, let me know. 
+Thanks,
+Chelsea
 TEXT;
             // }}}
         case 'Students':
