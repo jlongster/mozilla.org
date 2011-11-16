@@ -53,6 +53,18 @@ $current_year = date('Y');
         src: local('☺'), url('//www.mozilla.org/img/fonts/MetaWebPro-Bold.woff') format('woff');
         font-weight: bold;
     }
+
+    a.censor {
+        background-image:url(/img/censored_white.png);
+        -moz-transform: rotate(-2deg);
+        -webkit-transform: rotate(-2deg);
+    }
+
+    a.censor:hover {
+        background-image: url(/img/censored_blue.png);
+    }
+
+    div#preload { display: none }
     </style>
 
     <script src="<?=$config['js_prefix']?>/script/1.0/jquery-1.4.3.min.js"></script>
@@ -77,7 +89,10 @@ $current_year = date('Y');
 </ul>
 
 <div id="header">
-    <h1 class="unitPng"><a href="/" title="Back to home page">mozilla</a></h1>
+    <h1 class="unitPng">
+      <a href="/" title="Back to home page">mozilla</a>
+      <a class="censor" style="width:150px;height:35px;vertical-align:middle;text-align:center;background-color:#000;position:absolute;z-index:5555;top:18px;left:-20px;background-position:center center;background-repeat:no-repeat;" href="http://www.mozilla.org/sopa"></a>
+    </h1>
 
     <div id="header-contents">
       <?php $top_menu->display(); ?>
@@ -97,5 +112,9 @@ if (count($breadcrumbs) > 0) {
     ?></span></p><?php
 }
 ?>
+
+<div id="preload">
+  <img src="/img/censored_blue.png" width="1" height="1" />
+</div>
 
 <div id="main"<?=$main_class?>>
