@@ -57,7 +57,6 @@
                         'Webdev'              => 'Web Development',
                         'Documentation'       => 'Developer Documentation',
                         'IT'                  => 'Systems Administration',
-			'Automation' 	      => 'Build Automation',
                         'Research'            => 'User Research',
                         'Thunderbird'         => 'Thunderbird',
                         'Accessibility'       => 'Accessibility',

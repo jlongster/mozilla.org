@@ -167,7 +167,6 @@ class ContributeForm
             'Docs'           => 'eshepherd'        . '@' . 'mozilla.com',
             'Drumbeat'       => 'drumbeat'         . '@' . 'mozilla.com',
             'Browser Choice' => 'isandu'           . '@' . 'mozilla.com',
-	    'Automation'     => 'lsblakk'          . '@' . 'mozilla.com',
 	    'IT'     	     => 'cshields'         . '@' . 'mozilla.com',
 	    'Marketing'      => 'cnovak'           . '@' . 'mozilla.com',
         );
