@@ -33,6 +33,10 @@ p {
     margin: 0 0 15px 0;
     text-align: justify;
 }
+p#newsletter {
+    background: url("<?php echo data_url(dirname(__FILE__).'/../../img/tb5/envelope.png','image/png'); ?>") no-repeat #FFFFFF;
+    padding-left: 38px;
+}
 
 a {
     color: #0A4E96;
